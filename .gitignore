@@ -1,0 +1,16 @@
+/.deps/
+/build/
+/out/
+__pycache__/
+*.qir
+*.qasm
+*.ast
+*.ll
+*.deb
+/.venv/
+*.o
+*.so
+*.qir.json
+!/examples/*.qir.json
+
+
