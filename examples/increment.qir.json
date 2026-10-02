@@ -1,0 +1,9 @@
+{
+  "format": "cket.qir",
+  "version": 1,
+  "instructions": [
+    {"op": "qborrow", "id": 0, "width": 8, "signed": false},
+    {"op": "qadd_inplace", "id": 0, "value": 1},
+    {"op": "qphase", "angle": 0.3}
+  ]
+}
