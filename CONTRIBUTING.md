@@ -54,11 +54,16 @@ build/validate_qasm
 
 All validation programs are C. They preserve the five optimization levels, 24 arithmetic growth circuits, and 11 independently checked QASM circuits. Scripts store evidence in `build/`; CI attaches logs and failure reproductions.
 
-`test.sh` also runs `build/test_examples`: all 16 examples, expected outputs,
-static export support or rejection, both dynamic array indices and invalid
-input, correlated Bell outcomes, CLI errors, and execution outside the repository.
+`test.sh` also runs `build/test_examples`: all 36 examples, expected outputs,
+static export support or rejection, both dynamic array indices, interactive
+boundary and invalid inputs at five optimization levels, stochastic contracts
+over 16 seeds, correlated Bell outcomes, CLI errors, and execution outside the repository.
 `examples/types.c` deliberately demonstrates a 32-bit quantum integer: export
 succeeds, but execution must report the 24-qubit simulator limit.
+
+Use `bash scripts/run-examples.sh --all` to run the 35 simulator-compatible
+programs, or pass selected names such as `for_sum fibonacci maximum_scan`.
+The [examples guide](examples/README.md) documents outputs and input formats.
 
 To instrument these C tools, their native reference library, and QuEST with ASan/UBSan:
 
@@ -75,6 +80,6 @@ A bug report should include a minimal program, the exact command, GCC and `cket`
 
 A PR should explain the problem, the resulting behavior, and the validation performed. When extending the accepted subset, update the README and the relevant contract in `docs/`. Document bounds, defensive limits, and any ownership or ABI changes. A conservative rejection or a test over a small domain does not establish general support.
 
-Generated files, downloaded dependencies, binaries, and credentials must stay out of Git. Example QIR modules are tracked as source. The original commits retain the dates assigned when the repository was initialized; use actual dates for subsequent changes.
+Generated build files, downloaded dependencies, executables, and credentials must stay out of Git. Example QIR modules are tracked as source. Audited paper PDFs in `output/pdf/` and their original figures and reproducibility evidence in `docs/paper/` are publication artifacts tracked alongside their editable sources. The original commits retain the dates assigned when the repository was initialized; use actual dates for subsequent changes.
 
 Write documentation and contributor-facing templates in English. The project is distributed under the [MIT license](LICENSE). For potential vulnerabilities, follow [SECURITY.md](SECURITY.md).

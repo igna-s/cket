@@ -302,6 +302,15 @@ Resource counts precede device decomposition. Larger controlled operations count
 
 ## Example reference
 
+The collection now contains 36 C examples, including loops, sums, Fibonacci,
+dot products, extrema, interactive input and measurement feedback. See the
+[examples guide](examples/README.md) for the complete catalog, expected results
+and input formats. Run all 35 simulator-compatible examples with:
+
+```bash
+bash scripts/run-examples.sh --all
+```
+
 All C examples are checked at `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`. Seed-dependent entries below refer to seed 7.
 
 | File in `examples/` | Behavior | Static QASM |
@@ -368,7 +377,7 @@ This rebuilds the compiler, runs the native suite and all examples, checks front
 
 Independent validation builds the serial **C** backend of [QuEST 3.7.0](https://github.com/QuEST-Kit/QuEST/releases/tag/v3.7.0), pinned to commit `d4f75f724993b4af8e43a796e3c09ce24ae11670`, with SHA-256 `1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
-Validation includes 354 native checks; 16 examples at five optimization levels; a default frontend corpus of 29 programs at five levels; 24 growth circuits; and 11 independent QASM cases. QASM cases check eight complete states/final probabilities and three intermediate-measurement/reset channels with 8192 transcripts each. The native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions plus 4096 IR mutations.
+Validation includes 354 native checks; 36 examples at five optimization levels; a default frontend corpus of 29 programs at five levels; 24 growth circuits; and 11 independent QASM cases. QASM cases check eight complete states/final probabilities and three intermediate-measurement/reset channels with 8192 transcripts each. The native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions plus 4096 IR mutations.
 
 Independent state comparisons allow one common global phase and use amplitude tolerance `1e-10`. These finite checks provide evidence for the accepted subset; they are not a formal proof or exhaustive coverage of arbitrary C programs. The QASM reader supports this exporter's static subset.
 

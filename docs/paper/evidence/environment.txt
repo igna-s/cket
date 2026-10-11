@@ -1,0 +1,13 @@
+2026-10-11T17:03:24Z
+1ebb2e308e61bed5632798ded5beecf77b6b9a9c
+Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux
+gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+Python 3.10.12
+reportlab False
+matplotlib False
+PIL False
+fitz False
+pypdf False
+pdfplumber False
+/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf

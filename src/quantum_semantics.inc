@@ -433,6 +433,9 @@ tree lower_node(tree value) {
         for (const auto &entry : variables) live |= entry.second.lowered && !entry.second.measured && !entry.second.released && !entry.second.moved;
         if (!controls.empty() || (live && dynamic_depth)) error_at(at(value), "|c>: return inside a quantum region needs proven cleanup");
         if (TREE_OPERAND(value, 0)) TREE_OPERAND(value, 0) = lower_node(TREE_OPERAND(value, 0));
+        // Ordinary C functions have no register cleanup to emit. Preserve GCC's
+        // return assignment so inlining and SSA retain the actual return value.
+        if (variables.empty()) return value;
         tree list = alloc_stmt_list();
         // The return expression may perform explicit measurement. Evaluate it
         // before emitting release calls, preserving actual native/IR order.

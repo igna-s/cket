@@ -1,0 +1,15 @@
+{
+  "format": "cket.qir",
+  "version": 1,
+  "frontend": "GCC C",
+  "symbols": [
+    {"name":"x","function":"main","type":{"c_type":"unsigned char","quantum":true,"bits":8}},
+    {"name":"answer","function":"main","type":{"c_type":"unsigned char","quantum":true,"bits":8}}
+  ],
+  "instructions": [
+    {"op":"qalloc","id":0,"name":"x","width":8,"signed":false,"ancilla":false},
+    {"op":"qprepare","id":0,"lower":0,"upper":15},
+    {"op":"qfind","id":0,"upper":15,"solutions":1,"predicate":{"op":"eq","bits":32,"signed":true,"args":[{"op":"mul","bits":32,"signed":true,"args":[{"op":"cast","bits":32,"signed":true,"args":[{"op":"reg","id":0,"bits":8,"signed":false,"active":4}]},{"op":"cast","bits":32,"signed":true,"args":[{"op":"reg","id":0,"bits":8,"signed":false,"active":4}]}]},{"op":"const","value":9,"bits":32,"signed":true}]}},
+    {"op":"qmeasure","id":0,"result":"m0","width":8}
+  ]
+}

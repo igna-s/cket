@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="527.76pt" height="252.792pt" viewBox="0 0 527.76 252.792" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-11T15:40:12.176230</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 252.792 
+L 527.76 252.792 
+L 527.76 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 16.69716 67.98996 
+L 115.77564 67.98996 
+Q 118.8558 67.98996 118.8558 65.129256 
+L 118.8558 27.940104 
+Q 118.8558 25.0794 115.77564 25.0794 
+L 16.69716 25.0794 
+Q 13.617 25.0794 13.617 27.940104 
+L 13.617 65.129256 
+Q 13.617 67.98996 16.69716 67.98996 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 168.13836 67.98996 
+L 303.15204 67.98996 
+Q 306.2322 67.98996 306.2322 65.129256 
+L 306.2322 27.940104 
+Q 306.2322 25.0794 303.15204 25.0794 
+L 168.13836 25.0794 
+Q 165.0582 25.0794 165.0582 27.940104 
+L 165.0582 65.129256 
+Q 165.0582 67.98996 168.13836 67.98996 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 368.34876 67.98996 
+L 503.36244 67.98996 
+Q 506.4426 67.98996 506.4426 65.129256 
+L 506.4426 27.940104 
+Q 506.4426 25.0794 503.36244 25.0794 
+L 368.34876 25.0794 
+Q 365.2686 25.0794 365.2686 27.940104 
+L 365.2686 65.129256 
+Q 365.2686 67.98996 368.34876 67.98996 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_5">
+    <path d="M 16.69716 158.57892 
+L 115.77564 158.57892 
+Q 118.8558 158.57892 118.8558 155.718216 
+L 118.8558 116.145144 
+Q 118.8558 113.28444 115.77564 113.28444 
+L 16.69716 113.28444 
+Q 13.617 113.28444 13.617 116.145144 
+L 13.617 155.718216 
+Q 13.617 158.57892 16.69716 158.57892 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_6">
+    <path d="M 168.13836 158.57892 
+L 303.15204 158.57892 
+Q 306.2322 158.57892 306.2322 155.718216 
+L 306.2322 116.145144 
+Q 306.2322 113.28444 303.15204 113.28444 
+L 168.13836 113.28444 
+Q 165.0582 113.28444 165.0582 116.145144 
+L 165.0582 155.718216 
+Q 165.0582 158.57892 168.13836 158.57892 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_7">
+    <path d="M 368.34876 158.57892 
+L 503.36244 158.57892 
+Q 506.4426 158.57892 506.4426 155.718216 
+L 506.4426 116.145144 
+Q 506.4426 113.28444 503.36244 113.28444 
+L 368.34876 113.28444 
+Q 365.2686 113.28444 365.2686 116.145144 
+L 365.2686 155.718216 
+Q 365.2686 158.57892 368.34876 158.57892 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_8">
+    <path d="M 168.13836 242.01612 
+L 303.15204 242.01612 
+Q 306.2322 242.01612 306.2322 239.155416 
+L 306.2322 199.582344 
+Q 306.2322 196.72164 303.15204 196.72164 
+L 168.13836 196.72164 
+Q 165.0582 196.72164 165.0582 199.582344 
+L 165.0582 239.155416 
+Q 165.0582 242.01612 168.13836 242.01612 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_9">
+    <path d="M 368.34876 242.01612 
+L 503.36244 242.01612 
+Q 506.4426 242.01612 506.4426 239.155416 
+L 506.4426 199.582344 
+Q 506.4426 196.72164 503.36244 196.72164 
+L 368.34876 196.72164 
+Q 365.2686 196.72164 365.2686 199.582344 
+L 365.2686 239.155416 
+Q 365.2686 242.01612 368.34876 242.01612 
+z
+" clip-path="url(#p74e24f0faa)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="text_1">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="66.2364" y="43.524036" transform="rotate(-0 66.2364 43.524036)">Programa C11</text>
+   </g>
+   <g id="text_2">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="66.2364" y="58.479167" transform="rotate(-0 66.2364 58.479167)">declaraciones quant</text>
+   </g>
+   <g id="text_3">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="43.528192" transform="rotate(-0 235.6452 43.528192)">GCC + plugin</text>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="58.468929" transform="rotate(-0 235.6452 58.468929)">AST, tipos y vidas</text>
+   </g>
+   <g id="text_5">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="43.436754" transform="rotate(-0 435.8556 43.436754)">IR estática JSON</text>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="58.479167" transform="rotate(-0 435.8556 58.479167)">cket.qir, versión 1</text>
+   </g>
+   <g id="patch_10">
+    <path d="M 122.141317 46.773072 
+Q 142.215346 46.773072 160.724127 46.773072 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 154.004127 43.413072 
+L 160.724127 46.773072 
+L 154.004127 50.133072 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_11">
+    <path d="M 308.489336 46.773072 
+Q 335.494027 46.773072 360.933471 46.773072 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 354.213471 43.413072 
+L 360.933471 46.773072 
+L 354.213471 50.133072 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_7">
+    <g id="patch_12">
+     <path d="M 316.08097 47.818039 
+L 354.90647 47.818039 
+L 354.90647 34.285289 
+L 316.08097 34.285289 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11.2px; font-family: 'Times New Roman'; text-anchor: middle" x="335.49372" y="43.742289" transform="rotate(-0 335.49372 43.742289)">emisión</text>
+   </g>
+   <g id="text_8">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="66.2364" y="132.567604" transform="rotate(-0 66.2364 132.567604)">Ejecutable nativo</text>
+   </g>
+   <g id="text_9">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="66.2364" y="148.424468" transform="rotate(-0 66.2364 148.424468)">control clásico de CPU</text>
+   </g>
+   <g id="text_10">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="132.476166" transform="rotate(-0 235.6452 132.476166)">Runtime C</text>
+   </g>
+   <g id="text_11">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="148.414231" transform="rotate(-0 235.6452 148.414231)">instrucciones y argumentos</text>
+   </g>
+   <g id="text_12">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="132.476166" transform="rotate(-0 435.8556 132.476166)">Motor cuántico C</text>
+   </g>
+   <g id="text_13">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="148.424468" transform="rotate(-0 435.8556 148.424468)">verificador + síntesis</text>
+   </g>
+   <g id="patch_13">
+    <path d="M 164.778866 70.42597 
+Q 139.389909 90.637432 115.225547 109.874026 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 122.575716 108.317424 
+L 115.225547 109.874026 
+L 118.390367 103.059929 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_14">
+    <g id="patch_14">
+     <path d="M 86.928375 97.403575 
+L 145.649625 97.403575 
+L 145.649625 83.870825 
+L 86.928375 83.870825 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11.2px; font-family: 'Times New Roman'; text-anchor: middle" x="116.289" y="93.327825" transform="rotate(-0 116.289 93.327825)">compilación</text>
+   </g>
+   <g id="patch_15">
+    <path d="M 122.141317 135.93168 
+Q 142.215346 135.93168 160.724127 135.93168 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 154.004127 132.57168 
+L 160.724127 135.93168 
+L 154.004127 139.29168 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_16">
+    <path d="M 308.489336 135.93168 
+Q 335.494027 135.93168 360.933471 135.93168 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 354.213471 132.57168 
+L 360.933471 135.93168 
+L 354.213471 139.29168 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="patch_17">
+    <path d="M 435.8556 70.705045 
+Q 435.8556 90.636798 435.8556 109.003303 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 439.2156 102.283303 
+L 435.8556 109.003303 
+L 432.4956 102.283303 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_15">
+    <g id="patch_18">
+     <path d="M 446.319575 97.403575 
+L 486.994825 97.403575 
+L 486.994825 83.870825 
+L 446.319575 83.870825 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11.2px; font-family: 'Times New Roman'; text-anchor: middle" x="466.6572" y="93.327825" transform="rotate(-0 466.6572 93.327825)">backend</text>
+   </g>
+   <g id="text_16">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="215.913366" transform="rotate(-0 235.6452 215.913366)">Vector de estado</text>
+   </g>
+   <g id="text_17">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="235.6452" y="231.85399" transform="rotate(-0 235.6452 231.85399)">ejecución hasta 24 qubits</text>
+   </g>
+   <g id="text_18">
+    <text style="font-weight: 700; font-size: 13.3px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="215.913366" transform="rotate(-0 435.8556 215.913366)">QASM + recursos</text>
+   </g>
+   <g id="text_19">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="435.8556" y="231.861668" transform="rotate(-0 435.8556 231.861668)">hasta 128 qubits representados</text>
+   </g>
+   <g id="patch_19">
+    <path d="M 387.75489 160.400544 
+Q 335.749847 177.650463 285.230456 194.407597 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 292.666559 195.481079 
+L 285.230456 194.407597 
+L 290.550904 189.102803 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_20">
+    <g id="patch_20">
+     <path d="M 305.1473 188.230927 
+L 356.0863 188.230927 
+L 356.0863 174.698177 
+L 305.1473 174.698177 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11.2px; font-family: 'Times New Roman'; text-anchor: middle" x="330.6168" y="184.155177" transform="rotate(-0 330.6168 184.155177)">ruta nativa</text>
+   </g>
+   <g id="patch_21">
+    <path d="M 435.8556 161.774455 
+Q 435.8556 177.652844 435.8556 191.965985 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+    <path d="M 439.2156 185.245985 
+L 435.8556 191.965985 
+L 432.4956 185.245985 
+" style="fill: none; stroke: #000000; stroke-width: 1.4; stroke-linecap: round"/>
+   </g>
+   <g id="text_21">
+    <g id="patch_22">
+     <path d="M 439.107295 184.416655 
+L 496.260545 184.416655 
+L 496.260545 170.883905 
+L 439.107295 170.883905 
+z
+" style="fill: #ffffff"/>
+    </g>
+    <text style="font-size: 11.2px; font-family: 'Times New Roman'; text-anchor: middle" x="467.68392" y="180.340905" transform="rotate(-0 467.68392 180.340905)">ruta estática</text>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="p74e24f0faa">
+   <rect x="7.2" y="7.2" width="513.36" height="238.392"/>
+  </clipPath>
+ </defs>
+</svg>

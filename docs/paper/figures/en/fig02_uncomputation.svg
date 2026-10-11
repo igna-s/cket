@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+  "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="527.76pt" height="185.576923pt" viewBox="0 0 527.76 185.576923" xmlns="http://www.w3.org/2000/svg" version="1.1">
+ <metadata>
+  <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+   <cc:Work>
+    <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
+    <dc:date>2026-10-11T15:38:46.536390</dc:date>
+    <dc:format>image/svg+xml</dc:format>
+    <dc:creator>
+     <cc:Agent>
+      <dc:title>Matplotlib v3.10.9, https://matplotlib.org/</dc:title>
+     </cc:Agent>
+    </dc:creator>
+   </cc:Work>
+  </rdf:RDF>
+ </metadata>
+ <defs>
+  <style type="text/css">*{stroke-linejoin: round; stroke-linecap: butt}</style>
+ </defs>
+ <g id="figure_1">
+  <g id="patch_1">
+   <path d="M 0 185.576923 
+L 527.76 185.576923 
+L 527.76 0 
+L 0 0 
+z
+" style="fill: #ffffff"/>
+  </g>
+  <g id="axes_1">
+   <g id="patch_2">
+    <path d="M 80.86716 129.253292 
+L 167.11164 129.253292 
+Q 170.1918 129.253292 170.1918 126.182769 
+L 170.1918 31.508308 
+Q 170.1918 28.437785 167.11164 28.437785 
+L 80.86716 28.437785 
+Q 77.787 28.437785 77.787 31.508308 
+L 77.787 126.182769 
+Q 77.787 129.253292 80.86716 129.253292 
+z
+" clip-path="url(#pf977579d1e)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_3">
+    <path d="M 342.68076 129.253292 
+L 428.92524 129.253292 
+Q 432.0054 129.253292 432.0054 126.182769 
+L 432.0054 31.508308 
+Q 432.0054 28.437785 428.92524 28.437785 
+L 342.68076 28.437785 
+Q 339.6006 28.437785 339.6006 31.508308 
+L 339.6006 126.182769 
+Q 339.6006 129.253292 342.68076 129.253292 
+z
+" clip-path="url(#pf977579d1e)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="patch_4">
+    <path d="M 214.34076 129.253292 
+L 282.61764 129.253292 
+Q 285.6978 129.253292 285.6978 126.182769 
+L 285.6978 92.918769 
+Q 285.6978 89.848246 282.61764 89.848246 
+L 214.34076 89.848246 
+Q 211.2606 89.848246 211.2606 92.918769 
+L 211.2606 126.182769 
+Q 211.2606 129.253292 214.34076 129.253292 
+z
+" clip-path="url(#pf977579d1e)" style="fill: #eef5f6; stroke: #000000; stroke-width: 1.05; stroke-linejoin: miter"/>
+   </g>
+   <g id="line2d_1">
+    <path d="M 48.2688 109.550769 
+L 494.892 109.550769 
+" clip-path="url(#pf977579d1e)" style="fill: none; stroke: #000000; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="line2d_2">
+    <path d="M 48.2688 48.140308 
+L 494.892 48.140308 
+" clip-path="url(#pf977579d1e)" style="fill: none; stroke: #000000; stroke-width: 1.3; stroke-linecap: square"/>
+   </g>
+   <g id="text_1">
+    <!-- $|x\rangle$ -->
+    <g transform="translate(12.3336 53.390308)">
+     <text>
+      <tspan x="0" y="-0.03125" style="font-size: 21px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="13.523987" y="-0.03125" style="font-size: 21px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="4.199997" y="-0.03125" style="font-style: italic; font-size: 21px; font-family: 'STIXGeneral'">x</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_2">
+    <!-- $|0\rangle$ -->
+    <g transform="translate(12.3336 114.800769)">
+     <text>
+      <tspan x="0" y="-0.03125" style="font-size: 21px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="4.199997" y="-0.03125" style="font-size: 21px; font-family: 'STIXGeneral'">0</tspan>
+      <tspan x="14.699982" y="-0.03125" style="font-size: 21px; font-family: 'STIXGeneral'">⟩</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_3">
+    <!-- $U_f$ -->
+    <g transform="translate(117.5389 66.634028)">
+     <text>
+      <tspan x="0" y="-0.515625" style="font-style: italic; font-size: 13.3px; font-family: 'STIXGeneral'">U</tspan>
+      <tspan x="9.566483" y="1.204688" style="font-style: italic; font-size: 9.31px; font-family: 'STIXGeneral'">f</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_4">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="123.9894" y="104.067948" transform="rotate(-0 123.9894 104.067948)">qcompute</text>
+   </g>
+   <g id="text_5">
+    <!-- $U_f^{-1}$ -->
+    <g transform="translate(374.4315 66.900028)">
+     <text>
+      <tspan x="0" y="-0.265625" style="font-style: italic; font-size: 13.3px; font-family: 'STIXGeneral'">U</tspan>
+      <tspan x="10.946795" y="-4.853125" style="font-size: 9.31px; font-family: 'STIXGeneral'">−</tspan>
+      <tspan x="17.300158" y="-4.853125" style="font-size: 9.31px; font-family: 'STIXGeneral'">1</tspan>
+      <tspan x="9.566483" y="3.175" style="font-style: italic; font-size: 9.31px; font-family: 'STIXGeneral'">f</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_6">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="385.803" y="104.067948" transform="rotate(-0 385.803 104.067948)">quncompute</text>
+   </g>
+   <g id="text_7">
+    <!-- $Z$ -->
+    <g transform="translate(244.7552 107.004898)">
+     <text>
+      <tspan x="0" y="-0.515625" style="font-style: italic; font-size: 13.3px; font-family: 'STIXGeneral'">Z</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_8">
+    <text style="font-size: 10.92px; font-family: 'Times New Roman'; text-anchor: middle" x="248.4792" y="120.648772" transform="rotate(-0 248.4792 120.648772)">phase</text>
+   </g>
+   <g id="text_9">
+    <!-- $|f(x)\rangle$ -->
+    <g transform="translate(173.9006 94.198154)">
+     <text>
+      <tspan x="0" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="8.72348" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">(</tspan>
+      <tspan x="22.903702" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">)</tspan>
+      <tspan x="28.980942" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="3.649994" y="-0.171875" style="font-style: italic; font-size: 18.2px; font-family: 'STIXGeneral'">f</tspan>
+      <tspan x="14.80072" y="-0.171875" style="font-style: italic; font-size: 18.2px; font-family: 'STIXGeneral'">x</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_10">
+    <!-- $|0\rangle$ -->
+    <g transform="translate(466.9144 131.556185)">
+     <text>
+      <tspan x="0" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="3.649994" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">0</tspan>
+      <tspan x="12.774979" y="-0.171875" style="font-size: 18.2px; font-family: 'STIXGeneral'">⟩</tspan>
+     </text>
+    </g>
+   </g>
+   <g id="text_11">
+    <!-- $\sum_x\alpha_x|x\rangle|0\rangle\ \longmapsto\ \sum_x(-1)^{f(x)}\alpha_x|x\rangle|0\rangle$ -->
+    <g transform="translate(137.166 163.284923)">
+     <text>
+      <tspan x="0" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">∑</tspan>
+      <tspan x="33.469943" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="46.108432" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="53.958423" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="57.883411" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">0</tspan>
+      <tspan x="67.695911" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="83.102788" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">⟼</tspan>
+      <tspan x="121.549429" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">∑</tspan>
+      <tspan x="137.205679" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">(</tspan>
+      <tspan x="143.740805" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">−</tspan>
+      <tspan x="157.183936" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">1</tspan>
+      <tspan x="166.996436" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">)</tspan>
+      <tspan x="211.602594" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="224.241082" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="232.091073" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">|</tspan>
+      <tspan x="236.016061" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">0</tspan>
+      <tspan x="245.828561" y="-0.45625" style="font-size: 19.6px; font-family: 'STIXGeneral'">⟩</tspan>
+      <tspan x="5" y="14.575" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="26.489243" y="2.1875" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="126.549429" y="14.575" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="173.839999" y="-7.50625" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">f</tspan>
+      <tspan x="182.233612" y="-7.50625" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="204.621893" y="2.1875" style="font-style: italic; font-size: 13.72px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="15.65625" y="-0.45625" style="font-style: italic; font-size: 19.6px; font-family: 'STIXGeneral'">α</tspan>
+      <tspan x="37.394931" y="-0.45625" style="font-style: italic; font-size: 19.6px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="193.7889" y="-0.45625" style="font-style: italic; font-size: 19.6px; font-family: 'STIXGeneral'">α</tspan>
+      <tspan x="215.527581" y="-0.45625" style="font-style: italic; font-size: 19.6px; font-family: 'STIXGeneral'">x</tspan>
+      <tspan x="177.659024" y="-7.50625" style="font-size: 13.72px; font-family: 'STIXGeneral'">(</tspan>
+      <tspan x="188.333062" y="-7.50625" style="font-size: 13.72px; font-family: 'STIXGeneral'">)</tspan>
+     </text>
+    </g>
+   </g>
+  </g>
+ </g>
+ <defs>
+  <clipPath id="pf977579d1e">
+   <rect x="7.2" y="7.2" width="513.36" height="166.32"/>
+  </clipPath>
+ </defs>
+</svg>

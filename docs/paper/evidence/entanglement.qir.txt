@@ -1,0 +1,25 @@
+{
+  "format": "cket.qir",
+  "version": 1,
+  "frontend": "GCC C",
+  "symbols": [
+    {"name":"a","function":"main","type":{"c_type":"_Bool","quantum":true,"bits":1}},
+    {"name":"b","function":"main","type":{"c_type":"_Bool","quantum":true,"bits":1}},
+    {"name":"first","function":"main","type":{"c_type":"unsigned int","quantum":false,"bits":32}},
+    {"name":"second","function":"main","type":{"c_type":"unsigned int","quantum":false,"bits":32}}
+  ],
+  "instructions": [
+    {"op":"qalloc","id":0,"name":"a","width":1,"signed":false,"ancilla":false},
+    {"op":"qprepare","id":0,"lower":0,"upper":0},
+    {"op":"qalloc","id":1,"name":"b","width":1,"signed":false,"ancilla":false},
+    {"op":"qprepare","id":1,"lower":0,"upper":0},
+    {"op":"qfourier","id":0,"inverse":false,"controls":[]},
+    {"op":"qalloc","id":2,"width":1,"signed":false,"ancilla":true},
+    {"op":"qcompute","id":2,"expr":{"op":"ne","bits":32,"signed":true,"args":[{"op":"reg","id":0,"bits":1,"signed":false,"active":1},{"op":"const","value":0,"bits":1,"signed":false}]}},
+    {"op":"qinplace","id":1,"expr":{"op":"cast","bits":1,"signed":false,"args":[{"op":"ne","bits":1,"signed":false,"args":[{"op":"cast","bits":32,"signed":true,"args":[{"op":"bnot","bits":1,"signed":false,"args":[{"op":"reg","id":1,"bits":1,"signed":false,"active":0,"known":0}]}]},{"op":"const","value":0,"bits":32,"signed":true}]}]},"controls":[{"id":2,"value":1}]},
+    {"op":"quncompute","id":2,"expr":{"op":"ne","bits":32,"signed":true,"args":[{"op":"reg","id":0,"bits":1,"signed":false,"active":1},{"op":"const","value":0,"bits":1,"signed":false}]}},
+    {"op":"qrelease","id":2},
+    {"op":"qmeasure","id":0,"result":"m0","width":1},
+    {"op":"qmeasure","id":1,"result":"m1","width":1}
+  ]
+}

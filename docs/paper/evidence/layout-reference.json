@@ -1,0 +1,29 @@
+{
+  "reference_url": "https://arxiv.org/pdf/1706.03762",
+  "reference_title": "Attention Is All You Need",
+  "reference_pdf_version": "v7, 2 August 2023",
+  "page_size_points": [
+    612,
+    792
+  ],
+  "text_column_points": [
+    108,
+    504
+  ],
+  "body_font_reference": "NimbusRomNo9L (Times compatible), approximately 10 pt",
+  "body_font_cket": "Embedded Times New Roman or STIXGeneral, 10 pt",
+  "heading_points": 12,
+  "title_points": 17.2,
+  "structure": [
+    "Introduction",
+    "Background",
+    "Architecture",
+    "Motivation",
+    "Experimental setup",
+    "Results",
+    "Conclusion",
+    "References"
+  ],
+  "adaptation": "Spanish and English compiler content; original C Ket figures; no copied branding or affiliations",
+  "maximum_pages_including_references": 8
+}

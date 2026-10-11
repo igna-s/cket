@@ -1,0 +1,888 @@
+{
+  "status": "passed",
+  "language": "en",
+  "checks": 175,
+  "pages": 8,
+  "figures": 7,
+  "references": 10,
+  "project_commit": "1ebb2e308e61bed5632798ded5beecf77b6b9a9c",
+  "results": [
+    {
+      "check": "Siete secciones con la progresión del modelo",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ocho páginas planificadas, incluida bibliografía",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Mismos bloques C, JSON y bash en ambos idiomas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Mismas ecuaciones en ambos idiomas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Mismos enlaces bibliográficos en ambos idiomas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Mismas cifras y contratos cuantitativos en ambos idiomas",
+      "passed": true,
+      "detail": "204 cifras ES; 204 cifras EN"
+    },
+    {
+      "check": "Resultado reproducido: 354 passed, 0 failed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resultado reproducido: 426 checks passed across 16 examples",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ausencia de FAIL en native.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resultado reproducido: 145 generated frontend compilations passed; seed=20261011",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ausencia de FAIL en frontend.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resultado reproducido: 24 circuits compiled without tables",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ausencia de FAIL en growth.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resultado reproducido: 11 exported circuits independently validated with QuEST 3.7.0",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ausencia de FAIL en qasm.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Commit de referencia",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "GCC de referencia",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Build del proyecto",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "24 filas de síntesis",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Diseño completo de 6 operadores por 4 anchos",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Addition",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Addition",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Addition",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Subtraction",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Subtraction",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Subtraction",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Multiplication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Multiplication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Multiplication",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Division",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Division",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Division",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Remainder",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Remainder",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Remainder",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Dos tablas con operador Less than",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Puertas de Less than",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Workspace y profundidad de Less than",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes add 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes add 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes add 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes add 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes sub 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes sub 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes sub 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes sub 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mul 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mul 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mul 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mul 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes div 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes div 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes div 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes div 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mod 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mod 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mod 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes mod 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes lt 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes lt 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes lt 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bits relevantes lt 16",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Diez referencias identificadas y citadas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Siete figuras consecutivas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 1 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 1",
+      "passed": true,
+      "detail": "1832 x 877 píxeles"
+    },
+    {
+      "check": "Figura 1 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 2 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 2",
+      "passed": true,
+      "detail": "1832 x 646 píxeles"
+    },
+    {
+      "check": "Figura 2 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 3 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 3",
+      "passed": true,
+      "detail": "2283 x 743 píxeles"
+    },
+    {
+      "check": "Figura 3 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 4 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 4",
+      "passed": true,
+      "detail": "2282 x 768 píxeles"
+    },
+    {
+      "check": "Figura 4 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 5 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 5",
+      "passed": true,
+      "detail": "2278 x 756 píxeles"
+    },
+    {
+      "check": "Figura 5 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 6 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 6",
+      "passed": true,
+      "detail": "2278 x 818 píxeles"
+    },
+    {
+      "check": "Figura 6 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Figura 7 disponible",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Resolución figura 7",
+      "passed": true,
+      "detail": "2282 x 818 píxeles"
+    },
+    {
+      "check": "Figura 7 con etiquetas en en",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sin placeholders",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sin caracteres de guion problemáticos",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local README.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/language.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/ir-verification.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/circuit-abi.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c-coverage.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/v1-plan.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/cket.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/cket_plugin.cpp",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/cket_runtime.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/cket_backend.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/verify.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/simulator.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/quantum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/benchmark_synthesis.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_qasm.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/fuzz_frontend.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local include/quantum.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local LICENSE",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Límites físicos y simulación en código",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Evento GCC en código",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Propiedad por atributo en header",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Bell: distribución conjunta ideal",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Grover: valor y fórmula",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Grover: auxiliares en cero",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Grover: normalización",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Memoria teórica: 24 y 32 qubits",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Tres ejemplos C identificados",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_hello.c --run",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Ejemplo exacto del manuscrito imprime 12",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_bell.c --run",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Fragmento exacto bell compila y cumple el resultado con semilla 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_find.c --run",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Fragmento exacto find compila y cumple el resultado con semilla 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplo: --validate /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper-sample.json",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Ejemplo: --state /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper-sample.json",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "IR del manuscrito calcula 7+5",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF de ocho páginas como máximo, incluida bibliografía",
+      "passed": true,
+      "detail": "8 páginas"
+    },
+    {
+      "check": "Tamaño Letter del documento de referencia",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 1 Introduction",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 2 Background",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 3 System Architecture",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 4 Motivation and Model Costs",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 5 Experimental Setup",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 6 Results",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sección presente: 7 Conclusions",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 1",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 2",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 3",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 5",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 6",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption figura 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption tabla 1",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption tabla 2",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption tabla 3",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Caption tabla 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Diez referencias dentro del límite de páginas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Autor en PDF",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Idioma del resumen y metadatos",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sin glifos de reemplazo",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Referencias externas enlazadas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Tipografía Times o STIX embebida",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Texto principal serif de diez puntos y negro",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Título centrado de 17,2 puntos",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 1",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 1",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 1",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 2",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 2",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 2",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 3",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 3",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 3",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 4",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 4",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 5",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 5",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 5",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 6",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 6",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 6",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 7",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Página con contenido 8",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Columna de 5,5 pulgadas y márgenes de página 8",
+      "passed": true,
+      "detail": "[]"
+    },
+    {
+      "check": "Número centrado y único en página 8",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
+  "visual_review": "See audit.md: manual review of the latest rendered pages is also required."
+}

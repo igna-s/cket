@@ -1,0 +1,13 @@
+PASS independent QASM importer: 8 malformed artifacts rejected
+PASS independent QASM state and probabilities: entangled arithmetic (16 qubits)
+PASS independent QASM state and probabilities: relative phase and cleanup (9 qubits)
+PASS independent QASM state and probabilities: controlled global phase (2 qubits)
+PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
+PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
+PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
+PASS independent QASM state and probabilities: nested open controls (12 qubits)
+PASS independent QASM state and probabilities: independent controlled module (10 qubits)
+PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
+PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
+PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
+11 exported circuits independently validated with QuEST 3.7.0 (C)
