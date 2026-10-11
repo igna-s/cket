@@ -1,23 +1,23 @@
-name: Reporte de seguridad
-description: Reportar una vulnerabilidad dentro de este repositorio privado.
+name: Security report
+description: Report a vulnerability within this private repository.
 title: "[Security] "
 labels: [security]
 body:
   - type: markdown
     attributes:
-      value: Este reporte será visible a quienes tienen acceso al repositorio privado. Omití credenciales y datos sensibles.
+      value: This report is visible to people with access to the private repository. Omit credentials and sensitive data.
   - type: textarea
     id: reproduction
     attributes:
-      label: Reproducción mínima
-      description: Incluí el C o QIR mínimo, comando y versiones utilizados.
+      label: Minimal reproduction
+      description: Include the minimal C or QIR source, command, and versions used.
       render: text
     validations:
       required: true
   - type: textarea
     id: impact
     attributes:
-      label: Impacto observado
-      description: Describí el fallo y su impacto, adjuntando registros sin datos sensibles.
+      label: Observed impact
+      description: Describe the failure and its impact, attaching logs without sensitive data.
     validations:
       required: true

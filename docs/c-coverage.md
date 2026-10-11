@@ -1,77 +1,77 @@
-# Cobertura de C11 y datos `quant`
+# C11 coverage and `quant` data
 
-El objetivo de `|c>` es extender todo C11 con contratos cuánticos verificables. La implementación todavía no satisface ese objetivo completo. [1.0](v1-plan.md) exige un subconjunto cerrado y no requiere todo C11, QPU ni memoria dinámica. GCC analiza el lenguaje C; la tabla siguiente describe qué puede transformar el plugin cuando intervienen datos cuánticos. Reconocer una construcción con GCC no equivale a implementar su semántica cuántica.
+The goal of `|c>` is to extend C11 with verifiable quantum contracts. The implementation does not meet that complete goal yet. [Version 1.0](v1-plan.md) requires a closed subset rather than all of C11, a QPU, or dynamic memory. GCC parses C; the following table describes what the plugin can transform when quantum data is involved. GCC recognizing a construct does not imply support for its quantum semantics.
 
-Una operación que conserva información puede sintetizarse coherentemente. Una lectura hacia CPU requiere una medición explícita. Una escritura que pierde información necesita conservarla con propiedad y vida definidas, o un reset escrito por el programa. Rechazar casos todavía no implementados protege esos contratos, pero no se contabiliza como soporte funcional de la operación.
+Information-preserving operations may be synthesized coherently. Reading into CPU data requires explicit measurement. A write that loses information must preserve it with defined ownership and lifetime, or use an explicit program reset. Rejecting unimplemented cases protects these contracts but does not count as functional support.
 
-| Construcción de C11 | Estado sobre datos cuánticos | Contrato o trabajo pendiente |
+| C11 construct | Status for quantum data | Contract or remaining work |
 |---|---|---|
-| Preprocesador, includes y macros | GCC real | `quant` es un atributo registrado; todavía no un calificador nativo de GCC. |
-| Enteros y `_Bool` | Implementado hasta 64 bits | Anchura, signo, promociones y conversiones conservados en IR. |
-| `float`, `double`, complejos | Pendiente | Codificación, redondeo, excepciones y circuitos reversibles. Los ángulos CPU sí usan `double`. |
-| `typedef` | Alias escalares compatibles | Propagación de `quant` como parte nativa del tipo pendiente. |
-| `const` | Parámetros prestados de solo lectura | Propietarios constantes y préstamo general a través de toda la ABI pendientes. |
-| `volatile`, `_Atomic`, hilos | C clásico; integración cuántica general pendiente | La marca `volatile` interna evita simplificaciones tempranas. El runtime cuántico es global. |
-| Locales automáticas | Implementado | Propietarios en `main` y en procedimientos expandidos. |
-| Globales, `static`, `extern`, almacenamiento TLS | Pendiente para propietarios cuánticos | Inicialización, sincronización, propiedad y limpieza entre llamadas. |
-| Inicialización desde constante | Implementado | Prepara un estado de base. Una variable sin inicializador se prepara en cero. |
-| Inicialización desde CPU | Implementado | Evalúa una vez y prepara almacenamiento nuevo; requiere ejecución nativa si el valor es dinámico. |
-| Inicialización desde expresión cuántica | Implementado para expresiones admitidas | Conserva entradas, registra inversa y permite entrelazamiento. |
-| Arrays fijos y multidimensionales | Implementado para enteros/bools | Propiedad y limpieza por elemento; expansión defensiva limitada. |
-| Estructuras y estructuras anidadas | Implementado para productos enteros | Sin punteros internos, bitfields, unions ni campos anónimos cuánticos. |
-| Inicializadores designados | Implementado en productos fijos | Elementos omitidos se preparan en cero. |
-| Copia de arrays/estructuras completas | Pendiente | No puede heredar una copia independiente de un estado desconocido. |
-| VLA y arrays de tamaño dinámico | Pendiente | Vida, límites y asignación de registros en ejecución. |
-| Índices constantes | Implementado | Se comprueban los límites del almacenamiento. |
-| Índices de bucles estáticos | Implementado | Se expanden bucles cuya cota y contador se comprueban. |
-| Índices CPU dinámicos | Operaciones indexadas sobre arrays escalares y préstamos | Suma/resta/XOR e incrementos sin signo, medidas/reset y Fourier/inversa; límites comprobados. Lecturas cuánticas generales y productos anidados pendientes. |
-| Índices cuánticos | Pendiente | Lectura/escritura coherente mediante selección reversible; sin lectura CPU implícita. |
-| `&`, `*`, acceso mediante puntero | Préstamos comprobados | `quant T *p` referencia registros existentes; su dirección es clásica. Reinterpretar el tipo del elemento necesita un contrato de acceso por bytes y se rechaza. |
-| Aritmética de punteros | Desplazamientos constantes y selección indexada por CPU | Se admite volver dentro de un array y representar un puntero a su final; accesos indexados comprueban límites en ejecución. Reasignación general de referencias pendiente. |
-| Alias de referencias | Implementado en el alcance estático | Los alias apuntan al mismo registro; uso tras movimiento se rechaza. |
-| Reasignación/escape de punteros | Pendiente | Las referencias actuales no pueden escapar a CPU ni reasignarse dinámicamente. |
-| `malloc`, `free`, `realloc`, memoria cuántica dinámica | Pendiente | Gestor de almacenamiento, propiedad por dirección y limpieza antes de liberar. |
-| Funciones y procedimientos directos | Composición sobre AST | Definición disponible antes de uso en la misma unidad; locales nuevos por llamada. |
-| Parámetros escalares, punteros y arrays | Préstamos implementados | Igualdad de tipo C canónico; no consumir el préstamo ni solapar parámetros mutables. |
-| Retorno cuántico | Expresiones puras condicionales y resultados escalares propios terminales | Un local puede transferirse a un inicializador nuevo; devolver un parámetro prestado directamente se rechaza. |
-| Retornos generales y múltiples | Parcial | Retorno terminal propio y ramas puras; productos retornados y salidas tempranas con vida pendiente requieren análisis adicional. |
-| Recursión, llamadas indirectas, funciones variádicas cuánticas | Pendiente | ABI y pruebas de vida/efectos y cotas. |
-| Varias unidades de traducción y bibliotecas cuánticas | Módulos de circuitos QIR independientes | `circuit` e inversa embeben módulos tipados y unitarios; enlace de funciones C `quant` entre unidades pendiente. |
-| `+ - * / %` en un resultado nuevo | Circuitos por registros y camino finito pequeño | Operandos positivos/negativos con rangos probados; divisor distinto de cero, overflow y MIN/-1 rechazados. Composiciones generales y divisor de 64 bits pendientes. |
-| Suma/resta modular en el propio registro | Síntesis directa | Operandos CPU o registros sin signo distintos; conserva el otro registro. |
-| `& | ^ ~` y desplazamientos constantes | Síntesis simbólica y camino finito | Límites de términos; validación de desplazamientos y conversiones. |
-| `^=` | Acumulación reversible | Operando independiente del destino; argumento CPU evaluado una vez. Conversiones booleanas restringidas. |
-| `*= /= %= &= |= <<= >>=` | Casos inyectivos en el camino finito | Transformaciones destructivas generales requieren conservar historial. |
-| `++ --` | Contextos de actualización admitidos | El valor de una expresión con efectos cuánticos en cualquier contexto todavía no está implementado. |
-| Comparaciones contra constantes | Camino estructurado o finito | Predicados de 16 bits probados exhaustivamente; ciertos casos de 32 bits exportables. |
-| Comparaciones entre registros | Circuitos estructurados | Comparación léxica con diferencia reversible y sesgo del signo; limitada por espacio de trabajo. |
-| `! && || ?:` puros | Implementado | Conserva cortocircuito en la evaluación de aritmética; no convierte efectos CPU en efectos coherentes. |
-| Asignación escalar directa nueva | Movimiento | Transfiere propiedad, consume el nombre anterior y no asigna otra copia. |
-| Asignación a un destino ocupado | Casos reversibles; general pendiente | Preservación explícita del historial y reglas para su destino. |
-| `if/else` cuántico | Control coherente | Predicado calculado, control de ambas ramas e inversa; no mutar entradas necesarias para limpiarlo. |
-| `if/else` CPU | Uniones conservadoras de estados | Conserva hechos ciertos en ambas ramas; creación dinámica y cambios de identidad pendientes. |
-| `for` estático | Expansión acotada | Hasta 4096 iteraciones, sin saltos ni modificación del contador en el cuerpo. |
-| `for/while/do` CPU dinámicos | Actualizaciones, `if` coherentes y medidas sobre propietarios estables | No se aplanan para QASM. Medir/resetear un elemento seleccionado no prueba que el bucle haya consumido todos los propietarios; asignación dinámica pendiente. |
-| Bucles de condición cuántica | Pendiente | Cotas, avance reversible e historial. |
-| `switch`, `break`, `continue`, `goto`, etiquetas | C clásico; composición cuántica general pendiente | Necesitan análisis del grafo de control, vidas y efectos. |
-| `sizeof`, `_Alignof`, layout C clásico | GCC real | No leen amplitudes. El layout C no es una representación CPU del estado cuántico. |
-| `read`, `scanf`, archivos y sockets | CPU clásico | Sus resultados pueden preparar nuevos registros; un estado cuántico debe medirse antes de enviarlo a CPU. |
-| `write`, `printf`, archivos y sockets | CPU tras medida explícita | Se rechaza enviar un registro sin medir o efectuar I/O bajo control coherente. |
-| `memcpy`, `memmove`, `memset` sobre registros | Pendiente | Acceso por bytes, propiedad y reversibilidad; no se simulan como copias CPU de los marcadores. |
-| Comportamiento indefinido de C | Diagnósticos en el dominio sintetizado | No hay demostración completa de ausencia de UB en C arbitrario ni después de todas las transformaciones previas de GCC. |
+| Preprocessor, includes, macros | Real GCC | `quant` is a registered attribute, not yet a native GCC qualifier. |
+| Integers and `_Bool` | Implemented up to 64 bits | Width, signedness, promotions, and conversions are preserved in IR. |
+| `float`, `double`, complex types | Pending | Encoding, rounding, exceptions, and reversible circuits. CPU angles do use `double`. |
+| `typedef` | Compatible scalar aliases | Native propagation of `quant` as part of the type remains pending. |
+| `const` | Read-only borrowed parameters | Constant owners and general borrowing through the full ABI remain pending. |
+| `volatile`, `_Atomic`, threads | Classical C; general quantum integration pending | Internal `volatile` prevents early simplifications. The quantum runtime is global. |
+| Automatic locals | Implemented | Owners in `main` and expanded procedures. |
+| Globals, `static`, `extern`, TLS storage | Pending for quantum owners | Initialization, synchronization, ownership, and cleanup across calls. |
+| Constant initialization | Implemented | Prepares a basis state. A variable without an initializer starts in zero. |
+| CPU initialization | Implemented | Evaluates once and prepares new storage; a dynamic value requires native execution. |
+| Quantum expression initialization | Implemented for supported expressions | Preserves inputs, records an inverse, and permits entanglement. |
+| Fixed and multidimensional arrays | Implemented for integers/Booleans | Ownership and cleanup per element; defensively bounded expansion. |
+| Structures and nested structures | Implemented for integer products | No internal pointers, bitfields, unions, or anonymous quantum fields. |
+| Designated initializers | Implemented for fixed products | Omitted elements start in zero. |
+| Whole array/structure copies | Pending | Cannot inherit an independent copy of an unknown state. |
+| VLAs and dynamic arrays | Pending | Runtime lifetimes, bounds, and register allocation. |
+| Constant indices | Implemented | Storage bounds are checked. |
+| Static loop indices | Implemented | Loops expand when their bound and counter are checked. |
+| Dynamic CPU indices | Indexed operations on scalar arrays and borrows | Unsigned addition/subtraction/XOR and increments, measurement/reset, Fourier/inverse; bounds checked. General quantum reads and nested products remain pending. |
+| Quantum indices | Pending | Coherent read/write through reversible selection; no implicit CPU read. |
+| `&`, `*`, pointer access | Checked borrows | `quant T *p` refers to existing registers with a classical address. Reinterpreting element types requires a byte-access contract and is rejected. |
+| Pointer arithmetic | Constant offsets and CPU-indexed selection | Moving back inside an array and representing a one-past-end pointer are supported; indexed accesses check bounds at runtime. General reference reassignment remains pending. |
+| Reference aliases | Implemented in static scope | Aliases refer to the same register; use after move is rejected. |
+| Pointer reassignment/escape | Pending | Current references cannot escape into CPU data or be dynamically reassigned. |
+| `malloc`, `free`, `realloc`, dynamic quantum memory | Pending | Storage manager, address-based ownership, and cleanup before release. |
+| Direct functions and procedures | AST composition | Definition available before use in the same unit; fresh locals per call. |
+| Scalar, pointer, and array parameters | Borrows implemented | Same canonical C type; borrows cannot be consumed and mutable parameters cannot overlap. |
+| Quantum return | Pure conditional expressions and terminal owned scalar results | A local may transfer to a new initializer; directly returning a borrowed parameter is rejected. |
+| General and multiple returns | Partial | Terminal owned returns and pure branches; returned products and early exits with pending lifetimes need further analysis. |
+| Recursion, indirect calls, quantum variadic functions | Pending | ABI, lifetime/effect proofs, and bounds. |
+| Multiple translation units and quantum libraries | Independent QIR circuit modules | `circuit` and its inverse embed typed unitary modules; linking C `quant` functions across units remains pending. |
+| `+ - * / %` in a new result | Register circuits and small finite path | Positive/negative operands with proven ranges; zero divisors, signed overflow, and MIN/-1 rejected. General composition and 64-bit division remain pending. |
+| In-place modular addition/subtraction | Direct synthesis | CPU operands or distinct unsigned registers; preserves the other register. |
+| `& \| ^ ~` and constant shifts | Symbolic synthesis and finite path | Term budgets; checked shifts and conversions. |
+| `^=` | Reversible accumulation | Operand independent of destination; CPU argument evaluated once. Restricted Boolean conversions. |
+| `*= /= %= &= \|= <<= >>=` | Injective cases in finite path | General destructive transformations require preserving history. |
+| `++ --` | Supported update contexts | Values of effectful quantum expressions in arbitrary contexts are not implemented yet. |
+| Comparisons against constants | Structured or finite path | 16-bit predicates tested exhaustively; some 32-bit cases exportable. |
+| Register comparisons | Structured circuits | Lexicographic comparison with reversible difference and sign bias; workspace limited. |
+| Pure `! && \|\| ?:` | Implemented | Preserves short-circuit arithmetic evaluation; CPU effects do not become coherent effects. |
+| Direct scalar assignment to a new owner | Move | Transfers ownership, consumes the previous name, and does not allocate another copy. |
+| Assignment to occupied storage | Reversible cases; general case pending | Explicit history preservation and destination rules. |
+| Quantum `if/else` | Coherent control | Computed predicate, control of both branches, and inverse; inputs needed for cleanup must not change. |
+| CPU `if/else` | Conservative state joins | Retains facts true in both branches; dynamic creation and identity changes remain pending. |
+| Static `for` | Bounded expansion | Up to 4096 iterations, without jumps or counter changes in the body. |
+| Dynamic CPU `for/while/do` | Updates, coherent `if`, and measurements on stable owners | Not flattened into QASM. Measuring/resetting a selected element does not prove the loop consumed every owner; dynamic allocation remains pending. |
+| Quantum-condition loops | Pending | Bounds, reversible progress, and history. |
+| `switch`, `break`, `continue`, `goto`, labels | Classical C; general quantum composition pending | Control-flow graph, lifetime, and effect analysis required. |
+| `sizeof`, `_Alignof`, classical C layout | Real GCC | Do not read amplitudes. C layout is not a CPU representation of quantum state. |
+| `read`, `scanf`, files, sockets | Classical CPU | Results may prepare new registers; quantum state must be measured before passing to CPU. |
+| `write`, `printf`, files, sockets | CPU after explicit measurement | Passing unmeasured registers or performing I/O under coherent control is rejected. |
+| `memcpy`, `memmove`, `memset` on registers | Pending | Byte access, ownership, and reversibility; not simulated as CPU copies of markers. |
+| C undefined behavior | Diagnostics over the synthesized domain | No complete absence-of-UB proof for arbitrary C or all earlier GCC transformations. |
 
-## Transformaciones cuánticas adicionales
+## Additional quantum transformations
 
-`phase(theta)` admite ángulos clásicos finitos, constantes o calculados en ejecución. `fourier` e `inverse_fourier` transforman todo un registro, con o sin controles coherentes, usando síntesis cuadrática. Ninguna necesita enumerar el dominio.
+`phase(theta)` accepts finite classical angles, constant or runtime-computed. `fourier` and `inverse_fourier` transform an entire register, with or without coherent controls, using quadratic synthesis. Neither enumerates the domain.
 
-Los ejemplos `functions.c`, `vector_function.c`, `dynamic_vector.c`, `fourier.c` y `phase_estimation.c` prueban composición, préstamos, acceso por índice CPU y algoritmos con interferencia. `find_known` recibe la cantidad como promesa y `search` verifica candidatos con intentos acotados, incluso sin soluciones. `find` promete una solución. Ninguno cuenta previamente el dominio; el predicado todavía está sujeto a los límites de síntesis.
+The examples `functions.c`, `vector_function.c`, `dynamic_vector.c`, `fourier.c`, and `phase_estimation.c` exercise composition, borrows, CPU-indexed access, and interference algorithms. `find_known` receives a count as a promise; `search` verifies candidates within bounded attempts, including when no solutions exist. `find` promises one solution. None counts the domain beforehand; predicates remain subject to synthesis limits.
 
-## Evidencia y criterio de avance
+## Evidence and progress criteria
 
-La suite comprueba programas C completos, amplitudes complejas, correlaciones, versiones de dependencias, limpieza e IR incorrecta. Las pruebas exhaustivas enumeran dominios concretos: 256 entradas de aritmética de ocho bits, 3720 pares de sumadores, 65.536 entradas de predicados y las bases de QFT de uno a seis bits. Hay además 1024 expresiones tipadas generadas con semilla fija, contrastadas con C sobre todas sus entradas e invertidas, y 4096 mutaciones de IR para ejercer parser y validación. No equivalen a cubrir todo C11 ni constituyen una campaña completa de fuzzing.
+The suite checks complete C programs, complex amplitudes, correlations, dependency versions, cleanup, and invalid IR. Exhaustive tests enumerate specific domains: 256 inputs for eight-bit arithmetic, 3720 adder pairs, 65,536 predicate inputs, and QFT bases from one to six bits. It also includes 1024 seeded typed expressions compared with C over every input and inverted, plus 4096 IR mutations exercising parsing and validation. This does not cover all of C11 or constitute a complete fuzzing campaign.
 
-`scripts/sanitize.sh` instrumenta las pruebas y el motor. `scripts/sanitize-all.sh` construye además un plugin, driver, backend, runtime y ejecutables generados instrumentados, en `build/sanitized`. GCC anfitrión no está instrumentado; la detección de fugas se desactiva en sus procesos para no atribuir al plugin las reservas retenidas por GCC. ASan y UBSan continúan activos en el plugin; los checks escalares que GCC inserta antes de la pasada cuántica se sustituyen por la validación cuántica del dominio cuando corresponda. Los checks del código CPU se conservan.
+`scripts/sanitize.sh` instruments tests and the engine. `scripts/sanitize-all.sh` also builds an instrumented plugin, driver, backend, runtime, and generated executables in `build/sanitized`. Host GCC is not instrumented; leak detection is disabled in its processes to avoid attributing GCC-retained allocations to the plugin. ASan and UBSan remain active in the plugin; scalar checks inserted by GCC before the quantum pass are replaced with quantum domain validation where appropriate. CPU code checks remain.
 
-Completar el lenguaje requiere cerrar las filas pendientes con implementaciones y pruebas de contratos, además de ampliar la síntesis. Esta tabla registra ese trabajo y no declara terminada la solicitud de cubrir todo C.
+Completing the language requires implementations and contract tests for the pending rows, alongside broader synthesis. This table records that work without claiming complete C coverage.
 
-La nueva evidencia incluye amplitudes e inversas de los once operadores sin tablas, operandos negativos y redondeo C, crecimiento de 24 circuitos hasta 32 bits relevantes, frontend generado a cinco optimizaciones y once QASM importados directamente en Qiskit/Aer. Tres comparan transcripciones completas de medicion intermedia/reset. Los scripts y registros se describen en el README. La ABI de circuitos se detalla en [circuit-abi.md](circuit-abi.md).
+Additional evidence includes amplitudes and inverses for eleven operators without tables, negative operands and C rounding, 24 growth circuits up to 32 relevant bits, generated frontend tests at five optimization levels, and eleven exported QASM circuits checked against an independent simulator. Current validation tools are C and use QuEST; three cases compare full intermediate measurement/reset transcripts. The README describes scripts and evidence. See [circuit-abi.md](circuit-abi.md) for the circuit ABI.

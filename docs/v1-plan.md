@@ -1,100 +1,102 @@
-﻿# Especificación objetivo y aceptación de la versión 1.0
+# Version 1.0 target specification and acceptance
 
-Este documento fija el alcance exigido para 1.0. Es un contrato de publicación, no una certificación de que la implementación actual lo satisface. El [README](../README.md) registra capacidades y evidencia. Un dominio pequeño probado exhaustivamente no cierra un requisito general.
+This document fixes the required scope of 1.0. It is a release contract, not certification that the current implementation satisfies it. The [README](../README.md) records capabilities and evidence. Exhaustively testing a small domain does not close a general requirement.
 
-## Subconjunto cerrado
+## Closed subset
 
-1.0 comprende enteros de anchura fija de 1 a 64 bits, booleanos, arrays fijos y productos enteros, préstamos con dirección clásica, resultados escalares propios, funciones unitarias componibles y control CPU explícito. Se conservan promociones, conversiones, signo y orden de los efectos del C definido del destino GCC declarado.
+1.0 includes fixed-width integers from 1 to 64 bits, Booleans, fixed arrays and integer products, borrows with classical addresses, owned scalar results, composable unitary functions, and explicit CPU control. Defined C promotions, conversions, signedness, and effect order must be preserved for the declared GCC target.
 
-Calcular un resultado nuevo conserva sus entradas. Mover transfiere propiedad. Medir/resetear son operaciones explícitas. Limpiar exige demostrar la inversa, sus controles y las versiones de sus dependencias. Los rechazos protegen el contrato del subconjunto; no cuentan como implementación de una construcción pendiente.
+New computations preserve inputs; moves transfer ownership; measurement/reset are explicit. Cleanup requires proof of the inverse, controls, and dependency versions. Rejecting an unsupported construct protects this contract but does not implement that construct.
 
-Quedan fuera: QPU, memoria cuántica dinámica, QRAM, direcciones en superposición, coma flotante cuántica, todo C11, recursión cuántica general y bucles coherentes generales. Los saltos CPU sin prueba de vida se rechazan. Un fork de GCC no es requisito; justificar el punto de transformación sí lo es.
+Excluded: QPU execution, dynamic quantum memory, QRAM, addresses in superposition, quantum floating point, all of C11, general quantum recursion, and general coherent loops. CPU jumps without lifetime proofs are rejected. A GCC fork is not required; justification of the transformation boundary is.
 
-Anchura del lenguaje, trabajo del circuito y simulación son límites distintos. La referencia actual exporta hasta 128 qubits físicos y simula hasta 24. Agotar un presupuesto da un diagnóstico; no autoriza enumerar silenciosamente un dominio grande.
+Language width, circuit workspace, and simulation have distinct limits. The current reference exports up to 128 physical qubits and simulates up to 24. Exhausting a budget produces a diagnostic rather than silent enumeration of a large domain.
 
-## Orden y criterios verificables
+## Priorities and verifiable criteria
 
-| Prioridad | Contrato | Evidencia para cerrarlo |
+| Priority | Contract | Evidence required to close it |
 |---|---|---|
-| P1. Aritmética | Multiplicación, división, resto y comparaciones entre registros sin tablas. | Amplitudes e inversas contra C, más de 12 bits relevantes, cotas y CSV de puertas, auxiliares y profundidad. |
-| P2. Búsqueda | Separar oráculo y estrategia; cantidades conocidas/desconocidas, candidato verificado y fallo acotado. | Cero, una, varias y todas las soluciones sin un censo del dominio. |
-| P3. Flujo | Propiedad, préstamos y dependencias correctos en todos los caminos aceptados. | Uniones, invariantes de bucles, medidas, retornos y temporales; casos positivos y negativos. |
-| P4. Composición | Compilación separada, ABI tipada, resultados transferidos, control e inversa. | Módulos enlazados, alias rechazados, limpieza y fases relativas bajo control. |
-| P5. GCC | Semántica conservada a través de la frontera del plugin. | Diferenciales entre optimizaciones, promociones, casts, cortocircuitos y efectos evaluados una vez. |
-| P6. Validación | Importar el QASM original en otra implementación y tener CI/fuzzing reproducibles. | Estados completos, mediciones, registros de ejecución y reproducciones de fallos. |
-| P7. Ejecución | Separar planes estáticos, parámetros CPU y control CPU. | Contadores que demuestren ausencia de parses y síntesis repetidos; estado final equivalente. |
+| P1. Arithmetic | Register multiplication, division, remainder, and comparisons without tables. | Amplitudes/inverses against C, more than 12 relevant bits, bounds, and gate/ancilla/depth CSV. |
+| P2. Search | Separate oracle and strategy; known/unknown counts, verified candidates, bounded failure. | Zero, one, several, and all solutions without a domain census. |
+| P3. Flow | Correct ownership, borrows, and dependencies on every accepted path. | Joins, loop invariants, measurements, returns, temporaries; positive and negative cases. |
+| P4. Composition | Separate compilation, typed ABI, transferred results, control, inversion. | Linked modules, rejected aliases, cleanup, and relative phases under control. |
+| P5. GCC | Preserve semantics across the plugin boundary. | Optimization differentials, promotions, casts, short circuits, effects evaluated once. |
+| P6. Validation | Read original QASM in another implementation; reproducible CI/fuzzing. | Complete states, measurements, execution logs, failure reproductions. |
+| P7. Execution | Separate static plans, CPU parameters, and CPU control. | Counters proving no repeated parsing/synthesis; equivalent final states. |
 
-P1 y P2 son los primeros bloqueos de escalabilidad; P3 sigue inmediatamente. P5 y P6 acompañan cada cambio.
+P1 and P2 are the first scalability blockers; P3 follows immediately. P5 and P6 accompany every change.
 
-## P1: síntesis y complejidad
+## P1: synthesis and complexity
 
-El cálculo nuevo implementa `|a,b,0> -> |a,b,f(a,b)>`, con trabajo devuelto a cero. La copia al resultado es XOR, de modo que el mismo cálculo permite descomputarlo. La actualización del destino requiere una transformación inyectiva independiente.
+New computations implement `|a,b,0> -> |a,b,f(a,b)>` with workspace returned to zero. XOR-copy permits subsequent uncomputation. In-place updates require an independently injective transformation.
 
-Se exige suma/resta, multiplicación modular sin signo, cociente/resto con divisor probado distinto de cero, y las seis comparaciones entre registros. Las promociones con signo deben conservarse y probar ausencia de overflow antes de reducir la salida. División por cero, overflow con signo y shifts indefinidos se rechazan. La evaluación condicional conserva el cortocircuito.
+Required: addition/subtraction, unsigned modular multiplication, quotient/remainder with a proven nonzero divisor, and all six register comparisons. Preserve signed promotions and prove absence of overflow before narrowing output. Reject division by zero, signed overflow, and undefined shifts. Preserve conditional evaluation and short circuits.
 
-La matriz obligatoria compila anchuras 4, 8, 12 y 16 con tablas desactivadas: dos entradas de 16 bits tienen 32 bits relevantes. Dominios pequeños completos se contrastan con C independiente, amplitudes, controles e inversas. Se publica CSV con puertas por clase, auxiliares máximos, qubits físicos y profundidad. MCX se cuenta como puerta lógica; su descomposición física tiene otro coste.
+Compile widths 4, 8, 12, and 16 with tables disabled; two 16-bit inputs have 32 relevant bits. Check complete small domains against independent C, amplitudes, controls, and inverses. Publish gate classes, peak ancillas, physical qubits, and depth as CSV. MCX is a logical gate; physical decomposition has a separate cost.
 
-Cada algoritmo debe documentar su cota. Las construcciones por incrementos controlados actuales tienen hasta coste cúbico en puertas lógicas y espacio lineal para un operador binario. La composición necesita una cota por tamaño del árbol y una estrategia de temporales. Tokens, profundidad, términos simbólicos, trabajo real y memoria deben tener presupuestos globales: evitar tablas no garantiza escalabilidad.
+Document algorithmic bounds. Current controlled-increment constructions have at most cubic logical gate cost and linear workspace for a binary operator. Composition needs a bound by tree size and a temporary strategy. Tokens, depth, symbolic terms, actual work, and memory need global budgets: avoiding tables does not ensure scalability.
 
-La implementación incorpora `native/arithmetic.inc`, operandos negativos, división truncada hacia cero, resto con signo del dividendo, comparaciones generales y `--no-tables` en el backend. Demuestra divisores distintos de cero mediante rangos o bits constantes y excluye MIN/-1. Conserva una ruta finita optativa para expresiones pequeñas, casos no cubiertos y permutaciones. Las pruebas de rango más precisas, las composiciones grandes y el divisor de 64 bits siguen abiertos; P1 queda parcial.
+`native/arithmetic.inc` implements negative operands, truncation toward zero, remainder with the dividend's sign, general comparisons, and `--no-tables`. Nonzero divisors are proven through ranges or constant bits; MIN/-1 is excluded. An optional finite path remains for small expressions, uncovered cases, and permutations. More precise ranges, large compositions, and 64-bit division remain open. **P1 is partial.**
 
-## P2: búsqueda
+## P2: search
 
-Construir el oráculo no consulta cuántas entradas satisfacen el predicado. Evaluar un candidato medido está permitido; evaluar previamente todas las entradas para elegir la estrategia no lo está.
+Oracle construction must not count satisfying inputs. Evaluating measured candidates is permitted; evaluating every input beforehand to select a strategy is not.
 
-| Operación | Información | Resultado |
+| Operation | Information | Result |
 |---|---|---|
-| `find_known(x,p,M)` | Promesa del llamador: `1 <= M <= N`. | Transfiere el registro amplificado; `P(r)=sin²((2r+1)asin(sqrt(M/N)))`. No comprueba la promesa contando. |
-| `search(x,p,attempts)` | Cantidad desconocida, incluso cero. | Booleano CPU: `true` exige candidato medido que satisface `p`; `false` significa presupuesto agotado. |
+| `find_known(x,p,M)` | Caller promise: `1 <= M <= N`. | Transfers the amplified register; `P(r)=sin²((2r+1)asin(sqrt(M/N)))`. No census checks the promise. |
+| `search(x,p,attempts)` | Unknown count, including zero. | CPU Boolean; `true` requires a measured candidate satisfying `p`, `false` means budget exhaustion. |
 
-`find(x,p)` adopta el contrato de `find_known(x,p,1)`. Es un cambio respecto del prototipo que contaba soluciones. Con varias soluciones se proporciona M o se utiliza `search`.
+`find(x,p)` means `find_known(x,p,1)`, changing the previous counting prototype. Supply M or use `search` for several solutions.
 
-`search` mezcla, con igual probabilidad, muestras directas y un número uniforme de iteraciones entre cero y `ceil(sqrt(N))-1`. Bajo aleatoriedad uniforme independiente, un dominio no vacío tiene éxito por intento de al menos `1/8`: el fallo tras t intentos es a lo sumo `(7/8)^t`. Para M mayor o igual que N/2 bastan las muestras directas; para los otros M el promedio de Grover es al menos `1/4`, pues `K*sin(2*theta) >= 2*sqrt(1-1/N)`, con `K=ceil(sqrt(N))`.
+`search` equally mixes direct samples and a uniform Grover iteration count from zero to `ceil(sqrt(N))-1`. Under independent uniform randomness, a nonempty solution set succeeds with probability at least `1/8` per attempt; failure after t attempts is at most `(7/8)^t`. For M at least N/2, direct samples suffice; otherwise average Grover success is at least `1/4`, since `K*sin(2*theta) >= 2*sqrt(1-1/N)`, with `K=ceil(sqrt(N))`.
 
-El runtime usa un PRNG reproducible y muestreo sin sesgo modular. La cota corresponde al modelo probabilístico, no garantiza el resultado de una semilla particular. Cada éxito se verifica: no hay falsos positivos. Con cero soluciones se agotan los intentos sin demostrar inexistencia. La operación incluye medición/reset y repreparación entre intentos, y deja el registro disponible con el último candidato medido.
+The runtime uses a reproducible PRNG without modulo bias. The bound describes a probabilistic model, not every seed. Every success is verified. Zero solutions exhaust attempts without proving nonexistence. Measurement/reset and repreparation occur between attempts; the final measured candidate remains available.
 
-La aceptación exige cero/una/varias/todas las soluciones, dominio mayor de 12 bits, limpieza, presupuesto finito y rechazo de exportar feedback CPU como QASM plano. Las regresiones cubren esos contratos; faltan campañas estadísticas amplias y estrategias adaptativas con mejor coste de consultas.
+Acceptance includes zero/one/several/all solutions, domains above 12 bits, cleanup, finite budgets, and rejection of flat QASM for CPU feedback. Regressions cover these contracts; broad statistical campaigns and adaptive strategies with lower query cost remain pending.
 
-## P3: flujo y propiedad
+## P3: flow and ownership
 
-Cada punto debe disponer del estado de identidad, propietario, préstamo, disponibilidad, medida/reset, rango e inversa por registro. Una unión conserva solo hechos ciertos en todos sus predecesores. Un bucle incluye cero iteraciones cuando corresponda y prueba su arista de retorno.
+Every point needs each register's identity, owner, borrow, availability, measurement/reset status, range, and inverse state. Joins retain only facts true in every predecessor. Loops include zero iterations where applicable and prove the back edge.
 
-Se exige `if` cuántico en bucles CPU con propietarios estables y mediciones que alimenten decisiones CPU. Los auxiliares se limpian cada iteración. Consumo en una sola rama, uso tras movimiento, préstamo mutable solapado y cambio de una dependencia pendiente se rechazan.
+Required: coherent `if` inside CPU loops with stable owners, and measurement feeding CPU decisions. Clean ancillas each iteration. Reject consumption in one branch, use after move, overlapping mutable borrows, and changes to pending dependencies.
 
-La implementación une conservadoramente ramas y bucles e invalida rangos antes del control CPU dinámico. Admite esas combinaciones, resultados escalares propios con retorno terminal y retornos puros condicionales. Creación dinámica de propietarios, retornos tempranos con vida pendiente, `goto`, `switch` y transferencias con distinta identidad por rama siguen pendientes. La IR no reconstruye todavía un CFG completo: P3 queda parcial.
+Current analysis conservatively joins branches/loops and invalidates ranges before dynamic CPU control. It supports these combinations, terminal owned scalar returns, and pure conditional returns. Dynamic owners, early returns with pending lifetimes, `goto`, `switch`, branch-dependent identities, and complete CFG reconstruction remain pending. **P3 is partial.**
 
-## P4: funciones y ABI
+## P4: functions and ABI
 
-La ABI debe declarar representación, anchura, signo, modo de préstamo/consumo, resultados, efectos y obligaciones de limpieza. Un resultado propio puede escapar por transferencia; una referencia prestada no puede salir como propietario nuevo.
+Declare representation, width, signedness, borrow/consume modes, results, effects, and cleanup obligations. Owned results may escape by transfer; borrowed references cannot become new owners.
 
-Las funciones unitarias admiten control e inversa. La inversa invierte orden y ángulos; el control conserva también la fase global, que se vuelve relativa. Se rechazan medición, reset, búsqueda, feedback CPU y trabajo sucio dentro de esos módulos.
+Unitary functions support control/inversion. Inversion reverses order and angles; control preserves global phase, which becomes relative. Reject measurement, reset, search, CPU feedback, and dirty workspace inside these modules.
 
-Hay una ABI nativa QIR con `qborrow`, `qc_circuit_compile` y `qc_circuit_apply`, y composición desde C mediante `circuit`/`inverse_circuit`. El archivo independiente se incorpora al compilar; el runtime conserva su plan. [circuit-abi.md](circuit-abi.md) fija formato y restricciones. Esto no equivale aún a compilar/enlazar funciones C `quant` arbitrarias entre unidades ni a retornar productos propios mediante la ABI: P4 queda parcial.
+The QIR ABI provides `qborrow`, `qc_circuit_compile`, `qc_circuit_apply`, and C composition through `circuit`/`inverse_circuit`. Independent files are embedded during compilation and plans retained by the runtime. [circuit-abi.md](circuit-abi.md) defines restrictions. Arbitrary C `quant` linking across units and owned product results remain pending. **P4 is partial.**
 
 ## P5: GCC
 
-El plugin transforma en `PLUGIN_PRE_GENERICIZE`; las transformaciones anteriores forman parte de la frontera de confianza. `volatile` preserva determinados accesos y no demuestra que sobrevivan todas las promociones y condiciones de comportamiento definido.
+The transformation boundary is `PLUGIN_PRE_GENERICIZE`; earlier GCC transformations are trusted. `volatile` preserves certain accesses without proving preservation of every promotion or condition for defined behavior.
 
-Se exigen referencias CPU y diferenciales a `-O0`, `-O1`, `-O2`, `-O3` y `-Os`: promociones, narrowing, signo, cortocircuitos y efectos. Las secuencias puras introducidas por GCC se conservan como `sequence` para validar también la expresión descartada. Un estrechamiento temprano ambiguo de multiplicación se rechaza si el dominio podría desbordar el `int` original; se requiere un resultado sin signo de anchura completa antes de estrechar.
+Require CPU references/differentials at `-O0`, `-O1`, `-O2`, `-O3`, and `-Os` for promotions, narrowing, signedness, short circuits, and effects. Retain GCC's discarded pure expressions as `sequence`. Reject ambiguous early multiplication narrowing when the domain could overflow the original `int`; require a full-width unsigned result before narrowing.
 
-Hay generación reproducible de programas, semilla y archivo de reproducción. Faltan más patrones y versiones de GCC para cerrar P5; no se afirma una prueba general de todas las transformaciones anteriores al plugin.
+The C generator produces reproducible programs, seeds, and failure files. More patterns and GCC versions are required. A general proof of transformations preceding the plugin is not claimed.
 
-## P6: validación y CI
+## P6: validation and CI
 
-La referencia externa importa el QASM original y compara estados completos hasta una fase global común, con error máximo de amplitud `1e-10`. Casos obligatorios: superposición, entrelazamiento, fases relativas, controles abiertos/cerrados, Fourier/inversa, Grover completo y mediciones correlacionadas.
+The reference reads unmodified exported QASM and compares complete states up to a common global phase, with maximum amplitude error `1e-10`. Required cases include superposition, entanglement, relative phases, open/closed controls, Fourier/inverse, complete Grover, and correlated measurements.
 
-Se declaran tolerancia, muestras y semillas de medición. La campaña actual usa 8192 muestras por circuito y Hoeffding con unión de eventos, con probabilidad de falso rechazo familiar a lo sumo `1e-6` bajo el modelo de muestras independientes. Ocho circuitos comparan amplitudes y tres comparan transcripciones completas entre el runtime nativo y Aer, incluyendo reset de una entrada entrelazada y mediciones intermedias. La cota estadística no certifica una semilla particular del PRNG. No valida feedback dinámico exportado, ruido ni todos los canales de reset.
+Current validation programs are C. They use the independent serial C backend of QuEST 3.7.0, pinned by commit and archive checksum. A separate reader handles the static OpenQASM subset emitted by `cket`, rather than all of OpenQASM. Reference simulation does not consult QIR or call the native gate executor. Eight circuits compare amplitudes and exact final measurement probabilities, including classical bit mappings. Three compare 8192 complete intermediate measurement/reset transcripts between the native runtime and QuEST.
 
-El workflow construye con GCC 11 y ejecuta suite nativa, ASan/UBSan de toda la cadena propia, crecimiento sin tablas, frontend generado y Qiskit/Aer. Se fijan dependencias y se archivan registros/reproducciones. La [primera ejecución remota](https://github.com/igna-s/cket/actions/runs/38150646854), completada el 11 de octubre de 2026, aprobó todas estas verificaciones. Faltan campañas mayores y más medidas intermedias: P6 queda parcial.
+The transcript comparison uses Hoeffding and a union bound over both empirical distributions and every outcome, with family-wise false rejection probability at most `1e-6` under independent sampling. Tolerances and seeds are explicit; this does not certify each PRNG seed. Exported dynamic feedback, noise, and every reset channel remain outside coverage.
 
-## P7: reutilización
+CI builds with GCC 11 and runs native tests, ASan/UBSan across the project's compiler chain, growth without tables, generated frontend differentials, and independent QASM validation. Logs/reproductions are archived. The [first remote run](https://github.com/igna-s/cket/actions/runs/38150646854), completed October 11, 2026, passed the previous Python/Qiskit-based campaign; release evidence retains this historical distinction. Current validation uses C. Larger campaigns and additional intermediate measurements are needed. **P6 is partial.**
 
-Plan estático, parámetros CPU y decisión CPU son capas distintas. Se verifican vida y tipos cada llamada; parser y síntesis no deben repetirse mientras sean válidas las precondiciones del plan.
+## P7: reuse
 
-Se conservan documentos parseados, planes de expresiones/sumas y módulos unitarios compilados. Las claves incluyen expresión, cables, rangos y controles. El trabajo privado se reutiliza solo si sus cables no pertenecen a un registro vivo. Parámetros de suma seleccionan variantes por valor; índices CPU seleccionan identidades sin medirlas. Las cachés tienen límites explícitos.
+Static plans, CPU parameters, and CPU decisions are distinct layers. Check lifetime/types each call; do not repeat parsing/synthesis while a plan's preconditions hold.
 
-Ocho cálculos y sus inversas prueban cinco parses, una síntesis y quince aciertos del plan, además del estado. Falta enlazar de forma general puertas ya sintetizadas y plantillas parametrizadas para evitar también la síntesis de la primera llamada. P7 queda parcial.
+Retain parsed documents, expression/addition plans, and compiled modules. Keys include expressions, wires, ranges, and controls. Reuse private workspace only when its wires are not live. Addition parameters select value variants; CPU indices select identities without measurement. Caches have explicit budgets.
 
-## Publicación
+Eight computations and their inverses check five parses, one synthesis, fifteen plan hits, and final state. General linking of synthesized gates and parameterized templates to avoid first-call synthesis remains pending. **P7 is partial.**
 
-No se anuncia 1.0 hasta cerrar los siete requisitos con implementaciones, diagnósticos y evidencia reproducible para el subconjunto definido. QPU, memoria dinámica y ampliar C no sustituyen ninguna condición de corrección o escalabilidad.
+## Release
+
+Do not announce 1.0 until all seven requirements have implementations, diagnostics, and reproducible evidence for the defined subset. QPU support, dynamic memory, and wider C coverage do not replace correctness or scalability.

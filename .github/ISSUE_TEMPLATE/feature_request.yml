@@ -1,26 +1,26 @@
-name: Propuesta de mejora
-description: Ampliar el lenguaje, la síntesis, la composición o la validación.
+name: Feature request
+description: Extend the language, synthesis, composition, or validation.
 title: "[Feature] "
 labels: [enhancement]
 body:
   - type: textarea
     id: use_case
     attributes:
-      label: Caso de uso
-      description: Mostrá un programa o circuito que se beneficiaría del cambio.
+      label: Use case
+      description: Show a program or circuit that would benefit from the change.
     validations:
       required: true
   - type: textarea
     id: contract
     attributes:
-      label: Contrato propuesto
-      description: Indicá tipos, propiedad, efectos, controles, limpieza y límites necesarios.
+      label: Proposed contract
+      description: Specify required types, ownership, effects, controls, cleanup, and limits.
     validations:
       required: true
   - type: textarea
     id: acceptance
     attributes:
-      label: Criterios de aceptación
-      description: Proponé resultados verificables y la relación con docs/v1-plan.md.
+      label: Acceptance criteria
+      description: Propose verifiable results and their relationship to docs/v1-plan.md.
     validations:
       required: true

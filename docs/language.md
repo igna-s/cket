@@ -1,117 +1,117 @@
-# Tipos, propiedad y efectos de `|c>`
+# Types, ownership, and effects in `|c>`
 
-## C real y calificacion cuantica
+## Real C and quantum qualification
 
-GCC procesa C11 completo, incluidos preprocesador, headers, typedefs y las promociones aritmeticas. El plugin registra `cket_quant` y los intrinsecos, y analiza los arboles en `PLUGIN_PRE_GENERICIZE`. `quant`, `cuant` y `Cuant` son macros del header `quantum.h` para ese atributo reconocido. No son palabras reservadas incorporadas aun a la gramatica de GCC.
+GCC processes C11, including the preprocessor, headers, typedefs, and arithmetic promotions. The plugin registers `cket_quant` and the intrinsics, then analyzes trees at `PLUGIN_PRE_GENERICIZE`. `quant`, `cuant`, and `Cuant` are macros in `quantum.h` for that recognized attribute. They are not reserved words built into GCC's grammar yet.
 
 ```text
 SemanticType = { GCC_C_Type, quantum, integer_width, signedness }
 ```
 
-`int` y `quant int` conservan la misma anchura y codificacion C, pero tienen semanticas diferentes. La calificacion vive en el analisis del plugin y en la tabla de tipos de la Quantum IR. No se presenta el atributo como si fuera un calificador nativo de GCC. Una futura modificacion del frontend debe propagar la calificacion a tipos compuestos, argumentos, retornos, typedefs y ABI.
+`int` and `quant int` retain the same C width and encoding but have different semantics. Qualification lives in the plugin's analysis and the Quantum IR type table. The attribute is not a native GCC type qualifier. A future frontend change must propagate qualification through compound types, arguments, results, typedefs, and the ABI.
 
-Se admiten enteros C y bool de hasta 64 bits, arrays fijos multidimensionales y estructuras enteras. Las funciones se componen sobre el AST de GCC: parametros escalares, punteros y arrays prestan registros, los resultados pueden ser expresiones puras condicionales o locales propios con retorno terminal, y los procedimientos pueden crear temporales propios. Sus definiciones deben preceder las llamadas en la misma unidad de traduccion. Los propietarios pertenecen a `main`, incluidas las variables de procedimientos expandidos. Almacenamiento global, VLA, unions, bitfields, coma flotante y una ABI cuantica general siguen pendientes. Una marca interna volatile mantiene los accesos cuanticos ante simplificaciones como `x*0`.
+C integers and Booleans up to 64 bits, fixed multidimensional arrays, and integer structures are supported. Functions compose over GCC's AST: scalar, pointer, and array parameters borrow registers; results may be pure conditional expressions or owned locals with a terminal return; procedures may create owned temporaries. Definitions must precede calls in the same translation unit. Owners belong to `main`, including variables from expanded procedures. Global storage, VLAs, unions, bitfields, quantum floating point, and a general quantum ABI remain pending. An internal `volatile` marker preserves quantum accesses through simplifications such as `x*0`.
 
-`quant uint8_t *p = &x` es una referencia con direccion clasica al registro existente. Se resuelven dereferencias y desplazamientos constantes dentro de limites comprobados. Se admiten alias locales, pero no escape a memoria CPU ni reasignacion dinamica. Los parametros mutables no pueden solaparse; un prestamo de solo lectura no puede reenviarse a un mutador. Los prestamos no pueden consumirse mediante movimientos o `find`, incluso a traves de alias. Los procedimientos admiten un `return;` final; los retornos tempranos necesitan analisis adicional.
+`quant uint8_t *p = &x` is a reference with a classical address to the existing register. Dereferences and constant offsets resolve within checked bounds. Local aliases are supported, but escape into CPU memory and dynamic reassignment are not. Mutable parameters must not overlap; a read-only borrow must not be forwarded to a mutator. Borrows cannot be consumed through moves or `find`, including through aliases. Procedures support a final `return;`; early returns need further analysis.
 
-Arrays escalares fijos y sus prestamos admiten `a[i]` con indice CPU en suma/resta y XOR de enteros sin signo con operandos CPU, incrementos, `measure`, `reset` y Fourier/inversa. El indice se evalua una vez y se comprueba contra los limites; no mide el registro para seleccionarlo. Estas operaciones pueden ejecutarse en bucles CPU sin asignar nuevos registros. Medir/resetear un elemento desconocido no demuestra limpieza o consumo de todos los propietarios. El acceso coherente con indice cuantico y las expresiones cuanticas generales sobre elementos seleccionados siguen pendientes.
+Fixed scalar arrays and their borrows support `a[i]` with a CPU index for unsigned addition/subtraction and XOR with CPU operands, increments, `measure`, `reset`, and Fourier/inverse Fourier. The index is evaluated once and checked against bounds; selection does not measure the register. These operations may run in CPU loops without allocating new registers. Measuring or resetting an unknown element does not prove that every owner was consumed or cleaned. Coherent access with a quantum index and general quantum expressions over selected elements remain pending.
 
-Una inicializacion desde CPU, como `quant uint8_t x = read_value();`, evalua el valor una vez, conserva su conversion C y prepara un estado de base nuevo. No lee otro registro sin medirlo explicitamente. Los productos tambien pueden tener inicializadores CPU. La preparacion dinamica necesita ejecucion nativa y no se aplana para QASM.
+CPU initialization, such as `quant uint8_t x = read_value();`, evaluates the value once, preserves its C conversion, and prepares a new basis state. It does not read another register without explicit measurement. Products may also have CPU initializers. Dynamic preparation requires native execution and cannot be flattened into static QASM.
 
-## Valores nuevos y asignacion
+## New values and assignment
 
 ```c
 quant uint8_t x = superposition(0, 15);
 quant uint8_t y = x % 2;
 ```
 
-Genera almacenamiento cero y una operacion reversible:
+This allocates zeroed storage and produces a reversible operation:
 
 ```text
 |x>|0> -> |x>|x % 2>
 ```
 
-Esto conserva informacion y puede entrelazar registros; no clona un estado arbitrario. Los operadores se serializan con su tipo GCC en una expresion IR. Por ejemplo, `x*x` con x de tipo uint8_t conserva la promocion de C a int y no compara silenciosamente un producto truncado a 8 bits. Solo la conversion al resultado uint8_t trunca a esa anchura.
+It preserves information and may entangle registers; it does not clone an arbitrary state. Operators serialize into an IR expression with their GCC types. For example, `x*x` with `uint8_t` x preserves C's promotion to `int` rather than silently comparing an 8-bit truncated product. Only conversion to a `uint8_t` result truncates to that width.
 
-Una inicializacion directa `quant uint8_t b = a` con tipo compatible es una **transferencia de propiedad**: los dos nombres no tienen acceso simultaneo a dos estados. `a` queda consumido y sus usos posteriores producen un error. El movimiento y el resultado de `find` requieren el mismo tipo C canonico: typedefs compatibles se admiten, pero la misma anchura y signo no bastan entre tipos C distintos. Un cambio de anchura o signo calcula una conversion de valor y conserva la entrada.
+Direct initialization `quant uint8_t b = a` with a compatible type is an **ownership transfer**: the names do not simultaneously access two states. `a` is consumed and later uses produce an error. Moves and `find` results require the same canonical C type: compatible typedefs are accepted, but equal width and signedness do not suffice for distinct C types. A width or signedness change computes a value conversion and preserves the input.
 
-Las actualizaciones `x += k` y `x -= k` sobre tipos sin signo usan suma modular reversible. La suma/resta entre registros sin signo distintos conserva la fuente y tiene sintesis directa sin tablas ni ancillas. `x ^= y` y XOR con operandos independientes admitidos conservan informacion; los operandos CPU se evaluan una vez. Otras actualizaciones se sintetizan como permutaciones solo si son inyectivas en todo el espacio de bits. `x = x % 2`, desplazamientos destructivos y overwrites de un registro desconocido se rechazan. Actualizar un resultado derivado requiere otro resultado nuevo.
+Unsigned updates `x += k` and `x -= k` use reversible modular addition. Addition/subtraction between distinct unsigned registers preserves the source and uses direct synthesis without tables or ancillas. `x ^= y` and XOR with supported independent operands preserve information; CPU operands are evaluated once. Other updates are synthesized as permutations only when injective over the entire bit space. `x = x % 2`, destructive shifts, and overwrites of an unknown register are rejected. Updating a derived result requires another new result.
 
-Un operando CPU con efectos, como `x += measure(y)` o `x += ++n`, se evalua una sola vez antes de actualizar x. El plugin conserva el `SAVE_EXPR` compartido generado por GCC y emite la medicion explicita antes de la suma en Quantum IR. Esos efectos CPU se rechazan dentro de control cuantico coherente.
+An effectful CPU operand, such as `x += measure(y)` or `x += ++n`, is evaluated once before updating x. The plugin preserves GCC's shared `SAVE_EXPR` and emits explicit measurement before addition in Quantum IR. These CPU effects are rejected under coherent quantum control.
 
-## Control de flujo y efectos
+## Control flow and effects
 
-Una condicion quantum en un `if/else` se calcula en un auxiliar, controla coherentemente las operaciones de ambas ramas y se descomputa. No se elige una rama mediante medida. Las ramas aceptan operaciones unitarias soportadas y `phase_flip()`, y rechazan I/O, llamadas clasicas, escrituras CPU, reset, medicion y saltos clasicos. Las condiciones anidadas tienen controles acumulados.
+A quantum `if/else` condition is computed in an ancilla, coherently controls both branches, and is uncomputed. Measurement does not select a branch. Branches accept supported unitary operations and `phase_flip()` and reject I/O, classical calls, CPU writes, reset, measurement, and classical jumps. Nested conditions accumulate controls.
 
-Modificar una entrada de la condicion puede hacer imposible su inversa. El compilador rechaza ese caso mientras no tenga una transformacion reversible demostrada. Un flag independiente puede controlar una actualizacion de otro registro.
+Changing a condition input may make its inverse impossible. The compiler rejects this case unless it has a proven reversible transformation. An independent flag may control an update to another register.
 
-En particular, `if (x == 0) x += 1;` manda tanto cero como uno a uno. Es una transformacion no inyectiva sobre x, no solamente una limitacion conservadora del analisis. Conservar un historial distingue las entradas, pero no garantiza poder limpiarlo manteniendo ese resultado.
+In particular, `if (x == 0) x += 1;` maps both zero and one to one. It is non-injective over x, beyond a conservative analysis restriction. Retaining history distinguishes the inputs but does not ensure that history can be cleaned while preserving the intended result.
 
-Los `for/while/do` clasicos conservan el control CPU real de GCC. Las actualizaciones sin signo pueden recibir operandos CPU en cada iteracion. Las operaciones indexadas admitidas tambien pueden medir/resetear elementos de almacenamiento existente, conservando obligaciones de vida para todos los propietarios. Las declaraciones cuanticas dentro de flujo CPU dinamico siguen requiriendo analisis adicional. Se admiten medidas/reset escalares e if coherentes con propietarios estables; las uniones conservan solo hechos ciertos en todos los caminos, incluido el de cero iteraciones de un bucle. Los bucles con condiciones cuanticas requieren una cota finita y una representacion reversible del historial; no se admiten bucles generales sin esa prueba.
+Classical `for/while/do` loops retain GCC's actual CPU control. Unsigned updates may receive CPU operands each iteration. Supported indexed operations may also measure/reset existing storage while preserving lifetime obligations for all owners. Quantum declarations within dynamic CPU flow still need further analysis. Scalar measurements/resets and coherent `if` with stable owners are supported; joins retain only facts true on all paths, including a loop's zero-iteration path. Loops with quantum conditions need a finite bound and a reversible history representation; general loops without that proof are not supported.
 
-Los `for` con contador local, limites constantes y paso `++`/`--` pueden expandirse hasta 4096 iteraciones si permiten productos, temporales o control coherente. Se comprueban limites y desbordamiento; no se admiten saltos ni cambios del contador en el cuerpo. Los bucles CPU restantes conservan su ejecucion, incluida la falta de terminacion de un contador que vuelve a cero. La Quantum IR marca el control CPU dinamico y rechaza aplanarlo para QASM.
+A `for` with a local counter, constant bounds, and `++`/`--` may expand up to 4096 iterations to support products, temporaries, or coherent control. Bounds and overflow are checked; jumps and counter changes in the body are rejected. Other CPU loops retain their execution, including nontermination when a counter wraps to zero. Quantum IR marks dynamic CPU control and rejects flattening it into QASM.
 
-## Fases y transformada de Fourier
+## Phases and the Fourier transform
 
-`phase(theta)` aplica un angulo clasico finito, constante o calculado en CPU, a los controles activos. Fuera de control es una fase global. Los operandos CPU con efectos se rechazan bajo control coherente. Un angulo dinamico requiere ejecucion nativa.
+`phase(theta)` applies a finite classical angle, constant or CPU-computed, to active controls. Outside control it is a global phase. Effectful CPU operands are rejected under coherent control. A dynamic angle requires native execution.
 
-`fourier(x)` implementa `|x> -> sum(k, exp(2*pi*i*x*k/2^w)|k>)/sqrt(2^w)` sobre todo el registro de anchura w, en orden little-endian. `inverse_fourier(x)` cambia el signo del exponente. Admiten control coherente, conservan correlaciones y tienen sintesis cuadratica sin tablas. Una transformacion de base invalida las pruebas de valor y uniformidad, y se rechaza si impide una inversa pendiente.
+`fourier(x)` implements `|x> -> sum(k, exp(2*pi*i*x*k/2^w)|k>)/sqrt(2^w)` over the entire width-w register in little-endian order. `inverse_fourier(x)` reverses the exponent's sign. Both support coherent control, preserve correlations, and use quadratic synthesis without tables. A basis transformation invalidates value and uniformity proofs and is rejected if it prevents a pending inverse.
 
-Los ejemplos de Fourier y estimacion de fase comparan amplitudes con una DFT matematica independiente. Se utiliza precision double y tolerancia numerica `1e-10` en las pruebas; no se declara aun un presupuesto general de error para cualquier algoritmo.
+Fourier and phase estimation examples compare amplitudes against an independent mathematical DFT. Tests use double precision and numerical tolerance `1e-10`; no general error budget for every algorithm is claimed yet.
 
-## Descomputacion y medicion
+## Uncomputation and measurement
 
-Cada valor calculado registra su expresion creadora, controles externos normalizados y versiones de entradas y controles. Tras su ultimo uso, el compilador aplica la inversa y libera el registro solo cuando esta probado cero. La eliminacion sigue el orden inverso de dependencias. El backend exige la misma expresion, mascara y patron de control y dependencias disponibles con las mismas versiones; rechaza modificar, medir, resetear o liberar dependencias necesarias para una limpieza pendiente.
+Each computed value records its creating expression, normalized external controls, and input/control versions. After its last use, the compiler applies the inverse and releases the register only when proven zero. Cleanup follows reverse dependency order. The backend requires the same expression, control mask/pattern, and available dependencies with matching versions; it rejects modifying, measuring, resetting, or releasing dependencies needed for pending cleanup.
 
-Una fase diagonal puede conservar esa prueba porque no cambia los valores de base utilizados por el calculo. Sus fases relativas sobreviven a la inversa. La prueba de uniformidad para find se invalida cuando corresponde. El certificado actual compara el texto JSON de la expresion, por lo que puede rechazar serializaciones equivalentes.
+A diagonal phase can preserve this proof because it does not change the basis values used by the computation. Its relative phases survive the inverse. Uniformity for `find` is invalidated where appropriate. The current certificate compares the expression's JSON text and may reject equivalent serializations.
 
 ```c
 quant bool flag = (x + 5 == 42);
 if (flag) phase_flip();
-// flag y el auxiliar de control vuelven a cero automaticamente.
+// flag and the control ancilla automatically return to zero.
 ```
 
-La sintesis finita actual compone directamente el oraculo booleano reversible de la expresion IR; no necesita almacenar cada nodo aritmetico por separado. Los registros temporales existentes si se limpian explicitamente en IR mediante `quncompute` y `qrelease`.
+Current finite synthesis directly composes the reversible Boolean oracle from the IR expression; it need not store each arithmetic node separately. Existing temporary registers are explicitly cleaned in IR with `quncompute` and `qrelease`.
 
-`measure(x)` es la unica conversion a un valor CPU. Colapsa explicitamente el registro y conserva el estado resultante para siguientes operaciones/mediciones. `reset(x)` permite destruccion explicita de informacion y deja almacenamiento cero. No hay mediciones o resets insertados para facilitar el control coherente o la limpieza. Las constantes, la preparacion y las puertas unitarias nunca sobrescriben un estado desconocido mediante inicializacion no unitaria.
+`measure(x)` is the only conversion to a CPU value. It explicitly collapses the register and preserves the resulting state for later operations/measurements. `reset(x)` permits explicit destruction of information and leaves zeroed storage. No measurements or resets are inserted to facilitate coherent control or cleanup. Constants, preparation, and unitary gates never overwrite an unknown state through nonunitary initialization.
 
-Antes de salir, todo registro debe estar medido/reset explicitamente, transferido a otro propietario o descomputado y liberado. Se rechazan retornos con vida cuantica que no se pueda demostrar segura. El runtime C ejecuta cada operacion inmediatamente en su motor enlazado, incluida la limpieza; al salir libera la memoria del simulador.
+Before exit, every register must be explicitly measured/reset, transferred to another owner, or uncomputed and released. Returns with quantum lifetimes that cannot be proven safe are rejected. The C runtime immediately executes each operation, including cleanup, in its linked engine; it frees simulator memory on exit.
 
-## Motor nativo en C
+## Native C engine
 
-El vector de estado contiene amplitudes `double complex` en orden little-endian. H transforma un par de amplitudes `(a,b)` en `((a+b)/sqrt(2),(a-b)/sqrt(2))`; X y sus controles permutan amplitudes, y una fase multiplica las amplitudes seleccionadas por `cos(theta)+I*sin(theta)`. Las operaciones unitarias conservan la superposicion sin muestrearla.
+The statevector contains `double complex` amplitudes in little-endian order. H maps a pair `(a,b)` to `((a+b)/sqrt(2),(a-b)/sqrt(2))`; X and its controls permute amplitudes; a phase multiplies selected amplitudes by `cos(theta)+I*sin(theta)`. Unitary operations preserve superposition without sampling.
 
-Solo `measure` toma muestras segun la regla de Born, elimina las amplitudes incompatibles y normaliza el estado restante. Una medicion parcial conserva correlaciones con los demas registros. Un `reset` explicito aplica el canal de reset mediante una trayectoria de colapso y correccion, permitido porque el programa solicito destruir informacion. Liberar un auxiliar tambien verifica que su probabilidad fuera de cero sea menor que la tolerancia numerica.
+Only `measure` samples according to Born's rule, removes incompatible amplitudes, and normalizes the remaining state. Partial measurement preserves correlations with other registers. Explicit `reset` applies the reset channel through a collapse-and-correction trajectory, as the program requested information destruction. Releasing workspace also verifies that its probability outside zero is below the numerical tolerance.
 
-El driver `src/cket.c`, el runtime, el parser de Quantum IR, la sintesis, el simulador y las pruebas son C; el plugin AST es C++ por la API de GCC. No se necesita Python ni un SDK. `backend/cket_backend.c` ofrece validacion, QASM, recursos e inspeccion `--state` de amplitudes antes de las mediciones del documento, exclusivamente para depuracion del simulador. Esa inspeccion no modifica la ejecucion de los programas compilados.
+The driver `src/cket.c`, runtime, Quantum IR parser, synthesis, simulator, and test programs are C; the AST plugin is C++ because of GCC's API. No Python or quantum SDK is required by the compiler or runtime. Optional independent validation builds QuEST's C backend. `backend/cket_backend.c` provides validation, QASM, resources, and `--state` amplitude inspection before document measurements, solely for simulator debugging. Inspection does not change compiled program execution.
 
-## Sintesis y find experimental
+## Synthesis and experimental find
 
-El backend intenta sintesis simbolica de operadores de bits, conversiones, desplazamientos constantes y predicados admitidos contra constantes. No enumera el dominio y limita cada bit a 256 terminos, con un presupuesto global de dos millones de pasos. Para aritmetica mas grande hay circuitos por registros; el camino finito optativo usa hasta 12 bits relevantes (forma normal algebraica o minterminos). `--no-tables` lo desactiva. Las permutaciones generales conservan su limite de 12 bits. Los metadatos known y active requieren una prueba independiente mantenida por el motor. La enumeracion construye un circuito; no sustituye su interferencia por respuestas precalculadas.
+The backend attempts symbolic synthesis for bit operators, conversions, constant shifts, and supported predicates against constants. It does not enumerate the domain and limits each bit to 256 terms within a global budget of two million steps. Larger arithmetic uses register circuits; the optional finite path uses up to 12 relevant bits through algebraic normal form or minterms. `--no-tables` disables it. General permutations retain their 12-bit limit. `known` and `active` metadata require an independent engine-maintained proof. Enumeration constructs a circuit rather than replacing interference with precomputed answers.
 
-La expresion debe estar definida en el dominio sintetizado: division por cero, overflow con signo y shifts invalidos detectados en la IR tipada se rechazan. No se demuestra la ausencia de todo comportamiento indefinido que GCC haya simplificado previamente ni en C arbitrario. `&&`, `||` y `?:` puros conservan evaluacion condicional al sintetizar su funcion.
+The expression must be defined over the synthesized domain: division by zero, signed overflow, and invalid shifts detected in typed IR are rejected. Absence of all undefined behavior previously simplified by GCC or in arbitrary C is not proven. Pure `&&`, `||`, and `?:` preserve conditional evaluation when synthesizing their function.
 
-`find(x, predicado)` exige x uniforme e intacto y promete una solucion. `find_known(x,p,M)` recibe una cantidad conocida como promesa del llamador, sin comprobarla mediante enumeracion. Ambos transfieren el registro amplificado y dejan el nombre anterior consumido.
+`find(x, predicate)` requires an intact uniform x and promises one solution. `find_known(x,p,M)` receives a known count as a caller promise without checking it through enumeration. Both transfer the amplified register and consume the original name.
 
-`search(x,p,attempts)` admite cantidad desconocida, incluso cero. Es una operacion explicitamente no unitaria: mide candidatos, verifica p y repite preparacion/Grover con un presupuesto constante entre 1 y 4096. Devuelve bool CPU y conserva x con el ultimo candidato medido. True implica candidato valido; false significa presupuesto agotado, no prueba de inexistencia. Bajo aleatoriedad uniforme independiente, si existe solucion el fallo es a lo sumo `(7/8)^attempts`. Se usa un PRNG reproducible sin sesgo modular; no es una garantia por semilla. El feedback CPU impide una exportacion QASM plana.
+`search(x,p,attempts)` supports an unknown count, including zero. It is explicitly nonunitary: it measures candidates, verifies p, and repeats preparation/Grover within a constant budget from 1 to 4096. It returns a CPU bool and retains x with the last measured candidate. True implies a valid candidate; false means budget exhaustion rather than proving nonexistence. Under independent uniform randomness, if a solution exists, failure is at most `(7/8)^attempts`. A reproducible PRNG avoids modulo bias; this is not a guarantee for each seed. CPU feedback prevents flat QASM export.
 
-El registro auxiliar del oraculo acaba en cero. Los resultados de find son probabilisticos, incluso sin ruido. Los recursos informan qubits logicos, auxiliares, qubits fisicos, puertas y profundidad antes de descomposicion para un dispositivo. Los controles de una y dos entradas se cuentan como CNOT y Toffoli; los controles mayores como MCX, sin inventar su descomposicion. Los controles abiertos son una sola operacion en la IR; su expansion en QASM agrega X de apertura/cierre y puede aumentar el conteo y la profundidad exportados.
+The oracle ancilla ends in zero. Find results are probabilistic even without noise. Resource reports include logical qubits, ancillas, physical qubits, gates, and depth before device decomposition. One- and two-input controls count as CNOT and Toffoli; larger controls count as MCX without inventing a decomposition. Open controls are single IR operations; their QASM expansion adds opening/closing X gates and may increase exported counts and depth.
 
-## Verificacion y desarrollo hacia 1.0
+## Verification and development toward 1.0
 
-El verificador revisa esquema, tipos, aridades, controles, conversiones, constantes y angulos finitos antes de sintetizar cada operacion. Revisa estructuralmente todas las ramas de expresiones, conservando el cortocircuito al evaluar su aritmetica. Las marcas CPU deben estar equilibradas, pero no son aun un grafo de control completo.
+The verifier checks schema, types, arities, controls, conversions, constants, and finite angles before synthesizing each operation. It structurally checks every expression branch while preserving short-circuit evaluation of arithmetic. CPU markers must balance but do not yet form a complete control-flow graph.
 
-El [contrato de la IR](ir-verification.md) describe sus pruebas y limites. Ya existen funciones, productos fijos, prestamos, fases, QFT y un ejemplo de estimacion de fase. La [matriz de cobertura de C11](c-coverage.md) enumera lo que falta para el objetivo de extender todo C. El [plan de 1.0](v1-plan.md) mantiene criterios adicionales sobre ABI, sintesis, flujo y precision.
+The [IR contract](ir-verification.md) describes guarantees and limits. Functions, fixed products, borrows, phases, QFT, and a phase estimation example already exist. The [C11 coverage matrix](c-coverage.md) lists remaining work toward extending C. The [1.0 plan](v1-plan.md) retains further ABI, synthesis, flow, and precision criteria.
 
-## Referencias
+## References
 
-- [GCC: API de plugins y PLUGIN_PRE_GENERICIZE](https://gcc.gnu.org/onlinedocs/gccint/Plugin-API.html).
-- [OpenQASM 3: controles y fase global](https://openqasm.com/versions/3.0/language/gates.html).
+- [GCC: plugin API and PLUGIN_PRE_GENERICIZE](https://gcc.gnu.org/onlinedocs/gccint/Plugin-API.html).
+- [OpenQASM 3: controls and global phase](https://openqasm.com/versions/3.0/language/gates.html).
 
-## Incremento de sintesis, funciones y ejecucion
+## Arithmetic, functions, and execution updates
 
-Hay circuitos por registros para multiplicacion, division/resto con divisor probado distinto de cero y comparaciones generales, con calculo/copia XOR/inversa para limpiar el trabajo. Los operandos negativos conservan truncamiento hacia cero y signo del resto; se prueba ausencia de overflow y se rechaza MIN/-1. Los rangos comprimen extensiones de signo sin cambiar el valor. El divisor de 64 bits necesita trabajo no admitido todavia. Las rutas de tablas pequenas siguen disponibles; `cket_backend ... --no-tables` las desactiva. Anchura del lenguaje (64 bits), limite de puertas (128 qubits fisicos) y simulacion (24) son distintos.
+Register circuits cover multiplication, division/remainder with a proven nonzero divisor, and general comparisons, using compute/XOR-copy/inverse to clean workspace. Negative operands preserve truncation toward zero and the remainder's sign; absence of overflow is proven and MIN/-1 is rejected. Ranges compress sign extensions without changing the value. A 64-bit divider needs workspace not yet supported. Small table paths remain available; `cket_backend ... --no-tables` disables them. Language width (64 bits), gate storage (128 physical qubits), and simulation (24) are distinct limits.
 
-Una funcion con retorno terminal escalar propio puede transferir su local a un inicializador quant nuevo. Las ramas puras de retorno se convierten en una expresion condicional; retornos tempranos con vida pendiente y productos retornados siguen fuera. Los modulos QIR unitarios independientes se componen mediante `circuit` e `inverse_circuit`; [circuit-abi.md](circuit-abi.md) fija su contrato.
+A function with a terminal owned scalar return may transfer its local into a new `quant` initializer. Pure return branches become a conditional expression; early returns with pending lifetimes and returned products remain unsupported. Independent unitary QIR modules compose through `circuit` and `inverse_circuit`; [circuit-abi.md](circuit-abi.md) defines their contract.
 
-El runtime conserva documentos parseados y planes para expresiones, sumas y modulos. Se verifica disponibilidad y versiones cada llamada, y solo se reutiliza trabajo privado libre. La primera llamada todavia puede sintetizar: no se anuncia compilacion anticipada general. El [contrato de 1.0](v1-plan.md) conserva los requisitos no cerrados.
+The runtime retains parsed documents and plans for expressions, sums, and modules. Availability and versions are checked each call, and only free private workspace is reused. The first call may still synthesize; general ahead-of-time compilation is not claimed. The [1.0 contract](v1-plan.md) retains the open requirements.

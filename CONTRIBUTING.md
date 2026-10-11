@@ -1,54 +1,62 @@
-# Contribuir a `|c>`
+# Contributing to `|c>`
 
-`|c>` (`cket`) es un compilador experimental. Los cambios deben preservar promociones y conversiones de C, efectos evaluados una vez, propiedad de registros, coherencia y limpieza de auxiliares. El [contrato de 1.0](docs/v1-plan.md) distingue requisitos de publicación y capacidades actuales.
+`|c>` (`cket`) is an experimental compiler. Changes must preserve C promotions and conversions, evaluate effects once, and maintain register ownership, coherence, and ancilla cleanup. The [1.0 contract](docs/v1-plan.md) distinguishes release requirements from current capabilities.
 
-## Preparar el entorno
+## Set up the environment
 
-Usá Linux o WSL. Para la configuración de referencia en Ubuntu 22.04:
+Use Linux or WSL. For the reference configuration on Ubuntu 22.04:
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils python3 python3-venv
+sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils
 export CC=gcc-11
 export CXX=g++-11
 bash scripts/build.sh
 bash scripts/test.sh
 ```
 
-El plugin necesita cabeceras que correspondan al GCC utilizado. El README describe `GCC_PLUGIN_INCLUDE` y la alternativa de dependencias locales.
+The driver, backend, runtime, simulator, and test programs are C. The GCC plugin is C++17 because it uses GCC's internal API. Shell scripts coordinate builds and commands. Python is not required for building, execution, or testing.
 
-## Validar un cambio
+The plugin needs headers matching the GCC version in use. The README explains `GCC_PLUGIN_INCLUDE` and the local dependency alternative.
 
-Ejecutá las comprobaciones relacionadas con el comportamiento modificado. Para cambios en semántica, síntesis o ejecución, usá la suite nativa y los sanitizadores:
+## Validate a change
+
+Run checks relevant to the behavior you changed. For changes to semantics, synthesis, or execution, use the native suite and sanitizers:
 
 ```bash
 bash scripts/test.sh
 bash scripts/sanitize-all.sh
 ```
 
-Para promociones, casts y transformaciones del frontend:
+Build the additional C validation tools once, then run the checks relevant to your change:
 
 ```bash
-python3 scripts/fuzz_frontend.py
+sudo apt-get install -y curl ca-certificates
+bash scripts/build-validation.sh
+build/fuzz_frontend
+build/benchmark_synthesis
+build/validate_qasm
 ```
 
-Para recursos aritméticos y exportación independiente:
+`build-validation.sh` downloads a pinned, checksum-verified QuEST 3.7.0 source archive and builds its serial C backend under `build/validation-deps/`. QuEST provides an independent simulator for exported QASM; it is not linked into the compiler or application runtime. Its upstream license stays with the downloaded source. The frontend generator accepts `--seed N` and `--cases N` and retains failure reproductions in `build/frontend-failure.*`.
+
+All validation programs are C. They preserve the five optimization levels, 24 arithmetic growth circuits, and 11 independently checked QASM circuits. Scripts store evidence in `build/`; CI attaches logs and failure reproductions.
+
+To instrument these C tools, their native reference library, and QuEST with ASan/UBSan:
 
 ```bash
-python3 scripts/benchmark_synthesis.py
-python3 -m venv .venv
-.venv/bin/python -m pip install -r scripts/requirements-validation.txt
-.venv/bin/python scripts/validate_qasm.py
+VALIDATION_SANITIZERS=1 bash scripts/build-validation.sh
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 build/fuzz_frontend-sanitized
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 build/benchmark_synthesis-sanitized
+UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 build/validate_qasm-sanitized
 ```
 
-El motor nativo no requiere Python ni Qiskit. Estas dependencias se utilizan para validación y mediciones de desarrollo. Los scripts guardan evidencia en `build/`; CI adjunta sus registros y reproducciones.
+## Issues and pull requests
 
-## Issues y pull requests
+A bug report should include a minimal program, the exact command, GCC and `cket` versions, and expected and observed behavior. For phases and entanglement, provide amplitudes or a circuit that distinguishes phase errors from probability errors.
 
-Un reporte de error debe incluir un programa mínimo, el comando exacto, las versiones de GCC y `cket`, el comportamiento esperado y el observado. Para fases y entrelazamiento, adjuntá amplitudes o un circuito que permita distinguir errores de fase de errores de probabilidad.
+A PR should explain the problem, the resulting behavior, and the validation performed. When extending the accepted subset, update the README and the relevant contract in `docs/`. Document bounds, defensive limits, and any ownership or ABI changes. A conservative rejection or a test over a small domain does not establish general support.
 
-Una PR debe explicar el problema, el cambio de comportamiento y la validación ejecutada. Si amplía el subconjunto aceptado, actualizá el README y el contrato correspondiente en `docs/`. Documentá las cotas, los límites defensivos y cualquier cambio en propiedad o ABI. No presentes un rechazo conservador ni una prueba sobre un dominio pequeño como soporte general.
+Generated files, downloaded dependencies, binaries, and credentials must stay out of Git. Example QIR modules are tracked as source. The original commits retain the dates assigned when the repository was initialized; use actual dates for subsequent changes.
 
-Los archivos generados, SDKs descargados, binarios y credenciales deben permanecer fuera de Git. Los módulos QIR de ejemplo se versionan como código fuente. Los commits originales conservan las fechas asignadas al inicializar el repositorio; usá fechas reales para los cambios posteriores.
-
-Para posibles vulnerabilidades, seguí [SECURITY.md](SECURITY.md).
+Write documentation and contributor-facing templates in English. The project is distributed under the [MIT license](LICENSE). For potential vulnerabilities, follow [SECURITY.md](SECURITY.md).

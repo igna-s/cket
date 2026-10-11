@@ -1,82 +1,82 @@
-# Validación de la Quantum IR
+# Quantum IR validation
 
-El verificador de [native/verify.c](../native/verify.c) comprueba la IR serializada antes de sintetizar o ejecutar cada operación. Lo utilizan tanto el runtime enlazado como la validación y exportación de documentos. GCC sigue siendo el único parser de C.
+The verifier in [native/verify.c](../native/verify.c) checks serialized IR before synthesizing or executing each operation. Both the linked runtime and document validation/export use it. GCC remains the sole C parser.
 
-## Esquema y tipos
+## Schema and types
 
-- Cada operación y expresión tiene un conjunto explícito de campos admitidos. Los campos desconocidos y duplicados se rechazan.
-- Las anchuras son enteros de 1 a 64 bits; `signed` debe ser un booleano JSON real.
-- Los operadores tienen aridades comprobadas. Se revisan estructuralmente todas las ramas, incluidas las que no se evalúan para un valor concreto.
-- La aritmética exige operandos convertidos al tipo común correspondiente. Las comparaciones requieren tipos compatibles; los desplazamientos conservan el tipo del operando izquierdo.
-- Las conversiones al tipo del destino deben aparecer explícitamente en la expresión, salvo resultados booleanos utilizados como guardas de un bit.
-- Las constantes deben caber en su representación declarada.
-- Los controles necesitan registros booleanos disponibles. Se rechazan controles contradictorios y alias entre control y destino.
-- `qmeasure`, `qreset`, `qprepare`, `qalloc` y `qrelease` no admiten un campo de control coherente.
-- Los ángulos de fase deben ser números representables y finitos.
-- Los documentos comprueban formato, versión, campos de cabecera y equilibrio de las marcas de control CPU.
+- Every operation and expression has an explicit set of allowed fields. Unknown and duplicate fields are rejected.
+- Widths are integers from 1 to 64 bits; `signed` must be a real JSON Boolean.
+- Operators have checked arities. All branches are structurally checked, including those not evaluated for a particular value.
+- Arithmetic requires operands converted to the corresponding common type. Comparisons require compatible types; shifts retain the left operand's type.
+- Conversions to the destination type must appear explicitly in the expression, except Boolean results used as one-bit guards.
+- Constants must fit their declared representation.
+- Controls require available Boolean registers. Contradictory controls and control/target aliases are rejected.
+- `qmeasure`, `qreset`, `qprepare`, `qalloc`, and `qrelease` do not accept a coherent control field.
+- Phase angles must be representable finite numbers.
+- Documents check format, version, header fields, and balanced CPU control markers.
 
-La revisión estructural de una rama no obliga a evaluar su aritmética. La evaluación del dominio conserva el cortocircuito de C: una división de una rama no seleccionada no se ejecuta.
+Structural branch checking does not force its arithmetic to execute. Domain evaluation preserves C short-circuit semantics: division in an unselected branch is not executed.
 
-El frontend actualizado emite `signed` en cada `qalloc`. Para compatibilidad, un `qalloc` de la IR v1 que omita ese campo conserva el signo sin especificar: se valida la anchura, pero no se inventa una identidad de tipo C que el documento no contiene. La validación no reconstruye el sistema completo de tipos de GCC desde JSON.
+The updated frontend emits `signed` in every `qalloc`. For compatibility, IR v1 `qalloc` without that field retains unspecified signedness: width is checked without inventing a C type identity absent from the document. Validation does not reconstruct GCC's complete type system from JSON.
 
-## Pruebas de rango mantenidas por el motor
+## Engine-maintained range proofs
 
-El motor mantiene, independientemente de los metadatos de la expresión:
+Independently of expression metadata, the engine maintains:
 
-- Un valor de base conocido, cuando se puede demostrar.
-- Una máscara de bits probados cero.
-- Una preparación uniforme intacta y su límite superior.
+- A known basis value when provable.
+- A mask of bits proven zero.
+- An intact uniform preparation and its upper bound.
 
-Un nodo `reg` con `known` solo se admite si coincide con el valor demostrado por el motor. Un `active` reducido solo se admite cuando los bits que omite están probados cero.
+A `reg` node with `known` is accepted only if it matches the engine's proven value. Reduced `active` is accepted only if omitted bits are proven zero.
 
-La preparación establece esas pruebas. Las actualizaciones las actualizan en los casos de base conocidos o las descartan conservadoramente. El reset establece cero. La descomputación correcta restablece el destino en cero. Una medida conserva los ceros ya probados, pero invalida la preparación uniforme necesaria para `find`.
+Preparation establishes these proofs. Updates refresh them for known basis values or conservatively discard them. Reset establishes zero. Correct uncomputation restores the destination to zero. Measurement preserves proven zero bits but invalidates the uniform preparation required by `find`.
 
-Las fases y operaciones sobre resultados derivados invalidan, cuando corresponde, la uniformidad de sus entradas. Esto impide que un documento reutilice como entrada intacta de Grover un registro modificado o afectado por una medición de un resultado relacionado.
+Phases and operations on derived results invalidate input uniformity where appropriate. This prevents a document from reusing a modified register, or one affected by measurement of a related result, as an intact Grover input.
 
-## Certificado de descomputación
+## Uncomputation certificate
 
-Cada `qcompute` registra:
+Every `qcompute` records:
 
-1. La expresión tipada creadora.
-2. La máscara y el patrón de los controles externos.
-3. Las identidades y versiones de todas las entradas y controles.
+1. The typed creating expression.
+2. The external control mask and pattern.
+3. The identities and versions of all inputs and controls.
 
-Antes de aceptar `quncompute` se exige la misma expresión, el mismo control normalizado y dependencias disponibles con las mismas versiones. Reordenar la lista de controles no cambia la máscara ni el patrón.
+`quncompute` requires the same expression, normalized control, and available dependencies with matching versions. Reordering controls does not change their mask or pattern.
 
-La representación actual compara el texto JSON de la expresión creadora; una expresión equivalente con otra serialización puede rechazarse. Es una restricción conservadora, no una prueba de equivalencia general.
+The current representation compares the creating expression's JSON text; an equivalent expression with another serialization may be rejected. This is a conservative restriction rather than a general equivalence proof.
 
-Mientras un resultado necesita una entrada o control para su inversa, el motor rechaza cambiar, medir, resetear o liberar esa dependencia. Las operaciones que cambian los valores de base o el ciclo de vida incrementan la versión.
+While a result needs an input or control for its inverse, the engine rejects changing, measuring, resetting, or releasing that dependency. Operations changing basis values or lifetimes increment the version.
 
-Una fase diagonal sobre una entrada o control puede conservar la validez de la inversa del cálculo booleano: no cambia los valores de base utilizados por ese cálculo. Se invalida la uniformidad para `find`, pero no se trata esa fase como una sobrescritura del valor. Las pruebas verifican que la fase relativa sobreviva a la descomputación controlada.
+A diagonal phase on an input or control may preserve the inverse of a Boolean computation: it does not change the basis values used by that computation. Uniformity for `find` is invalidated, but the phase is not treated as a value overwrite. Tests verify that relative phase survives controlled uncomputation.
 
-Tras la inversa se marca el destino como cero y se elimina el certificado. En simulación se comprueba además que su probabilidad fuera de cero sea menor que `1e-10` antes de reutilizarlo. Esa comprobación numérica complementa la prueba; la exportación no depende de disponer de amplitudes simuladas.
+After the inverse, the destination is marked zero and the certificate is removed. Simulation also requires probability outside zero below `1e-10` before reuse. This numerical check complements the proof; export does not depend on simulated amplitudes.
 
-## Operaciones estructuradas y argumentos CPU
+## Structured operations and CPU arguments
 
-`qadd_register` conserva una fuente sin signo y suma/resta modularmente sobre un destino distinto. `qxor_inplace` exige un operando independiente del destino; puede usar una expresión tipada o un valor CPU. `qfourier` admite controles que no se solapen con el registro transformado, rechaza inversas pendientes y descarta pruebas de valor y uniformidad.
+`qadd_register` preserves an unsigned source and adds/subtracts modularly into a distinct destination. `qxor_inplace` requires an operand independent of the destination, represented as a typed expression or CPU value. `qfourier` accepts controls disjoint from the transformed register, rejects pending inverses, and discards value/uniformity proofs.
 
-`qprepare` con `dynamic: true` recibe un valor ya convertido por C mediante la API de argumentos enteros. Requiere almacenamiento nuevo limpio y no admite simultáneamente límites estáticos. `qphase` dinámico recibe un `double` finito por una API específica; no se confunde con el argumento entero de suma, XOR o preparación. Durante validación se conservan efectos abstractos sin inventar valores; exportación y simulación del documento sin argumentos reales se rechazan.
+`qprepare` with `dynamic: true` receives a C-converted value through the integer argument API. It requires fresh clean storage and cannot also specify static bounds. Dynamic `qphase` receives a finite `double` through a dedicated API, separate from integer addition, XOR, or preparation arguments. Validation retains abstract effects without inventing values; export and document simulation without actual arguments are rejected.
 
-La síntesis simbólica de bits y predicados no utiliza el límite de 12 bits de las tablas. Antes de emitir puertas se comprueban todos sus operandos; las dependencias y sus versiones se certifican también cuando esa ruta no necesita enumeración. Sus límites defensivos de términos no constituyen una prueba de que todas las expresiones admiten síntesis escalable.
+Symbolic bit and predicate synthesis is independent of the 12-bit table limit. All operands are checked before emitting gates; dependencies and versions are certified even when enumeration is unnecessary. Defensive term limits do not prove that every expression admits scalable synthesis.
 
-`qindexed` declara una lista de identidades candidatas y una acción sobre el primer candidato. El verificador exige identidades únicas, registros preparados con igual anchura y signo, ausencia de inversas pendientes y una acción admitida sin controles coherentes: suma/XOR con argumento CPU, medida, reset o Fourier. `qc_apply_index` comprueba el índice y aplica la acción únicamente al registro seleccionado. La validación sin índice real comprueba todos los candidatos y descarta pruebas de valor, uniformidad y limpieza: un reset condicional no certifica cero para todos los elementos. No se admite convertir esa selección CPU en un circuito estático.
+`qindexed` declares candidate identities and an action on the first candidate. The verifier requires unique identities, prepared registers with matching width/signedness, no pending inverses, and a supported action without coherent controls: CPU-argument addition/XOR, measurement, reset, or Fourier. `qc_apply_index` checks the index and applies the action only to the selected register. Validation without an actual index checks every candidate and discards value, uniformity, and cleanliness proofs: a conditional reset does not certify zero for all elements. CPU selection cannot become a static circuit.
 
-## Alcance de la garantía
+## Scope of the guarantee
 
-Este verificador comprueba operaciones de la IR y sus dependencias sobre la secuencia procesada. No es una demostración formal del compilador ni un análisis completo de todos los caminos CPU.
+This verifier checks IR operations and dependencies along the processed sequence. It is not a formal compiler proof or a complete analysis of all CPU paths.
 
-Las marcas de ramas y bucles CPU se validan estructuralmente, pero no contienen un grafo de control completo con las condiciones y todas sus rutas. La ejecución híbrida y la exportación estática siguen teniendo los límites documentados.
+CPU branch and loop markers are structurally validated but lack a complete control-flow graph with conditions and every route. Hybrid execution and static export retain their documented limits.
 
-El frontend comprueba movimientos y préstamos estáticos en las funciones expandidas, incluidos alias y solo lectura. Las reglas generales entre módulos, efectos y vidas dinámicas y la propagación nativa de `quant` en GCC necesitan trabajo adicional. El significado de `qmove` entre nombres se controla en el frontend; la API de registros por identidad no reconstruye la propiedad de todos los nombres de C.
+The frontend checks static moves and borrows in expanded functions, including aliases and read-only access. General cross-module rules, dynamic effects/lifetimes, and native propagation of `quant` in GCC need further work. The frontend controls `qmove` semantics between names; the register identity API does not reconstruct ownership for every C name.
 
-Las pruebas utilizan las APIs públicas en contextos de exportación y simulación, y comprueban controles incorrectos, dependencias vivas, metadatos falsos, tipos, aridades, fases y limpieza. No equivalen a una campaña completa de fuzzing o una prueba formal.
+Tests use public APIs in export and simulation contexts to check invalid controls, live dependencies, false metadata, types, arities, phases, and cleanup. They are not a complete fuzzing campaign or formal proof.
 
-## Circuitos, busqueda y presupuestos incorporados
+## Circuits, search, and built-in budgets
 
-`qborrow` declara un parametro de modulo con rango desconocido y representacion fija. `qmodule` remapea sus identidades y controla o invierte un cuerpo unitario. Se rechazan alias, representaciones incompatibles, efectos CPU/no unitarios, dependencias invalidadas y trabajo privado que no se libere limpio. Los parametros preceden al cuerpo; la anidacion de modulos tiene limite de 16 niveles.
+`qborrow` declares a module parameter with unknown range and fixed representation. `qmodule` remaps identities and controls or inverts a unitary body. Aliases, incompatible representations, CPU/nonunitary effects, invalidated dependencies, and private workspace not released cleanly are rejected. Parameters precede the body; nested modules are limited to 16 levels.
 
-`qfind` puede declarar `solutions`; si se omite promete una solucion. El numero se valida como contrato, no mediante un censo del dominio. `qsearch` exige un presupuesto de intentos, verifica candidatos medidos y no se exporta estaticamente. La validacion de la IR comprueba el oraculo aun sin conocer el resultado de la estrategia.
+`qfind` may declare `solutions`; omission promises one solution. The number is validated as a contract rather than by a domain census. `qsearch` requires an attempt budget, verifies measured candidates, and cannot be exported statically. IR validation checks the oracle without knowing the search strategy's outcome.
 
-`sequence` conserva la evaluacion de expresiones puras descartadas por GCC. El verificador limita profundidad a 128 y tokens de expresion a 100.000; la sintesis simbolica cuenta tambien las comparaciones de terminos dentro de su presupuesto de dos millones de pasos. Los circuitos aritmeticos registran un plan e invierten sus puertas para devolver el trabajo a cero.
+`sequence` preserves evaluation of pure expressions discarded by GCC. The verifier limits depth to 128 and expression tokens to 100,000; symbolic synthesis includes term comparisons in its two-million-step budget. Arithmetic circuits record a plan and reverse its gates to return workspace to zero.
 
-Las caches no sustituyen la verificacion de cada llamada. Sus claves conservan expresion, soporte probado, representacion de cables y controles; el trabajo privado de un plan no puede solaparse con registros vivos. El formato permanece en version 1 con nuevas operaciones admitidas; una herramienta anterior debe rechazarlas explicitamente.
+Caches do not replace per-call verification. Keys retain the expression, proven support, wire representation, and controls; a plan's private workspace must not overlap live registers. The format remains version 1 with additional accepted operations; older tools must explicitly reject unsupported operations.

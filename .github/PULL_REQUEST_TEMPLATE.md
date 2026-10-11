@@ -1,11 +1,11 @@
-## Problema y comportamiento resultante
+## Problem and resulting behavior
 
-Describí el caso que motiva el cambio y su comportamiento después de esta PR.
+Describe the motivating case and how it behaves after this PR.
 
-## Validación
+## Validation
 
-Indicá los comandos ejecutados, resultados y cualquier comprobación pendiente.
+List the commands run, their results, and any checks still pending.
 
-## Contratos y límites
+## Contracts and limits
 
-Explicá los cambios en tipos, propiedad, efectos, limpieza, ABI, cotas o documentación que correspondan.
+Explain relevant changes to types, ownership, effects, cleanup, ABI, bounds, or documentation.

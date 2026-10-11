@@ -1,6 +1,6 @@
-# ABI nativa de circuitos
+# Native circuit ABI
 
-Un módulo es un documento `cket.qir`, versión 1, independiente del llamador. Sus parámetros se declaran al principio mediante `qborrow`, antes de cualquier operación del cuerpo. Identidad local, anchura y signo definen cada parámetro; el orden de declaración determina el orden de argumentos.
+A module is a `cket.qir` version 1 document independent of its caller. Parameters are declared at the beginning with `qborrow`, before any body operation. Local identity, width, and signedness define each parameter; declaration order determines argument order.
 
 ```json
 {
@@ -14,13 +14,13 @@ Un módulo es un documento `cket.qir`, versión 1, independiente del llamador. S
 }
 ```
 
-Los parámetros se analizan como estados desconocidos, incluso si el llamador prepara una base. El cuerpo puede asignar trabajo privado, pero debe descomputarlo/liberarlo y no dejar certificados pendientes. Medición, reset, búsqueda y feedback CPU se rechazan. Los parámetros permanecen prestados al terminar.
+Parameters are analyzed as unknown states, even if the caller prepares a basis state. The body may allocate private workspace, but must uncompute and release it without leaving pending certificates. Measurement, reset, search, and CPU feedback are rejected. Parameters remain borrowed when the module finishes.
 
-La API de [native/quantum.h](../native/quantum.h) compila una vez con `qc_circuit_compile`, aplica a identidades del contexto con `qc_circuit_apply` y destruye con `qc_circuit_destroy`. Se remapean cables y se verifican disponibilidad, anchura, signo, alias y dependencias de entradas modificadas. Es una ABI de representación de registros, no una ABI completa de tipos nominales de C.
+The API in [native/quantum.h](../native/quantum.h) compiles once with `qc_circuit_compile`, applies to context identities with `qc_circuit_apply`, and destroys the module with `qc_circuit_destroy`. Wires are remapped; availability, width, signedness, aliasing, and dependencies on modified inputs are checked. This is a register representation ABI, rather than a complete ABI for nominal C types.
 
-La inversa invierte orden y ángulos. Los controles externos se acumulan sobre todas las puertas, incluidas las fases globales; no se elimina su efecto relativo. El trabajo privado comienza/termina en cero, también bajo control en superposición. Las mutaciones invalidan conservadoramente versiones y rangos del llamador.
+The inverse reverses gate order and angles. External controls accumulate on every gate, including global phases, preserving their relative effect. Private workspace starts and ends in zero, including under a control in superposition. Mutations conservatively invalidate the caller's versions and ranges.
 
-Desde C:
+From C:
 
 ```c
 quant bool flag = superposition(0, 1);
@@ -31,6 +31,6 @@ measure(x);
 measure(flag);
 ```
 
-El archivo se resuelve respecto del archivo C que contiene la llamada y se incorpora durante la compilación. El runtime lo valida/compila en la primera llamada y reutiliza el plan; no vuelve a abrirlo. [examples/circuit_module.c](../examples/circuit_module.c) y [examples/increment.qir.json](../examples/increment.qir.json) forman un ejemplo completo.
+The file is resolved relative to the C file containing the call and embedded during compilation. The runtime validates and compiles it on the first call, then reuses the plan without reopening the file. [examples/circuit_module.c](../examples/circuit_module.c) and [examples/increment.qir.json](../examples/increment.qir.json) provide a complete example.
 
-Los argumentos C son préstamos mutables conservadores sin inversas pendientes. Retornar propietarios nuevos, transportar productos, enlazar funciones C `quant` entre unidades y emitir una tabla definitiva de puertas durante la compilación siguen pendientes.
+C arguments are conservative mutable borrows without pending inverses. Returning new owners, passing products, linking C `quant` functions across translation units, and emitting a final gate table during compilation remain pending.
