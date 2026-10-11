@@ -1,6 +1,13 @@
 # `|c>`: C con datos cuánticos de alto nivel
 
+**A new quantum variant of C for GCC-based compilers.**
+
+[![Verification](https://github.com/igna-s/cket/actions/workflows/verify.yml/badge.svg)](https://github.com/igna-s/cket/actions/workflows/verify.yml)
+[![Version](https://img.shields.io/badge/version-0.4.0--experimental-orange)](docs/releases/v0.4.0.md)
+
 `cket` es un **prototipo funcional de compilador de C11 extendido con `quant`**. Utiliza el frontend real de GCC, agrega semántica cuántica a las variables calificadas, genera una Quantum IR propia y ejecuta los circuitos con un motor nativo de amplitudes escrito en C.
+
+El lenguaje se escribe `|c>`; `cket` es el nombre del driver y del [repositorio](https://github.com/igna-s/cket). Consultá las [notas de 0.4.0](docs/releases/v0.4.0.md), la [guía de contribución](CONTRIBUTING.md) y el [reporte privado de seguridad](SECURITY.md).
 
 Este README contiene el informe técnico del estado implementado, su funcionamiento, las pruebas realizadas y los puntos propuestos para auditoría. Las propuestas se distinguen de las capacidades existentes.
 

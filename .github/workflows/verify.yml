@@ -1,8 +1,18 @@
 name: Quantum compiler verification
-on: [push, pull_request]
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+defaults:
+  run:
+    shell: bash
 jobs:
   verify:
     runs-on: ubuntu-22.04
+    timeout-minutes: 45
     env:
       CC: gcc-11
       CXX: g++-11
@@ -16,11 +26,16 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev
       - run: python -m pip install -r scripts/requirements-validation.txt
       - run: bash scripts/build.sh
-      - run: bash scripts/test.sh | tee build/ci-native.log
-      - run: python scripts/fuzz_frontend.py | tee build/ci-frontend.log
-      - run: python scripts/benchmark_synthesis.py | tee build/ci-growth.log
-      - run: python scripts/validate_qasm.py | tee build/ci-qasm.log
-      - run: bash scripts/sanitize-all.sh | tee build/ci-sanitized.log
+      - name: Native compiler and runtime tests
+        run: bash scripts/test.sh | tee build/ci-native.log
+      - name: GCC optimization differential fuzzing
+        run: python scripts/fuzz_frontend.py | tee build/ci-frontend.log
+      - name: Arithmetic growth without tables
+        run: python scripts/benchmark_synthesis.py | tee build/ci-growth.log
+      - name: Independent QASM states and measurement channels
+        run: python scripts/validate_qasm.py | tee build/ci-qasm.log
+      - name: Complete compiler chain under ASan and UBSan
+        run: bash scripts/sanitize-all.sh | tee build/ci-sanitized.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:

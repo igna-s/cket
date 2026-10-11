@@ -1,0 +1,23 @@
+name: Reporte de seguridad
+description: Reportar una vulnerabilidad dentro de este repositorio privado.
+title: "[Security] "
+labels: [security]
+body:
+  - type: markdown
+    attributes:
+      value: Este reporte será visible a quienes tienen acceso al repositorio privado. Omití credenciales y datos sensibles.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproducción mínima
+      description: Incluí el C o QIR mínimo, comando y versiones utilizados.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impacto observado
+      description: Describí el fallo y su impacto, adjuntando registros sin datos sensibles.
+    validations:
+      required: true
