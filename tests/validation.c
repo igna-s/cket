@@ -32,10 +32,15 @@ static double seconds(void) {
     return (double)t.tv_sec + (double)t.tv_nsec / 1e9;
 }
 int validation_run(validation *v, char *const argv[], const char *output, unsigned timeout) {
+    return validation_run_input(v, argv, NULL, output, timeout);
+}
+int validation_run_input(validation *v, char *const argv[], const char *input,
+                         const char *output, unsigned timeout) {
     if (fflush(NULL)) validation_fail("cannot flush validation output");
     pid_t pid = fork(); if (pid < 0) validation_fail("cannot start validation subprocess");
     if (!pid) {
         if (setpgid(0, 0) || chdir(v->root) || !freopen(v->log, "w", stderr)) _exit(126);
+        if (!freopen(input ? input : "/dev/null", "r", stdin)) _exit(126);
         if (output ? !freopen(output, "w", stdout) : dup2(STDERR_FILENO, STDOUT_FILENO) < 0) _exit(126);
         execvp(argv[0], argv); perror(argv[0]); _exit(127);
     }

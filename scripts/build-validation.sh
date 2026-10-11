@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 compiler="${CC:-gcc}"
-flags=(-std=c11 -O2 -Wall -Wextra -Werror -Inative -Itests)
+flags=(-std=c11 -O2 -Wall -Wextra -Werror -Isrc/engine -Itests)
 suffix=""
 native_library=build/libcket_quantum.a
 san_flags=()
@@ -14,7 +14,7 @@ if [[ "${VALIDATION_SANITIZERS:-0}" == 1 ]]; then
     native_objects=()
     for component in json quantum verify simulator; do
         object="build/validation-deps/sanitized/cket-$component.o"
-        "$compiler" "${flags[@]}" -Wno-misleading-indentation -c "native/$component.c" -o "$object"
+        "$compiler" "${flags[@]}" -Wno-misleading-indentation -c "src/engine/$component.c" -o "$object"
         native_objects+=("$object")
     done
     native_library=build/validation-deps/sanitized/libcket_quantum.a

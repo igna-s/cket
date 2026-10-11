@@ -36,7 +36,7 @@ Compile widths 4, 8, 12, and 16 with tables disabled; two 16-bit inputs have 32 
 
 Document algorithmic bounds. Current controlled-increment constructions have at most cubic logical gate cost and linear workspace for a binary operator. Composition needs a bound by tree size and a temporary strategy. Tokens, depth, symbolic terms, actual work, and memory need global budgets: avoiding tables does not ensure scalability.
 
-`native/arithmetic.inc` implements negative operands, truncation toward zero, remainder with the dividend's sign, general comparisons, and `--no-tables`. Nonzero divisors are proven through ranges or constant bits; MIN/-1 is excluded. An optional finite path remains for small expressions, uncovered cases, and permutations. More precise ranges, large compositions, and 64-bit division remain open. **P1 is partial.**
+`src/engine/arithmetic.inc` implements negative operands, truncation toward zero, remainder with the dividend's sign, general comparisons, and `--no-tables`. Nonzero divisors are proven through ranges or constant bits; MIN/-1 is excluded. An optional finite path remains for small expressions, uncovered cases, and permutations. More precise ranges, large compositions, and 64-bit division remain open. **P1 is partial.**
 
 ## P2: search
 

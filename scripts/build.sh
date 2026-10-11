@@ -22,16 +22,17 @@ fi
 "$compiler" -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-format-diag -fPIC -shared \
     -fno-rtti -I"$plugin_headers" "${extra[@]}" \
     src/cket_plugin.cpp -o build/cket_plugin.so
-flags=(-std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -Inative)
-"$gcc_compiler" "${flags[@]}" -c native/json.c -o build/json.o
-"$gcc_compiler" "${flags[@]}" -c native/quantum.c -o build/quantum.o
-"$gcc_compiler" "${flags[@]}" -c native/verify.c -o build/verify.o
-"$gcc_compiler" "${flags[@]}" -c native/simulator.c -o build/simulator.o
+flags=(-std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -Isrc/engine)
+"$gcc_compiler" "${flags[@]}" -c src/engine/json.c -o build/json.o
+"$gcc_compiler" "${flags[@]}" -c src/engine/quantum.c -o build/quantum.o
+"$gcc_compiler" "${flags[@]}" -c src/engine/verify.c -o build/verify.o
+"$gcc_compiler" "${flags[@]}" -c src/engine/simulator.c -o build/simulator.o
 ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build/simulator.o
-"$gcc_compiler" "${flags[@]}" -c runtime/cket_runtime.c -o build/cket_runtime.o
+"$gcc_compiler" "${flags[@]}" -c src/cket_runtime.c -o build/cket_runtime.o
 "$gcc_compiler" "${flags[@]}" src/cket.c build/libcket_quantum.a -lm -o build/cket
-"$gcc_compiler" "${flags[@]}" backend/cket_backend.c build/libcket_quantum.a -lm -o build/cket_backend
+"$gcc_compiler" "${flags[@]}" src/cket_backend.c build/libcket_quantum.a -lm -o build/cket_backend
 "$gcc_compiler" "${flags[@]}" tests/test_native.c build/libcket_quantum.a -lm -o build/cket_tests
+"$gcc_compiler" "${flags[@]}" tests/test_examples.c tests/validation.c -o build/test_examples
 "$gcc_compiler" -dumpfullversion > build/gcc-version.txt
 echo "Built |c> native C driver, reversible backend, statevector motor and GCC plugin"
 

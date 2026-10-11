@@ -16,7 +16,7 @@ A module is a `cket.qir` version 1 document independent of its caller. Parameter
 
 Parameters are analyzed as unknown states, even if the caller prepares a basis state. The body may allocate private workspace, but must uncompute and release it without leaving pending certificates. Measurement, reset, search, and CPU feedback are rejected. Parameters remain borrowed when the module finishes.
 
-The API in [native/quantum.h](../native/quantum.h) compiles once with `qc_circuit_compile`, applies to context identities with `qc_circuit_apply`, and destroys the module with `qc_circuit_destroy`. Wires are remapped; availability, width, signedness, aliasing, and dependencies on modified inputs are checked. This is a register representation ABI, rather than a complete ABI for nominal C types.
+The API in [src/engine/quantum.h](../src/engine/quantum.h) compiles once with `qc_circuit_compile`, applies to context identities with `qc_circuit_apply`, and destroys the module with `qc_circuit_destroy`. Wires are remapped; availability, width, signedness, aliasing, and dependencies on modified inputs are checked. This is a register representation ABI, rather than a complete ABI for nominal C types.
 
 The inverse reverses gate order and angles. External controls accumulate on every gate, including global phases, preserving their relative effect. Private workspace starts and ends in zero, including under a control in superposition. Mutations conservatively invalidate the caller's versions and ranges.
 

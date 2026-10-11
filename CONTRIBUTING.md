@@ -21,6 +21,18 @@ The plugin needs headers matching the GCC version in use. The README explains `G
 
 ## Validate a change
 
+The complete verification command rebuilds the project, runs every example at
+five GCC optimization levels, checks the native suite and independent QASM, and
+repeats the tests with ASan/UBSan:
+
+```bash
+sudo apt-get install -y curl ca-certificates
+bash scripts/verify.sh
+```
+
+Evidence is saved to `build/verify-*.log`. For a larger reproducible frontend
+campaign, set `CKET_FUZZ_CASES=128` and optionally `CKET_FUZZ_SEED=20261012`.
+
 Run checks relevant to the behavior you changed. For changes to semantics, synthesis, or execution, use the native suite and sanitizers:
 
 ```bash
@@ -41,6 +53,12 @@ build/validate_qasm
 `build-validation.sh` downloads a pinned, checksum-verified QuEST 3.7.0 source archive and builds its serial C backend under `build/validation-deps/`. QuEST provides an independent simulator for exported QASM; it is not linked into the compiler or application runtime. Its upstream license stays with the downloaded source. The frontend generator accepts `--seed N` and `--cases N` and retains failure reproductions in `build/frontend-failure.*`.
 
 All validation programs are C. They preserve the five optimization levels, 24 arithmetic growth circuits, and 11 independently checked QASM circuits. Scripts store evidence in `build/`; CI attaches logs and failure reproductions.
+
+`test.sh` also runs `build/test_examples`: all 16 examples, expected outputs,
+static export support or rejection, both dynamic array indices and invalid
+input, correlated Bell outcomes, CLI errors, and execution outside the repository.
+`examples/types.c` deliberately demonstrates a 32-bit quantum integer: export
+succeeds, but execution must report the 24-qubit simulator limit.
 
 To instrument these C tools, their native reference library, and QuEST with ASan/UBSan:
 

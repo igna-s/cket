@@ -18,33 +18,16 @@ jobs:
       CXX: g++-11
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev curl ca-certificates
-      - run: bash scripts/build.sh
-      - run: bash scripts/build-validation.sh
-      - name: Native compiler and runtime tests
-        run: bash scripts/test.sh | tee build/ci-native.log
-      - name: GCC optimization differential fuzzing
-        run: build/fuzz_frontend | tee build/ci-frontend.log
-      - name: Arithmetic growth without tables
-        run: build/benchmark_synthesis | tee build/ci-growth.log
-      - name: Independent QASM states and measurement channels
-        run: build/validate_qasm | tee build/ci-qasm.log
-      - name: Complete compiler chain under ASan and UBSan
-        run: bash scripts/sanitize-all.sh | tee build/ci-sanitized.log
-      - name: C validation tools under ASan and UBSan
-        env:
-          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
-        run: |
-          VALIDATION_SANITIZERS=1 bash scripts/build-validation.sh
-          build/fuzz_frontend-sanitized | tee build/ci-c-frontend-sanitized.log
-          build/benchmark_synthesis-sanitized | tee build/ci-c-growth-sanitized.log
-          build/validate_qasm-sanitized | tee build/ci-c-qasm-sanitized.log
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates
+      - name: Compiler, runtime, user examples and independent validation with sanitizers
+        run: bash scripts/verify.sh
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: verification-evidence
           path: |
-            build/ci-*.log
+            build/verify-*.log
             build/frontend-failure.*
             build/gcc-version.txt
             build/synthesis-growth.csv

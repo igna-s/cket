@@ -1,6 +1,6 @@
 # Quantum IR validation
 
-The verifier in [native/verify.c](../native/verify.c) checks serialized IR before synthesizing or executing each operation. Both the linked runtime and document validation/export use it. GCC remains the sole C parser.
+The verifier in [src/engine/verify.c](../src/engine/verify.c) checks serialized IR before synthesizing or executing each operation. Both the linked runtime and document validation/export use it. GCC remains the sole C parser.
 
 ## Schema and types
 

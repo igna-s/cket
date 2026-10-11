@@ -83,7 +83,7 @@ The statevector contains `double complex` amplitudes in little-endian order. H m
 
 Only `measure` samples according to Born's rule, removes incompatible amplitudes, and normalizes the remaining state. Partial measurement preserves correlations with other registers. Explicit `reset` applies the reset channel through a collapse-and-correction trajectory, as the program requested information destruction. Releasing workspace also verifies that its probability outside zero is below the numerical tolerance.
 
-The driver `src/cket.c`, runtime, Quantum IR parser, synthesis, simulator, and test programs are C; the AST plugin is C++ because of GCC's API. No Python or quantum SDK is required by the compiler or runtime. Optional independent validation builds QuEST's C backend. `backend/cket_backend.c` provides validation, QASM, resources, and `--state` amplitude inspection before document measurements, solely for simulator debugging. Inspection does not change compiled program execution.
+The driver `src/cket.c`, runtime, Quantum IR parser, synthesis, simulator, and test programs are C; the AST plugin is C++ because of GCC's API. No Python or quantum SDK is required by the compiler or runtime. Optional independent validation builds QuEST's C backend. `src/cket_backend.c` provides validation, QASM, resources, and `--state` amplitude inspection before document measurements, solely for simulator debugging. Inspection does not change compiled program execution.
 
 ## Synthesis and experimental find
 
