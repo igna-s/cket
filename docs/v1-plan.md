@@ -85,7 +85,7 @@ La referencia externa importa el QASM original y compara estados completos hasta
 
 Se declaran tolerancia, muestras y semillas de medición. La campaña actual usa 8192 muestras por circuito y Hoeffding con unión de eventos, con probabilidad de falso rechazo familiar a lo sumo `1e-6` bajo el modelo de muestras independientes. Ocho circuitos comparan amplitudes y tres comparan transcripciones completas entre el runtime nativo y Aer, incluyendo reset de una entrada entrelazada y mediciones intermedias. La cota estadística no certifica una semilla particular del PRNG. No valida feedback dinámico exportado, ruido ni todos los canales de reset.
 
-El workflow construye con GCC 11 y ejecuta suite nativa, ASan/UBSan de toda la cadena propia, crecimiento sin tablas, frontend generado y Qiskit/Aer. Se fijan dependencias y se archivan registros/reproducciones. Preparar el workflow no registra una ejecución remota. Faltan campañas mayores y más medidas intermedias: P6 queda parcial.
+El workflow construye con GCC 11 y ejecuta suite nativa, ASan/UBSan de toda la cadena propia, crecimiento sin tablas, frontend generado y Qiskit/Aer. Se fijan dependencias y se archivan registros/reproducciones. La [primera ejecución remota](https://github.com/igna-s/cket/actions/runs/38150646854), completada el 11 de octubre de 2026, aprobó todas estas verificaciones. Faltan campañas mayores y más medidas intermedias: P6 queda parcial.
 
 ## P7: reutilización
 

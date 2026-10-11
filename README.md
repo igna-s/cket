@@ -896,7 +896,7 @@ La revisión añade pruebas sin tablas para los once operadores y sus inversas, 
 
 `scripts/validate_qasm.py` importa el QASM original con Qiskit y valida once circuitos: ocho mediante estados completos hasta fase global, con tolerancia `1e-10`, y tres mediante transcripciones de medición intermedia y reset. Usa 8192 medidas por circuito; `scripts/qasm_samples.c` recoge las transcripciones nativas y Aer ejecuta el circuito exportado. Incluye entrelazamiento, fases relativas, controles abiertos, Fourier, Grover y un módulo independiente. Los registros se guardan en `build/qasm-validation.log`, `build/frontend-fuzz.log` y `build/synthesis-growth.csv`. Las dependencias de validación se fijan en `scripts/requirements-validation.txt`; el runtime C no depende de ellas.
 
-El workflow [.github/workflows/verify.yml](.github/workflows/verify.yml) reproduce estas verificaciones y archiva evidencia. Su ejecución remota todavía no se ha registrado en esta sesión. Las comparaciones externas no cubren todos los canales de reset ni el feedback CPU exportado.
+El workflow [.github/workflows/verify.yml](.github/workflows/verify.yml) reproduce estas verificaciones y archiva evidencia. La [primera ejecución remota](https://github.com/igna-s/cket/actions/runs/38150646854), completada el 11 de octubre de 2026, aprobó las 353 pruebas nativas y las 353 con ASan/UBSan, los 145 diferenciales de GCC, los 24 circuitos de crecimiento sin tablas y los 11 QASM independientes. Las comparaciones externas no cubren todos los canales de reset ni el feedback CPU exportado.
 
 ## 17. Construcción y reproducción
 
