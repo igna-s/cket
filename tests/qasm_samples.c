@@ -1,4 +1,4 @@
-/* Validation helper: record the original QIR's measurement transcript.
+/* C validation helper: record the original QIR's measurement transcript.
  * The independent QASM implementation reads the corresponding exported bits. */
 #include "internal.h"
 #include <inttypes.h>

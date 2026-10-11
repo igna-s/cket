@@ -18,24 +18,27 @@ jobs:
       CXX: g++-11
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-          cache: pip
-          cache-dependency-path: scripts/requirements-validation.txt
-      - run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev
-      - run: python -m pip install -r scripts/requirements-validation.txt
+      - run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev curl ca-certificates
       - run: bash scripts/build.sh
+      - run: bash scripts/build-validation.sh
       - name: Native compiler and runtime tests
         run: bash scripts/test.sh | tee build/ci-native.log
       - name: GCC optimization differential fuzzing
-        run: python scripts/fuzz_frontend.py | tee build/ci-frontend.log
+        run: build/fuzz_frontend | tee build/ci-frontend.log
       - name: Arithmetic growth without tables
-        run: python scripts/benchmark_synthesis.py | tee build/ci-growth.log
+        run: build/benchmark_synthesis | tee build/ci-growth.log
       - name: Independent QASM states and measurement channels
-        run: python scripts/validate_qasm.py | tee build/ci-qasm.log
+        run: build/validate_qasm | tee build/ci-qasm.log
       - name: Complete compiler chain under ASan and UBSan
         run: bash scripts/sanitize-all.sh | tee build/ci-sanitized.log
+      - name: C validation tools under ASan and UBSan
+        env:
+          UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+        run: |
+          VALIDATION_SANITIZERS=1 bash scripts/build-validation.sh
+          build/fuzz_frontend-sanitized | tee build/ci-c-frontend-sanitized.log
+          build/benchmark_synthesis-sanitized | tee build/ci-c-growth-sanitized.log
+          build/validate_qasm-sanitized | tee build/ci-c-qasm-sanitized.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
