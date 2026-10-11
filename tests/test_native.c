@@ -128,6 +128,13 @@ static void amplitude_cases(void) {
         ok&=close_to(creal(a),expected) && close_to(cimag(a),0);
     }
     report("coherent phase and all ancillas zero",ok); qc_destroy(c);
+    c=state("quant uint8_t x=superposition(0,15); quant bool f=((unsigned)(x<8)-(unsigned)(x==x))==0u; if(f)phase_flip(); measure(x);"); ok=c!=NULL;
+    if (c) for (size_t i=0;i<qc_state_size(c);++i) {
+        double expected=i<16?(i<8?-.25:.25):0;
+        double complex a=qc_amplitude(c,i);
+        ok&=close_to(creal(a),expected) && close_to(cimag(a),0);
+    }
+    report("GCC logical XOR preserves relative phase and cleanup",ok); qc_destroy(c);
     c=state("quant bool b=superposition(0,1); quant uint8_t x=0; if(b) x+=1; else x+=2; measure(x); measure(b);"); ok=c!=NULL;
     if (c) for (size_t i=0;i<qc_state_size(c);++i) ok&=close_to(probability(c,i),i==3 || i==4?.5:0);
     report("coherent if else joint state",ok); qc_destroy(c);

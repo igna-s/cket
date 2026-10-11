@@ -141,6 +141,15 @@ std::string expression(tree value, std::set<unsigned> &deps) {
                ",\"active\":" + std::to_string(active) + (var.basis_known ? ",\"known\":" + std::to_string(var.lower) : "") + '}';
     }
     const char *op = nullptr; int arity = 2;
+    if (code == TRUTH_XOR_EXPR) {
+        // Logical XOR compares truth values, including non-Boolean operands.
+        // Normalize each operand once; reuse existing typed IR operations.
+        std::string type = type_json(TREE_TYPE(value));
+        std::string left = expression(TREE_OPERAND(value, 0), deps);
+        std::string right = expression(TREE_OPERAND(value, 1), deps);
+        return "{\"op\":\"ne\"" + type + ",\"args\":[{\"op\":\"not\"" + type + ",\"args\":[" + left +
+               "]},{\"op\":\"not\"" + type + ",\"args\":[" + right + "]}]}";
+    }
     if(code==MULT_EXPR && TYPE_UNSIGNED(TREE_TYPE(value)) && TYPE_PRECISION(TREE_TYPE(value))<TYPE_PRECISION(integer_type_node)) {
         unsigned __int128 maximum[2];
         for(unsigned j=0;j<2;++j) {
