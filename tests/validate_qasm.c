@@ -73,7 +73,15 @@ static const test_case
              {"retained byte history preserves relative phases",
               "quant uint8_t x=superposition(0,3);if(x&2)phase(.19);x&=1;if(x&1)phase(.31);measure(x);"},
              {"history CPU snapshot inverse",
-              "quant bool n=superposition(0,1);quant bool x=!n;int d=1;x/=d;++d;if(x)phase(.31);measure(n);return d!=2;"}};
+              "quant bool n=superposition(0,1);quant bool x=!n;int d=1;x/=d;++d;if(x)phase(.31);measure(n);return d!=2;"},
+             {"coherent two-arm history join",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){x=false;phase(.23);}else{x=!x;phase(.41);}if(x)phase(.31);measure(x);measure(c);"},
+             {"self-controlled information loss",
+              "quant bool x=superposition(0,1);if(x)phase(.19);if(x)x=false;measure(x);"},
+             {"nested coherent history joins",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){if(x)x=false;else x=true;}if(x)phase(.31);measure(x);measure(c);"},
+             {"coherent CPU predicate snapshot inverse",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);int d=1;if(c<d)x+=1;d=0;if(x)phase(.31);measure(x);measure(c);"}};
 static const test_case channels[] = {
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},
@@ -187,10 +195,11 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
         body = module;
     }
     reference_circuit c;
-    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")     ? 2
-                             : !strcmp(test->name, "saved CPU snapshot inverse")   ? 5
-                             : !strcmp(test->name, "history CPU snapshot inverse") ? 1
-                                                                                   : 0;
+    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")                ? 2
+                             : !strcmp(test->name, "saved CPU snapshot inverse")              ? 5
+                             : !strcmp(test->name, "history CPU snapshot inverse")            ? 1
+                             : !strcmp(test->name, "coherent CPU predicate snapshot inverse") ? 1
+                                                                                              : 0;
     exported(v, body, ir, &c, binding_value);
     char *text = validation_read(ir);
     cj_doc d = {0};

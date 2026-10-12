@@ -623,6 +623,7 @@ static int controls(
 }
 
 #include "structured.inc"
+static const cj_doc *parsed_operation(qc_context *c, const char *text, cj_doc *local);
 #include "arithmetic.inc"
 
 static int synthesize_compute(
@@ -656,6 +657,29 @@ static int synthesize_compute(
     }
     if (!make_domain(c, d, expr, &dom))
         return 0;
+    /* Saved Boolean identities constrain reachable input rows. Assign zero
+     * on inconsistent rows to extend the value function reversibly; never
+     * evaluate C arithmetic on a branch certified unreachable. */
+    unsigned alias[QC_MAX_SOURCES];
+    int inverted[QC_MAX_SOURCES];
+    ar_builder proof = {.c = c, .d = d};
+    for (unsigned j = 0; j < dom.count; ++j) {
+        alias[j] = j;
+        inverted[j] = 0;
+        uint32_t source;
+        int polarity = 0;
+        if (!ar_register_boolean_alias(&proof, dom.sources[j].id, &source, &polarity, 0)) {
+            if (*c->error)
+                return 0;
+            continue;
+        }
+        for (unsigned k = 0; k < dom.count; ++k)
+            if (source == dom.sources[k].id) {
+                alias[j] = k;
+                inverted[j] = polarity;
+                break;
+            }
+    }
     size_t n = (size_t)1 << dom.nwires;
     uint64_t *table = malloc(n * sizeof *table), *anf = malloc(n * sizeof *anf);
     if (!table || !anf) {
@@ -667,6 +691,16 @@ static int synthesize_compute(
     int ok = 1;
     for (size_t i = 0; i < n; ++i) {
         values(&dom, i, vals);
+        int reachable = 1;
+        for (unsigned j = 0; j < dom.count; ++j)
+            if (vals[j] != (vals[alias[j]] ^ (uint64_t)inverted[j])) {
+                reachable = 0;
+                break;
+            }
+        if (!reachable) {
+            table[i] = 0;
+            continue;
+        }
         if (!evaluate(c, d, expr, &dom, vals, &table[i])) {
             ok = 0;
             break;
@@ -731,13 +765,14 @@ static int compute(
         qc_register *r = j == dom.count ? target : reg(c, dom.sources[j].id);
         used += (size_t)snprintf(key + used,
                                  capacity - used,
-                                 "/%u:%u:%d:%d:%" PRIu64 ":%" PRIu64,
+                                 "/%u:%u:%d:%d:%" PRIu64 ":%" PRIu64 ":%" PRIu64,
                                  r->id,
                                  r->width,
                                  r->signed_type,
                                  j == dom.count ? 0 : r->basis_known,
                                  j == dom.count ? 0 : r->basis_value,
-                                 j == dom.count ? 0 : r->zero_mask);
+                                 j == dom.count ? 0 : r->zero_mask,
+                                 j == dom.count ? 0 : r->epoch);
         for (unsigned b = 0; b < r->width; ++b)
             used += (size_t)snprintf(key + used, capacity - used, ":%u", r->wires[b]);
     }

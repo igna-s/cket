@@ -146,15 +146,17 @@ the same compatible type **transfers ownership**: `x` cannot then be used. This 
 independent copy.
 
 Unsigned `+=`, `-=`, and supported XOR updates are reversible. A distinct quantum source may be
-preserved during addition/subtraction. Unconditional scalar overwrites can use
+preserved during addition/subtraction. Scalar overwrites can use
 [versioned storage and retained history](docs/c11-history.md): old dependent values keep their
 original inputs, and the new owner receives freshly computed storage. Unknown old states remain part
 of the joint circuit output unless a valid cleanup is available.
+[Structured coherent branches](docs/c11-control.md) select fresh values with the previous value on
+inactive amplitudes and preserve their original branch decisions through cleanup.
 
 In-place bit permutations and affine word updates also have
 [table-free certificates](docs/c11-inplace.md). These include fixed rotations, complement, defined
 negation and multiplication by an odd constant, with no private qubits. Boolean updates retain C
-truth conversion. `--no-tables` also applies to the remaining in-place fallback. Versioned branch
+truth conversion. `--no-tables` also applies to the remaining in-place fallback. Versioned CPU/CFG
 joins, runtime iteration history, general memory overwrites and expression-valued effects remain
 pending. History has an explicit qubit cost; no measurement or reset is inserted to erase it.
 
@@ -506,9 +508,9 @@ Independent validation builds the serial **C** backend of
 `1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
-Validation includes 389 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 33 independent QASM cases exported
-without tables. QASM cases check thirty complete states/final probabilities and three
+Validation includes 391 native checks; 36 examples at five optimization levels; a default frontend
+corpus of 29 programs at five levels; 24 growth circuits; and 37 independent QASM cases exported
+without tables. QASM cases check thirty-four complete states/final probabilities and three
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
@@ -519,11 +521,12 @@ extensions, complete states/inverse, overlap, contracts, C composition and wide 
 division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
 coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The binding
 suite adds 399 checks of complete states and saved inverse, typed integer endpoints, malformed
-inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 207
+inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 348
 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU snapshot
-cleanup and explicit pending-contract diagnostics. The native suite also exhausts selected eight-bit
-expressions, 3720 adder basis pairs and 65,536-input predicates, checks 126 Fourier bases against
-the DFT, and exercises 1024 generated typed expressions plus 4096 IR mutations.
+cleanup, coherent control joins, Boolean/word states and explicit pending-contract diagnostics. The
+native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
+predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
+plus 4096 IR mutations.
 
 The shared [validation runner](docs/audit-validation.md) has 18 fault-injection checks. Signals,
 timeouts, setup failures, captured sanitizer reports and compiler internal errors cannot satisfy an

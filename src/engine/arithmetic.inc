@@ -122,6 +122,92 @@ static int ar_same(ar_builder *p, int a, int b, unsigned depth) {
     return 1;
 }
 
+/* A saved, unconditional Boolean definition can certify an identity or its
+ * complement. Its live dependency epochs must still match; partial controls
+ * and general functions do not receive this certificate. */
+static int ar_register_boolean_alias(
+    ar_builder *p, uint32_t id, uint32_t *source, int *inverted, unsigned depth);
+
+static int ar_boolean_alias(
+    ar_builder *p, const cj_doc *d, int e, uint32_t *id, int *inverted, unsigned depth) {
+    if (depth > 128 || ++p->work > QC_ARITH_WORK)
+        return qc_fail(p->c, "Boolean alias proof work/depth budget exceeded");
+    int op = cj_get(d, e, "op"), nodes[3];
+    unsigned n = expr_nodes(d, e, nodes);
+    uint64_t width;
+    if (!cj_u64(d, cj_get(d, e, "bits"), &width))
+        return 0;
+    if (cj_equal(d, op, "cast") && n == 1) {
+        uint64_t from;
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &from) || (width != 1 && width < from))
+            return 0;
+        return ar_boolean_alias(p, d, nodes[0], id, inverted, depth + 1);
+    }
+    if ((cj_equal(d, op, "not") || (cj_equal(d, op, "bnot") && width == 1)) && n == 1) {
+        *inverted ^= 1;
+        return ar_boolean_alias(p, d, nodes[0], id, inverted, depth + 1);
+    }
+    if ((cj_equal(d, op, "eq") || cj_equal(d, op, "ne")) && n == 2) {
+        for (unsigned side = 0; side < 2; ++side) {
+            uint64_t value, bits;
+            if (cj_equal(d, cj_get(d, nodes[side], "op"), "const") &&
+                cj_u64(d, cj_get(d, nodes[side], "value"), &value) &&
+                cj_u64(d, cj_get(d, nodes[side], "bits"), &bits) &&
+                !(value & bits_mask((unsigned)bits))) {
+                *inverted ^= cj_equal(d, op, "eq");
+                return ar_boolean_alias(p, d, nodes[!side], id, inverted, depth + 1);
+            }
+        }
+        return 0;
+    }
+    uint64_t value;
+    if (width != 1 || !cj_equal(d, op, "reg") || !cj_u64(d, cj_get(d, e, "id"), &value))
+        return 0;
+    return ar_register_boolean_alias(p, (uint32_t)value, id, inverted, depth + 1);
+}
+
+static int ar_register_boolean_alias(
+    ar_builder *p, uint32_t id, uint32_t *source, int *inverted, unsigned depth) {
+    if (depth > 128 || ++p->work > QC_ARITH_WORK)
+        return qc_fail(p->c, "Boolean alias proof work/depth budget exceeded");
+    qc_register *r = reg(p->c, id);
+    if (!r || !r->alive || !r->prepared || r->width != 1)
+        return 0;
+    *source = r->id;
+    if (!r->definition || r->definition_mask)
+        return 1;
+    for (unsigned j = 0; j < r->ndeps; ++j) {
+        qc_register *input = reg(p->c, r->deps[j]);
+        if (!input || !input->alive || input->epoch != r->epochs[j])
+            return 0;
+    }
+    cj_doc local = {0};
+    const cj_doc *saved = parsed_operation(p->c, r->definition, &local);
+    uint32_t original = r->id;
+    int polarity = *inverted;
+    int found = saved && ar_boolean_alias(p, saved, 0, &original, &polarity, depth + 1);
+    cj_free(&local);
+    if (found) {
+        *source = original;
+        *inverted = polarity;
+    }
+    return !*p->c->error;
+}
+
+static int ar_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wanted) {
+    *wanted = fact->wanted;
+    if (ar_same(p, e, fact->expression, 0))
+        return 1;
+    uint32_t value_id, fact_id;
+    int value_inverted = 0, fact_inverted = 0;
+    if (!ar_boolean_alias(p, p->d, e, &value_id, &value_inverted, 0) ||
+        !ar_boolean_alias(p, p->d, fact->expression, &fact_id, &fact_inverted, 0) ||
+        value_id != fact_id)
+        return 0;
+    *wanted ^= value_inverted ^ fact_inverted;
+    return 1;
+}
+
 static int ar_zero_constant(ar_builder *p, int e) {
     uint64_t value, width;
     return cj_equal(p->d, cj_get(p->d, e, "op"), "const") &&
@@ -523,9 +609,10 @@ facts:
         for (const ar_fact *fact = p->facts; fact; fact = fact->next) {
             if (!ar_order_fact(p, e, r, fact))
                 return 0;
-            if (!ar_same(p, key, fact->expression, 0))
+            int wanted;
+            if (!ar_truth_fact(p, key, fact, &wanted))
                 continue;
-            if (fact->wanted) {
+            if (wanted) {
                 if (r->lo == 0 && r->hi == 0)
                     return 0;
                 r->nonzero = 1;

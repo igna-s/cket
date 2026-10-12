@@ -6,7 +6,7 @@ subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y 
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `50ea73b8318490dd641c91913badba4aa35e79a3` e incluye cambios locales. El manifiesto
+parte de `22113c9f688e5a79c2577f0422d6d82491209990` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -221,12 +221,47 @@ regla ahora exige una sola fuente; las pruebas existentes contrastan los 65 536 
 tablas ni workspace privado. Las combinaciones `x*2+1`, `x^(x>>1)` y `x*2+x` comprueban además la
 selección de historial o actualización afín en la IR.
 
-Las [207 comprobaciones de historial](c11-history.md) separan 78 dominios completos con fase e
-inversa, cuatro contratos de vida/esquema, 75 integraciones C, 30 estados completos de documentos C
-y 20 diagnósticos específicos. QuEST agrega tres circuitos sin tablas para limpieza derivada, salida
-desconocida retenida e inversa con parámetros CPU capturados. Las uniones de ramas, las iteraciones
-dinámicas, el manejo explícito del historial y la memoria general siguen pendientes P/R. Esta etapa
-no completa las asignaciones de C11.
+La etapa inicial de historial, publicada en `22113c9`, incorporó 207 comprobaciones: 78 dominios
+completos con fase e inversa, cuatro contratos de vida/esquema, 75 integraciones C, 30 estados
+completos de documentos C y 20 diagnósticos específicos. QuEST agrega tres circuitos sin tablas para
+limpieza derivada, salida desconocida retenida e inversa con parámetros CPU capturados. En esa etapa
+seguían pendientes las uniones de ramas, las iteraciones dinámicas, el manejo explícito del
+historial y la memoria general P/R. Esta etapa no completa las asignaciones de C11.
+
+## Uniones coherentes y captura de predicados
+
+Se agregaron [versiones seleccionadas por control coherente](c11-control.md): una rama calcula el
+nuevo valor donde está activa y conserva el anterior donde está inactiva. Las dos ramas y los
+controles anidados conservan sus decisiones originales, incluso si modifican la variable de la
+condición. Los predicados necesarios para resultados que sobreviven a la rama permanecen como
+historial derivado y tienen inversa y costo explícitos.
+
+Se reprodujo un bug de `22113c9`: `if (n + a)` con `n` cuántico y `a` CPU capturaba el parámetro en
+la asignación de almacenamiento, dejando su descriptor sin usar. La captura ahora corresponde al
+cálculo del predicado; su inversa conserva los valores capturados. Las dos reproducciones y los
+estados con fase distinguen captura, evaluación y limpieza.
+
+Las pruebas detectaron además dos rutas incompletas de esta implementación. La síntesis sin tablas
+no relacionaba un predicado booleano calculado con su entrada para descartar aritmética inactiva; la
+ruta con tablas enumeraba combinaciones imposibles de esos registros. Ambas usan ahora un
+certificado conservador de identidad/complemento con entradas y epochs válidos. Las claves de caché
+incluyen esas versiones; una regresión convierte una división antes inactiva en alcanzable y exige
+rechazo antes de puertas de salida. Esto no acredita correlaciones arbitrarias ni funciones
+booleanas generales.
+
+La prueba con un alias de array detectó metadatos distintos para dos lecturas del mismo registro. El
+generador comparte ahora su serialización entre las ramas activa e inactiva. También se corrigió la
+selección de historial para saturación booleana bajo control, conservando el complemento de un bit
+que GCC usa para XOR con `true`: esa ruta reversible sigue permitiendo medir el control antes del
+destino, como en el ejemplo entrelazado existente.
+
+La suite de historial suma 348 comprobaciones. Agrega 110 estados booleanos conjuntos y 30 estados
+con salidas de ocho bits, firmadas y sin signo, a cinco niveles GCC y dos políticas de síntesis. Los
+casos de palabras usan entradas en una base conocida y aliases fijos; no prueban todos los estados
+de palabras de ocho bits. Se contrastan fase relativa, todas las líneas privadas, restauración
+conocida, conteos de medición y vida de predicados. QuEST agrega cuatro circuitos para ramas,
+controles propios, anidamiento y capturas CPU. Las uniones CPU/CFG, bucles dinámicos, declaraciones
+dentro de ramas, memoria general y el resto de C11 siguen abiertos P/R.
 
 ## Formato y legibilidad
 
@@ -254,18 +289,18 @@ generados más cinco fijos y cinco niveles de optimización. Las semillas y tama
 prueba formal ni el análisis de los caminos no ejercitados. Los resultados finales de esta campaña
 deben leerse junto con sus transcripciones y el manifiesto actual.
 
-La campaña completa terminó sin fallos, normal y con ASan/UBSan: **389 pruebas nativas, 1452
+La campaña completa terminó sin fallos, normal y con ASan/UBSan: **391 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 207 de historial, 18
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 348 de historial, 18
 de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 33 casos QASM por configuración**. Incluye las correcciones
+frontend, 24 circuitos de crecimiento y 37 casos QASM por configuración**. Incluye las correcciones
 del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
 expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
 política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
 rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
-los guards puros de UBSan en ramas coherentes. Los treinta y tres casos externos corresponden a
-treinta estados y tres canales; los once casos del paper siguen identificados como evidencia
-histórica.
+los guards puros de UBSan en ramas coherentes y las versiones seleccionadas con predicados
+guardados. Los treinta y siete casos externos corresponden a treinta y cuatro estados y tres
+canales; los once casos del paper siguen identificados como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -279,7 +314,7 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-history-full.log` después de reproducir
+`python3 scripts/archive-audit.py --log build/audit/verify-control-full.log` después de reproducir
 la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica.
 Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes
 permiten contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de

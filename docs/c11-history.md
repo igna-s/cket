@@ -12,12 +12,12 @@ dependent values. For a computational-basis function `f`, the embedding is `|x>|
 extended linearly to arbitrary superpositions. It preserves relative phases and information in the
 complete joint state. The old register is retained history, not a cloned unknown quantum state.
 
-The compiler implements this for unconditional scalar assignments and statically resolved array,
-structure and pointer-borrow aliases. Covered paths include constant overwrites; division and
-remainder; shifts; masks; even multiplication; and updates of derived values or values with live old
-dependents. Existing safe in-place addition/XOR and certified word transformations keep their
-separate paths. Some Boolean updates use versions even when a smaller in-place circuit would be
-possible; that is an optimization obligation.
+The compiler implements this for unconditional and structured coherent scalar assignments and
+statically resolved array, structure and pointer-borrow aliases. Covered paths include constant
+overwrites; division and remainder; shifts; masks; even multiplication; and updates of derived
+values or values with live old dependents. Existing safe in-place addition/XOR and certified word
+transformations keep their separate paths. Some Boolean updates use versions even when a smaller
+in-place circuit would be possible; that is an optimization obligation.
 
 Pure CPU integer inputs specialize the new computation through the binding contract. Its concrete
 definition retains the original values for its inverse. Generic effectful operands still require
@@ -57,10 +57,12 @@ execution does not certify the same program's table-free resource budget. Wider 
 reported separately from complete-state execution. Histories are never discarded to fit these
 limits; failures are explicit **R** resource contracts.
 
-CPU branch joins, runtime loop iterations and coherent branch joins need compatible versions and
-history ownership. They remain **P/R** and currently reject a versioned update with a specific
-diagnostic. They do not become semantic prohibitions on C conditionals or loops. Full aliases,
-dynamic allocation, escaped pointers, unions and byte layouts remain separate M4/M5 obligations.
+Structured coherent branch versions follow the [selected-value contract](c11-control.md), including
+escaping predicate lifetimes. CPU branch joins and runtime loop iterations still need compatible
+versions and history ownership. They remain **P/R** and currently reject a versioned update with a
+specific diagnostic. They do not become semantic prohibitions on C conditionals or loops. Full
+aliases, dynamic allocation, escaped pointers, unions and byte layouts remain separate M4/M5
+obligations.
 
 ## Measurement ordering regression
 
@@ -92,8 +94,8 @@ The history suite separates:
 - 78 complete phased domains over synthetic 2/3/4-bit words, signed and unsigned arithmetic, both
   table policies, a live old dependent, and clean derived inverses. These do not certify C
   bitfields.
-- Four lifetime/schema contracts, including known-basis restoration, safe wire reuse, live inverse
-  protection and rejection before gates.
+- Five lifetime/schema/proof contracts, including known-basis restoration, safe wire reuse, live
+  inverse protection, rejection before gates and predicate-cache invalidation.
 - 75 native C integrations at five GCC levels: assignments, CPU snapshots, fixed arrays and pointer
   aliases, mutable quantum procedures and the measurement-chain regression. Their measurements are
   explicit. Combined even affine and self-dependent XOR expressions select history; the odd affine
@@ -102,8 +104,11 @@ The history suite separates:
   cleanup of derived versions, unknown retained outputs and a CPU snapshot used by an inverse after
   the CPU variable changes. Terminal measurements are ignored only for these coherent state
   comparisons; their counts are checked separately.
-- 20 specific pending-contract rejections for branch/iteration versions and erased multiplication
-  promotions. Infrastructure faults cannot count as semantic rejections.
+- 110 coherent Boolean states and 30 coherent word states, with phases, saved branch decisions,
+  predicate cleanup and fixed aliases. Their precise scope is in [c11-control.md](c11-control.md).
+- 20 specific pending-contract rejections for CPU branch/iteration versions, CPU branches under
+  coherent control and erased multiplication promotions. Infrastructure faults cannot count as
+  semantic rejections.
 
 ```bash
 export CC=gcc-11 CXX=g++-11

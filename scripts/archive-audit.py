@@ -23,12 +23,12 @@ def main():
     content = log.read_text(encoding='utf-8')
     # Each result must occur once in the normal run and once with sanitizers.
     patterns = {
-        'native': r'^389 passed, 0 failed \(native C tests, no external quantum SDK\)$',
+        'native': r'^391 passed, 0 failed \(native C tests, no external quantum SDK\)$',
         'examples': r'^1452 checks passed across 36 examples, five optimization levels and CLI/input contracts$',
         'classical': r'^5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete\.$',
         'frontend': r'^665 generated frontend compilations passed; seed=20261012 \(C generator, SplitMix64\)$',
         'synthesis': r'^24 circuits compiled without tables;',
-        'qasm': r'^33 exported circuits independently validated with QuEST 3\.7\.0 \(C\): 30 states, 3 channels; table-free export$',
+        'qasm': r'^37 exported circuits independently validated with QuEST 3\.7\.0 \(C\): 34 states, 3 channels; table-free export$',
         'shifts': r'^55 shift checks passed; generated wide circuits are distinct from state-validated small domains\.$',
         'expressions': r'^97 expression checks passed; generated circuits and complete-state comparisons have separate scopes\.$',
         'inplace': r'^271 in-place checks passed; wide circuit generation is distinct from complete-state validation\.$',
@@ -36,7 +36,7 @@ def main():
         'harness': r'^18 validation harness checks passed; infrastructure faults cannot count as semantic rejections\.$',
         'division': r'^990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes\.$',
         'bindings': r'^399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes\.$',
-        'history': r'^207 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
+        'history': r'^348 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
     }
     for name, pattern in patterns.items():
         if len(re.findall(pattern, content, re.M)) != 2:
@@ -93,7 +93,7 @@ def main():
         'command': 'CC=gcc-11 CXX=g++-11 CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh',
         'configurations': ['normal', 'ASan/UBSan'],
         'counts_per_configuration': {
-            'native': 389,
+            'native': 391,
             'example_checks': 1452,
             'examples': 36,
             'classical_header_integration': 5,
@@ -106,8 +106,8 @@ def main():
             'harness_checks': 18,
             'division_checks': 990,
             'binding_checks': 399,
-            'history_checks': 207,
-            'external_qasm_states': 30,
+            'history_checks': 348,
+            'external_qasm_states': 34,
             'external_qasm_channels': 3,
         },
         'source_sha256': hashes,

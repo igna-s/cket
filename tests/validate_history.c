@@ -172,8 +172,52 @@ static void lifetimes(void) {
             validation_fail("rejected history cleanup altered the joint state");
     qc_destroy(c);
     ++checks;
+    c = qc_create(1, 7);
+    if (!c)
+        validation_fail("predicate cache context allocation failed");
+    qc_allow_tables(c, 0);
+    apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":1,\"signed\":false}");
+    apply(c, "{\"op\":\"qprepare\",\"id\":0,\"lower\":0,\"upper\":1}");
+    apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":1,\"signed\":false,\"ancilla\":true}");
+    apply(c, "{\"op\":\"qalloc\",\"id\":2,\"width\":1,\"signed\":false,\"ancilla\":true}");
+    apply(
+        c,
+        "{\"op\":\"qcompute\",\"id\":1,\"expr\":{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false}}");
+    const char *expression = "{\"op\":\"select\",\"bits\":1,\"signed\":false,\"args\":["
+                             "{\"op\":\"reg\",\"id\":1,\"bits\":1,\"signed\":false},"
+                             "{\"op\":\"select\",\"bits\":1,\"signed\":false,\"args\":["
+                             "{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false},"
+                             "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":1},"
+                             "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":["
+                             "{\"op\":\"div\",\"bits\":32,\"signed\":true,\"args\":["
+                             "{\"op\":\"const\",\"bits\":32,\"signed\":true,\"value\":1},"
+                             "{\"op\":\"const\",\"bits\":32,\"signed\":true,\"value\":0}]}]}]},"
+                             "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}]}";
+    char operation[4096];
+    snprintf(operation, sizeof operation, "{\"op\":\"qcompute\",\"id\":2,\"expr\":%s}", expression);
+    apply(c, operation);
+    for (size_t basis = 0; basis < qc_state_size(c); ++basis)
+        if (cabs(qc_amplitude(c, basis) - (basis == 0 || basis == 7 ? 1 / sqrt(2.0) : 0)) > 1e-10)
+            validation_fail("Boolean predicate certificate changed the coherent state");
+    snprintf(
+        operation, sizeof operation, "{\"op\":\"quncompute\",\"id\":2,\"expr\":%s}", expression);
+    apply(c, operation);
+    apply(
+        c,
+        "{\"op\":\"quncompute\",\"id\":1,\"expr\":{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false}}");
+    apply(
+        c,
+        "{\"op\":\"qcompute\",\"id\":1,\"expr\":{\"op\":\"not\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false}]}}");
+    gates = c->ngates;
+    snprintf(operation, sizeof operation, "{\"op\":\"qcompute\",\"id\":2,\"expr\":%s}", expression);
+    if (qc_apply(c, operation, NULL) || c->ngates != gates || qc_lookup(c, 2)->definition ||
+        (!strstr(qc_error(c), "truth tables are disabled") &&
+         !strstr(qc_error(c), "division/remainder by zero")))
+        validation_fail("a changed Boolean predicate reused an invalid cached proof");
+    qc_destroy(c);
+    ++checks;
     puts(
-        "PASS 4 history lifetimes: known basis restoration/reuse, live inverse protection and schema/ownership rejection before gates");
+        "PASS 5 history/proof lifetimes: known basis restoration/reuse, live inverse protection, schema rejection and predicate cache invalidation");
 }
 
 static void programs(validation *v) {
@@ -366,11 +410,13 @@ static void documents(validation *v) {
         "PASS 30 C complete states: derived/history cleanup, retained unknown outputs and CPU snapshot inverse at five GCC levels with both synthesis policies");
 }
 
+#include "test_coherent_history.inc"
+
 static void rejections(validation *v) {
     const char *bodies[] = {
         "quant uint8_t x=superposition(0,3);volatile int c=1;if(c)x%=2;measure(x);",
         "quant uint8_t x=superposition(0,3);volatile int count=2;while(count--)x%=2;measure(x);",
-        "quant bool c=superposition(0,1);quant uint8_t x=superposition(0,3);if(c)x%=2;measure(x);measure(c);",
+        "volatile int flag=1;quant bool c=superposition(0,1);quant uint8_t x=superposition(0,3);if(c){if(flag)x%=2;}measure(x);measure(c);",
         "quant bool n=superposition(0,1);quant uint8_t x=(unsigned)n+3;int factor=2;x*=factor;measure(x);measure(n);"};
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
     for (unsigned i = 0; i < 4; ++i)
@@ -386,8 +432,10 @@ static void rejections(validation *v) {
                 compiler, source, "--run", (char *)levels[level], "-o", executable, NULL};
             int status = validation_run(v, command, NULL, 60);
             char *log = validation_read(v->log);
-            if (!validation_rejected(
-                    status, log, i == 3 ? "GCC narrowed a multiplication" : "versioned assignment"))
+            const char *diagnostic = i == 3   ? "GCC narrowed a multiplication"
+                                     : i == 2 ? "classical branch inside quantum control"
+                                              : "versioned assignment";
+            if (!validation_rejected(status, log, diagnostic))
                 validation_fail("history contract rejection failed case=%u level=%s\n%s",
                                 i,
                                 levels[level],
@@ -396,7 +444,7 @@ static void rejections(validation *v) {
             ++checks;
         }
     puts(
-        "PASS 20 pending-contract diagnostics: CPU/coherent branch merges, runtime iterations and lost signed multiplication promotions at five GCC levels");
+        "PASS 20 pending-contract diagnostics: CPU joins/iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels");
 }
 
 int main(int argc, char **argv) {
@@ -408,6 +456,8 @@ int main(int argc, char **argv) {
     validation_init(&v, argv[0]);
     programs(&v);
     documents(&v);
+    coherent_documents(&v);
+    coherent_word_documents(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

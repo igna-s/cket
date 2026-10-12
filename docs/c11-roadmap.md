@@ -72,9 +72,10 @@ requested destructive channel. Syntax for this capability is not implemented yet
 `free` must not silently measure, reset or trace out dirty history. The
 [implemented unconditional scalar path](c11-history.md) retains unknown root history as part of the
 joint output until context end, with current/peak qubits in resource reports. Derived versions and
-known-basis roots have checked cleanup. Source-level history capabilities, versioned control joins,
-runtime iterations and general memory updates remain P/R. Measure/reset channels remain explicit
-source operations.
+known-basis roots have checked cleanup. Structured coherent joins now have the
+[selected-value implementation](c11-control.md). Source-level history capabilities, versioned
+CPU/CFG joins, runtime iterations and general memory updates remain P/R. Measure/reset channels
+remain explicit source operations.
 
 ### Floating and complex data
 
@@ -238,11 +239,13 @@ small states, inverse, C composition and wide generation; three more QuEST state
 emitted updates. General noninjective history, support extensions, expression-valued effects, all
 assignments and the rest of M2 remain open.
 
-M2/M4 now include [unconditional versioned assignments](c11-history.md). The 207 checks distinguish
-complete phased domains and derived inverses, lifetime/ownership guards, compiled C integrations and
-specific pending-contract diagnostics. Three further table-free QuEST cases contrast derived
-cleanup, unknown retained outputs and CPU snapshot inverses. Versioned control joins, runtime
-iterations, general memory, history handles and expression-valued effects remain open.
+M2/M3/M4 now include [versioned assignments](c11-history.md). The 348 checks distinguish complete
+phased domains and derived inverses, lifetime/ownership guards, compiled C integrations and specific
+pending-contract diagnostics. Three further table-free QuEST cases contrast derived cleanup, unknown
+retained outputs and CPU snapshot inverses. Four further QuEST cases cover
+[coherent joins](c11-control.md), self controls, nesting and CPU predicate snapshots. General
+CPU/CFG joins, runtime iterations, general memory, history handles and expression-valued effects
+remain open.
 
 ## Search, external validation and GCC guarantees
 
@@ -273,7 +276,7 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is thirty state cases and
+comparison, and external simulator comparison. Current QuEST coverage is thirty-four state cases and
 three sampled channels, not every generated circuit. Extend it to integrated library, memory,
 history and control workloads; state checks alone cannot validate intermediate measurement/reset
 channels.

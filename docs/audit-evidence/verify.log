@@ -93,7 +93,10 @@ PASS constant overwrite retains or cleans old storage
 PASS remainder overwrite with retained history
 PASS boolean saturating addition retains old value
 PASS versioned mutation preserves a live old predicate
+PASS noninjective conditional update retains history
 PASS unsigned increment/decrement
+PASS CPU argument captured by coherent predicate
+PASS inactive nested predicate division
 PASS signed division and measurement type
 PASS signed narrowing matches GCC
 PASS classical for
@@ -116,7 +119,6 @@ PASS 20 operators, C promotions and clean reuse
 PASS reject use after move
 PASS reject move between distinct C types
 PASS reject find changes input signedness
-PASS reject noninjective conditional update
 PASS reject implicit CPU read
 PASS reject implicit I/O read
 PASS reject folded zero read
@@ -389,7 +391,7 @@ PASS GCC sanitizer flags reach native linking
 PASS refuse flattening dynamic CPU control
 PASS runtime errors propagate failure
 
-389 passed, 0 failed (native C tests, no external quantum SDK)
+391 passed, 0 failed (native C tests, no external quantum SDK)
 PASS example hello             : five GCC levels, runtime contract and exports
 PASS example entanglement      : five GCC levels, runtime contract and exports
 PASS example find              : five GCC levels, runtime contract and exports
@@ -488,24 +490,26 @@ PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer
 PASS 40 C template specializations: libc projections, CPU mutation, complete phases and structural/export separation
 399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.
 PASS 78 history domains: complete phased states, live old dependencies, typed arithmetic, both table policies and clean derived inverses
-PASS 4 history lifetimes: known basis restoration/reuse, live inverse protection and schema/ownership rejection before gates
+PASS 5 history/proof lifetimes: known basis restoration/reuse, live inverse protection, schema rejection and predicate cache invalidation
 PASS 75 C history integrations: combined assignments, CPU snapshots, fixed arrays/pointer aliases, mutable functions and measurement-chain regression at five GCC levels
 PASS 30 C complete states: derived/history cleanup, retained unknown outputs and CPU snapshot inverse at five GCC levels with both synthesis policies
-PASS 20 pending-contract diagnostics: CPU/coherent branch merges, runtime iterations and lost signed multiplication promotions at five GCC levels
-207 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
-Built /tmp/tmp.5RQcBnKgAt/quantum
+PASS 110 coherent C complete states: one/two arms, self controls, nesting, CPU snapshots, lazy definedness, functions and successive joins at five GCC levels with both synthesis policies
+PASS 30 coherent word states: signed/unsigned eight-bit outputs, known-basis history restoration and fixed pointer/array aliases at five GCC levels with both synthesis policies
+PASS 20 pending-contract diagnostics: CPU joins/iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels
+348 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
+Built /tmp/tmp.sFvQA71zOZ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.5RQcBnKgAt/quantum
+Built /tmp/tmp.sFvQA71zOZ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.5RQcBnKgAt/quantum
+Built /tmp/tmp.sFvQA71zOZ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.5RQcBnKgAt/quantum
+Built /tmp/tmp.sFvQA71zOZ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.5RQcBnKgAt/quantum
+Built /tmp/tmp.sFvQA71zOZ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -676,10 +680,10 @@ PASS independent QASM state and probabilities: controlled global phase (2 qubits
 PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
 PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
 PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
-PASS independent QASM state and probabilities: nested open controls (12 qubits)
+PASS independent QASM state and probabilities: nested open controls (15 qubits)
 PASS independent QASM state and probabilities: independent controlled module (10 qubits)
 PASS independent QASM state and probabilities: signed absolute value with relative phase (11 qubits)
-PASS independent QASM state and probabilities: function, array, static loop and coherent phase (8 qubits)
+PASS independent QASM state and probabilities: function, array, static loop and coherent phase (6 qubits)
 PASS independent QASM state and probabilities: quantum variable left shift and relative phase (14 qubits)
 PASS independent QASM state and probabilities: signed variable right shift and Boolean conversion (13 qubits)
 PASS independent QASM state and probabilities: conditional expression with guarded division (13 qubits)
@@ -700,10 +704,14 @@ PASS independent QASM state and probabilities: saved CPU snapshot inverse (12 qu
 PASS independent QASM state and probabilities: derived history cleanup (7 qubits)
 PASS independent QASM state and probabilities: retained byte history preserves relative phases (17 qubits)
 PASS independent QASM state and probabilities: history CPU snapshot inverse (6 qubits)
+PASS independent QASM state and probabilities: coherent two-arm history join (10 qubits)
+PASS independent QASM state and probabilities: self-controlled information loss (5 qubits)
+PASS independent QASM state and probabilities: nested coherent history joins (9 qubits)
+PASS independent QASM state and probabilities: coherent CPU predicate snapshot inverse (6 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-33 exported circuits independently validated with QuEST 3.7.0 (C): 30 states, 3 channels; table-free export
+37 exported circuits independently validated with QuEST 3.7.0 (C): 34 states, 3 channels; table-free export
 PASS signed structured mul: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured div: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured mod: joint amplitudes, C rounding, inverse and zero garbage
@@ -798,7 +806,10 @@ PASS constant overwrite retains or cleans old storage
 PASS remainder overwrite with retained history
 PASS boolean saturating addition retains old value
 PASS versioned mutation preserves a live old predicate
+PASS noninjective conditional update retains history
 PASS unsigned increment/decrement
+PASS CPU argument captured by coherent predicate
+PASS inactive nested predicate division
 PASS signed division and measurement type
 PASS signed narrowing matches GCC
 PASS classical for
@@ -821,7 +832,6 @@ PASS 20 operators, C promotions and clean reuse
 PASS reject use after move
 PASS reject move between distinct C types
 PASS reject find changes input signedness
-PASS reject noninjective conditional update
 PASS reject implicit CPU read
 PASS reject implicit I/O read
 PASS reject folded zero read
@@ -1094,7 +1104,7 @@ PASS GCC sanitizer flags reach native linking
 PASS refuse flattening dynamic CPU control
 PASS runtime errors propagate failure
 
-389 passed, 0 failed (native C tests, no external quantum SDK)
+391 passed, 0 failed (native C tests, no external quantum SDK)
 PASS validation harness: success
 PASS validation harness: semantic
 PASS validation harness: unrelated
@@ -1155,11 +1165,13 @@ PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer
 PASS 40 C template specializations: libc projections, CPU mutation, complete phases and structural/export separation
 399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.
 PASS 78 history domains: complete phased states, live old dependencies, typed arithmetic, both table policies and clean derived inverses
-PASS 4 history lifetimes: known basis restoration/reuse, live inverse protection and schema/ownership rejection before gates
+PASS 5 history/proof lifetimes: known basis restoration/reuse, live inverse protection, schema rejection and predicate cache invalidation
 PASS 75 C history integrations: combined assignments, CPU snapshots, fixed arrays/pointer aliases, mutable functions and measurement-chain regression at five GCC levels
 PASS 30 C complete states: derived/history cleanup, retained unknown outputs and CPU snapshot inverse at five GCC levels with both synthesis policies
-PASS 20 pending-contract diagnostics: CPU/coherent branch merges, runtime iterations and lost signed multiplication promotions at five GCC levels
-207 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
+PASS 110 coherent C complete states: one/two arms, self controls, nesting, CPU snapshots, lazy definedness, functions and successive joins at five GCC levels with both synthesis policies
+PASS 30 coherent word states: signed/unsigned eight-bit outputs, known-basis history restoration and fixed pointer/array aliases at five GCC levels with both synthesis policies
+PASS 20 pending-contract diagnostics: CPU joins/iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels
+348 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
 PASS example hello             : five GCC levels, runtime contract and exports
 PASS example entanglement      : five GCC levels, runtime contract and exports
 PASS example find              : five GCC levels, runtime contract and exports
@@ -1198,19 +1210,19 @@ PASS example search_constraints: five GCC levels, runtime contract and exports
 PASS example coherent_accumulate: five GCC levels, runtime contract and exports
 
 1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
-Built /tmp/tmp.YQ4hv3AVG8/quantum
+Built /tmp/tmp.fWNfJkf0TQ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.YQ4hv3AVG8/quantum
+Built /tmp/tmp.fWNfJkf0TQ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.YQ4hv3AVG8/quantum
+Built /tmp/tmp.fWNfJkf0TQ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.YQ4hv3AVG8/quantum
+Built /tmp/tmp.fWNfJkf0TQ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.YQ4hv3AVG8/quantum
+Built /tmp/tmp.fWNfJkf0TQ/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -1381,10 +1393,10 @@ PASS independent QASM state and probabilities: controlled global phase (2 qubits
 PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
 PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
 PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
-PASS independent QASM state and probabilities: nested open controls (12 qubits)
+PASS independent QASM state and probabilities: nested open controls (15 qubits)
 PASS independent QASM state and probabilities: independent controlled module (10 qubits)
 PASS independent QASM state and probabilities: signed absolute value with relative phase (11 qubits)
-PASS independent QASM state and probabilities: function, array, static loop and coherent phase (8 qubits)
+PASS independent QASM state and probabilities: function, array, static loop and coherent phase (6 qubits)
 PASS independent QASM state and probabilities: quantum variable left shift and relative phase (14 qubits)
 PASS independent QASM state and probabilities: signed variable right shift and Boolean conversion (13 qubits)
 PASS independent QASM state and probabilities: conditional expression with guarded division (13 qubits)
@@ -1405,8 +1417,12 @@ PASS independent QASM state and probabilities: saved CPU snapshot inverse (12 qu
 PASS independent QASM state and probabilities: derived history cleanup (7 qubits)
 PASS independent QASM state and probabilities: retained byte history preserves relative phases (17 qubits)
 PASS independent QASM state and probabilities: history CPU snapshot inverse (6 qubits)
+PASS independent QASM state and probabilities: coherent two-arm history join (10 qubits)
+PASS independent QASM state and probabilities: self-controlled information loss (5 qubits)
+PASS independent QASM state and probabilities: nested coherent history joins (9 qubits)
+PASS independent QASM state and probabilities: coherent CPU predicate snapshot inverse (6 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-33 exported circuits independently validated with QuEST 3.7.0 (C): 30 states, 3 channels; table-free export
+37 exported circuits independently validated with QuEST 3.7.0 (C): 34 states, 3 channels; table-free export
 All compiler, runtime, example, synthesis and independent QASM checks passed.

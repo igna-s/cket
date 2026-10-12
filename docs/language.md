@@ -75,7 +75,9 @@ are evaluated once. Certified injective updates can act on the existing register
 masks, even multiplication and constant overwrites. Updates of derived values or sources with live
 dependents compute into fresh storage and retain the previous version. A valid inverse or
 known-basis restoration releases history; unknown root history remains part of the joint output
-until the quantum context ends. Branch joins and runtime iterations still need version support.
+until the quantum context ends. [Structured coherent joins](c11-control.md) preserve old values on
+inactive amplitudes and retain needed predicates. CPU/CFG joins and runtime iterations still need
+version support.
 
 An effectful CPU operand, such as `x += measure(y)` or `x += ++n`, is evaluated once before updating
 x. The plugin preserves GCC's shared `SAVE_EXPR` and emits explicit measurement before addition in
@@ -110,13 +112,15 @@ uncomputed. Measurement does not select a branch. Branches accept supported unit
 `phase_flip()` and reject I/O, classical calls, CPU writes, reset, measurement, and classical jumps.
 Nested conditions accumulate controls.
 
-Changing a condition input may make its inverse impossible. The compiler rejects this case unless it
-has a proven reversible transformation. An independent flag may control an update to another
-register.
+Changing a condition input requires preserving its original value for the predicate inverse.
+Structured scalar updates can retain that value and select a new version using the saved flag. An
+independent flag may also control an in-place update to another register.
 
 In particular, `if (x == 0) x += 1;` maps both zero and one to one. It is non-injective over x,
 beyond a conservative analysis restriction. Retaining history distinguishes the inputs but does not
-ensure that history can be cleaned while preserving the intended result.
+ensure that history can be cleaned while preserving the intended result. Supported scalar coherent
+branches implement this case by retaining the old value; unknown root history remains a joint output
+with its explicit storage cost.
 
 Classical `for/while/do` loops retain GCC's actual CPU control. Unsigned updates may receive CPU
 operands each iteration. Supported indexed operations may also measure/reset existing storage while
