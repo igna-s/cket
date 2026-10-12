@@ -63,7 +63,11 @@ static const test_case
               "quant bool n=superposition(0,1);if(n)phase(.31);quant uint8_t q=div((int)n+5,2).quot;quant uint8_t r=div((int)n+5,2).rem;measure(q);measure(r);measure(n);"},
              {"coherent library division with variable denominator", "#include <quantum.h>\n#include <inttypes.h>\nint main(void){quant bool n=superposition(0,1),d=superposition(0,1),c=superposition(0,1);if(d)phase(.47);quant bool q=c?imaxdiv((intmax_t)n,(intmax_t)d+1).quot:false;quant bool r=c?imaxdiv((intmax_t)n,(intmax_t)d+1).rem:false;measure(q);measure(r);measure(n);measure(d);measure(c);return 0;}\n"},
              {"signed library division rounds toward zero",
-              "quant bool n=superposition(0,1);if(n)phase(.37);quant bool q=ldiv(3*(long)n-1,2).quot;quant int8_t r=ldiv(3*(long)n-1,2).rem;measure(q);measure(r);measure(n);"}};
+              "quant bool n=superposition(0,1);if(n)phase(.37);quant bool q=ldiv(3*(long)n-1,2).quot;quant int8_t r=ldiv(3*(long)n-1,2).rem;measure(q);measure(r);measure(n);"},
+             {"CPU-bound library division",
+              "quant bool n=superposition(0,1);if(n)phase(.31);int d=2;quant uint8_t q=div((int)n+5,d).quot;quant uint8_t r=div((int)n+5,d).rem;measure(q);measure(r);measure(n);"},
+             {"saved CPU snapshot inverse",
+              "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t y=n+a;++a;if(y==6)phase(.31);measure(n);"}};
 static const test_case channels[] = {
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},
@@ -92,7 +96,8 @@ static void check_importer(void) {
     puts("PASS independent QASM importer: 8 malformed artifacts rejected");
 }
 
-static void exported(validation *v, const char *body, char *ir, reference_circuit *c) {
+static void
+exported(validation *v, const char *body, char *ir, reference_circuit *c, unsigned binding_value) {
     char source[4096], qasm[4096], compiler[4096], backend[4096], program[8192];
     validation_path(source, sizeof source, "%s/program.c", v->temp);
     validation_path(ir, 4096, "%s/program.json", v->temp);
@@ -110,9 +115,53 @@ static void exported(validation *v, const char *body, char *ir, reference_circui
     }
     char *compile[] = {compiler, source, "--emit-ir", "-o", ir, NULL};
     char *export[] = {backend, "--emit-qasm", ir, "--no-tables", NULL};
-    if (validation_run(v, compile, NULL, 30) || validation_run(v, export, qasm, 30)) {
+    if (validation_run(v, compile, NULL, 30)) {
         char *log = validation_read(v->log);
         validation_fail("QASM preparation failed: %s", log);
+    }
+    if (binding_value) {
+        char *template = validation_read(ir);
+        cj_doc d = {0};
+        if (!cj_parse(&d, template))
+            validation_fail("invalid binding fixture IR");
+        char rows[4096] = "[";
+        size_t length = 1;
+        unsigned index = 0, count = 0;
+        int list = cj_get(&d, 0, "instructions");
+        for (int token = list + 1; token < d.tokens[list].next;
+             token = d.tokens[token].next, ++index) {
+            if (!cj_equal(&d, cj_get(&d, token, "op"), "qbind"))
+                continue;
+            int parameters = cj_get(&d, token, "parameters");
+            if (d.tokens[parameters].children != 1)
+                validation_fail("unexpected QASM fixture parameter count");
+            int written = snprintf(rows + length,
+                                   sizeof rows - length,
+                                   "%s{\"instruction\":%u,\"values\":[%u]}",
+                                   count++ ? "," : "",
+                                   index,
+                                   binding_value);
+            if (written < 0 || (size_t)written >= sizeof rows - length)
+                validation_fail("QASM binding fixture budget exceeded");
+            length += (size_t)written;
+        }
+        if (!count)
+            validation_fail("CPU binding QASM fixture emitted no templates");
+        rows[length++] = ']';
+        rows[length] = 0;
+        qc_context *context = qc_create(0, 7);
+        char *bound = context ? qc_bind_document(context, template, rows) : NULL;
+        if (!bound)
+            validation_fail("QASM fixture binding failed: %s", qc_error(context));
+        validation_write(ir, bound);
+        free(bound);
+        qc_destroy(context);
+        cj_free(&d);
+        free(template);
+    }
+    if (validation_run(v, export, qasm, 30)) {
+        char *log = validation_read(v->log);
+        validation_fail("QASM export failed: %s", log);
     }
     char *text = validation_read(qasm);
     if (!reference_parse(c, text))
@@ -132,7 +181,10 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
         body = module;
     }
     reference_circuit c;
-    exported(v, body, ir, &c);
+    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")   ? 2
+                             : !strcmp(test->name, "saved CPU snapshot inverse") ? 5
+                                                                                 : 0;
+    exported(v, body, ir, &c, binding_value);
     char *text = validation_read(ir);
     cj_doc d = {0};
     qc_context *native = qc_create(1, 7);
@@ -208,7 +260,7 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
 static void check_channel(validation *v, QuESTEnv env, const test_case *test) {
     char ir[4096], sampler[4096], counts_path[4096];
     reference_circuit c;
-    exported(v, test->body, ir, &c);
+    exported(v, test->body, ir, &c, 0);
     validation_path(sampler,
                     sizeof sampler,
                     "%s/build/qasm_samples%s",

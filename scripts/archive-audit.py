@@ -28,13 +28,14 @@ def main():
         'classical': r'^5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete\.$',
         'frontend': r'^665 generated frontend compilations passed; seed=20261012 \(C generator, SplitMix64\)$',
         'synthesis': r'^24 circuits compiled without tables;',
-        'qasm': r'^28 exported circuits independently validated with QuEST 3\.7\.0 \(C\): 25 states, 3 channels; table-free export$',
+        'qasm': r'^30 exported circuits independently validated with QuEST 3\.7\.0 \(C\): 27 states, 3 channels; table-free export$',
         'shifts': r'^55 shift checks passed; generated wide circuits are distinct from state-validated small domains\.$',
         'expressions': r'^97 expression checks passed; generated circuits and complete-state comparisons have separate scopes\.$',
         'inplace': r'^271 in-place checks passed; wide circuit generation is distinct from complete-state validation\.$',
         'memcopy': r'^414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation\.$',
         'harness': r'^18 validation harness checks passed; infrastructure faults cannot count as semantic rejections\.$',
         'division': r'^990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes\.$',
+        'bindings': r'^399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes\.$',
     }
     for name, pattern in patterns.items():
         if len(re.findall(pattern, content, re.M)) != 2:
@@ -103,7 +104,8 @@ def main():
             'memory_copy_checks': 414,
             'harness_checks': 18,
             'division_checks': 990,
-            'external_qasm_states': 25,
+            'binding_checks': 399,
+            'external_qasm_states': 27,
             'external_qasm_channels': 3,
         },
         'source_sha256': hashes,

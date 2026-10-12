@@ -403,6 +403,10 @@ void finish_function(void *event, void *) {
     remaining.clear();
     counted_saves.clear();
     expression_saves.clear();
+    cpu_parameter_ids.clear();
+    cpu_parameter_values.clear();
+    active_cpu_parameters.clear();
+    coherent_expression_depth = 0;
     controls.clear();
     dynamic_depth = 0;
     if (has_quantum)
@@ -445,8 +449,14 @@ void finish_function(void *event, void *) {
     expanded_product_leaves = 0;
     counted_saves.clear();
     expression_saves.clear();
+    cpu_parameter_ids.clear();
+    cpu_parameter_values.clear();
+    active_cpu_parameters.clear();
+    cpu_library_saves.clear();
+    coherent_expression_depth = 0;
     prepare_fn = measure_fn = NULL_TREE;
     apply_fn = apply_arg_fn = NULL_TREE;
+    apply_values_fn = NULL_TREE;
     apply_phase_fn = NULL_TREE;
     apply_index_fn = NULL_TREE;
 }

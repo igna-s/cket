@@ -480,19 +480,26 @@ PASS 40 Boolean conversions use C truth rather than truncating the low bit
 PASS 10 private homonyms retain their own C behavior
 PASS 80 wide table-free projections, 40 whole-product resource contracts and 160 definedness/capture diagnostics
 990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes.
-Built /tmp/tmp.9veM9zo3uf/quantum
+PASS 96 bound arithmetic domains: full phases, controls, table policies and saved inverse
+PASS 52 typed binding endpoints including signed minimum and unsigned maximum
+PASS 10 malformed CPU descriptor cases reject before state changes
+PASS 11 whole-document binding/preparation contracts before circuit mutation
+PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer widths, products, callbacks in loops and nested initializer regression
+PASS 40 C template specializations: libc projections, CPU mutation, complete phases and structural/export separation
+399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.
+Built /tmp/tmp.zWW2ae8CmL/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.9veM9zo3uf/quantum
+Built /tmp/tmp.zWW2ae8CmL/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.9veM9zo3uf/quantum
+Built /tmp/tmp.zWW2ae8CmL/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.9veM9zo3uf/quantum
+Built /tmp/tmp.zWW2ae8CmL/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.9veM9zo3uf/quantum
+Built /tmp/tmp.zWW2ae8CmL/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -682,10 +689,12 @@ PASS independent QASM state and probabilities: library copy survives coherent so
 PASS independent QASM state and probabilities: library division product projections with relative phase (20 qubits)
 PASS independent QASM state and probabilities: coherent library division with variable denominator (18 qubits)
 PASS independent QASM state and probabilities: signed library division rounds toward zero (17 qubits)
+PASS independent QASM state and probabilities: CPU-bound library division (20 qubits)
+PASS independent QASM state and probabilities: saved CPU snapshot inverse (12 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-28 exported circuits independently validated with QuEST 3.7.0 (C): 25 states, 3 channels; table-free export
+30 exported circuits independently validated with QuEST 3.7.0 (C): 27 states, 3 channels; table-free export
 PASS signed structured mul: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured div: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured mod: joint amplitudes, C rounding, inverse and zero garbage
@@ -1129,6 +1138,13 @@ PASS 40 Boolean conversions use C truth rather than truncating the low bit
 PASS 10 private homonyms retain their own C behavior
 PASS 80 wide table-free projections, 40 whole-product resource contracts and 160 definedness/capture diagnostics
 990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes.
+PASS 96 bound arithmetic domains: full phases, controls, table policies and saved inverse
+PASS 52 typed binding endpoints including signed minimum and unsigned maximum
+PASS 10 malformed CPU descriptor cases reject before state changes
+PASS 11 whole-document binding/preparation contracts before circuit mutation
+PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer widths, products, callbacks in loops and nested initializer regression
+PASS 40 C template specializations: libc projections, CPU mutation, complete phases and structural/export separation
+399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.
 PASS example hello             : five GCC levels, runtime contract and exports
 PASS example entanglement      : five GCC levels, runtime contract and exports
 PASS example find              : five GCC levels, runtime contract and exports
@@ -1167,19 +1183,19 @@ PASS example search_constraints: five GCC levels, runtime contract and exports
 PASS example coherent_accumulate: five GCC levels, runtime contract and exports
 
 1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
-Built /tmp/tmp.ThqChGJ93e/quantum
+Built /tmp/tmp.4kY0xxPYyR/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.ThqChGJ93e/quantum
+Built /tmp/tmp.4kY0xxPYyR/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.ThqChGJ93e/quantum
+Built /tmp/tmp.4kY0xxPYyR/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.ThqChGJ93e/quantum
+Built /tmp/tmp.4kY0xxPYyR/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.ThqChGJ93e/quantum
+Built /tmp/tmp.4kY0xxPYyR/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -1369,8 +1385,10 @@ PASS independent QASM state and probabilities: library copy survives coherent so
 PASS independent QASM state and probabilities: library division product projections with relative phase (20 qubits)
 PASS independent QASM state and probabilities: coherent library division with variable denominator (18 qubits)
 PASS independent QASM state and probabilities: signed library division rounds toward zero (17 qubits)
+PASS independent QASM state and probabilities: CPU-bound library division (20 qubits)
+PASS independent QASM state and probabilities: saved CPU snapshot inverse (12 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-28 exported circuits independently validated with QuEST 3.7.0 (C): 25 states, 3 channels; table-free export
+30 exported circuits independently validated with QuEST 3.7.0 (C): 27 states, 3 channels; table-free export
 All compiler, runtime, example, synthesis and independent QASM checks passed.

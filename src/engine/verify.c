@@ -261,8 +261,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         return 1;
     }
     static const char *const alloc[] = {"op", "id", "width", "signed", "name", "ancilla", NULL};
-    static const char *const prepare[] = {"op", "id", "lower", "upper", "dynamic", NULL};
-    static const char *const computation[] = {"op", "id", "expr", "controls", NULL};
+    static const char *const prepare[] = {"op", "id", "lower", "upper", "dynamic", "expr", NULL};
+    static const char *const computation[] = {"op", "id", "expr", "controls", "saved", NULL};
     static const char *const addition[] = {
         "op", "id", "value", "argument", "dynamic", "controls", NULL};
     static const char *const register_addition[] = {
@@ -400,7 +400,18 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             uint64_t low, high;
             if (!boolean_field(c, d, inst, "dynamic", 1))
                 return 0;
-            if (cj_bool(d, cj_get(d, inst, "dynamic"))) {
+            int expr = cj_get(d, inst, "expr");
+            if (expr >= 0) {
+                uint64_t bits;
+                if (cj_get(d, inst, "lower") >= 0 || cj_get(d, inst, "upper") >= 0 ||
+                    cj_bool(d, cj_get(d, inst, "dynamic")) ||
+                    !cj_equal(d, cj_get(d, expr, "op"), "const") || !expression(c, d, expr) ||
+                    !unsigned_field(c, d, expr, "bits", &bits) || bits != r->width ||
+                    (r->signed_type >= 0 &&
+                     cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type))
+                    return qc_fail(
+                        c, "basis preparation requires a matching bound classical constant");
+            } else if (cj_bool(d, cj_get(d, inst, "dynamic"))) {
                 if (cj_get(d, inst, "lower") >= 0 || cj_get(d, inst, "upper") >= 0)
                     return qc_fail(c, "ambiguous runtime/static preparation");
             } else if (!unsigned_field(c, d, inst, "lower", &low) ||
@@ -408,13 +419,23 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 return 0;
         } else if (allowed == computation) {
             int expr = cj_get(d, inst, "expr");
-            uint64_t bits;
-            if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits))
-                return 0;
-            int sign = cj_bool(d, cj_get(d, expr, "signed"));
-            if ((bits != r->width || (r->signed_type >= 0 && sign != r->signed_type)) &&
-                !(r->width == 1 && truth_valued(d, expr)))
-                return qc_fail(c, "quantum output requires an explicit conversion to its C type");
+            int saved = cj_get(d, inst, "saved");
+            if (saved >= 0) {
+                if (!cj_equal(d, op, "quncompute") || !boolean_field(c, d, inst, "saved", 0) ||
+                    !cj_bool(d, saved) || expr >= 0 || !r->definition)
+                    return qc_fail(
+                        c,
+                        "saved inverse requires an existing definition and no explicit expression");
+            } else {
+                uint64_t bits;
+                if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits))
+                    return 0;
+                int sign = cj_bool(d, cj_get(d, expr, "signed"));
+                if ((bits != r->width || (r->signed_type >= 0 && sign != r->signed_type)) &&
+                    !(r->width == 1 && truth_valued(d, expr)))
+                    return qc_fail(c,
+                                   "quantum output requires an explicit conversion to its C type");
+            }
         } else if (allowed == register_addition) {
             uint64_t source;
             if (!unsigned_field(c, d, inst, "source", &source) || source > UINT32_MAX ||

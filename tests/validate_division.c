@@ -381,7 +381,7 @@ static void generation_and_contracts(validation *v) {
                                       "--resources",
                                       negative == 0   ? "zero"
                                       : negative == 1 ? "overflows"
-                                                      : "once-only capture"));
+                                                      : "CPU parameter bindings"));
                     ++checks;
                 }
             }

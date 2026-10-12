@@ -3,11 +3,22 @@
 #include <string.h>
 
 int main(int argc, char **argv) {
-    if ((argc != 3 && argc != 4) || (argc == 4 && strcmp(argv[3], "--no-tables")) ||
+    const char *binding_path = NULL;
+    int tables = 1;
+    int valid_options = 1;
+    for (int i = 3; i < argc; ++i) {
+        if (!strcmp(argv[i], "--no-tables") && tables)
+            tables = 0;
+        else if (!strcmp(argv[i], "--bindings") && !binding_path && i + 1 < argc)
+            binding_path = argv[++i];
+        else
+            valid_options = 0;
+    }
+    if (argc < 3 || !valid_options ||
         (strcmp(argv[1], "--validate") && strcmp(argv[1], "--emit-qasm") &&
          strcmp(argv[1], "--resources") && strcmp(argv[1], "--state"))) {
         fputs(
-            "usage: cket_backend --validate|--emit-qasm|--resources|--state quantum-ir.json [--no-tables]\n",
+            "usage: cket_backend --validate|--emit-qasm|--resources|--state quantum-ir.json [--no-tables] [--bindings values.json]\n",
             stderr);
         return 2;
     }
@@ -18,8 +29,21 @@ int main(int argc, char **argv) {
         return 1;
     }
     qc_context *c = qc_create(state, 7);
-    if (c && argc == 4)
+    if (c && !tables)
         qc_allow_tables(c, 0);
+    if (c && binding_path) {
+        char *bindings = qc_read_file(binding_path);
+        char *bound = bindings ? qc_bind_document(c, text, bindings) : NULL;
+        free(bindings);
+        if (!bound) {
+            fprintf(stderr, "|c> backend: invalid bindings %s: %s\n", binding_path, qc_error(c));
+            free(text);
+            qc_destroy(c);
+            return 1;
+        }
+        free(text);
+        text = bound;
+    }
     if (!c || !qc_document(c, text, validate, state)) {
         fprintf(stderr, "|c> backend: %s\n", qc_error(c));
         free(text);

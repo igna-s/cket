@@ -1189,10 +1189,28 @@ int qc_apply_token(qc_context *c,
                    uint64_t *result) {
     if (c->error[0])
         return 0;
+    int op = cj_get(d, inst, "op");
+    if (cj_equal(d, op, "qbind")) {
+        if (c->validation && c->structural) {
+            int parameters = cj_get(d, inst, "parameters");
+            if (parameters < 0 || d->tokens[parameters].kind != '[' ||
+                !d->tokens[parameters].children || d->tokens[parameters].children > 128)
+                return qc_fail(c, "invalid CPU binding descriptor count");
+            char *wrapper = cj_copy(d, inst);
+            uint64_t values[128] = {0};
+            if (!wrapper)
+                return qc_fail(c, "cannot copy CPU binding template");
+            int success =
+                qc_apply_bound(c, wrapper, values, (size_t)d->tokens[parameters].children, result);
+            free(wrapper);
+            return success;
+        }
+        return qc_fail(c,
+                       "CPU parameter bindings required; specialize qbind before circuit export");
+    }
     if (!qc_verify_instruction(c, d, inst))
         return 0;
     *result = 0;
-    int op = cj_get(d, inst, "op");
     uint64_t id = 0;
     if (cj_equal(d, op, "qmodule"))
         return !has_argument ? apply_module(c, d, inst)
@@ -1287,7 +1305,7 @@ int qc_apply_token(qc_context *c,
         if (has_argument && expr >= 0)
             return qc_fail(c, "runtime XOR argument conflicts with its expression");
         if (expr >= 0) {
-            if (!impossible && !compute(c, d, expr, r, mask, pattern))
+            if (!c->structural && !impossible && !compute(c, d, expr, r, mask, pattern))
                 return 0;
             r = reg(c, (uint32_t)id);
             domain dom;
@@ -1337,7 +1355,13 @@ int qc_apply_token(qc_context *c,
         uint64_t low, high;
         if (!r->clean || r->prepared)
             return qc_fail(c, "preparation requires fresh clean storage");
-        if (cj_bool(d, cj_get(d, inst, "dynamic"))) {
+        int expression = cj_get(d, inst, "expr");
+        if (expression >= 0) {
+            if (!number(c, d, expression, "value", &low))
+                return 0;
+            low &= bits_mask(r->width);
+            high = low;
+        } else if (cj_bool(d, cj_get(d, inst, "dynamic"))) {
             if (!has_argument) {
                 if (!c->validation)
                     return qc_fail(c, "runtime basis preparation requires native C execution");
@@ -1383,6 +1407,26 @@ int qc_apply_token(qc_context *c,
         return 1;
     }
     if (cj_equal(d, op, "qcompute") || cj_equal(d, op, "quncompute")) {
+        if (cj_bool(d, cj_get(d, inst, "saved"))) {
+            char *control_text = cj_copy(d, cj_get(d, inst, "controls"));
+            const char *control_value = control_text ? control_text : "[]";
+            size_t size = strlen(r->definition) + strlen(control_value) + 128;
+            char *restored = malloc(size);
+            if (!restored) {
+                free(control_text);
+                return qc_fail(c, "cannot allocate saved quantum inverse");
+            }
+            snprintf(restored,
+                     size,
+                     "{\"op\":\"quncompute\",\"id\":%" PRIu64 ",\"expr\":%s,\"controls\":%s}",
+                     id,
+                     r->definition,
+                     control_value);
+            int success = qc_apply(c, restored, result);
+            free(restored);
+            free(control_text);
+            return success;
+        }
         int expr = cj_get(d, inst, "expr");
         char *definition = cj_copy(d, expr);
         if (!definition)
@@ -1410,7 +1454,7 @@ int qc_apply_token(qc_context *c,
             free(definition);
             return qc_fail(c, "computed quantum output requires clean storage");
         }
-        if (!compute(c, d, expr, r, mask, pattern)) {
+        if (!c->structural && !compute(c, d, expr, r, mask, pattern)) {
             free(definition);
             return 0;
         }
@@ -1454,6 +1498,12 @@ int qc_apply_token(qc_context *c,
         return release(c, r);
     if (cj_equal(d, op, "qadd_inplace") || cj_equal(d, op, "qadd_register") ||
         cj_equal(d, op, "qinplace")) {
+        if (c->structural) {
+            unknown_support(r);
+            r->clean = 0;
+            ++r->epoch;
+            return 1;
+        }
         if (has_argument && cj_get(d, inst, "value") >= 0)
             return qc_fail(c, "runtime argument conflicts with a static addition value");
         if (r->definition)
@@ -1542,6 +1592,12 @@ int qc_apply_token(qc_context *c,
         }
         ++r->epoch;
         clear_definition(r);
+        return 1;
+    }
+    if (c->structural && (cj_equal(d, op, "qfind") || cj_equal(d, op, "qsearch"))) {
+        unknown_support(r);
+        r->clean = 0;
+        ++r->epoch;
         return 1;
     }
     if (cj_equal(d, op, "qfind"))
@@ -1656,6 +1712,13 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
     int instructions = cj_get(&d, 0, "instructions"), ok = qc_verify_document(c, &d);
     c->validation = validation;
     c->ignore_measurements = ignore_measurements;
+    if (ok && validation)
+        for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next)
+            c->structural |= cj_equal(&d, cj_get(&d, t, "op"), "qbind");
+    if (c->structural && c->simulate) {
+        cj_free(&d);
+        return qc_fail(c, "CPU template validation requires a nonsimulating context");
+    }
     if (ok)
         for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next) {
             uint64_t result;
@@ -1669,6 +1732,10 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
 }
 
 void qc_resources(const qc_context *c, FILE *f) {
+    if (c->structural) {
+        fputs("CPU template validation has no synthesized resource report.\n", f);
+        return;
+    }
     fprintf(f,
             "Logical qubits: %u\nAncillas:       %u\nPeak qubits:    %u\n",
             c->logical_peak,
@@ -1693,6 +1760,8 @@ void qc_resources(const qc_context *c, FILE *f) {
 }
 
 int qc_qasm(const qc_context *c, FILE *f) {
+    if (c->structural)
+        return 0;
     fprintf(f, "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n");
     if (c->physical)
         fprintf(f, "qubit[%u] q;\n", c->physical);
@@ -1742,3 +1811,4 @@ int qc_qasm(const qc_context *c, FILE *f) {
 }
 
 #include "circuit.inc"
+#include "binding.inc"

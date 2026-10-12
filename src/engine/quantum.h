@@ -24,6 +24,18 @@ void qc_destroy(qc_context *context);
 const char *qc_error(const qc_context *context);
 int qc_apply(qc_context *context, const char *operation, uint64_t *result);
 int qc_apply_arg(qc_context *context, const char *operation, uint64_t argument);
+/* Bind declared CPU integer inputs before synthesizing a quantum operation.
+ * The returned operation owns its text and must be freed by the caller. */
+char *
+qc_bind_operation(qc_context *context, const char *operation, const uint64_t *values, size_t count);
+int qc_apply_bound(qc_context *context,
+                   const char *operation,
+                   const uint64_t *values,
+                   size_t count,
+                   uint64_t *result);
+/* Binding rows are ordered {instruction: index, values: [raw integers]}.
+ * Every qbind instruction requires exactly one row. */
+char *qc_bind_document(qc_context *context, const char *ir, const char *bindings);
 int qc_apply_phase(qc_context *context, const char *operation, double angle);
 int qc_apply_index(qc_context *context,
                    const char *operation,

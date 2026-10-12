@@ -264,8 +264,8 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is twenty-five state cases and
-three sampled channels, not every generated circuit. Extend it to integrated library, memory,
+comparison, and external simulator comparison. Current QuEST coverage is twenty-seven state cases
+and three sampled channels, not every generated circuit. Extend it to integrated library, memory,
 history and control workloads; state checks alone cannot validate intermediate measurement/reset
 channels.
 
@@ -279,8 +279,16 @@ the intermediate subset.
 M2/M4/M7 now include [integer-division products and projections](c11-division.md) for the four
 standard signed division functions. Constant power-of-two division has table-free signed rounding
 corrections. The 990 checks distinguish phased/inverse state validation, ordinary C references, wide
-generation and diagnostic/resource contracts. Runtime CPU capture, general product ABI and larger
-complete-product storage remain P/R; this does not close those milestones.
+generation and diagnostic/resource contracts. Effectful quantum arguments, general quantum product
+ABI and larger complete-product storage remain P/R; this does not close those milestones.
+
+M2/M4/M7 also include [once-only CPU bindings and classical product preparation](c11-bindings.md).
+Concrete circuit definitions retain parameter snapshots for their inverse. Structural template
+validation does not certify numerical definedness or generated circuits. Nested classical
+structure-return initializers now retain evaluations and values instead of silently zero-filling
+their quantum fields. The 399 finite checks and two additional QuEST states provide evidence for
+these contracts; general quantum product ABI, coherent CPU effects and full C11 coverage remain
+open.
 
 ## Completion rule
 

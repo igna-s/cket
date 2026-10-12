@@ -1,13 +1,28 @@
 // Semantic analysis of genuine GCC C trees. No source/token parser exists here.
 std::map<unsigned, unsigned> remaining;
 std::set<tree> counted_saves;
-std::map<tree, std::pair<std::string, std::set<unsigned>>> expression_saves;
+
+struct SavedExpression {
+    std::string text;
+    std::set<unsigned> sources, parameters;
+};
+
+std::map<tree, SavedExpression> expression_saves;
+std::map<tree, unsigned> cpu_parameter_ids;
+std::vector<tree> cpu_parameter_values;
+std::set<unsigned> active_cpu_parameters;
+std::set<tree> cpu_library_saves;
+unsigned coherent_expression_depth = 0;
 std::vector<std::pair<unsigned, unsigned>> controls;
 unsigned dynamic_depth = 0;
 size_t embedded_module_bytes = 0;
 tree apply_fn = NULL_TREE, apply_arg_fn = NULL_TREE;
+tree apply_values_fn = NULL_TREE;
 tree apply_phase_fn = NULL_TREE;
 tree apply_index_fn = NULL_TREE;
+tree lower_node(tree value);
+bool gcc_quantum_sanitizer_guard(tree value);
+bool quantum_pure_expression(tree value);
 
 tree selected_storage(tree value) {
     value = strip(value);
@@ -79,6 +94,43 @@ std::string control_json() {
 }
 
 tree emit_operation(std::string operation, location_t loc, tree argument = NULL_TREE) {
+    if (!active_cpu_parameters.empty()) {
+        std::set<unsigned> parameters;
+        parameters.swap(active_cpu_parameters);
+        if (argument || parameters.size() > 128) {
+            error_at(loc, "|c>: CPU expression binding exceeds its checked operation budget");
+            return build_zero_cst(long_long_unsigned_type_node);
+        }
+        std::string descriptors = "[";
+        std::vector<tree> values;
+        for (unsigned id : parameters) {
+            tree value = cpu_parameter_values.at(id);
+            if (!values.empty())
+                descriptors += ',';
+            descriptors += "{\"id\":" + std::to_string(id) +
+                           ",\"bits\":" + std::to_string(TYPE_PRECISION(TREE_TYPE(value))) +
+                           ",\"signed\":" + (TYPE_UNSIGNED(TREE_TYPE(value)) ? "false" : "true") +
+                           '}';
+            values.push_back(fold_convert(long_long_unsigned_type_node, lower_node(value)));
+        }
+        operation = "{\"op\":\"qbind\",\"instruction\":" + operation +
+                    ",\"parameters\":" + descriptors + "]}";
+        instructions.push_back(operation);
+        if (!apply_values_fn) {
+            apply_values_fn =
+                build_fn_decl("__cket_apply_values",
+                              build_varargs_function_type_list(long_long_unsigned_type_node,
+                                                               build_pointer_type(char_type_node),
+                                                               long_long_unsigned_type_node,
+                                                               NULL_TREE));
+            TREE_PUBLIC(apply_values_fn) = DECL_EXTERNAL(apply_values_fn) =
+                DECL_ARTIFICIAL(apply_values_fn) = 1;
+        }
+        std::vector<tree> arguments = {
+            build_string_literal(operation.size() + 1, operation.c_str()), constant(values.size())};
+        arguments.insert(arguments.end(), values.begin(), values.end());
+        return build_call_expr_loc_array(loc, apply_values_fn, arguments.size(), arguments.data());
+    }
     instructions.push_back(operation);
     tree &fn = argument ? apply_arg_fn : apply_fn;
     if (!fn) {
@@ -173,19 +225,76 @@ std::string type_json(tree type) {
            ",\"signed\":" + (TYPE_UNSIGNED(type) ? "false" : "true");
 }
 
+std::string cpu_parameter(tree value) {
+    auto found = cpu_parameter_ids.find(value);
+    if (found == cpu_parameter_ids.end()) {
+        unsigned id = cpu_parameter_values.size();
+        cpu_parameter_values.push_back(value);
+        found = cpu_parameter_ids.emplace(value, id).first;
+    }
+    active_cpu_parameters.insert(found->second);
+    return "{\"op\":\"parameter\",\"id\":" + std::to_string(found->second) +
+           type_json(TREE_TYPE(value)) + '}';
+}
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
     auto code = TREE_CODE(value);
+    // GCC inserts scalar UBSan handlers before this pass. In a coherent arm,
+    // pure arithmetic belongs to the circuit, whose backend checks definedness.
+    // Executing a host handler would eagerly evaluate an inactive branch.
+    if (coherent_expression_depth && code == COMPOUND_EXPR &&
+        gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)) &&
+        quantum_pure_expression(TREE_OPERAND(value, 1)))
+        return expression(TREE_OPERAND(value, 1), deps);
+    if (code != INTEGER_CST && !has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+        tree inner = value;
+        while (CONVERT_EXPR_P(inner) || TREE_CODE(inner) == NON_LVALUE_EXPR)
+            inner = TREE_OPERAND(inner, 0);
+        tree effect_source = inner;
+        while (TREE_CODE(effect_source) == SAVE_EXPR)
+            effect_source = TREE_OPERAND(effect_source, 0);
+        bool effect = TREE_SIDE_EFFECTS(effect_source) || TREE_THIS_VOLATILE(effect_source);
+        if (coherent_expression_depth && quantum_pure_expression(value))
+            effect = false;
+        bool captured = cpu_library_saves.count(inner);
+        if (effect && (!captured || !controls.empty() || coherent_expression_depth)) {
+            error_at(
+                at(value),
+                "|c>: CPU effects in quantum expressions require once-only capture outside coherent control");
+            return "{}";
+        }
+        tree leaf = inner;
+        while (TREE_CODE(leaf) == SAVE_EXPR)
+            leaf = TREE_OPERAND(leaf, 0);
+        // Pure arithmetic in a coherent arm is lowered lazily on the quantum
+        // side. Eager CPU evaluation could otherwise execute inactive UB.
+        if (TREE_CODE(inner) != INTEGER_CST &&
+            (!coherent_expression_depth || TREE_CODE(leaf) == VAR_DECL)) {
+            if (TYPE_PRECISION(TREE_TYPE(value)) > 64) {
+                error_at(at(value),
+                         "|c>: CPU integer expression bindings currently require at most 64 bits");
+                return "{}";
+            }
+            return cpu_parameter(value);
+        }
+    }
     if (code == SAVE_EXPR) {
         auto cached = expression_saves.find(value);
         if (cached == expression_saves.end()) {
             std::set<unsigned> sources;
+            std::set<unsigned> previous;
+            previous.swap(active_cpu_parameters);
             std::string result = expression(TREE_OPERAND(value, 0), sources);
-            cached = expression_saves.emplace(value, std::make_pair(result, sources)).first;
+            SavedExpression saved{result, sources, active_cpu_parameters};
+            active_cpu_parameters.insert(previous.begin(), previous.end());
+            cached = expression_saves.emplace(value, saved).first;
         }
-        deps.insert(cached->second.second.begin(), cached->second.second.end());
-        return cached->second.first;
+        deps.insert(cached->second.sources.begin(), cached->second.sources.end());
+        active_cpu_parameters.insert(cached->second.parameters.begin(),
+                                     cached->second.parameters.end());
+        return cached->second.text;
     }
     if (code == NON_LVALUE_EXPR)
         return expression(TREE_OPERAND(value, 0), deps);
@@ -360,9 +469,22 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     for (int i = 0; i < arity; ++i) {
         if (i)
             result += ',';
+        bool coherent_arm =
+            i && ((code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
+                   code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR) &&
+                  has_quantum(TREE_OPERAND(value, 0)));
+        coherent_expression_depth += coherent_arm;
         result += expression(TREE_OPERAND(value, i), deps);
+        coherent_expression_depth -= coherent_arm;
     }
     return result + "]}";
+}
+
+std::string inverse_operation(unsigned id, const std::string &expression) {
+    return "{\"op\":\"quncompute\",\"id\":" + std::to_string(id) +
+           (expression.find("\"op\":\"parameter\"") != std::string::npos
+                ? ",\"saved\":true}"
+                : ",\"expr\":" + expression + '}');
 }
 
 std::string cast_result(std::string expr, Variable &var) {
@@ -400,10 +522,7 @@ void cleanup(tree *list) {
             if (!var.lowered || !var.derived || var.released || var.measured || var.moved ||
                 remaining[var.id] || dependent(var.id))
                 continue;
-            append(list,
-                   emit_operation("{\"op\":\"quncompute\",\"id\":" + std::to_string(var.id) +
-                                      ",\"expr\":" + var.creation + '}',
-                                  at(var.decl)));
+            append(list, emit_operation(inverse_operation(var.id, var.creation), at(var.decl)));
             append(list,
                    emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(var.id) + '}',
                                   at(var.decl)));
@@ -564,11 +683,11 @@ tree lower_quantum_decl(Variable &var) {
                                   ",\"expr\":" + var.creation + '}',
                               at(var.decl)));
     } else if (var.classical_init) {
+        std::string value = cpu_parameter(var.original_init);
         append(&list,
                emit_operation("{\"op\":\"qprepare\",\"id\":" + std::to_string(var.id) +
-                                  ",\"dynamic\":true}",
-                              at(var.decl),
-                              lower_node(var.original_init)));
+                                  ",\"expr\":" + value + '}',
+                              at(var.decl)));
     } else {
         append(&list,
                emit_operation("{\"op\":\"qprepare\",\"id\":" + std::to_string(var.id) +
@@ -911,10 +1030,7 @@ tree lower_node(tree value) {
         append(&list, lower_node(TREE_OPERAND(value, 2)));
         controls.pop_back();
         variables.erase(key);
-        append(&list,
-               emit_operation("{\"op\":\"quncompute\",\"id\":" + std::to_string(flag) +
-                                  ",\"expr\":" + predicate + '}',
-                              at(value)));
+        append(&list, emit_operation(inverse_operation(flag, predicate), at(value)));
         append(
             &list,
             emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(flag) + '}', at(value)));

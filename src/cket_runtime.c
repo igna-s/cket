@@ -2,6 +2,7 @@
 #include "quantum.h"
 #include <errno.h>
 #include <inttypes.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
@@ -55,6 +56,23 @@ uint64_t __cket_apply_arg(const char *operation, uint64_t argument) {
     if (!qc_apply_arg(engine, operation, argument))
         fail();
     return 0;
+}
+
+unsigned long long __cket_apply_values(const char *operation, unsigned long long count, ...) {
+    uint64_t values[128], result;
+    if (!count || count > 128) {
+        fputs("|c> runtime: CPU binding count must be 1..128\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    va_list arguments;
+    va_start(arguments, count);
+    for (unsigned long long i = 0; i < count; ++i)
+        values[i] = va_arg(arguments, unsigned long long);
+    va_end(arguments);
+    start_engine();
+    if (!qc_apply_bound(engine, operation, values, (size_t)count, &result))
+        fail();
+    return result;
 }
 
 uint64_t __cket_apply_phase(const char *operation, double angle) {

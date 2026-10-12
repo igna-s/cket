@@ -2,6 +2,7 @@
 // Quantum function definitions are templates whose effects are checked again
 // at each caller by the ordinary quantum semantic pass.
 tree expand_quantum_program(tree value);
+bool standard_integer_division(tree fn);
 std::map<tree, std::map<std::string, tree>> quantum_products;
 
 struct QuantumReference {
@@ -33,9 +34,14 @@ bool quantum_pure_expression(tree value) {
         return true;
     if (quantum(value) || CONSTANT_CLASS_P(value) || TYPE_P(value))
         return true;
+    if (!has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value)) && !TREE_SIDE_EFFECTS(value) &&
+        !TREE_THIS_VOLATILE(value) && !TYPE_VOLATILE(TREE_TYPE(value)))
+        return true;
     if (DECL_P(value))
         return TREE_CODE(value) == VAR_DECL && !TREE_THIS_VOLATILE(value);
     auto code = TREE_CODE(value);
+    if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
+        return quantum_pure_expression(TREE_OPERAND(value, 1));
     if (code == CALL_EXPR || code == MODIFY_EXPR || code == INIT_EXPR || code == COMPOUND_EXPR ||
         code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
         code == POSTDECREMENT_EXPR || code == ADDR_EXPR)
@@ -521,6 +527,37 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
 // Fixed arrays and structures become independently owned scalar registers.
 unsigned expanded_product_leaves = 0;
 
+tree classical_product_constructor(tree type, tree value, unsigned &nodes) {
+    if (++nodes > 4096) {
+        error_at(at(value), "|c>: classical product preparation exceeds 4096 nodes");
+        return NULL_TREE;
+    }
+    if (TREE_CODE(type) != ARRAY_TYPE && TREE_CODE(type) != RECORD_TYPE)
+        return value;
+    vec<constructor_elt, va_gc> *elements = NULL;
+    if (TREE_CODE(type) == ARRAY_TYPE) {
+        uint64_t count = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
+        for (uint64_t i = 0; i < count; ++i) {
+            tree index = size_int(i);
+            tree selected = build4(ARRAY_REF, TREE_TYPE(type), value, index, NULL_TREE, NULL_TREE);
+            tree child = classical_product_constructor(TREE_TYPE(type), selected, nodes);
+            if (!child)
+                return NULL_TREE;
+            CONSTRUCTOR_APPEND_ELT(elements, index, child);
+        }
+    } else {
+        for (tree field = TYPE_FIELDS(type); field; field = DECL_CHAIN(field))
+            if (TREE_CODE(field) == FIELD_DECL) {
+                tree selected = build3(COMPONENT_REF, TREE_TYPE(field), value, field, NULL_TREE);
+                tree child = classical_product_constructor(TREE_TYPE(field), selected, nodes);
+                if (!child)
+                    return NULL_TREE;
+                CONSTRUCTOR_APPEND_ELT(elements, field, child);
+            }
+    }
+    return build_constructor(type, elements);
+}
+
 tree constructor_element(tree init, tree key, uint64_t number, bool array) {
     if (!init || TREE_CODE(init) != CONSTRUCTOR)
         return NULL_TREE;
@@ -545,6 +582,32 @@ void product_leaves(
     if (++expanded_product_leaves > 4096) {
         error_at(at(original), "|c>: fixed quantum product expansion exceeds 4096 nodes");
         return;
+    }
+    if (TREE_CODE(type) == RECORD_TYPE && init && TREE_CODE(init) != CONSTRUCTOR) {
+        tree call = strip(init);
+        if (call && TREE_CODE(call) == CALL_EXPR &&
+            standard_integer_division(get_callee_fndecl(call)) && has_quantum(call))
+            init = expand_quantum_program(call);
+    }
+    if (TREE_CODE(type) == RECORD_TYPE && init && TREE_CODE(init) != CONSTRUCTOR) {
+        if (has_quantum(init)) {
+            error_at(at(original),
+                     "|c>: quantum product preparation cannot implicitly copy quantum storage");
+            return;
+        }
+        tree temporary = build_decl(at(original),
+                                    VAR_DECL,
+                                    get_identifier("__cket_product_input"),
+                                    TYPE_MAIN_VARIANT(type));
+        DECL_CONTEXT(temporary) = active_function;
+        DECL_INITIAL(temporary) = init;
+        DECL_CHAIN(temporary) = *vars;
+        *vars = temporary;
+        append(list, build1(DECL_EXPR, void_type_node, temporary));
+        unsigned nodes = 0;
+        init = classical_product_constructor(type, temporary, nodes);
+        if (!init)
+            return;
     }
     if (TREE_CODE(type) == ARRAY_TYPE) {
         uint64_t count = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
@@ -736,18 +799,47 @@ bool standard_integer_division(tree fn) {
     return name == "div" || name == "ldiv" || name == "lldiv" || name == "imaxdiv";
 }
 
+tree snapshot_classical_leaves(tree value, std::map<tree, tree> &captures) {
+    if (!value || CONSTANT_CLASS_P(value) || TYPE_P(value))
+        return value;
+    auto code = TREE_CODE(value);
+    if (!has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value)) &&
+        (code == VAR_DECL || code == ARRAY_REF || code == COMPONENT_REF || code == INDIRECT_REF)) {
+        auto found = captures.find(value);
+        if (found == captures.end()) {
+            tree saved = save_expr(value);
+            cpu_library_saves.insert(saved);
+            found = captures.emplace(value, saved).first;
+        }
+        return found->second;
+    }
+    if (DECL_P(value) || !EXPR_P(value))
+        return value;
+    tree result = copy_node(value);
+    for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
+        TREE_OPERAND(result, i) = snapshot_classical_leaves(TREE_OPERAND(value, i), captures);
+    return result;
+}
+
 tree expand_integer_division(tree call) {
     if (call_expr_nargs(call) != 2 ||
         (!has_quantum(CALL_EXPR_ARG(call, 0)) && !has_quantum(CALL_EXPR_ARG(call, 1))))
         return NULL_TREE;
+    std::map<tree, tree> captures;
+    tree arguments[2];
     for (unsigned i = 0; i < 2; ++i) {
         tree argument = CALL_EXPR_ARG(call, i);
-        if (has_quantum(argument) ? !quantum_pure_expression(argument)
-                                  : TREE_CODE(strip(argument)) != INTEGER_CST) {
+        if (has_quantum(argument) && !quantum_pure_expression(argument)) {
             error_at(
                 at(call),
-                "|c>: quantum integer-division library arguments currently require pure quantum expressions or classical constants; runtime CPU arguments need once-only capture");
+                "|c>: quantum integer-division arguments currently require pure quantum expressions; effectful quantum arguments need sequenced capture");
             return call;
+        }
+        if (has_quantum(argument))
+            arguments[i] = snapshot_classical_leaves(argument, captures);
+        else {
+            arguments[i] = save_expr(argument);
+            cpu_library_saves.insert(arguments[i]);
         }
     }
     tree type = TREE_TYPE(call);
@@ -767,8 +859,8 @@ tree expand_integer_division(tree call) {
             error_at(at(call), "|c>: integer-division library product layout is unsupported");
             return call;
         }
-        tree numerator = fold_convert(field_type, CALL_EXPR_ARG(call, 0)),
-             denominator = fold_convert(field_type, CALL_EXPR_ARG(call, 1));
+        tree numerator = fold_convert(field_type, arguments[0]),
+             denominator = fold_convert(field_type, arguments[1]);
         // Do not fold remainder by minus one to zero: the complete C call is
         // undefined when its quotient is not representable, even if unused.
         tree value = build2_loc(at(call),
@@ -1132,6 +1224,7 @@ tree expand_quantum_program(tree value) {
         }
         if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl)) &&
             (TREE_CODE(type) == ARRAY_TYPE || TREE_CODE(type) == RECORD_TYPE)) {
+            tree list = alloc_stmt_list(), vars = NULL_TREE;
             tree initial = DECL_INITIAL(decl);
             tree call = strip(initial);
             if (call && TREE_CODE(call) == CALL_EXPR &&
@@ -1151,13 +1244,13 @@ tree expand_quantum_program(tree value) {
                                            : 0));
                 initial = build_constructor(type, elts);
             }
-            if (initial && TREE_CODE(initial) != CONSTRUCTOR) {
+            if (initial && TREE_CODE(initial) != CONSTRUCTOR &&
+                (TREE_CODE(type) != RECORD_TYPE || has_quantum(initial))) {
                 error_at(
                     at(decl),
                     "|c>: whole quantum product assignment cannot implicitly copy storage; initialize or move individual elements");
                 return value;
             }
-            tree list = alloc_stmt_list(), vars = NULL_TREE;
             product_leaves(decl, type, initial, "", &list, &vars);
             DECL_INITIAL(decl) = NULL_TREE;
             return expand_quantum_program(build3(BIND_EXPR, void_type_node, vars, list, NULL_TREE));

@@ -56,7 +56,7 @@ typedef struct qc_module_cache {
 } qc_module_cache;
 
 struct qc_context {
-    int simulate, validation, ignore_measurements, allow_tables;
+    int simulate, validation, structural, ignore_measurements, allow_tables;
     unsigned symbolic_work;
     int recording;
     unsigned module_depth;

@@ -1,8 +1,8 @@
 # C11 integer division: quantum products and table-free synthesis
 
 `div`, `ldiv`, `lldiv` and `imaxdiv` have partial quantum adapters for direct calls with pure
-integer arguments. This advances [M2/M4/M7](c11-roadmap.md). General product ABIs, runtime CPU
-argument capture and complete C11 library compatibility remain open.
+integer arguments. This advances [M2/M4/M7](c11-roadmap.md). General quantum product ABIs and
+complete C11 library compatibility remain open.
 
 ## Standard values and reversible meaning
 
@@ -28,19 +28,20 @@ lifetimes.
 
 Actual external system declarations are recognized. Private functions with the same name retain
 their own behavior. Calls with entirely classical arguments continue through GCC/libc, including
-ordinary once-only evaluation of argument side effects. Quantum calls currently require pure quantum
-expressions or classical constants. Runtime CPU values and effectful quantum arguments need a
-once-only capture implementation (**P**); the adapter rejects them rather than evaluating arguments
-separately for each field.
+ordinary once-only evaluation of argument side effects. Quantum calls require pure quantum
+expressions and [captured CPU integer values](c11-bindings.md). CPU arguments may include increments
+or ordinary calls outside coherent control; their values are evaluated once and retained for both
+fields. Effectful quantum arguments still need sequenced capture (**P**).
 
 The adapter is selected when at least one argument carries quantum data. Importing an entirely
-classical product result into fresh quantum product storage remains **P**, including
-`quant div_t result = div(6,2)`. This restriction concerns the product preparation path; ordinary
-classical calls remain available.
+classical product result into fresh quantum product storage now snapshots that result and prepares
+its fields, including `quant div_t result = div(6,2)`. Resource limits still apply to the full
+result; classical calls remain available.
 
 A quantum product or projected value cannot initialize CPU storage implicitly. Its quantum fields
 must be measured explicitly before their values can be used as classical scalars or assembled into a
-classical structure. Indirect calls and general product imports remain part of the pending ABI.
+classical structure. Indirect calls and general quantum product returns remain part of the pending
+ABI.
 
 For each field, the adapter restores the standard parameter type before constructing the division
 expression. For example, narrowing `div(a,b).quot` to `uint8_t` does not change the call's signed
@@ -87,9 +88,9 @@ prohibition.
 Native state simulation is limited to 24 qubits (**R**). Full `div_t` products therefore have
 circuit-generation evidence, while small projections have complete state comparisons. General 64-bit
 variable division still needs a wider remainder workspace and resource expansion (**P/R**). Sharing
-the two field computations, retained-history assignments, dynamic CPU capture and full
-interprocedural product composition remain **P**. No hidden destructive operation is used to reduce
-these costs.
+the two field computations, retained-history assignments, effectful quantum argument capture and
+full interprocedural product composition remain **P**. No hidden destructive operation is used to
+reduce these costs.
 
 ## Reproducible validation
 
@@ -106,13 +107,15 @@ these costs.
   conversions and 10 private-homonym executions. Measurements and resets in numeric fixtures are
   explicit; they are separate evidence from the coherent state tests.
 - 80 wide scalar circuit generations, 40 complete-product resource contracts and 160 negative
-  diagnostics for zero, overflow, runtime CPU capture and side effects. Negative cases require the
-  expected semantic diagnostic and reject infrastructure faults.
+  diagnostics for zero, overflow and unbound CPU inputs during static export. Negative cases require
+  the expected semantic diagnostic and reject infrastructure faults.
 
 Three additional exported QASM circuits are compared with pinned QuEST 3.7.0: constant division with
 both projections, coherent variable-denominator division, and signed rounding/remainder. These
-extend the finite external corpus to 25 state comparisons and three sampled channels. Wide
-generation is not counted as externally validated execution or hardware execution.
+extended the finite external corpus to 25 state comparisons and three sampled channels. The
+[CPU-binding stage](c11-bindings.md) adds two state comparisons, reaching 27 states and three
+sampled channels. Wide generation is not counted as externally validated execution or hardware
+execution.
 
 ```bash
 export CC=gcc-11 CXX=g++-11

@@ -187,11 +187,13 @@ def semantics(header, name, kind, optional):
             "partial",
             ["P", "R"],
             "M2/M4/M7",
-            ["tests/validate_division.c", "tests/validate_qasm.c"],
+            ["tests/validate_division.c", "tests/validate_bindings.c", "tests/validate_qasm.c"],
             "Input-preserving signed integer quotient/remainder products and scalar projections "
             "retain the standard parameter/field types and require a defined C domain. Pure quantum "
-            "arguments or classical constants are adapted; runtime CPU capture and effectful quantum "
-            "arguments remain pending. Constant power-of-two lowering is table-free. Full div_t "
+            "arguments and once-only CPU integer inputs are adapted; effectful quantum arguments "
+            "need sequenced capture. Classical structure results can prepare fresh quantum fields. "
+            "Unbound templates have structural validation only; numerical synthesis requires values. "
+            "Constant power-of-two lowering is table-free. Full div_t "
             "products can be generated on the declared target; two 64-bit fields plus a live input "
             "exceed the current 128-qubit representation. Small complete phased states and inverse "
             "are validated separately from wide circuit generation. General product ABI, library "
