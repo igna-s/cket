@@ -347,7 +347,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         allowed = fourier;
     else if (cj_equal(d, op, "qmeasure"))
         allowed = measure;
-    else if (cj_equal(d, op, "qrelease") || cj_equal(d, op, "qreset"))
+    else if (cj_equal(d, op, "qrelease") || cj_equal(d, op, "qreset") ||
+             cj_equal(d, op, "qretain") || cj_equal(d, op, "qhistory_end"))
         allowed = simple;
     else if (cj_equal(d, op, "qmove"))
         allowed = move;

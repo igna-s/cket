@@ -85,8 +85,6 @@ static void composition_cases(void) {
         {"quantum product outside bounds", "quant uint8_t a[2]={1,2};measure(a[2]);"},
         {"quantum element use after move",
          "quant uint8_t a[2]={1,2};quant uint8_t b=a[1];measure(a[1]);measure(a[0]);measure(b);"},
-        {"destructive quantum field write",
-         "struct S{uint8_t x;};quant struct S s={7};s.x=0;measure(s.x);"},
         {"quantum structure with pointer field", "struct S{uint8_t *p;};quant struct S s;"},
         {"quantum union", "union S{uint8_t x,y;};quant union S s;"},
         {"quantum variable length array", "int n=2;quant uint8_t a[n];"},
@@ -98,6 +96,10 @@ static void composition_cases(void) {
         snprintf(name, sizeof name, "reject %s", invalid[i].name);
         report(name, compile(invalid[i].source, "--emit-ir", 0));
     }
+    report("versioned quantum field overwrite",
+           compile("struct S{uint8_t x;};quant struct S s={7};s.x=0;return measure(s.x)!=0;",
+                   "--run",
+                   1));
     qc_context *c = state(
         "#include <quantum.h>\nquant bool p(quant const uint8_t x){return x*x==9;}\nint main(void){quant uint8_t x=superposition(0,15);quant uint8_t a=find(x,p(x));measure(a);}\n");
     int ok = c && close_to(probability(c, 3), .9613189697265625);

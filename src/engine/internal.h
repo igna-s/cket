@@ -23,7 +23,7 @@ typedef struct {
     uint32_t id;
     unsigned width, wires[64];
     uint64_t epoch;
-    int alive, clean, prepared, ancillary;
+    int alive, clean, prepared, ancillary, history;
     int signed_type, basis_known, uniform;
     uint64_t basis_value, zero_mask, uniform_upper;
     char *definition;
@@ -70,7 +70,8 @@ struct qc_context {
     size_t nregisters, register_capacity;
     qc_gate *gates;
     size_t ngates, gate_capacity;
-    unsigned physical, free_wires[QC_MAX_PHYSICAL], nfree, logical_peak, ancillary_peak;
+    unsigned physical, free_wires[QC_MAX_PHYSICAL], nfree, logical_peak, ancillary_peak,
+        history_peak;
     unsigned depths[QC_MAX_PHYSICAL], depth;
     uint64_t h, x, cx, ccx, mcx, phase, global_phase, measure, reset, rng;
     double complex *state;

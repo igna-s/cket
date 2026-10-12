@@ -69,9 +69,9 @@ Exceeding a budget is an explicit resource restriction (**R**).
 
 The separate QASM campaign adds three small complete-state comparisons with QuEST: guarded
 conditional division, short-circuit division and conditional signed negation/complement, each with
-relative phase. Its current suite comprises 22 states and three sampled measurement/reset channels.
-These comparisons use an independent QASM reader and simulator; the ordinary-C references above
-separately check language results.
+relative phase. The full state/channel counts belong to the
+[current campaign archive](audit-evidence/README.md). These comparisons use an independent QASM
+reader and simulator; the ordinary-C references above separately check language results.
 
 Run `CC=gcc-11 CXX=g++-11 bash scripts/verify.sh` for normal and ASan/UBSan checks. The
 [current archive](audit-evidence/README.md) identifies completed campaigns and their source hashes.

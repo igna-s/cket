@@ -25,9 +25,18 @@ it. GCC remains the sole C parser.
   result.
 - Controls require available Boolean registers. Contradictory controls and control/target aliases
   are rejected.
-- `qmeasure`, `qreset`, `qprepare`, `qalloc`, and `qrelease` do not accept a coherent control field.
+- `qmeasure`, `qreset`, `qprepare`, `qalloc`, `qrelease`, `qretain` and `qhistory_end` do not accept
+  a coherent control field.
 - Phase angles must be representable finite numbers.
 - Documents check format, version, header fields, and balanced CPU control markers.
+
+`qretain` and `qhistory_end` accept only `op` and the register `id`. Retaining a prepared value
+marks its history lifetime without changing gates or its value version; live inverse borrows remain
+valid. Ending history requires no live dependents. A known basis root is restored to zero with X
+gates and released; an unknown root remains allocated as a joint output until context end. There is
+no implicit measurement, reset or partial trace. Derived history instead uses the ordinary saved
+inverse and clean release. Current/peak retained qubits are included in existing resource totals.
+See [history contracts](c11-history.md) for compiler scope and remaining control/memory obligations.
 
 Structural branch checking does not force its arithmetic to execute. Domain evaluation preserves C
 short-circuit semantics: division in an unselected branch is not executed.

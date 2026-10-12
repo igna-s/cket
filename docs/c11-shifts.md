@@ -60,8 +60,9 @@ impossible. Better workspace scheduling and wider backends remain P/R.
 
 Two additional QASM cases compare small generated states independently with QuEST: an unsigned
 variable left shift with relative phase and a signed variable right shift followed by Boolean
-conversion. The complete external campaign contains twenty-two state comparisons and three sampled
-channels. Wide circuit generation is labelled separately from state validation.
+conversion. The complete external state/channel counts are recorded in the
+[current campaign archive](audit-evidence/README.md). Wide circuit generation is labelled separately
+from state validation.
 
 Run `CC=gcc-11 CXX=g++-11 bash scripts/verify.sh` for normal and ASan/UBSan campaigns. The archive
 under `docs/audit-evidence/` identifies the tested working tree and results; the paper's older

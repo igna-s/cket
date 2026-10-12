@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 285,
+  "checks": 287,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -514,6 +514,11 @@
     },
     {
       "check": "Fuente local docs/c11-expressions.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-history.md",
       "passed": true,
       "detail": ""
     },
@@ -1038,6 +1043,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_history.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_inplace.c",
       "passed": true,
       "detail": ""
@@ -1434,9 +1444,9 @@
     }
   ],
   "audit_checkout": {
-    "head": "d18a873edbffef084a6f362b2f525959b8679feb",
+    "head": "50ea73b8318490dd641c91913badba4aa35e79a3",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 123
+    "source_files_in_manifest": 125
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required."

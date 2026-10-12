@@ -67,7 +67,13 @@ static const test_case
              {"CPU-bound library division",
               "quant bool n=superposition(0,1);if(n)phase(.31);int d=2;quant uint8_t q=div((int)n+5,d).quot;quant uint8_t r=div((int)n+5,d).rem;measure(q);measure(r);measure(n);"},
              {"saved CPU snapshot inverse",
-              "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t y=n+a;++a;if(y==6)phase(.31);measure(n);"}};
+              "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t y=n+a;++a;if(y==6)phase(.31);measure(n);"},
+             {"derived history cleanup",
+              "quant bool n=superposition(0,1);quant bool x=!n;if(n)phase(.31);x+=1;if(x)phase(.17);measure(x);measure(n);"},
+             {"retained byte history preserves relative phases",
+              "quant uint8_t x=superposition(0,3);if(x&2)phase(.19);x&=1;if(x&1)phase(.31);measure(x);"},
+             {"history CPU snapshot inverse",
+              "quant bool n=superposition(0,1);quant bool x=!n;int d=1;x/=d;++d;if(x)phase(.31);measure(n);return d!=2;"}};
 static const test_case channels[] = {
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},
@@ -181,9 +187,10 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
         body = module;
     }
     reference_circuit c;
-    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")   ? 2
-                             : !strcmp(test->name, "saved CPU snapshot inverse") ? 5
-                                                                                 : 0;
+    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")     ? 2
+                             : !strcmp(test->name, "saved CPU snapshot inverse")   ? 5
+                             : !strcmp(test->name, "history CPU snapshot inverse") ? 1
+                                                                                   : 0;
     exported(v, body, ir, &c, binding_value);
     char *text = validation_read(ir);
     cj_doc d = {0};

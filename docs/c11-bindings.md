@@ -146,5 +146,6 @@ The binding suite distinguishes complete phased states with saved inverse, typed
 conversions, rejection before mutation, C executions/diagnostics at five GCC levels with both
 builtin settings, and complete-state comparisons of specialized C documents. Measurements in C
 execution fixtures are explicit. The external QASM corpus adds CPU-bound division and cleanup after
-CPU mutation, reaching 27 states and three sampled channels with pinned QuEST 3.7.0. Neither
-structural validation nor wide generation is counted as externally validated hardware execution.
+CPU mutation with pinned QuEST 3.7.0. Current corpus totals are recorded in the
+[campaign archive](audit-evidence/README.md). Neither structural validation nor wide generation is
+counted as externally validated hardware execution.

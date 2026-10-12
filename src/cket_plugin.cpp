@@ -42,6 +42,8 @@ struct Variable {
     std::string creation;
     std::set<unsigned> dependencies;
     bool basis_known = false;
+    bool history = false;
+    bool pending_destruction = false;
     bool pristine_uniform = false;
 };
 

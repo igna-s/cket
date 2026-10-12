@@ -112,9 +112,9 @@ boundary, and a positive static-for case combines control and memory copying.
 
 Wide 16/32/64-bit checks are generation evidence, not complete-state validation. Four independent
 QuEST cases contrast controlled copying, signed object bits, exact-alias interference and copying
-from a coherent source that is subsequently uncomputed. The current external suite contains 22 state
-comparisons and three sampled channels; the papers retain their separately identified historical
-evaluation.
+from a coherent source that is subsequently uncomputed. The full state/channel counts belong to the
+[current campaign archive](audit-evidence/README.md); the papers retain their separately identified
+historical evaluation.
 
 Run `CC=gcc-11 CXX=g++-11 bash scripts/verify.sh` for the normal and ASan/UBSan campaign. Completed
 results and source hashes belong in the [evidence archive](audit-evidence/README.md). All

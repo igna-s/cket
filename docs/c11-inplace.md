@@ -30,8 +30,9 @@ derived result still needs a composable inverse certificate and remains pending 
 
 An affine map is invertible modulo `2^w` when `a` is odd: its coefficient has a modular inverse. Its
 inverse is `a^-1*y - a^-1*b` modulo that same word size. An even coefficient is not injective on the
-complete word space. A useful restricted-support extension or retained history may still implement
-the C assignment; these mechanisms remain pending, rather than physically impossible.
+complete word space. [Retained history](c11-history.md) implements unconditional scalar assignments
+through a fresh output while preserving the old value. Restricted-support extensions and general
+versioned control/memory remain pending.
 
 The generated multiplier writes no copy. Let `delta = a - 1`, which is even. For input bit `i`,
 taken in descending order, conditionally add `delta*2^i`. That addition affects only bits above `i`,
@@ -101,8 +102,8 @@ additional operations. These are logical counts, not a physical gate or timing c
 
 Wide generation checks do not validate those complete large states. The separate QASM campaign adds
 independent QuEST states for controlled affine arithmetic, rotation/complement and signed affine
-updates after Fourier. Its current suite has 22 state comparisons and three sampled
-measurement/reset channels.
+updates after Fourier. The full state/channel counts belong to the
+[current campaign archive](audit-evidence/README.md).
 
 Run `CC=gcc-11 CXX=g++-11 bash scripts/verify.sh` for normal and ASan/UBSan checks. The
 [archive](audit-evidence/README.md) identifies completed campaigns by source hash. The papers keep
@@ -111,9 +112,10 @@ their separate historical evaluation.
 ## Remaining coverage
 
 General nonlinear injective functions, variable quantum/CPU factors, full dynamic indexed updates,
-all signed range correlations, expression-valued assignments and increments, and automatic
-retained-history transformations remain **P**. Wider representations and proof/gate/storage budgets
-are **P/R**. The rejection of a noninjective full-space map does not rule out a proven support
-extension. Erasing distinguishable inputs without retained information or an explicit channel is an
-incompatible context (**S**), not a reason to remove C assignment or a whole library family from the
-final objective.
+all signed range correlations, expression-valued assignments and increments, and general
+retained-history transformations remain **P**. Unconditional scalar history is partial; coherent
+joins and runtime iterations still require implementation. Wider representations and
+proof/gate/storage budgets are **P/R**. The rejection of a noninjective full-space map does not rule
+out a proven support extension. Erasing distinguishable inputs without retained information or an
+explicit channel is an incompatible context (**S**), not a reason to remove C assignment or a whole
+library family from the final objective.

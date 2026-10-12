@@ -1293,7 +1293,7 @@ int qc_apply_token(qc_context *c,
     qc_register *r = reg(c, (uint32_t)id);
     if (!r || !r->alive)
         return qc_fail(c, "use of unknown or released quantum storage");
-    if (!cj_equal(d, op, "qmove") && !unborrowed(c, r->id))
+    if (!cj_equal(d, op, "qmove") && !cj_equal(d, op, "qretain") && !unborrowed(c, r->id))
         return 0;
     if (cj_equal(d, op, "qxor_inplace")) {
         if (r->definition)
@@ -1496,6 +1496,33 @@ int qc_apply_token(qc_context *c,
     }
     if (cj_equal(d, op, "qrelease"))
         return release(c, r);
+    if (cj_equal(d, op, "qretain")) {
+        if (!r->prepared)
+            return qc_fail(c, "retained history requires prepared storage");
+        r->history = 1;
+        unsigned history = 0;
+        for (size_t i = 0; i < c->nregisters; ++i)
+            if (c->registers[i].alive && c->registers[i].history)
+                history += c->registers[i].width;
+        if (history > c->history_peak)
+            c->history_peak = history;
+        return 1;
+    }
+    if (cj_equal(d, op, "qhistory_end")) {
+        if (!r->history || !unborrowed(c, r->id))
+            return qc_fail(c, "history lifetime cannot end with live dependencies");
+        if (!r->basis_known)
+            return 1; /* Keep unknown history until the context ends. */
+        uint64_t basis = r->basis_value;
+        for (unsigned bit = 0; bit < r->width; ++bit)
+            if ((basis >> bit) & 1)
+                if (!qc_emit(c, QC_X, r->wires[bit], 0, 0, 0))
+                    return 0;
+        r->clean = 1;
+        r->basis_value = 0;
+        r->zero_mask = bits_mask(r->width);
+        return release(c, r);
+    }
     if (cj_equal(d, op, "qadd_inplace") || cj_equal(d, op, "qadd_register") ||
         cj_equal(d, op, "qinplace")) {
         if (c->structural) {
@@ -1741,6 +1768,16 @@ void qc_resources(const qc_context *c, FILE *f) {
             c->logical_peak,
             c->ancillary_peak,
             c->physical);
+    if (c->history_peak) {
+        unsigned history = 0;
+        for (size_t i = 0; i < c->nregisters; ++i)
+            if (c->registers[i].alive && c->registers[i].history)
+                history += c->registers[i].width;
+        fprintf(f,
+                "Retained history: %u current, %u peak qubits (included above)\n",
+                history,
+                c->history_peak);
+    }
     const char *names[] = {
         "H", "X", "CNOT", "Toffoli", "MCX", "PHASE", "GLOBAL_PHASE", "MEASURE", "RESET"};
     uint64_t counts[] = {

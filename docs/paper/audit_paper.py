@@ -287,6 +287,7 @@ def main(language):
                 'docs/c11-memcopy.md',
                 'docs/c11-division.md',
                 'docs/c11-bindings.md',
+                'docs/c11-history.md',
                 'docs/audit-validation.md',
                 'CONTRIBUTING.md',
                 '.clang-format',

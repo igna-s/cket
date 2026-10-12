@@ -19,12 +19,12 @@ Source hashes are captured when archiving; the script does not monitor source ch
 compilation. Run verification and archival without intervening compiler/runtime/test changes. The
 archive script checks completed stage results before copying them. Preserve an existing archive
 before rerunning it if comparing campaigns. This is finite evidence for the implemented subset and
-twenty-seven state/three channel comparisons with QuEST, not proof of all C11/library semantics or
+thirty state/three channel comparisons with QuEST, not proof of all C11/library semantics or
 hardware execution. The historical paper evidence remains in `docs/paper/evidence/` and belongs to a
 different fixed revision and campaign.
 
 The current campaign includes 55 shift checks, 97 pure-expression checks, 271 in-place checks and
-414 memory-copy checks, 990 integer-division checks, 399 CPU-binding checks and 18 validation-runner
-fault-injection checks in each configuration. Wide circuit-generation checks are not counted as
-complete state validation. The source manifest also records the formatting configuration, optional
-tool versions and CI workflow used for this source tree.
+414 memory-copy checks, 990 integer-division checks, 399 CPU-binding checks, 207 history checks and
+18 validation-runner fault-injection checks in each configuration. Wide circuit-generation checks
+are not counted as complete state validation. The source manifest also records the formatting
+configuration, optional tool versions and CI workflow used for this source tree.

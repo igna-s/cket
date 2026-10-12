@@ -60,18 +60,21 @@ classical cast.
 ### Destructive assignment and history
 
 An injective update may act in place. A noninjective update must preserve enough information to make
-the complete transformation reversible. The design is versioned ownership: evaluate the right-hand
-side once, retain the old storage as history, produce the new value in fresh storage, and update the
-owner and checked aliases consistently. Ancillas used to compute the new value are uncomputed with
-their still-available inputs.
+the complete transformation reversible. The partial implementation uses versioned ownership:
+evaluate the right-hand side once, retain the old storage as history, produce the new value in fresh
+storage, and update the owner and checked aliases consistently. Ancillas used to compute the new
+value are uncomputed with their still-available inputs.
 
 The old value itself cannot generally be erased by that cleanup. The lifetime and qubit cost of
 retained history must be visible in diagnostics and resource reports. A proposed history capability
 transfers or releases it only after a proved inverse, known basis restoration, or an explicitly
 requested destructive channel. Syntax for this capability is not implemented yet. Scope exit and
-`free` must not silently measure, reset or trace out dirty history. If history cannot be discharged,
-require an explicit operation or reject with its precise remaining obligation. Measure/reset
-channels remain explicit source operations.
+`free` must not silently measure, reset or trace out dirty history. The
+[implemented unconditional scalar path](c11-history.md) retains unknown root history as part of the
+joint output until context end, with current/peak qubits in resource reports. Derived versions and
+known-basis roots have checked cleanup. Source-level history capabilities, versioned control joins,
+runtime iterations and general memory updates remain P/R. Measure/reset channels remain explicit
+source operations.
 
 ### Floating and complex data
 
@@ -219,8 +222,8 @@ dependencies, not an invented delivery estimate.
 
 M2 now includes [preserved-input variable shifts](c11-shifts.md) with a table-free barrel network,
 clean private inverse, interval-definedness checks, small complete-state comparisons, wide exports
-and GCC composition tests. This advances one gate; expression-valued effects, destructive-write
-history, all assignments and the rest of M2 remain open.
+and GCC composition tests. This advances one gate; expression-valued effects, general write history,
+all assignments and the rest of M2 remain open.
 
 M2 also includes [pure integer expression synthesis](c11-expressions.md): negation, complement,
 logical short circuiting and conditional selection with branch-local definedness and clean private
@@ -232,8 +235,14 @@ flow.
 M2 now also includes [in-place bit/affine certificates](c11-inplace.md), with zero private qubits,
 proper Boolean truth conversion and an enforced table policy. Its 271 finite checks cover complete
 small states, inverse, C composition and wide generation; three more QuEST states contrast the
-emitted updates. Noninjective history, support extensions, expression-valued effects, all
+emitted updates. General noninjective history, support extensions, expression-valued effects, all
 assignments and the rest of M2 remain open.
+
+M2/M4 now include [unconditional versioned assignments](c11-history.md). The 207 checks distinguish
+complete phased domains and derived inverses, lifetime/ownership guards, compiled C integrations and
+specific pending-contract diagnostics. Three further table-free QuEST cases contrast derived
+cleanup, unknown retained outputs and CPU snapshot inverses. Versioned control joins, runtime
+iterations, general memory, history handles and expression-valued effects remain open.
 
 ## Search, external validation and GCC guarantees
 
@@ -264,8 +273,8 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is twenty-seven state cases
-and three sampled channels, not every generated circuit. Extend it to integrated library, memory,
+comparison, and external simulator comparison. Current QuEST coverage is thirty state cases and
+three sampled channels, not every generated circuit. Extend it to integrated library, memory,
 history and control workloads; state checks alone cannot validate intermediate measurement/reset
 channels.
 

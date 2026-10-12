@@ -70,9 +70,12 @@ computes a value conversion and preserves the input.
 Unsigned updates `x += k` and `x -= k` use reversible modular addition. Addition/subtraction between
 distinct unsigned registers preserves the source and uses direct synthesis without tables or
 ancillas. `x ^= y` and XOR with supported independent operands preserve information; CPU operands
-are evaluated once. Other updates are synthesized as permutations only when injective over the
-entire bit space. `x = x % 2`, destructive shifts, and overwrites of an unknown register are
-rejected. Updating a derived result requires another new result.
+are evaluated once. Certified injective updates can act on the existing register.
+[Unconditional versioned assignments](c11-history.md) also support remainder, destructive shifts,
+masks, even multiplication and constant overwrites. Updates of derived values or sources with live
+dependents compute into fresh storage and retain the previous version. A valid inverse or
+known-basis restoration releases history; unknown root history remains part of the joint output
+until the quantum context ends. Branch joins and runtime iterations still need version support.
 
 An effectful CPU operand, such as `x += measure(y)` or `x += ++n`, is evaluated once before updating
 x. The plugin preserves GCC's shared `SAVE_EXPR` and emits explicit measurement before addition in
@@ -89,10 +92,10 @@ padding, dynamic extents, mixed CPU boundaries and use of the returned pointer r
 
 In-place [bit permutations and affine word transformations](c11-inplace.md) have scalable
 certificates without truth tables or private qubits. An affine coefficient must be odd on the
-complete word space; useful restricted-support extensions and retained history for other assignments
-remain pending. C definedness is checked before gates, and Boolean assignments use truth
-normalization. The bounded fallback now respects disabled tables. Existing ownership and inverse
-dependencies still constrain mutable updates.
+complete word space; useful restricted-support extensions remain pending. Noninjective scalar
+assignments can instead use the unconditional history path. C definedness is checked before gates,
+and Boolean assignments use truth normalization. The bounded fallback now respects disabled tables.
+Existing ownership and inverse dependencies still constrain mutable updates.
 
 Pure integer `&&`, `||` and `?:` have a table-free circuit path with branch-local definedness. Unary
 negation and bitwise complement preserve the input, and truth conversion normalizes nonzero values.
@@ -269,8 +272,8 @@ source bits until after shifting, including when the final assignment narrows th
 Intermediate stages are inverted after copying the result, with no implicit measurement/reset.
 Workspace grows with active width and count stages, so full 32/64-bit domains can exceed the current
 128-qubit backend. Correlated definedness not proven by interval bounds, effectful expressions and
-destructive shift assignments remain separate implementation/history obligations. See
-[shift contracts and evidence](c11-shifts.md).
+versioned shifts in general control/memory contexts remain separate implementation/history
+obligations. See [shift contracts and evidence](c11-shifts.md).
 
 A function with a terminal owned scalar return may transfer its local into a new `quant`
 initializer. Pure return branches become a conditional expression; early returns with pending

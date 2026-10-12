@@ -88,9 +88,13 @@ prohibition.
 Native state simulation is limited to 24 qubits (**R**). Full `div_t` products therefore have
 circuit-generation evidence, while small projections have complete state comparisons. General 64-bit
 variable division still needs a wider remainder workspace and resource expansion (**P/R**). Sharing
-the two field computations, retained-history assignments, effectful quantum argument capture and
-full interprocedural product composition remain **P**. No hidden destructive operation is used to
-reduce these costs.
+the two field computations, general retained-history composition, effectful quantum argument capture
+and full interprocedural product composition remain **P**. No hidden destructive operation is used
+to reduce these costs.
+
+[Unconditional scalar assignments](c11-history.md) can now version division/remainder results and
+preserve old dependents. This does not extend the general product ABI or versioned branch/loop
+contracts.
 
 ## Reproducible validation
 
@@ -113,9 +117,9 @@ reduce these costs.
 Three additional exported QASM circuits are compared with pinned QuEST 3.7.0: constant division with
 both projections, coherent variable-denominator division, and signed rounding/remainder. These
 extended the finite external corpus to 25 state comparisons and three sampled channels. The
-[CPU-binding stage](c11-bindings.md) adds two state comparisons, reaching 27 states and three
-sampled channels. Wide generation is not counted as externally validated execution or hardware
-execution.
+[CPU-binding stage](c11-bindings.md) adds two state comparisons. The current corpus totals are
+recorded in the [campaign archive](audit-evidence/README.md). Wide generation is not counted as
+externally validated execution or hardware execution.
 
 ```bash
 export CC=gcc-11 CXX=g++-11

@@ -495,8 +495,8 @@ std::string cast_result(std::string expr, Variable &var) {
 bool dependent(unsigned id) {
     for (auto &entry : variables) {
         auto &var = entry.second;
-        if (var.lowered && var.derived && !var.released && !var.measured && !var.moved &&
-            var.dependencies.count(id))
+        if (var.lowered && var.derived && !var.released &&
+            (!var.measured || var.pending_destruction) && !var.moved && var.dependencies.count(id))
             return true;
     }
     return false;
@@ -510,6 +510,16 @@ void cleanup(tree *list) {
         changed = false;
         for (auto &entry : variables) {
             auto &var = entry.second;
+            if (var.lowered && var.history && !var.derived && !var.released && !var.moved &&
+                !remaining[var.id] && !dependent(var.id)) {
+                append(list,
+                       emit_operation("{\"op\":\"qhistory_end\",\"id\":" + std::to_string(var.id) +
+                                          '}',
+                                      at(var.decl)));
+                var.released = true;
+                changed = true;
+                continue;
+            }
             if (var.lowered && var.measured && var.clean && !var.released && !var.moved &&
                 !remaining[var.id] && !dependent(var.id)) {
                 append(list,
@@ -530,6 +540,163 @@ void cleanup(tree *list) {
             changed = true;
         }
     } while (changed);
+}
+
+int affine_parity(tree value, unsigned width, tree &source, unsigned depth = 0) {
+    if (!value || depth > 128)
+        return -1;
+    if (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR) {
+        if (INTEGRAL_TYPE_P(TREE_TYPE(value)) && TYPE_PRECISION(TREE_TYPE(value)) < width)
+            return -1;
+        return affine_parity(TREE_OPERAND(value, 0), width, source, depth + 1);
+    }
+    if (TREE_CODE(value) == INTEGER_CST)
+        return 0;
+    if (quantum(value)) {
+        if (source && source != value)
+            return -1;
+        source = value;
+        return 1;
+    }
+    auto code = TREE_CODE(value);
+    if (code == NEGATE_EXPR || code == BIT_NOT_EXPR)
+        return affine_parity(TREE_OPERAND(value, 0), width, source, depth + 1);
+    if (code == PLUS_EXPR || code == MINUS_EXPR) {
+        int a = affine_parity(TREE_OPERAND(value, 0), width, source, depth + 1);
+        int b = affine_parity(TREE_OPERAND(value, 1), width, source, depth + 1);
+        return a < 0 || b < 0 ? -1 : a ^ b;
+    }
+    if (code == MULT_EXPR) {
+        tree a = strip(TREE_OPERAND(value, 0)), b = strip(TREE_OPERAND(value, 1));
+        tree literal = TREE_CODE(a) == INTEGER_CST ? a : b;
+        if (TREE_CODE(literal) != INTEGER_CST)
+            return -1;
+        int coefficient =
+            affine_parity(literal == a ? TREE_OPERAND(value, 1) : TREE_OPERAND(value, 0),
+                          width,
+                          source,
+                          depth + 1);
+        return coefficient < 0 ? -1 : coefficient & (TREE_INT_CST_LOW(literal) & 1);
+    }
+    return -1;
+}
+
+bool lossy_assignment(tree value, unsigned width, unsigned depth = 0) {
+    if (depth > 128)
+        return true;
+    while (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR) {
+        if (INTEGRAL_TYPE_P(TREE_TYPE(value)) && TYPE_PRECISION(TREE_TYPE(value)) < width)
+            return true;
+        value = TREE_OPERAND(value, 0);
+    }
+    auto code = TREE_CODE(value);
+    tree affine_source = NULL_TREE;
+    int parity = width > 1 ? affine_parity(value, width, affine_source) : -1;
+    if (parity >= 0)
+        return parity == 0;
+    if (width == 1 && controls.empty() && !dynamic_depth) {
+        if (code == TRUTH_NOT_EXPR || quantum(value))
+            return false;
+        if (code == EQ_EXPR || code == NE_EXPR) {
+            tree a = strip(TREE_OPERAND(value, 0)), b = strip(TREE_OPERAND(value, 1));
+            tree literal = TREE_CODE(a) == INTEGER_CST ? a : b;
+            tree source = literal == a ? b : a;
+            if (quantum(source) && TYPE_PRECISION(TREE_TYPE(source)) == 1 &&
+                TREE_CODE(literal) == INTEGER_CST && tree_fits_uhwi_p(literal) &&
+                tree_to_uhwi(literal) <= 1)
+                return false;
+        }
+        return true;
+    }
+    if (width == 1 && (code == PLUS_EXPR || code == MINUS_EXPR))
+        return true;
+    if (code == TRUNC_DIV_EXPR || code == LSHIFT_EXPR || code == RSHIFT_EXPR) {
+        tree amount = strip(TREE_OPERAND(value, 1));
+        if (TREE_CODE(amount) == INTEGER_CST &&
+            (code == TRUNC_DIV_EXPR ? integer_onep(amount) : integer_zerop(amount)))
+            return false;
+        return true;
+    }
+    if (code == TRUNC_MOD_EXPR)
+        return true;
+    if (code == BIT_AND_EXPR || code == BIT_IOR_EXPR) {
+        tree a = strip(TREE_OPERAND(value, 0)), b = strip(TREE_OPERAND(value, 1));
+        tree literal = TREE_CODE(a) == INTEGER_CST ? a : b;
+        uint64_t mask = width == 64 ? UINT64_MAX : ((uint64_t{1} << width) - 1);
+        if (TREE_CODE(literal) == INTEGER_CST &&
+            (code == BIT_AND_EXPR
+                 ? (static_cast<uint64_t>(TREE_INT_CST_LOW(literal)) & mask) == mask
+                 : integer_zerop(literal)))
+            return false;
+        return !has_quantum(TREE_OPERAND(value, 0)) || !has_quantum(TREE_OPERAND(value, 1));
+    }
+    if (code == MULT_EXPR) {
+        tree a = strip(TREE_OPERAND(value, 0)), b = strip(TREE_OPERAND(value, 1));
+        tree coefficient = TREE_CODE(a) == INTEGER_CST ? a : b;
+        return TREE_CODE(coefficient) != INTEGER_CST ||
+               (width == 1 ? integer_zerop(coefficient) : !(TREE_INT_CST_LOW(coefficient) & 1));
+    }
+    if (code == PLUS_EXPR || code == MINUS_EXPR || code == NEGATE_EXPR || code == BIT_NOT_EXPR ||
+        code == BIT_XOR_EXPR)
+        for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
+            if (has_quantum(TREE_OPERAND(value, i)) &&
+                lossy_assignment(TREE_OPERAND(value, i), width, depth + 1))
+                return true;
+    return false;
+}
+
+bool references_storage(tree value, tree storage) {
+    auto inspect = [](tree *node, int *walk, void *data) -> tree {
+        if (*node == static_cast<tree>(data))
+            return *node;
+        if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    return value && walk_tree(&value, inspect, storage, nullptr);
+}
+
+void versioned_assignment(Variable &var,
+                          const std::string &expr,
+                          const std::set<unsigned> &deps,
+                          location_t loc,
+                          tree *list) {
+    if (!controls.empty() || dynamic_depth) {
+        error_at(
+            loc,
+            "|c>: versioned assignment needs implemented branch merges or a static per-iteration expansion; coherent/CPU-loop history is pending");
+        return;
+    }
+    unsigned old_id = var.id, new_id = next_id++;
+    Variable previous = var;
+    previous.history = true;
+    previous.name += ".history." + std::to_string(old_id);
+    previous.decl =
+        build_decl(loc, VAR_DECL, get_identifier(previous.name.c_str()), TREE_TYPE(var.decl));
+    variables.emplace(previous.decl, previous);
+    remaining[new_id] = remaining[old_id];
+    remaining[old_id] = 0;
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    append(list, emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(old_id) + '}', loc));
+    append(list,
+           emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(new_id) +
+                              ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
+                              (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                          loc));
+    active_cpu_parameters.swap(parameters);
+    append(list,
+           emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(new_id) +
+                              ",\"expr\":" + expr + '}',
+                          loc));
+    var.id = new_id;
+    var.derived = true;
+    var.history = false;
+    var.dependencies = deps;
+    var.creation = expr;
+    var.range_max = var.width == 64 ? UINT64_MAX : ((uint64_t{1} << var.width) - 1);
+    var.measured = var.clean = var.basis_known = var.pristine_uniform = false;
+    ++var.epoch;
 }
 
 tree lower_node(tree value);
@@ -1113,11 +1280,11 @@ tree lower_node(tree value) {
     }
     if ((code == MODIFY_EXPR || code == INIT_EXPR) && quantum(strip(TREE_OPERAND(value, 0)))) {
         auto &var = variables.at(strip(TREE_OPERAND(value, 0)));
-        consume(var);
         tree rhs = TREE_OPERAND(value, 1);
         tree list = alloc_stmt_list();
         cleanup(&list);
-        if (var.moved || var.released || dependent(var.id)) {
+        consume(var);
+        if (var.moved || var.released) {
             error_at(
                 at(value),
                 "|c>: modifying this register would prevent uncomputation of a live dependent quantum value");
@@ -1126,6 +1293,14 @@ tree lower_node(tree value) {
         taint_uniform(var.id);
         for (const auto &control : controls)
             taint_uniform(control.first);
+        if (dependent(var.id) || var.derived ||
+            (lossy_assignment(rhs, var.width) &&
+             (!var.clean || references_storage(rhs, var.decl)))) {
+            std::set<unsigned> deps;
+            std::string expr = cast_result(expression(rhs, deps), var);
+            versioned_assignment(var, expr, deps, at(value), &list);
+            return list;
+        }
         tree simple = strip(rhs);
         tree addend = NULL_TREE;
         if (TREE_CODE(simple) == PLUS_EXPR || TREE_CODE(simple) == MINUS_EXPR) {
@@ -1229,7 +1404,7 @@ tree lower_node(tree value) {
             std::set<unsigned> deps;
             std::string expr = cast_result(expression(rhs, deps), var);
             if (var.clean && !var.derived && !deps.count(var.id) && controls.empty() &&
-                !dynamic_depth && !quantum(strip(rhs))) {
+                !dynamic_depth) {
                 var.derived = true;
                 var.dependencies = deps;
                 var.creation = expr;
@@ -1242,9 +1417,7 @@ tree lower_node(tree value) {
                 return list;
             }
             if (deps != std::set<unsigned>{var.id}) {
-                error_at(
-                    at(value),
-                    "|c>: assignment must preserve information; compute into a fresh quant variable, rather than overwriting this state");
+                versioned_assignment(var, expr, deps, at(value), &list);
                 return list;
             }
             append(&list,
@@ -1447,11 +1620,13 @@ tree lower_node(tree value) {
             // automatically inverse that output before the requested measure.
             bool was_clean = var.clean;
             var.measured = true;
+            var.pending_destruction = true;
             var.clean = false;
             tree list = alloc_stmt_list();
             cleanup(&list);
             var.clean = was_clean;
             if (dependent(var.id)) {
+                var.pending_destruction = false;
                 error_at(
                     at(value),
                     "|c>: measurement/reset would invalidate a live computed quantum value; use or uncompute it first");
@@ -1477,6 +1652,7 @@ tree lower_node(tree value) {
                 var.dependencies.clear();
                 var.creation.clear();
             }
+            var.pending_destruction = false;
             // GCC COMPOUND_EXPR preserves cleanup-before-measure inside printf/initializers.
             tree sequence = call;
             std::vector<tree> prefix;

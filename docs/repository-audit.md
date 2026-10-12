@@ -6,7 +6,7 @@ subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y 
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `d18a873edbffef084a6f362b2f525959b8679feb` e incluye cambios locales. El manifiesto
+parte de `50ea73b8318490dd641c91913badba4aa35e79a3` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -39,9 +39,9 @@ signo y la pérdida del signo al estrechar un resultado de valor absoluto; ambos
 
 QuEST contrasta además el valor absoluto con fase relativa y un programa que combina función, array,
 bucle estático y control coherente. La exportación de los casos actuales se realiza con
-`--no-tables`. Se comparan veintidós estados y probabilidades completas, salvo una fase global, y
-tres canales con 8192 transcripciones por implementación. El lector externo cubre el subconjunto
-QASM emitido, no todo el lenguaje OpenQASM 3 ni dispositivos físicos.
+`--no-tables`. Se comparan treinta estados y probabilidades completas, salvo una fase global, y tres
+canales con 8192 transcripciones por implementación. El lector externo cubre el subconjunto QASM
+emitido, no todo el lenguaje OpenQASM 3 ni dispositivos físicos.
 
 `tests/c11_classical.c` incluye las 29 familias de headers y ejercita memoria, strings, formato,
 conversiones, complejos, entorno flotante, atomics, hilos y saltos clásicos antes de una frontera
@@ -200,6 +200,34 @@ delega su dominio al backend. Las regresiones contrastan división y desplazamie
 rechazo de división activa por cero y callbacks CPU con punteros e incrementos dentro de un bucle.
 Los efectos CPU reales y los accesos volátiles conservan sus restricciones.
 
+## Sobrescrituras versionadas y orden de descomputación
+
+Se implementó historial para asignaciones escalares incondicionales y aliases fijos comprobados. El
+nuevo valor se calcula en almacenamiento limpio y la versión anterior conserva la información y las
+dependencias antiguas. Los valores derivados se descomputan cuando terminan sus usos; las raíces en
+una base conocida se restauran con puertas X; las raíces desconocidas permanecen en la salida
+conjunta hasta el final del contexto. El reporte identifica qubits actuales y de pico del historial.
+No se agrega medición, reset ni descarte parcial para hacerlo caber.
+
+Se reprodujo un fallo de la revisión publicada `50ea73b`: medir `b=a*2`, con `a=(unsigned)n+3` y `n`
+cuántico, podía programar la inversa de `a` antes de medir `b`. El backend rechazaba la ejecución
+para proteger sus dependencias. El compilador ahora mantiene dichas dependencias hasta emitir la
+medición o reset solicitado. La misma reproducción pasa y tiene regresión a cinco niveles de
+optimización.
+
+La revisión de la nueva selección de rutas también detectó una regresión: sumar registros distintos
+se clasificaba como una expresión afín de una misma fuente, introduciendo historial innecesario. La
+regla ahora exige una sola fuente; las pruebas existentes contrastan los 65 536 pares de suma sin
+tablas ni workspace privado. Las combinaciones `x*2+1`, `x^(x>>1)` y `x*2+x` comprueban además la
+selección de historial o actualización afín en la IR.
+
+Las [207 comprobaciones de historial](c11-history.md) separan 78 dominios completos con fase e
+inversa, cuatro contratos de vida/esquema, 75 integraciones C, 30 estados completos de documentos C
+y 20 diagnósticos específicos. QuEST agrega tres circuitos sin tablas para limpieza derivada, salida
+desconocida retenida e inversa con parámetros CPU capturados. Las uniones de ramas, las iteraciones
+dinámicas, el manejo explícito del historial y la memoria general siguen pendientes P/R. Esta etapa
+no completa las asignaciones de C11.
+
 ## Formato y legibilidad
 
 Se normalizaron los archivos propios de C/C++, Python, Bash y documentación: cuatro espacios,
@@ -228,15 +256,16 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **389 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 18 de supervisión de
-validación, cinco comparaciones de integración clásica, 665 compilaciones frontend, 24 circuitos de
-crecimiento y 30 casos QASM por configuración**. Incluye las correcciones del absoluto sin signo y
-del signo anterior al estrechamiento, la red de desplazamientos variables, expresiones condicionales
-puras, las regresiones de interpretación firmada y suma booleana, y la política de tablas para
-actualizaciones reversibles, los adaptadores de memoria y división, y el rechazo de fallos de
-infraestructura como pruebas negativas, la preparación de productos clásicos y los guards puros de
-UBSan en ramas coherentes. Los treinta casos externos corresponden a veintisiete estados y tres
-canales; los once casos del paper siguen identificados como evidencia histórica.
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 207 de historial, 18
+de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
+frontend, 24 circuitos de crecimiento y 33 casos QASM por configuración**. Incluye las correcciones
+del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
+expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
+política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
+rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
+los guards puros de UBSan en ramas coherentes. Los treinta y tres casos externos corresponden a
+treinta estados y tres canales; los once casos del paper siguen identificados como evidencia
+histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -250,11 +279,11 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-bindings-full-fixed.log` después de
-reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción
-histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los
-hashes permiten contrastarlo con la revisión que publique esos archivos; no se presenta como
-ejecución de CI.
+`python3 scripts/archive-audit.py --log build/audit/verify-history-full.log` después de reproducir
+la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica.
+Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes
+permiten contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de
+CI.
 
 ## Papers y garantías abiertas
 
@@ -265,8 +294,8 @@ como objetivo futuro; sus cifras siguen perteneciendo al estudio histórico de 0
 [auditoría documental](paper/audit.md) precisa su alcance.
 
 La [hoja de ruta](c11-roadmap.md), el [inventario de construcciones](c11-inventory.md) y el
-[índice de interfaces](c11-library.json) dejan abiertos, entre otros, historial automático para
-sobrescrituras, expresiones completas con efectos, CFG y saltos generales, memoria
+[índice de interfaces](c11-library.json) dejan abiertos, entre otros, historial general para control
+y memoria, expresiones completas con efectos, CFG y saltos generales, memoria
 dinámica/VLA/unions/bitfields, ABI completa, flotantes/complejos cuánticos, biblioteca estándar,
 concurrencia y direcciones coherentes. P indica implementación pendiente; R recursos o acotación; S
 una incompatibilidad fundamentada en un contexto concreto. No se cierran entradas P mediante una
