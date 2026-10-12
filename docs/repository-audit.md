@@ -6,7 +6,7 @@ subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y 
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `34d0eee9259924c4de9859b76ffb43e1150e8983` e incluye cambios locales. El manifiesto
+parte de `da1952fff57574601396a4e22bc8bfdaa69bb8ec` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -140,6 +140,34 @@ demostradas se comprueban individualmente. Layouts de bytes generales, padding, 
 historial y uso del puntero retornado siguen pendientes. El contrato detallado está en
 [c11-memcopy.md](c11-memcopy.md); este avance no completa M4, M7 ni la biblioteca C11.
 
+## Productos de división entera
+
+Se reprodujo el rechazo de `div((int)n+5,2).quot`: el frontend no reconocía la proyección del
+producto devuelto por libc, aunque el backend ya tenía división reversible. Ahora `div`, `ldiv`,
+`lldiv` e `imaxdiv` producen campos `quot` y `rem` con sus tipos estándar. Se preservan los
+argumentos, el redondeo hacia cero y el signo del resto. División por cero y `MIN/-1` se rechazan
+incluso si solo se usa el resto; no se insertan mediciones ni resets.
+
+Los divisores constantes de magnitud potencia de dos usan vistas de bits y correcciones firmadas sin
+tablas. El programa con `div((int)n+5,2).quot` e `imaxdiv((intmax_t)n+5,2).rem`, proyectados a dos
+destinos de ocho bits, genera un circuito con 20 qubits de pico. El producto completo tiene otro
+tamaño de salida y exige contabilizar sus propios recursos. Los conteos describen circuitos lógicos;
+la descomposición y conectividad del hardware requieren una evaluación adicional.
+
+La suite [de división](c11-division.md) agrega 990 comprobaciones: 300 estados completos con fase e
+inversa, 240 estados de las cuatro interfaces con control y denominador variable, 80 ejecuciones
+numéricas firmadas, 40 llamadas clásicas con efectos de argumentos, 40 conversiones booleanas, diez
+funciones privadas homónimas, 80 generaciones anchas, 40 contratos de producto completo y 160
+diagnósticos negativos. Los tres circuitos QASM añadidos tienen contraste independiente con QuEST.
+Las ejecuciones numéricas con medición/reset explícitos se distinguen de las pruebas coherentes sin
+canales.
+
+La captura de argumentos CPU en tiempo de ejecución y el ABI general de productos siguen pendientes
+(**P**). Un producto con dos campos de 64 bits más una entrada viva exige al menos 129 qubits; el
+límite actual de 128 se documenta y prueba como recursos (**R**), no como imposibilidad semántica.
+El índice conserva 1224 interfaces: 368 de metadatos, 57 parciales y 799 pendientes. Ni ocho
+entradas adicionales parciales ni esta campaña completan los hitos de C11.
+
 ## Formato y legibilidad
 
 Se normalizaron los archivos propios de C/C++, Python, Bash y documentación: cuatro espacios,
@@ -168,14 +196,14 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **389 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 18 de supervisión de validación, cinco comparaciones de
-integración clásica, 665 compilaciones frontend, 24 circuitos de crecimiento y 25 casos QASM por
-configuración**. Incluye las correcciones del absoluto sin signo y del signo anterior al
-estrechamiento, la red de desplazamientos variables, expresiones condicionales puras, las
+reversibles, 414 de copias de memoria, 990 de división, 18 de supervisión de validación, cinco
+comparaciones de integración clásica, 665 compilaciones frontend, 24 circuitos de crecimiento y 28
+casos QASM por configuración**. Incluye las correcciones del absoluto sin signo y del signo anterior
+al estrechamiento, la red de desplazamientos variables, expresiones condicionales puras, las
 regresiones de interpretación firmada y suma booleana, y la política de tablas para actualizaciones
-reversibles, los adaptadores de memoria y el rechazo de fallos de infraestructura como pruebas
-negativas. Los veinticinco casos externos corresponden a veintidós estados y tres canales; los once
-casos del paper siguen identificados como evidencia histórica.
+reversibles, los adaptadores de memoria y división, y el rechazo de fallos de infraestructura como
+pruebas negativas. Los veintiocho casos externos corresponden a veinticinco estados y tres canales;
+los once casos del paper siguen identificados como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -189,7 +217,7 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-harness-full.log` después de reproducir
+`python3 scripts/archive-audit.py --log build/audit/verify-division-full.log` después de reproducir
 la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica.
 Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes
 permiten contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de

@@ -436,6 +436,7 @@ void finish_function(void *event, void *) {
     // marked through PLUGIN_GGC_MARKING. The emitted IR contains no GCC trees.
     variables.clear();
     quantum_products.clear();
+    quantum_division_products.clear();
     quantum_references.clear();
     quantum_memory_copies.clear();
     quantum_indexed_accesses.clear();

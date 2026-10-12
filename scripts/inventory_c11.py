@@ -54,6 +54,8 @@ INTEGER_TYPES = {
 }
 ABS = {"abs", "labs", "llabs", "imaxabs"}
 MEMORY_COPY = {"memcpy", "memmove"}
+DIVISION = {"div", "ldiv", "lldiv", "imaxdiv"}
+DIVISION_PRODUCTS = {"div_t", "ldiv_t", "lldiv_t", "imaxdiv_t"}
 FAMILY_CONTRACTS = {
     "assert.h": (
         ["P", "S"],
@@ -179,6 +181,21 @@ def semantics(header, name, kind, optional):
                 "simulator budgets apply; current tests cover narrow promoted sources and "
                 "a complete small signed state domain, not every 64-bit input."
             ),
+        )
+    if name in DIVISION or name in DIVISION_PRODUCTS:
+        return (
+            "partial",
+            ["P", "R"],
+            "M2/M4/M7",
+            ["tests/validate_division.c", "tests/validate_qasm.c"],
+            "Input-preserving signed integer quotient/remainder products and scalar projections "
+            "retain the standard parameter/field types and require a defined C domain. Pure quantum "
+            "arguments or classical constants are adapted; runtime CPU capture and effectful quantum "
+            "arguments remain pending. Constant power-of-two lowering is table-free. Full div_t "
+            "products can be generated on the declared target; two 64-bit fields plus a live input "
+            "exceed the current 128-qubit representation. Small complete phased states and inverse "
+            "are validated separately from wide circuit generation. General product ABI, library "
+            "composition and wider resource budgets remain open.",
         )
     if header == "string.h" and name in MEMORY_COPY:
         return (

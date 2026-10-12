@@ -805,6 +805,61 @@ ar_shift(ar_builder *p, const ar_value *source, const ar_value *count, int left,
 
 static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out);
 
+/* Powers of two do not need a long-divider remainder/quotient workspace.
+ * Signed division rounds toward zero; signed remainder keeps the dividend's
+ * sign. Typed definedness was checked before this lowering. */
+static int ar_power_division(ar_builder *p,
+                             const ar_value *a,
+                             const ar_value *b,
+                             int divide,
+                             unsigned width,
+                             int sign,
+                             ar_value *out) {
+    if (!ar_literal_value(b))
+        return 0;
+    uint64_t raw = 0;
+    for (unsigned j = 0; j < b->width; ++j)
+        if (b->bit[j].inverted)
+            raw |= UINT64_C(1) << j;
+    int negative = b->sign && !!(raw & (UINT64_C(1) << (b->width - 1)));
+    uint64_t magnitude = negative ? (~raw + 1) & bits_mask(b->width) : raw;
+    if (!magnitude || (magnitude & (magnitude - 1)))
+        return 0;
+    unsigned shift = 0;
+    while ((magnitude >> shift) > 1)
+        ++shift;
+    ar_value value = {.width = width, .sign = sign};
+    for (unsigned j = 0; j < width; ++j)
+        value.bit[j] = divide ? ar_at(a, j + shift) : j < shift ? ar_at(a, j) : (ar_bit){0, 0};
+    if (!a->sign && (!divide || !negative)) {
+        *out = value;
+        return 1;
+    }
+    if (!ar_temp(p, width, out) || !ar_copy(p, out, &value))
+        return -1;
+    out->sign = sign;
+    ar_value low = {.width = shift};
+    for (unsigned j = 0; j < shift; ++j)
+        low.bit[j] = ar_at(a, j);
+    ar_bit nonzero;
+    if (!ar_truth(p, &low, &nonzero))
+        return -1;
+    ar_bit controls[2] = {a->sign ? a->bit[a->width - 1] : (ar_bit){0, 0}, nonzero};
+    if (divide) {
+        // Arithmetic shift is floor division. Increment negative, nonexact
+        // results to obtain C truncation toward zero.
+        if (!ar_power(p, out, 0, controls, 2, 0) ||
+            (negative && !ar_negate_if(p, out, (ar_bit){0, 1})))
+            return -1;
+    } else {
+        int ones[2] = {1, 1};
+        for (unsigned j = shift; j < width; ++j)
+            if (!ar_condition(p, ar_wire(out->bit[j]), controls, ones, 2))
+                return -1;
+    }
+    return 1;
+}
+
 static int
 ar_lower_arm(ar_builder *p, int e, unsigned arm, int value, unsigned requested, ar_value *out) {
     ar_branch *branch = p->branches;
@@ -970,6 +1025,12 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         return 0;
     if (n > 1 && !ar_lower(p, nodes[1], comparison || division || shift ? 64 : width, &b))
         return 0;
+    if (division) {
+        int optimized = ar_power_division(
+            p, &a, &b, cj_equal(p->d, op, "div"), width, range.sign && range.lo < 0, out);
+        if (optimized)
+            return optimized > 0;
+    }
     if (!ar_temp(p, width, out))
         return 0;
     out->sign = range.sign && range.lo < 0;

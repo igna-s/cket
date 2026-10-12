@@ -165,6 +165,11 @@ Temporary expressions retain dependencies needed for their inverse. Do not chang
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
 predicates can be uncomputed automatically after their last use.
 
+`div`, `ldiv`, `lldiv` and `imaxdiv` have [partial quantum product adapters](docs/c11-division.md)
+for pure arguments and fresh quotient/remainder results. Constant power-of-two division uses
+table-free bit views and signed rounding corrections. Runtime CPU capture, general product ABI and
+wider resource budgets remain open.
+
 Division requires a proven nonzero divisor. Signed arithmetic must have supported range/overflow
 proofs; division truncates toward zero and remainder follows the dividend's sign. Accepted type
 widths do not imply every expression can be synthesized or simulated. See the
@@ -493,8 +498,8 @@ Independent validation builds the serial **C** backend of
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
 Validation includes 389 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 25 independent QASM cases exported
-without tables. QASM cases check twenty-two complete states/final probabilities and three
+corpus of 29 programs at five levels; 24 growth circuits; and 28 independent QASM cases exported
+without tables. QASM cases check twenty-five complete states/final probabilities and three
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
@@ -502,9 +507,11 @@ expression suite adds 97 checks, with complete small-state comparisons distingui
 exports. The in-place suite adds 271 checks of affine maps, bit permutations, Boolean normalization,
 controls, inverse, policy and C composition. The memory-copy suite adds 414 checks of known-basis
 extensions, complete states/inverse, overlap, contracts, C composition and wide generation. The
-native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
-predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
-plus 4096 IR mutations.
+division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
+coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The native suite
+also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input predicates,
+checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions plus 4096
+IR mutations.
 
 The shared [validation runner](docs/audit-validation.md) has 18 fault-injection checks. Signals,
 timeouts, setup failures, captured sanitizer reports and compiler internal errors cannot satisfy an

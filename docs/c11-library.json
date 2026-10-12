@@ -2475,14 +2475,17 @@
       "source_index": "B.7",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M2/M4/M7",
-      "tests": [],
-      "contract": "Not implemented: Integer adapters need exact target widths, product-return ABI for division, bounded string domains and retained parsing state; formatting crosses an explicit measured/CPU boundary."
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "inttypes.h",
@@ -4510,14 +4513,17 @@
       "source_index": "B.7",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M2/M4/M7",
-      "tests": [],
-      "contract": "Not implemented: Integer adapters need exact target widths, product-return ABI for division, bounded string domains and retained parsing state; formatting crosses an explicit measured/CPU boundary."
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "inttypes.h",
@@ -12968,14 +12974,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",
@@ -12984,14 +12993,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",
@@ -13000,14 +13012,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",
@@ -13580,14 +13595,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",
@@ -13596,14 +13614,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",
@@ -13612,14 +13633,17 @@
       "source_index": "B.21",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
-      "milestone": "M2/M4/M5/M7",
-      "tests": [],
-      "contract": "Not implemented: Each pure value operation needs a reversible result adapter and bounded defined domain. Allocation, comparator callbacks, randomness, environment and termination require their own memory/ABI/effect contracts."
+      "milestone": "M2/M4/M7",
+      "tests": [
+        "tests/validate_division.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving signed integer quotient/remainder products and scalar projections retain the standard parameter/field types and require a defined C domain. Pure quantum arguments or classical constants are adapted; runtime CPU capture and effectful quantum arguments remain pending. Constant power-of-two lowering is table-free. Full div_t products can be generated on the declared target; two 64-bit fields plus a live input exceed the current 128-qubit representation. Small complete phased states and inverse are validated separately from wide circuit generation. General product ABI, library composition and wider resource budgets remain open."
     },
     {
       "header": "stdlib.h",

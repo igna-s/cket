@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 280,
+  "checks": 282,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -499,6 +499,11 @@
     },
     {
       "check": "Fuente local docs/c-coverage.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-division.md",
       "passed": true,
       "detail": ""
     },
@@ -1003,6 +1008,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_division.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_expressions.c",
       "passed": true,
       "detail": ""
@@ -1409,9 +1419,9 @@
     }
   ],
   "audit_checkout": {
-    "head": "34d0eee9259924c4de9859b76ffb43e1150e8983",
+    "head": "da1952fff57574601396a4e22bc8bfdaa69bb8ec",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 118
+    "source_files_in_manifest": 120
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required."

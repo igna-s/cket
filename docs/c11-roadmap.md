@@ -264,7 +264,7 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is twelve state cases and
+comparison, and external simulator comparison. Current QuEST coverage is twenty-five state cases and
 three sampled channels, not every generated circuit. Extend it to integrated library, memory,
 history and control workloads; state checks alone cannot validate intermediate measurement/reset
 channels.
@@ -275,6 +275,12 @@ preservation must be checked against multiple declared GCC targets and against o
 for defined behavior. Resource reports and papers must identify their exact implementation, scripts,
 seeds, transcript criteria and unsupported features. The historical 0.4.0 paper remains a study of
 the intermediate subset.
+
+M2/M4/M7 now include [integer-division products and projections](c11-division.md) for the four
+standard signed division functions. Constant power-of-two division has table-free signed rounding
+corrections. The 990 checks distinguish phased/inverse state validation, ordinary C references, wide
+generation and diagnostic/resource contracts. Runtime CPU capture, general product ABI and larger
+complete-product storage remain P/R; this does not close those milestones.
 
 ## Completion rule
 

@@ -45,6 +45,7 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" tests/validate_expressions.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_expressions"
 "$real_cc" "${flags[@]}" tests/validate_inplace.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_inplace"
 "$real_cc" "${flags[@]}" tests/validate_memcopy.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memcopy"
+"$real_cc" "${flags[@]}" tests/validate_division.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_division"
 "$real_cc" -dumpfullversion >"$san_root/build/gcc-version.txt"
 cat >"$san_root/build/gcc-wrapper" <<'WRAPPER'
 #!/usr/bin/env bash
@@ -66,4 +67,5 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_expressions"
 "$san_root/build/validate_inplace"
 "$san_root/build/validate_memcopy"
+"$san_root/build/validate_division"
 exec "$san_root/build/test_examples"

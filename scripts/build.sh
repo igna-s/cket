@@ -38,5 +38,6 @@ ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build
 "$gcc_compiler" "${flags[@]}" tests/validate_expressions.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_expressions
 "$gcc_compiler" "${flags[@]}" tests/validate_inplace.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_inplace
 "$gcc_compiler" "${flags[@]}" tests/validate_memcopy.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_memcopy
+"$gcc_compiler" "${flags[@]}" tests/validate_division.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_division
 "$gcc_compiler" -dumpfullversion >build/gcc-version.txt
 echo "Built |c> native C driver, reversible backend, statevector motor and GCC plugin"

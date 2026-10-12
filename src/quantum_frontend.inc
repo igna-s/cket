@@ -11,6 +11,7 @@ struct QuantumReference {
 };
 
 std::map<tree, QuantumReference> quantum_references;
+std::set<tree> quantum_division_products;
 bool resolve_quantum_reference(tree value, QuantumReference &reference);
 tree reference_element(tree value);
 
@@ -727,6 +728,66 @@ bool standard_memory_copy(tree fn, bool &move) {
     return copy || move;
 }
 
+bool standard_integer_division(tree fn) {
+    if (!fn || !DECL_EXTERNAL(fn) || !TREE_PUBLIC(fn) ||
+        !in_system_header_at(DECL_SOURCE_LOCATION(fn)))
+        return false;
+    std::string name = name_of(fn);
+    return name == "div" || name == "ldiv" || name == "lldiv" || name == "imaxdiv";
+}
+
+tree expand_integer_division(tree call) {
+    if (call_expr_nargs(call) != 2 ||
+        (!has_quantum(CALL_EXPR_ARG(call, 0)) && !has_quantum(CALL_EXPR_ARG(call, 1))))
+        return NULL_TREE;
+    for (unsigned i = 0; i < 2; ++i) {
+        tree argument = CALL_EXPR_ARG(call, i);
+        if (has_quantum(argument) ? !quantum_pure_expression(argument)
+                                  : TREE_CODE(strip(argument)) != INTEGER_CST) {
+            error_at(
+                at(call),
+                "|c>: quantum integer-division library arguments currently require pure quantum expressions or classical constants; runtime CPU arguments need once-only capture");
+            return call;
+        }
+    }
+    tree type = TREE_TYPE(call);
+    if (TREE_CODE(type) != RECORD_TYPE) {
+        error_at(at(call), "|c>: integer-division library result requires a checked product type");
+        return call;
+    }
+    vec<constructor_elt, va_gc> *elements = NULL;
+    unsigned fields = 0;
+    for (tree field = TYPE_FIELDS(type); field; field = DECL_CHAIN(field)) {
+        if (TREE_CODE(field) != FIELD_DECL)
+            continue;
+        std::string name = name_of(field);
+        tree field_type = TREE_TYPE(field);
+        if ((name != "quot" && name != "rem") || !INTEGRAL_TYPE_P(field_type) ||
+            TYPE_PRECISION(field_type) > 64 || TYPE_UNSIGNED(field_type) || DECL_BIT_FIELD(field)) {
+            error_at(at(call), "|c>: integer-division library product layout is unsupported");
+            return call;
+        }
+        tree numerator = fold_convert(field_type, CALL_EXPR_ARG(call, 0)),
+             denominator = fold_convert(field_type, CALL_EXPR_ARG(call, 1));
+        // Do not fold remainder by minus one to zero: the complete C call is
+        // undefined when its quotient is not representable, even if unused.
+        tree value = build2_loc(at(call),
+                                name == "quot" ? TRUNC_DIV_EXPR : TRUNC_MOD_EXPR,
+                                field_type,
+                                numerator,
+                                denominator);
+        CONSTRUCTOR_APPEND_ELT(elements, field, value);
+        ++fields;
+    }
+    if (fields != 2) {
+        error_at(at(call), "|c>: integer-division library product must contain quot and rem");
+        return call;
+    }
+    tree result = build_constructor(type, elements);
+    quantum_division_products.insert(result);
+    return result;
+}
+
 tree expand_memory_copy(tree call, bool move) {
     if (call_expr_nargs(call) != 3)
         return NULL_TREE;
@@ -1072,6 +1133,10 @@ tree expand_quantum_program(tree value) {
         if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl)) &&
             (TREE_CODE(type) == ARRAY_TYPE || TREE_CODE(type) == RECORD_TYPE)) {
             tree initial = DECL_INITIAL(decl);
+            tree call = strip(initial);
+            if (call && TREE_CODE(call) == CALL_EXPR &&
+                standard_integer_division(get_callee_fndecl(call)))
+                initial = expand_quantum_program(call);
             if (initial && TREE_CODE(initial) == STRING_CST && TREE_CODE(type) == ARRAY_TYPE &&
                 INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) == 8) {
                 vec<constructor_elt, va_gc> *elts = NULL;
@@ -1136,6 +1201,11 @@ tree expand_quantum_program(tree value) {
         }
         if (quantum_function(fn))
             return instantiate_quantum_call(value);
+        if (standard_integer_division(fn)) {
+            tree expanded = expand_integer_division(value);
+            if (expanded)
+                return expanded;
+        }
         // These standard integer interfaces are pure basis-value functions.
         // Recognize the actual GCC builtin or an external system declaration;
         // never rewrite a user function merely because its name matches.
@@ -1161,6 +1231,23 @@ tree expand_quantum_program(tree value) {
             return element;
     }
     if (code == ARRAY_REF || code == COMPONENT_REF) {
+        if (code == COMPONENT_REF) {
+            tree container = strip(TREE_OPERAND(value, 0));
+            while (container && TREE_CODE(container) == SAVE_EXPR)
+                container = strip(TREE_OPERAND(container, 0));
+            if (container && TREE_CODE(container) == CALL_EXPR &&
+                standard_integer_division(get_callee_fndecl(container))) {
+                tree product = expand_quantum_program(container);
+                if (quantum_division_products.count(product)) {
+                    tree member = constructor_element(product, TREE_OPERAND(value, 1), 0, false);
+                    if (!member) {
+                        error_at(at(value), "|c>: integer-division library projection is invalid");
+                        return build_zero_cst(TREE_TYPE(value));
+                    }
+                    return member;
+                }
+            }
+        }
         tree selected = dynamic_product_access(value);
         if (selected)
             return selected;
