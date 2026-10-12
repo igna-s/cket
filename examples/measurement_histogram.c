@@ -8,8 +8,10 @@ int main(void) {
     while (trials < 32) {
         reset(coin);
         fourier(coin);
-        if (measure(coin)) ++ones;
-        else ++zeros;
+        if (measure(coin))
+            ++ones;
+        else
+            ++zeros;
         ++trials;
     }
     reset(coin);

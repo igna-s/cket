@@ -22,7 +22,7 @@ fi
 "$compiler" -std=c++17 -O2 -Wall -Wextra -Wno-unused-parameter -Wno-format-diag -fPIC -shared \
     -fno-rtti -I"$plugin_headers" "${extra[@]}" \
     src/cket_plugin.cpp -o build/cket_plugin.so
-flags=(-std=c11 -O2 -Wall -Wextra -Werror -Wno-misleading-indentation -Isrc/engine)
+flags=(-std=c11 -O2 -Wall -Wextra -Werror -Isrc/engine)
 "$gcc_compiler" "${flags[@]}" -c src/engine/json.c -o build/json.o
 "$gcc_compiler" "${flags[@]}" -c src/engine/quantum.c -o build/quantum.o
 "$gcc_compiler" "${flags[@]}" -c src/engine/verify.c -o build/verify.o
@@ -33,6 +33,9 @@ ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build
 "$gcc_compiler" "${flags[@]}" src/cket_backend.c build/libcket_quantum.a -lm -o build/cket_backend
 "$gcc_compiler" "${flags[@]}" tests/test_native.c build/libcket_quantum.a -lm -o build/cket_tests
 "$gcc_compiler" "${flags[@]}" tests/test_examples.c tests/validation.c -o build/test_examples
-"$gcc_compiler" -dumpfullversion > build/gcc-version.txt
+"$gcc_compiler" "${flags[@]}" tests/validate_shifts.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_shifts
+"$gcc_compiler" "${flags[@]}" tests/validate_expressions.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_expressions
+"$gcc_compiler" "${flags[@]}" tests/validate_inplace.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_inplace
+"$gcc_compiler" "${flags[@]}" tests/validate_memcopy.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_memcopy
+"$gcc_compiler" -dumpfullversion >build/gcc-version.txt
 echo "Built |c> native C driver, reversible backend, statevector motor and GCC plugin"
-

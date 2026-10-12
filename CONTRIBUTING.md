@@ -1,6 +1,8 @@
 # Contributing to `|c>`
 
-`|c>` (`cket`) is an experimental compiler. Changes must preserve C promotions and conversions, evaluate effects once, and maintain register ownership, coherence, and ancilla cleanup. The [1.0 contract](docs/v1-plan.md) distinguishes release requirements from current capabilities.
+`|c>` (`cket`) is an experimental compiler. Changes must preserve C promotions and conversions,
+evaluate effects once, and maintain register ownership, coherence, and ancilla cleanup. The
+[1.0 contract](docs/v1-plan.md) distinguishes release requirements from current capabilities.
 
 ## Set up the environment
 
@@ -15,25 +17,28 @@ bash scripts/build.sh
 bash scripts/test.sh
 ```
 
-The driver, backend, runtime, simulator, and test programs are C. The GCC plugin is C++17 because it uses GCC's internal API. Shell scripts coordinate builds and commands. Python is not required for building, execution, or testing.
+The driver, backend, runtime, simulator, and test programs are C. The GCC plugin is C++17 because it
+uses GCC's internal API. Shell scripts coordinate builds and commands. Python is not required for
+building, execution, or testing.
 
-The plugin needs headers matching the GCC version in use. The README explains `GCC_PLUGIN_INCLUDE` and the local dependency alternative.
+The plugin needs headers matching the GCC version in use. The README explains `GCC_PLUGIN_INCLUDE`
+and the local dependency alternative.
 
 ## Validate a change
 
-The complete verification command rebuilds the project, runs every example at
-five GCC optimization levels, checks the native suite and independent QASM, and
-repeats the tests with ASan/UBSan:
+The complete verification command rebuilds the project, runs every example at five GCC optimization
+levels, checks the native suite and independent QASM, and repeats the tests with ASan/UBSan:
 
 ```bash
 sudo apt-get install -y curl ca-certificates
 bash scripts/verify.sh
 ```
 
-Evidence is saved to `build/verify-*.log`. For a larger reproducible frontend
-campaign, set `CKET_FUZZ_CASES=128` and optionally `CKET_FUZZ_SEED=20261012`.
+Evidence is saved to `build/verify-*.log`. For a larger reproducible frontend campaign, set
+`CKET_FUZZ_CASES=128` and optionally `CKET_FUZZ_SEED=20261012`.
 
-Run checks relevant to the behavior you changed. For changes to semantics, synthesis, or execution, use the native suite and sanitizers:
+Run checks relevant to the behavior you changed. For changes to semantics, synthesis, or execution,
+use the native suite and sanitizers:
 
 ```bash
 bash scripts/test.sh
@@ -50,20 +55,26 @@ build/benchmark_synthesis
 build/validate_qasm
 ```
 
-`build-validation.sh` downloads a pinned, checksum-verified QuEST 3.7.0 source archive and builds its serial C backend under `build/validation-deps/`. QuEST provides an independent simulator for exported QASM; it is not linked into the compiler or application runtime. Its upstream license stays with the downloaded source. The frontend generator accepts `--seed N` and `--cases N` and retains failure reproductions in `build/frontend-failure.*`.
+`build-validation.sh` downloads a pinned, checksum-verified QuEST 3.7.0 source archive and builds
+its serial C backend under `build/validation-deps/`. QuEST provides an independent simulator for
+exported QASM; it is not linked into the compiler or application runtime. Its upstream license stays
+with the downloaded source. The frontend generator accepts `--seed N` and `--cases N` and retains
+failure reproductions in `build/frontend-failure.*`.
 
-All validation programs are C. They preserve the five optimization levels, 24 arithmetic growth circuits, and 11 independently checked QASM circuits. Scripts store evidence in `build/`; CI attaches logs and failure reproductions.
+All validation programs are C. They exercise five optimization levels, 24 arithmetic growth
+circuits, and independent QASM state/channel comparisons. Scripts store evidence in `build/`; CI
+attaches logs and failure reproductions. The [repository audit](docs/repository-audit.md) records
+the counts and scope of the latest completed campaign.
 
-`test.sh` also runs `build/test_examples`: all 36 examples, expected outputs,
-static export support or rejection, both dynamic array indices, interactive
-boundary and invalid inputs at five optimization levels, stochastic contracts
-over 16 seeds, correlated Bell outcomes, CLI errors, and execution outside the repository.
-`examples/types.c` deliberately demonstrates a 32-bit quantum integer: export
-succeeds, but execution must report the 24-qubit simulator limit.
+`test.sh` also runs `build/test_examples`: all 36 examples, expected outputs, static export support
+or rejection, both dynamic array indices, interactive boundary and invalid inputs at five
+optimization levels, stochastic contracts over 16 seeds, correlated Bell outcomes, CLI errors, and
+execution outside the repository. `examples/types.c` deliberately demonstrates a 32-bit quantum
+integer: export succeeds, but execution must report the 24-qubit simulator limit.
 
-Use `bash scripts/run-examples.sh --all` to run the 35 simulator-compatible
-programs, or pass selected names such as `for_sum fibonacci maximum_scan`.
-The [examples guide](examples/README.md) documents outputs and input formats.
+Use `bash scripts/run-examples.sh --all` to run the 35 simulator-compatible programs, or pass
+selected names such as `for_sum fibonacci maximum_scan`. The [examples guide](examples/README.md)
+documents outputs and input formats.
 
 To instrument these C tools, their native reference library, and QuEST with ASan/UBSan:
 
@@ -74,12 +85,44 @@ UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 build/benchmark_synthesis-sanit
 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 build/validate_qasm-sanitized
 ```
 
+## Formatting and readability
+
+Use four spaces for C, C++, Python and Bash, and two for JSON/YAML. Keep related steps on separate
+lines and wrap prose and ordinary code at 100 columns. Long literal strings, URLs and Markdown
+tables may exceed that limit. The [clang-format configuration](.clang-format) preserves include
+order and literal strings; [EditorConfig](.editorconfig) supplies editor defaults.
+
+Optional development tools format repository-owned source files, shell scripts, Python tools,
+documentation and code examples embedded in documentation:
+
+```bash
+bash scripts/setup-format.sh
+.deps/format-venv/bin/python scripts/format.py
+.deps/format-venv/bin/python scripts/format.py --check
+```
+
+The formatter verifies C tokens, preprocessor boundaries and Python syntax trees before writing
+those files. Run the relevant build and behavioral checks after formatting; these guards do not
+prove semantic equivalence. Downloaded dependencies and historical evidence retain their original
+bytes. Paper manuscripts preserve the layout tied to their audited PDFs; typesetting changes use the
+separate [paper workflow](docs/paper/README.md).
+
 ## Issues and pull requests
 
-A bug report should include a minimal program, the exact command, GCC and `cket` versions, and expected and observed behavior. For phases and entanglement, provide amplitudes or a circuit that distinguishes phase errors from probability errors.
+A bug report should include a minimal program, the exact command, GCC and `cket` versions, and
+expected and observed behavior. For phases and entanglement, provide amplitudes or a circuit that
+distinguishes phase errors from probability errors.
 
-A PR should explain the problem, the resulting behavior, and the validation performed. When extending the accepted subset, update the README and the relevant contract in `docs/`. Document bounds, defensive limits, and any ownership or ABI changes. A conservative rejection or a test over a small domain does not establish general support.
+A PR should explain the problem, the resulting behavior, and the validation performed. When
+extending the accepted subset, update the README and the relevant contract in `docs/`. Document
+bounds, defensive limits, and any ownership or ABI changes. A conservative rejection or a test over
+a small domain does not establish general support.
 
-Generated build files, downloaded dependencies, executables, and credentials must stay out of Git. Example QIR modules are tracked as source. Audited paper PDFs in `output/pdf/` and their original figures and reproducibility evidence in `docs/paper/` are publication artifacts tracked alongside their editable sources. The original commits retain the dates assigned when the repository was initialized; use actual dates for subsequent changes.
+Generated build files, downloaded dependencies, executables, and credentials must stay out of Git.
+Example QIR modules are tracked as source. Audited paper PDFs in `output/pdf/` and their original
+figures and reproducibility evidence in `docs/paper/` are publication artifacts tracked alongside
+their editable sources. The original commits retain the dates assigned when the repository was
+initialized; use actual dates for subsequent changes.
 
-Write documentation and contributor-facing templates in English. The project is distributed under the [MIT license](LICENSE). For potential vulnerabilities, follow [SECURITY.md](SECURITY.md).
+Write documentation and contributor-facing templates in English. The project is distributed under
+the [MIT license](LICENSE). For potential vulnerabilities, follow [SECURITY.md](SECURITY.md).

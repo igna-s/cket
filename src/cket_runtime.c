@@ -8,42 +8,98 @@
 
 /* The native program owns the quantum context; no subprocess or SDK. */
 static qc_context *engine;
-static void shutdown_engine(void) { qc_destroy(engine); engine=NULL; }
-static void fail(void) { fprintf(stderr,"|c> runtime: %s\n",qc_error(engine)); exit(EXIT_FAILURE); }
-static void start_engine(void) {
-    if (engine) return;
-    uint64_t seed=(uint64_t)time(NULL)^(uint64_t)getpid();
-    const char *configured=getenv("CKET_SEED");
-    if (configured && *configured) {
-        char *end; errno=0; seed=strtoull(configured,&end,10);
-        if (errno || end==configured || *end || *configured=='-') { fputs("|c> runtime: invalid CKET_SEED\n",stderr); exit(EXIT_FAILURE); }
-    }
-    engine=qc_create(1,seed); if (!engine) fail();
-    if (atexit(shutdown_engine)) { fputs("|c> runtime: cannot register cleanup\n",stderr); exit(EXIT_FAILURE); }
+
+static void shutdown_engine(void) {
+    qc_destroy(engine);
+    engine = NULL;
 }
+
+static void fail(void) {
+    fprintf(stderr, "|c> runtime: %s\n", qc_error(engine));
+    exit(EXIT_FAILURE);
+}
+
+static void start_engine(void) {
+    if (engine)
+        return;
+    uint64_t seed = (uint64_t)time(NULL) ^ (uint64_t)getpid();
+    const char *configured = getenv("CKET_SEED");
+    if (configured && *configured) {
+        char *end;
+        errno = 0;
+        seed = strtoull(configured, &end, 10);
+        if (errno || end == configured || *end || *configured == '-') {
+            fputs("|c> runtime: invalid CKET_SEED\n", stderr);
+            exit(EXIT_FAILURE);
+        }
+    }
+    engine = qc_create(1, seed);
+    if (!engine)
+        fail();
+    if (atexit(shutdown_engine)) {
+        fputs("|c> runtime: cannot register cleanup\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+}
+
 uint64_t __cket_apply(const char *operation) {
     uint64_t result;
-    start_engine(); if (!qc_apply(engine,operation,&result)) fail(); return result;
-}
-uint64_t __cket_apply_arg(const char *operation,uint64_t argument) {
-    start_engine(); if (!qc_apply_arg(engine,operation,argument)) fail(); return 0;
-}
-uint64_t __cket_apply_phase(const char *operation,double angle) {
-    start_engine(); if (!qc_apply_phase(engine,operation,angle)) fail(); return 0;
-}
-uint64_t __cket_apply_index(const char *operation,uint64_t index,uint64_t has_argument,uint64_t argument) {
-    uint64_t result;
-    start_engine(); if (has_argument>1 || !qc_apply_index(engine,operation,index,(int)has_argument,argument,&result)) fail();
+    start_engine();
+    if (!qc_apply(engine, operation, &result))
+        fail();
     return result;
 }
-uint64_t __cket_measure(uint64_t id) {
-    start_engine(); char operation[128]; uint64_t result;
-    snprintf(operation,sizeof operation,"{\"op\":\"qmeasure\",\"id\":%" PRIu64 "}",id);
-    if (!qc_apply(engine,operation,&result)) fail(); return result;
+
+uint64_t __cket_apply_arg(const char *operation, uint64_t argument) {
+    start_engine();
+    if (!qc_apply_arg(engine, operation, argument))
+        fail();
+    return 0;
 }
+
+uint64_t __cket_apply_phase(const char *operation, double angle) {
+    start_engine();
+    if (!qc_apply_phase(engine, operation, angle))
+        fail();
+    return 0;
+}
+
+uint64_t __cket_apply_index(const char *operation,
+                            uint64_t index,
+                            uint64_t has_argument,
+                            uint64_t argument) {
+    uint64_t result;
+    start_engine();
+    if (has_argument > 1 ||
+        !qc_apply_index(engine, operation, index, (int)has_argument, argument, &result))
+        fail();
+    return result;
+}
+
+uint64_t __cket_measure(uint64_t id) {
+    start_engine();
+    char operation[128];
+    uint64_t result;
+    snprintf(operation, sizeof operation, "{\"op\":\"qmeasure\",\"id\":%" PRIu64 "}", id);
+    if (!qc_apply(engine, operation, &result))
+        fail();
+    return result;
+}
+
 /* ABI retained: storage placeholders are never CPU reads of quantum data. */
-uint64_t __cket_prepare(uint64_t id,uint64_t width,uint64_t low,uint64_t high) {
+uint64_t __cket_prepare(uint64_t id, uint64_t width, uint64_t low, uint64_t high) {
     char operation[256];
-    snprintf(operation,sizeof operation,"{\"op\":\"qalloc\",\"id\":%" PRIu64 ",\"width\":%" PRIu64 "}",id,width); __cket_apply(operation);
-    snprintf(operation,sizeof operation,"{\"op\":\"qprepare\",\"id\":%" PRIu64 ",\"lower\":%" PRIu64 ",\"upper\":%" PRIu64 "}",id,low,high); return __cket_apply(operation);
+    snprintf(operation,
+             sizeof operation,
+             "{\"op\":\"qalloc\",\"id\":%" PRIu64 ",\"width\":%" PRIu64 "}",
+             id,
+             width);
+    __cket_apply(operation);
+    snprintf(operation,
+             sizeof operation,
+             "{\"op\":\"qprepare\",\"id\":%" PRIu64 ",\"lower\":%" PRIu64 ",\"upper\":%" PRIu64 "}",
+             id,
+             low,
+             high);
+    return __cket_apply(operation);
 }

@@ -35,7 +35,8 @@ struct Variable {
     uint64_t lower = 0, upper = 0;
     std::string name, c_type;
     tree original_init = NULL_TREE;
-    bool expression_init = false, classical_init = false, derived = false, released = false, moved = false, clean = false;
+    bool expression_init = false, classical_init = false, derived = false, released = false,
+         moved = false, clean = false;
     uint64_t range_max = 0;
     unsigned epoch = 0;
     std::string creation;
@@ -43,21 +44,45 @@ struct Variable {
     bool basis_known = false;
     bool pristine_uniform = false;
 };
+
 std::map<tree, Variable> variables;
-struct QuantumIndexedAccess { std::vector<tree> elements; tree index; bool readonly; };
+
+struct QuantumIndexedAccess {
+    std::vector<tree> elements;
+    tree index;
+    bool readonly;
+};
+
 std::map<tree, QuantumIndexedAccess> quantum_indexed_accesses;
+
+struct QuantumMemoryCopy {
+    std::vector<std::pair<tree, tree>> elements; // Destination, source, in read-before-write order.
+};
+
+std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
 std::map<tree, tree> indexed_expansions;
 std::set<tree> readonly_quantum_borrows;
-struct QuantumFunction { tree decl, body; bool result; bool owned_result=false; };
+
+struct QuantumFunction {
+    tree decl, body;
+    bool result;
+    bool owned_result = false;
+};
+
 std::map<std::string, QuantumFunction> quantum_functions;
 std::set<std::string> expanding_functions;
+
 bool quantum_function(tree fn) {
-    if (!fn || TREE_CODE(fn) != FUNCTION_DECL) return false;
-    if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(fn))) return true;
+    if (!fn || TREE_CODE(fn) != FUNCTION_DECL)
+        return false;
+    if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(fn)))
+        return true;
     for (tree p = DECL_ARGUMENTS(fn); p; p = DECL_CHAIN(p))
-        if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(p))) return true;
+        if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(p)))
+            return true;
     return quantum_functions.count(DECL_NAME(fn) ? IDENTIFIER_POINTER(DECL_NAME(fn)) : "");
 }
+
 std::set<tree> recorded_declarations;
 std::vector<std::string> symbols, instructions;
 std::string ir_path, ast_path;
@@ -73,10 +98,14 @@ std::string json(const std::string &value) {
     std::ostringstream stream;
     stream << '"';
     for (unsigned char ch : value) {
-        if (ch == '"' || ch == '\\') stream << '\\' << ch;
-        else if (ch == '\n') stream << "\\n";
-        else if (ch < 32) stream << "\\u00" << "0123456789abcdef"[ch >> 4] << "0123456789abcdef"[ch & 15];
-        else stream << ch;
+        if (ch == '"' || ch == '\\')
+            stream << '\\' << ch;
+        else if (ch == '\n')
+            stream << "\\n";
+        else if (ch < 32)
+            stream << "\\u00" << "0123456789abcdef"[ch >> 4] << "0123456789abcdef"[ch & 15];
+        else
+            stream << ch;
     }
     stream << '"';
     return stream.str();
@@ -85,64 +114,83 @@ std::string json(const std::string &value) {
 std::string name_of(tree decl) {
     return DECL_NAME(decl) ? IDENTIFIER_POINTER(DECL_NAME(decl)) : "<anonymous>";
 }
+
 bool quantum(tree decl) {
     return decl && (TREE_CODE(decl) == VAR_DECL || TREE_CODE(decl) == PARM_DECL) &&
-        INTEGRAL_TYPE_P(TREE_TYPE(decl)) &&
-        lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl));
+           INTEGRAL_TYPE_P(TREE_TYPE(decl)) &&
+           lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl));
 }
+
 tree strip(tree value) {
     while (value && (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR))
         value = TREE_OPERAND(value, 0);
     return value;
 }
+
 std::string intrinsic(tree call) {
-    if (!call || TREE_CODE(call) != CALL_EXPR) return "";
+    if (!call || TREE_CODE(call) != CALL_EXPR)
+        return "";
     tree fn = get_callee_fndecl(call);
-    if (!fn) return "";
+    if (!fn)
+        return "";
     tree attr = lookup_attribute("cket_intrinsic", DECL_ATTRIBUTES(fn));
-    if (!attr) return "";
+    if (!attr)
+        return "";
     tree value = TREE_VALUE(TREE_VALUE(attr));
     return TREE_CODE(value) == STRING_CST ? TREE_STRING_POINTER(value) : "";
 }
+
 location_t at(tree node) {
-    if (DECL_P(node)) return DECL_SOURCE_LOCATION(node);
+    if (DECL_P(node))
+        return DECL_SOURCE_LOCATION(node);
     return EXPR_HAS_LOCATION(node) ? EXPR_LOCATION(node) : input_location;
 }
 
 bool quantum_product_type(tree type) {
-    if (!type || TYPE_READONLY(type)) return false;
-    if (INTEGRAL_TYPE_P(type)) return TYPE_PRECISION(type) <= 64;
+    if (!type || TYPE_READONLY(type))
+        return false;
+    if (INTEGRAL_TYPE_P(type))
+        return TYPE_PRECISION(type) <= 64;
     if (TREE_CODE(type) == ARRAY_TYPE) {
         tree domain = TYPE_DOMAIN(type);
         return domain && TYPE_MAX_VALUE(domain) && tree_fits_uhwi_p(TYPE_MAX_VALUE(domain)) &&
-            tree_to_uhwi(TYPE_MAX_VALUE(domain)) < 4096 && quantum_product_type(TREE_TYPE(type));
+               tree_to_uhwi(TYPE_MAX_VALUE(domain)) < 4096 && quantum_product_type(TREE_TYPE(type));
     }
     if (TREE_CODE(type) == RECORD_TYPE) {
         for (tree f = TYPE_FIELDS(type); f; f = DECL_CHAIN(f))
-            if (TREE_CODE(f) == FIELD_DECL && (DECL_BIT_FIELD(f) || !quantum_product_type(TREE_TYPE(f)))) return false;
+            if (TREE_CODE(f) == FIELD_DECL &&
+                (DECL_BIT_FIELD(f) || !quantum_product_type(TREE_TYPE(f))))
+                return false;
         return true;
     }
     return false;
 }
+
 tree quantum_attribute(tree *node, tree, tree, int, bool *no_add) {
     tree decl = *node;
     if (TREE_CODE(decl) == FUNCTION_DECL) {
         tree result = TREE_TYPE(TREE_TYPE(decl));
         if (result != void_type_node && (!INTEGRAL_TYPE_P(result) || TYPE_PRECISION(result) > 64)) {
-            error_at(at(decl), "|c>: quantum function results currently require a C integer or bool");
+            error_at(at(decl),
+                     "|c>: quantum function results currently require a C integer or bool");
             *no_add = true;
         }
         return NULL_TREE;
     }
     if (TREE_CODE(decl) == PARM_DECL) {
         tree type = TREE_TYPE(decl);
-        if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
-            TREE_TYPE(decl) = build_pointer_type(build_qualified_type(TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
+        if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) &&
+            TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
+            TREE_TYPE(decl) = build_pointer_type(build_qualified_type(
+                TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
             return NULL_TREE;
         }
         if (!INTEGRAL_TYPE_P(type) || TYPE_PRECISION(type) > 64) {
-            error_at(at(decl), "|c>: quantum parameters currently borrow scalar integer registers; pointer/array parameters need an explicit borrow contract");
-            *no_add = true; return NULL_TREE;
+            error_at(
+                at(decl),
+                "|c>: quantum parameters currently borrow scalar integer registers; pointer/array parameters need an explicit borrow contract");
+            *no_add = true;
+            return NULL_TREE;
         }
         TREE_TYPE(decl) = build_qualified_type(type, TYPE_QUALS(type) | TYPE_QUAL_VOLATILE);
         TREE_THIS_VOLATILE(decl) = TREE_SIDE_EFFECTS(decl) = 1;
@@ -156,12 +204,16 @@ tree quantum_attribute(tree *node, tree, tree, int, bool *no_add) {
         return NULL_TREE;
     }
     tree type = TREE_TYPE(decl);
-    if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
-        TREE_TYPE(decl) = build_pointer_type(build_qualified_type(TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
+    if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) &&
+        TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
+        TREE_TYPE(decl) = build_pointer_type(build_qualified_type(
+            TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
         return NULL_TREE;
     }
     if (!quantum_product_type(type)) {
-        error_at(at(decl), "|c>: quant requires integers/bools, fixed arrays or integer structures; pointers, unions, bitfields and floating point need further quantum semantics");
+        error_at(
+            at(decl),
+            "|c>: quant requires integers/bools, fixed arrays or integer structures; pointers, unions, bitfields and floating point need further quantum semantics");
         *no_add = true;
         return NULL_TREE;
     }
@@ -181,8 +233,11 @@ tree intrinsic_attribute(tree *node, tree, tree args, int, bool *no_add) {
     return NULL_TREE;
 }
 
-const attribute_spec quant_spec = {"cket_quant", 0, 0, true, false, false, false, quantum_attribute, nullptr};
-const attribute_spec intrinsic_spec = {"cket_intrinsic", 1, 1, true, false, false, false, intrinsic_attribute, nullptr};
+const attribute_spec quant_spec = {
+    "cket_quant", 0, 0, true, false, false, false, quantum_attribute, nullptr};
+const attribute_spec intrinsic_spec = {
+    "cket_intrinsic", 1, 1, true, false, false, false, intrinsic_attribute, nullptr};
+
 void register_attributes(void *, void *) {
     register_attribute(&quant_spec);
     register_attribute(&intrinsic_spec);
@@ -199,40 +254,57 @@ tree runtime_function(const char *name, unsigned argc) {
     DECL_ARTIFICIAL(fn) = 1;
     return fn;
 }
-tree constant(uint64_t value) { return build_int_cstu(long_long_unsigned_type_node, value); }
+
+tree constant(uint64_t value) {
+    return build_int_cstu(long_long_unsigned_type_node, value);
+}
 
 void record_decl(void *event, void *) {
     tree decl = static_cast<tree>(event);
     tree context = DECL_P(decl) && DECL_CONTEXT(decl) ? DECL_CONTEXT(decl) : current_function_decl;
-    if (!context) context = active_function;
-    if (TREE_CODE(decl) != VAR_DECL || !context || TREE_CODE(context) != FUNCTION_DECL || !DECL_NAME(decl))
+    if (!context)
+        context = active_function;
+    if (TREE_CODE(decl) != VAR_DECL || !context || TREE_CODE(context) != FUNCTION_DECL ||
+        !DECL_NAME(decl))
         return;
-    if (!recorded_declarations.insert(decl).second) return;
-    if (!DECL_CONTEXT(decl)) DECL_CONTEXT(decl) = context;
+    if (!recorded_declarations.insert(decl).second)
+        return;
+    if (!DECL_CONTEXT(decl))
+        DECL_CONTEXT(decl) = context;
     bool is_quantum = quantum(decl);
     tree type = TYPE_MAIN_VARIANT(TREE_TYPE(decl));
     char *spelling = print_generic_expr_to_str(type);
     std::string c_type = spelling ? spelling : "unknown";
     std::free(spelling);
     unsigned width = INTEGRAL_TYPE_P(type) ? TYPE_PRECISION(type) : 0;
-    symbols.push_back("{\"name\":" + json(name_of(decl)) + ",\"function\":" + json(name_of(DECL_CONTEXT(decl))) +
-                      ",\"type\":{\"c_type\":" + json(c_type) + ",\"quantum\":" + (is_quantum ? "true" : "false") +
+    symbols.push_back("{\"name\":" + json(name_of(decl)) + ",\"function\":" +
+                      json(name_of(DECL_CONTEXT(decl))) + ",\"type\":{\"c_type\":" + json(c_type) +
+                      ",\"quantum\":" + (is_quantum ? "true" : "false") +
                       ",\"bits\":" + std::to_string(width) + "}}");
-    if (!is_quantum) return;
+    if (!is_quantum)
+        return;
     if (name_of(DECL_CONTEXT(decl)) != "main") {
-        error_at(at(decl), "|c>: quantum locals currently belong in main; quantum function calls are unsupported");
+        error_at(
+            at(decl),
+            "|c>: quantum locals require main or expansion through a declared quantum procedure");
         return;
     }
     Variable var{};
-    var.decl = decl; var.id = next_id++; var.width = width; var.is_signed = !TYPE_UNSIGNED(type);
-    var.name = name_of(decl); var.c_type = c_type;
+    var.decl = decl;
+    var.id = next_id++;
+    var.width = width;
+    var.is_signed = !TYPE_UNSIGNED(type);
+    var.name = name_of(decl);
+    var.c_type = c_type;
     tree init = strip(DECL_INITIAL(decl));
     // C converts uint64_t -> _Bool as a comparison with zero.
-    if (TREE_CODE(type) == BOOLEAN_TYPE && init && TREE_CODE(init) == NE_EXPR && integer_zerop(TREE_OPERAND(init, 1)))
+    if (TREE_CODE(type) == BOOLEAN_TYPE && init && TREE_CODE(init) == NE_EXPR &&
+        integer_zerop(TREE_OPERAND(init, 1)))
         init = strip(TREE_OPERAND(init, 0));
     if (init && TREE_CODE(init) == INTEGER_CST) {
         var.lower = var.upper = static_cast<uint64_t>(TREE_INT_CST_LOW(init));
-        if (width < 64) var.lower = var.upper = var.lower & ((uint64_t{1} << width) - 1);
+        if (width < 64)
+            var.lower = var.upper = var.lower & ((uint64_t{1} << width) - 1);
     } else if (init && intrinsic(init) == "superposition" && call_expr_nargs(init) == 2) {
         tree lower = strip(CALL_EXPR_ARG(init, 0)), upper = strip(CALL_EXPR_ARG(init, 1));
         if (TREE_CODE(lower) != INTEGER_CST || TREE_CODE(upper) != INTEGER_CST) {
@@ -246,11 +318,15 @@ void record_decl(void *event, void *) {
             return;
         }
         if (var.lower != var.upper && (var.lower != 0 || (var.upper & (var.upper + 1)) != 0)) {
-            error_at(at(decl), "|c>: uniform preparation currently supports [0, 2^k-1] or a single basis value");
+            error_at(
+                at(decl),
+                "|c>: uniform preparation currently supports [0, 2^k-1] or a single basis value");
             return;
         }
         if (var.is_signed && var.upper > ((uint64_t{1} << (width - 1)) - 1)) {
-            error_at(at(decl), "|c>: superposition bounds must be nonnegative values representable by the signed C type");
+            error_at(
+                at(decl),
+                "|c>: superposition bounds must be nonnegative values representable by the signed C type");
             return;
         }
     } else if (init) {
@@ -258,7 +334,9 @@ void record_decl(void *event, void *) {
         var.expression_init = !var.classical_init;
     }
     var.original_init = DECL_INITIAL(decl);
-    var.range_max = var.expression_init || var.classical_init ? (width == 64 ? UINT64_MAX : ((uint64_t{1} << width) - 1)) : var.upper;
+    var.range_max = var.expression_init || var.classical_init
+                        ? (width == 64 ? UINT64_MAX : ((uint64_t{1} << width) - 1))
+                        : var.upper;
     var.clean = !var.expression_init && !var.classical_init && var.upper == 0;
     var.basis_known = !var.expression_init && !var.classical_init && var.lower == var.upper;
     var.pristine_uniform = !var.expression_init && !var.classical_init && var.lower != var.upper;
@@ -269,12 +347,16 @@ tree discover_declarations(tree *node, int *walk, void *) {
     if (TREE_CODE(*node) == DECL_EXPR) {
         if (ast_file) {
             tree decl = DECL_EXPR_DECL(*node);
-            fprintf(ast_file, "\n;; Semantic declaration %s quant=%d\n", name_of(decl).c_str(), quantum(decl));
+            fprintf(ast_file,
+                    "\n;; Semantic declaration %s quant=%d\n",
+                    name_of(decl).c_str(),
+                    quantum(decl));
             print_node(ast_file, "declaration", decl, 0, false);
         }
         record_decl(DECL_EXPR_DECL(*node), nullptr);
         *walk = 0;
-    } else if (DECL_P(*node) || TYPE_P(*node)) *walk = 0;
+    } else if (DECL_P(*node) || TYPE_P(*node))
+        *walk = 0;
     return NULL_TREE;
 }
 
@@ -292,7 +374,8 @@ void finish_function(void *event, void *) {
     tree fn = static_cast<tree>(event);
     active_function = fn;
     recorded_declarations.clear();
-    if (!DECL_SAVED_TREE(fn)) return;
+    if (!DECL_SAVED_TREE(fn))
+        return;
     if (lookup_attribute("cket_intrinsic", DECL_ATTRIBUTES(fn))) {
         error_at(at(fn), "|c>: compiler intrinsics must not have C definitions");
         return;
@@ -317,13 +400,36 @@ void finish_function(void *event, void *) {
         has_quantum |= DECL_CONTEXT(item.first) == fn;
     saw_measure = false;
     saw_return = false;
-    remaining.clear(); counted_saves.clear(); expression_saves.clear(); controls.clear(); dynamic_depth = 0;
-    if (has_quantum) walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
-    DECL_SAVED_TREE(fn) = lower_node(DECL_SAVED_TREE(fn));
+    remaining.clear();
+    counted_saves.clear();
+    expression_saves.clear();
+    controls.clear();
+    dynamic_depth = 0;
+    if (has_quantum)
+        walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
+    if (name_of(fn) != "main" && !has_quantum) {
+        auto quantum_effect = [](tree *node, int *walk, void *) -> tree {
+            if (!intrinsic(*node).empty())
+                return *node;
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        tree effect = walk_tree(&DECL_SAVED_TREE(fn), quantum_effect, nullptr, nullptr);
+        if (effect)
+            error_at(
+                at(effect),
+                "|c>: a helper with quantum effects must declare a quantum procedure or parameter");
+        // Ordinary helper loops/branches must not enter the quantum IR.
+    } else
+        DECL_SAVED_TREE(fn) = lower_node(DECL_SAVED_TREE(fn));
     for (const auto &item : variables) {
         const auto &var = item.second;
-        if (DECL_CONTEXT(var.decl) == fn && (!var.lowered || (!var.measured && !var.released && !var.moved)))
-            error_at(at(var.decl), "|c>: live quantum storage must be explicitly measured/reset, or safely uncomputed before leaving main");
+        if (DECL_CONTEXT(var.decl) == fn &&
+            (!var.lowered || (!var.measured && !var.released && !var.moved)))
+            error_at(
+                at(var.decl),
+                "|c>: live quantum storage must be explicitly measured/reset, or safely uncomputed before leaving main");
     }
     active_function = NULL_TREE;
     // Per-call analysis is discarded; saved function templates are explicitly
@@ -331,11 +437,13 @@ void finish_function(void *event, void *) {
     variables.clear();
     quantum_products.clear();
     quantum_references.clear();
+    quantum_memory_copies.clear();
     quantum_indexed_accesses.clear();
     indexed_expansions.clear();
     readonly_quantum_borrows.clear();
     expanded_product_leaves = 0;
-    counted_saves.clear(); expression_saves.clear();
+    counted_saves.clear();
+    expression_saves.clear();
     prepare_fn = measure_fn = NULL_TREE;
     apply_fn = apply_arg_fn = NULL_TREE;
     apply_phase_fn = NULL_TREE;
@@ -343,14 +451,23 @@ void finish_function(void *event, void *) {
 }
 
 void finish(void *, void *) {
-    if (ast_file) { fclose(ast_file); ast_file = nullptr; }
-    if (errorcount || sorrycount || ir_path.empty()) return;
+    if (ast_file) {
+        fclose(ast_file);
+        ast_file = nullptr;
+    }
+    if (errorcount || sorrycount || ir_path.empty())
+        return;
     std::ofstream out(ir_path);
-    if (!out) { error("|c>: cannot write Quantum IR"); return; }
+    if (!out) {
+        error("|c>: cannot write Quantum IR");
+        return;
+    }
     out << "{\n  \"format\": \"cket.qir\",\n  \"version\": 1,\n  \"frontend\": \"GCC C\",\n  \"symbols\": [\n";
-    for (size_t i = 0; i < symbols.size(); ++i) out << "    " << symbols[i] << (i + 1 < symbols.size() ? ",\n" : "\n");
+    for (size_t i = 0; i < symbols.size(); ++i)
+        out << "    " << symbols[i] << (i + 1 < symbols.size() ? ",\n" : "\n");
     out << "  ],\n  \"instructions\": [\n";
-    for (size_t i = 0; i < instructions.size(); ++i) out << "    " << instructions[i] << (i + 1 < instructions.size() ? ",\n" : "\n");
+    for (size_t i = 0; i < instructions.size(); ++i)
+        out << "    " << instructions[i] << (i + 1 < instructions.size() ? ",\n" : "\n");
     out << "  ]\n}\n";
 }
 } // namespace
@@ -362,13 +479,21 @@ int plugin_init(plugin_name_args *info, plugin_gcc_version *version) {
     }
     for (int i = 0; i < info->argc; ++i) {
         std::string key = info->argv[i].key;
-        if (key == "ir" && info->argv[i].value) ir_path = info->argv[i].value;
-        else if (key == "ast" && info->argv[i].value) ast_path = info->argv[i].value;
-        else { fprintf(stderr, "|c>: unknown plugin option %s\n", key.c_str()); return 1; }
+        if (key == "ir" && info->argv[i].value)
+            ir_path = info->argv[i].value;
+        else if (key == "ast" && info->argv[i].value)
+            ast_path = info->argv[i].value;
+        else {
+            fprintf(stderr, "|c>: unknown plugin option %s\n", key.c_str());
+            return 1;
+        }
     }
     if (!ast_path.empty()) {
         ast_file = fopen(ast_path.c_str(), "w");
-        if (!ast_file) { fprintf(stderr, "|c>: cannot open AST output\n"); return 1; }
+        if (!ast_file) {
+            fprintf(stderr, "|c>: cannot open AST output\n");
+            return 1;
+        }
     }
     register_callback(info->base_name, PLUGIN_ATTRIBUTES, register_attributes, nullptr);
     register_callback(info->base_name, PLUGIN_PRE_GENERICIZE, finish_function, nullptr);

@@ -3,7 +3,8 @@
 
 int main(void) {
     unsigned index;
-    if (scanf("%u", &index) != 1 || index >= 2) return 1;
+    if (scanf("%u", &index) != 1 || index >= 2)
+        return 1;
     quant uint8_t values[2] = {1, 7};
     values[index] += 2;
     printf("%u\n", (unsigned)measure(values[index]));

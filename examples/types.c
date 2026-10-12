@@ -8,4 +8,3 @@ int main(void) {
     bool bit = (bool)measure(quantum_boolean);
     return classical != measured || (bit != false && bit != true);
 }
-

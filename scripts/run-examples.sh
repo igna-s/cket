@@ -20,10 +20,19 @@ for source in examples/*.c; do
 done
 
 case "${1:---all}" in
-    --help|-h) usage; exit 0 ;;
-    --list) printf '%s\n' "${names[@]}"; exit 0 ;;
+    --help | -h)
+        usage
+        exit 0
+        ;;
+    --list)
+        printf '%s\n' "${names[@]}"
+        exit 0
+        ;;
     --all)
-        if (( $# > 1 )); then usage >&2; exit 1; fi
+        if (($# > 1)); then
+            usage >&2
+            exit 1
+        fi
         ;;
     *) names=("$@") ;;
 esac

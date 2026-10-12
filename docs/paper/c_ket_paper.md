@@ -3,12 +3,11 @@
 <!-- authors -->
 **Ignacio Schwindt**
 
-Proyecto C Ket (|c> / cket)
 <!-- /authors -->
 
 ## Resumen
 
-C Ket es un prototipo de programación cuántica de alto nivel integrado en C11 mediante un plugin de GCC. Permite declarar enteros cuánticos, expresar cálculos y condiciones coherentes y combinar circuitos con control clásico nativo. Su arquitectura reúne un frontend con análisis de propiedad, una representación intermedia JSON verificada, síntesis reversible, un runtime C y exportación OpenQASM 3. El sistema exige conservar las dependencias necesarias para descomputar temporales y distingue transferencia de propiedad, préstamo y medición. Evaluamos una revisión fijada mediante 354 pruebas nativas, 426 comprobaciones de 16 ejemplos, 145 compilaciones diferenciales, 24 circuitos sin tablas y 11 validaciones independientes con QuEST. Presentamos costos de puertas y workspace para seis operadores entre 4 y 16 bits. La representación admite 128 qubits y el simulador local 24; estas capacidades son diferentes. Los resultados documentan el subconjunto implementado y sus límites, sin afirmar ventaja práctica, ejecución en hardware ni corrección formal general.
+Presentamos C Ket, un sistema experimental de programación cuántica integrado en C11 mediante un plugin de GCC. El sistema combina expresiones enteras y control coherente con ejecución clásica nativa. Su arquitectura comprende análisis de propiedad, una representación intermedia JSON, síntesis reversible y exportación OpenQASM 3. La conservación explícita de dependencias permite descomputar registros temporales y distingue transferencia de propiedad, préstamo y medición. La evaluación comprende 354 pruebas nativas, 426 comprobaciones de 16 programas, 145 compilaciones diferenciales, 24 circuitos sintetizados sin tablas y 11 validaciones independientes con QuEST. Analizamos el número de puertas y los registros auxiliares de seis operadores con anchos entre 4 y 16 bits. La representación de circuitos admite 128 qubits y la simulación local hasta 24. Los resultados caracterizan la implementación y muestran que el costo de los auxiliares limita la simulación de circuitos que sí pueden sintetizarse.
 
 ## 1 Introducción
 
@@ -16,27 +15,25 @@ Expresar un algoritmo cuántico requiere coordinar transformaciones reversibles,
 
 C Ket explora esta integración desde C11 [1]. El programador declara datos con `quant`, utiliza expresiones enteras y construcciones de control reconocibles, mientras GCC sigue compilando el trabajo de CPU. Un plugin analiza el subconjunto cuántico antes de las transformaciones generales del compilador y lo traduce a operaciones verificadas. La ruta nativa enlaza un motor C; otra ruta emite circuitos estáticos y recursos. Esta organización permite estudiar conjuntamente semántica, compilación y costos de representación.
 
-El aporte del proyecto se concreta en tres elementos: una disciplina explícita de propiedad y descomputación; un motor compartido por simulación y exportación; y evidencia reproducible de aceptación, rechazo y síntesis aritmética sin enumerar dominios en las cargas evaluadas. Su alcance es experimental. C Ket no implementa todo C11 para datos cuánticos, y conservar la sintaxis de C no garantiza que cualquier programa clásico admita una traducción coherente.
+Las contribuciones de este trabajo son una disciplina de propiedad y descomputación integrada en C, un motor común para simulación y exportación, y una evaluación de la síntesis aritmética sin enumeración de dominios en las cargas estudiadas. La integración se limita a un subconjunto de C11: las operaciones cuánticas requieren condiciones de reversibilidad y conservación de dependencias que la semántica clásica, por sí sola, no establece.
 
-El artículo presenta antecedentes, arquitectura y motivación del modelo; describe el entorno experimental y sus resultados; y delimita las conclusiones. Las figuras distinguen esquemas, cálculos ideales y datos de síntesis. La evaluación corresponde a cket 0.4.0 y a la revisión identificada en la Sección 5, para evitar mezclar mediciones de estados diferentes del proyecto.
-
-<!-- page -->
+El análisis se centra en la relación entre expresividad, conservación de información y costo de síntesis. En particular, estudiamos cómo las dependencias de los cálculos reversibles condicionan la reutilización de auxiliares y cómo esa reutilización afecta los recursos de los circuitos. La evaluación combina pruebas funcionales, contraste con un simulador independiente y medición de recursos lógicos.
 
 ## 2 Antecedentes
 
-Bennett estableció un marco para recuperar espacio mediante cálculo reversible y restauración de auxiliares [3]. Silq vincula tipos y descomputación segura en un lenguaje cuántico de alto nivel [6]; Quipper ofrece composición programática de circuitos desde un enfoque funcional [7]. C Ket participa de esa línea e investiga su integración con el AST de GCC y el control clásico de C. La comparación es arquitectónica: no se midió productividad ni rendimiento equivalente frente a esos lenguajes.
+Bennett estableció un marco para recuperar espacio mediante cálculo reversible y restauración de auxiliares [3]. Silq vincula tipos y descomputación segura en un lenguaje cuántico de alto nivel [6]; Quipper ofrece composición programática de circuitos desde un enfoque funcional [7]. C Ket estudia estas cuestiones mediante su integración con el árbol de sintaxis abstracta de GCC y el control clásico de C. Estos antecedentes sitúan las decisiones de diseño; la evaluación se concentra en la implementación y sus recursos, sin realizar una comparación experimental entre lenguajes.
 
-OpenQASM 3 proporciona un lenguaje de intercambio con controles y fases [8, 9]. C Ket exporta un subconjunto estático; sus restricciones de CPU no son restricciones generales del estándar. QuEST aporta una implementación externa para contrastar los circuitos exportados [10]. Estos componentes cumplen funciones distintas: frontend, intercambio y referencia de simulación.
+OpenQASM 3 proporciona un lenguaje de intercambio con controles y fases [8, 9]. La exportación de C Ket utiliza un subconjunto estático, cuya expresividad depende de las construcciones que el frontend puede traducir. QuEST proporciona una implementación independiente para contrastar los estados y canales de los circuitos exportados [10].
 
 ## 3 Arquitectura del sistema
 
 La Figura 1 separa las rutas de compilación y ejecución. El plugin está escrito en C++17 y el runtime y motor en C. Ambos caminos utilizan el mismo verificador y sintetizador, aunque la validación externa de QASM emplea una implementación independiente [1].
 
-![Figura 1. Arquitectura de C Ket. El programa genera llamadas nativas al runtime o una IR estática; el motor verifica y sintetiza ambas rutas. Esquema de la implementación.](figures/fig01_architecture.png)
+![Figura 1. Arquitectura de C Ket. El frontend genera llamadas al runtime para ejecución híbrida o una representación intermedia estática para exportación. Ambas rutas comparten verificación y síntesis.](figures/fig01_architecture.png)
 
 ### 3.1 Frontend y tipos
 
-`quant` es una macro de atributo de GCC, no un parser separado. El plugin utiliza `PLUGIN_PRE_GENERICIZE` para inspeccionar declaraciones, expresiones y vidas [2]. Los enteros conservan ancho, signedness y conversiones explícitas. La aritmética unsigned respeta reducción modular; las expresiones con signo quedan sujetas a sus condiciones de validez. El siguiente programa completo calcula y mide 12:
+La declaración `quant` se implementa mediante un atributo de GCC. El plugin interviene en `PLUGIN_PRE_GENERICIZE` para analizar declaraciones, expresiones y tiempos de vida [2]. Los enteros conservan su ancho, interpretación con o sin signo y conversiones explícitas. La aritmética sin signo utiliza reducción modular; las expresiones con signo requieren satisfacer sus condiciones de validez. El siguiente programa ilustra el cálculo y la medición del valor 12:
 
 ```c
 #include <quantum.h>
@@ -49,8 +46,6 @@ int main(void) {
 }
 ```
 
-<!-- page -->
-
 ### 3.2 Propiedad y descomputación
 
 Una inicialización directa entre registros compatibles transfiere propiedad; una expresión nueva preserva las entradas y produce un resultado correlacionado. Los préstamos permiten operar sin transferir el registro. Conceptualmente, el cálculo reversible acumula una función en un destino:
@@ -61,7 +56,7 @@ $$
 
 ![Figura 2. Cálculo, uso de fase e inversa de un predicado. El auxiliar vuelve a cero y la fase permanece en la entrada; deben conservarse controles y dependencias.](figures/fig02_uncomputation.png)
 
-Cada `qcompute` certifica expresión JSON, controles normalizados y versiones de dependencias. `quncompute` exige compatibilidad; mutar, medir o liberar una dependencia puede invalidar la inversa. La igualdad textual de JSON es conservadora y no resuelve equivalencia matemática general. La simulación exige residuo fuera de cero menor que `1e-10` antes de reutilizar el auxiliar. La limpieza elegible sigue el orden inverso de dependencias [1, 3].
+La operación `qcompute` registra la expresión, los controles normalizados y las versiones de sus dependencias. La operación inversa, `quncompute`, requiere que esos elementos permanezcan compatibles. Modificar, medir o liberar una dependencia puede impedir la descomputación. El criterio de identidad de expresiones es conservador y se basa en su representación JSON. Antes de reutilizar un auxiliar, el simulador exige una probabilidad residual fuera del estado cero inferior a `1e-10`. La liberación de temporales sigue el orden inverso de sus dependencias [1, 3].
 
 ### 3.3 Control coherente y transformadas
 
@@ -74,11 +69,9 @@ if (a) b ^= 1;
 unsigned first = measure(a), second = measure(b);
 ```
 
-![Figura 3. Circuito de Bell y probabilidades conjuntas ideales: 00 y 11 tienen peso 1/2. Distribución analítica contrastada con amplitudes del backend; no son frecuencias de hardware.](figures/fig03_bell.png)
+![Figura 3. Preparación de un estado de Bell y distribución conjunta de medición. Los resultados 00 y 11 tienen probabilidad ideal 1/2, en concordancia con las amplitudes obtenidas por simulación.](figures/fig03_bell.png)
 
 Bajo control cuántico se rechazan I/O, efectos de CPU, medición y reset. Fourier usa exponente positivo, little-endian y síntesis cuadrática en el ancho; su inversa cambia el signo. Los bucles de CPU siguen siendo clásicos. La exportación expande formas fijas admitidas hasta 4096 iteraciones; las declaraciones cuánticas en bucles dinámicos y los bucles coherentes generales tienen restricciones.
-
-<!-- page -->
 
 ### 3.4 IR verificada y síntesis
 
@@ -92,11 +85,11 @@ Bajo control cuántico se rechazan I/O, efectos de CPU, medición y reset. Fouri
   ]}}
 ```
 
-El motor combina síntesis simbólica, circuitos aritméticos con workspace reversible y una alternativa finita de hasta 12 bits relevantes. `--no-tables` desactiva esta última. División y resto necesitan un divisor no nulo probado. Los presupuestos producen diagnósticos, sin asegurar síntesis eficiente para toda expresión. En la ruta nativa, una primera llamada puede sintetizar y alimentar una caché; eso no implica compilación anticipada general.
+El motor combina síntesis simbólica, circuitos aritméticos con registros auxiliares reversibles y enumeración finita de hasta 12 bits relevantes. La opción `--no-tables` permite evaluar la síntesis sin enumeración. División y resto requieren demostrar que el divisor es distinto de cero. Los límites de recursos determinan cuándo se rechaza una expresión. En la ejecución nativa, un circuito puede sintetizarse durante su primera invocación y reutilizarse mediante una caché.
 
 ### 3.5 Búsqueda y amplificación
 
-Grover reduce el número de consultas a un oráculo para búsqueda no estructurada [4]. C Ket construye el oráculo desde un predicado puro; su síntesis también tiene costo. `find` exige una solución y `find_known` recibe un conteo M prometido por el llamador. Ambas operaciones necesitan preparación uniforme intacta y transfieren propiedad [1].
+El algoritmo de Grover reduce el número de consultas al oráculo en búsqueda no estructurada [4]. C Ket sintetiza ese oráculo a partir de un predicado puro. La operación `find` requiere una única solución; `find_known` utiliza un número M de soluciones proporcionado como precondición. Ambas operaciones requieren una preparación uniforme sin modificar y transfieren la propiedad del registro de entrada [1].
 
 ```c
 quant uint8_t x = superposition(0, 15);
@@ -110,11 +103,9 @@ $$
 \theta=\arcsin\sqrt{M/N},\qquad P_r=\sin^2((2r+1)\theta).
 $$
 
-![Figura 4. Amplificación ideal para N=16 y M=1. El backend selecciona r=3, con P=0,9613189697; curva teórica contrastada con el estado del ejemplo.](figures/fig04_grover.png)
+![Figura 4. Probabilidad ideal de éxito para N=16 y M=1 en función de las iteraciones de Grover. La selección r=3 produce P=0,9613189697, en concordancia con el estado simulado.](figures/fig04_grover.png)
 
-El ejemplo devuelve 3 con probabilidad ideal cercana al 96,13 %, sin garantía determinista. Para conteo desconocido, `search` mezcla muestreo y Grover con medición y verificación clásica; false significa presupuesto agotado. Su cota documentada `(7/8)^attempts` supone que existe solución y aleatoriedad uniforme independiente. Es un contrato del proyecto, no un nuevo teorema ni una atribución literal a BBHT [1, 5].
-
-<!-- page -->
+El ejemplo devuelve 3 con probabilidad ideal cercana al 96,13 %. Cuando el número de soluciones es desconocido, `search` combina muestreo, amplificación, medición y verificación clásica. Un resultado falso indica que se agotó el presupuesto de búsqueda. La cota de fallo especificada para esta operación, `(7/8)^attempts`, presupone la existencia de una solución y aleatoriedad uniforme independiente; su alcance se limita a esas condiciones de ejecución [1, 5].
 
 ## 4 Motivación y costos del modelo
 
@@ -126,7 +117,7 @@ $$
 B(n)=16\cdot 2^n\ \mathrm{bytes}.
 $$
 
-![Figura 5. Memoria teórica del vector de estado. A 24 qubits ocupa 256 MiB; a 32, 64 GiB. Excluye estructuras del motor, cachés y overhead del proceso.](figures/fig05_memory.png)
+![Figura 5. Memoria del vector de estado en función del número de qubits. La representación requiere 256 MiB a 24 qubits y 64 GiB a 32, sin incluir estructuras auxiliares, cachés ni memoria adicional del proceso.](figures/fig05_memory.png)
 
 <!-- table: Tabla 1. Capacidades del prototipo: ancho del tipo, representación de circuitos y simulación son límites distintos. -->
 | Capacidad | Límite |
@@ -135,27 +126,25 @@ $$
 | Circuito almacenado y exportado | 128 qubits representados |
 | Vector de estado local | 24 qubits físicos |
 
-Los auxiliares cuentan para la simulación. Un soporte inicial pequeño no elimina los bits del ancho declarado; reutilizar wires limpios tampoco reduce una dimensión del vector ya alcanzada. Exportar un circuito grande no implica simularlo ni ejecutarlo en una QPU.
+Los qubits auxiliares contribuyen al tamaño del vector de estado. Una distribución inicial con pocos estados de amplitud no nula conserva la dimensión asociada al ancho declarado. Asimismo, reutilizar qubits restaurados no reduce una dimensión ya alcanzada. La capacidad de representar y exportar circuitos debe, por tanto, distinguirse de la capacidad de simular sus amplitudes.
 
 ## 5 Configuración experimental
 
-### 5.1 Revisión y entorno
+### 5.1 Implementación y entorno
 
-Se evalúa el commit `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`, cket 0.4.0 experimental, con GCC 11.4.0 en Ubuntu 22.04, WSL2 x86_64. Logs, CSV y estados se conservan en `docs/paper/evidence/`. Las campañas del estudio se repitieron en ese estado; esta edición reutiliza esa evidencia y vuelve a comprobar los ejemplos del manuscrito.
+La evaluación corresponde a C Ket 0.4.0 [1], compilado con GCC 11.4.0 en Ubuntu 22.04 sobre WSL2 x86_64. Todas las campañas utilizan la misma revisión de la implementación. Se consideran por separado la corrección funcional, la concordancia con una implementación independiente y el costo lógico de los circuitos sintetizados.
 
 ### 5.2 Cargas y criterios
 
-Las pruebas de frontend y ejemplos usan cinco niveles: `-O0`, `-O1`, `-O2`, `-O3` y `-Os`; semillas 20261011 para generación y 7 para ejecución. El benchmark estudia seis operadores y cuatro anchos, con dos entradas unsigned uniformes y un destino. División y resto aplican OR con uno al divisor para impedir cero. Se incluyen preparación y limpieza privada, pero se conserva el resultado final.
-
-<!-- page -->
+Las pruebas del frontend y de los programas utilizan cinco niveles de optimización: `-O0`, `-O1`, `-O2`, `-O3` y `-Os`. Se fijan las semillas 20261011 para generación y 7 para ejecución. La evaluación de recursos comprende seis operadores y cuatro anchos, con dos entradas sin signo preparadas uniformemente y un registro de resultado. En división y resto, el divisor se combina mediante OR con uno para excluir el valor cero. Los conteos incluyen preparación y descomputación de auxiliares privados; el resultado final se conserva.
 
 ## 6 Resultados
 
 ### 6.1 Corrección observada y validación externa
 
-La Tabla 2 resume campañas con unidades diferentes; sus cifras no se suman como cobertura homogénea. Las 145 compilaciones representan 29 casos en cinco niveles, no 145 algoritmos. Las campañas internas de 1024 expresiones y 4096 mutaciones forman parte de casos agregados de la suite nativa [1].
+La Tabla 2 presenta los resultados de validación según la unidad de cada campaña. Las 145 compilaciones corresponden a 29 casos evaluados en cinco niveles de optimización. Las pruebas nativas incluyen conjuntos de 1024 expresiones generadas y 4096 mutaciones de la representación intermedia, contabilizados dentro de casos agregados [1]. Estas cantidades describen dimensiones diferentes de la evaluación y se interpretan por separado.
 
-<!-- table: Tabla 2. Campañas del estado fijado. Todas aprobaron; cada fila conserva su propia unidad de validación. -->
+<!-- table: Tabla 2. Resultados de validación de la implementación evaluada. Todas las campañas finalizaron sin fallos en los casos examinados. -->
 | Campaña | Resultado | Alcance |
 |---|---|---|
 | Nativa | 354 pruebas | Semántica, estados, errores y CLI |
@@ -164,13 +153,13 @@ La Tabla 2 resume campañas con unidades diferentes; sus cifras no se suman como
 | Síntesis sin tablas | 24 circuitos | Seis operadores, cuatro anchos |
 | QASM con QuEST | 11 circuitos | Ocho estados y tres canales |
 
-Un importer separado ejecuta el QASM en QuEST 3.7.0 [10]. Ocho casos comparan amplitudes hasta fase global y probabilidades con tolerancia `1e-10`; tres canales contrastan transcripciones con 8192 ejecuciones por circuito e implementación. También se rechazan ocho artefactos malformados. El importer cubre el subconjunto emitido, no todo OpenQASM 3.
+Un lector independiente ejecuta los circuitos exportados en QuEST 3.7.0 [10]. Ocho casos comparan amplitudes salvo una fase global común y probabilidades con tolerancia `1e-10`. Tres canales con medición intermedia y reinicio contrastan secuencias de resultados mediante 8192 ejecuciones por circuito e implementación. Además, se comprueba el rechazo de ocho circuitos malformados. El lector implementa el subconjunto OpenQASM utilizado por el exportador.
 
 ### 6.2 Puertas lógicas
 
-![Figura 6. Puertas de los 24 circuitos sin tablas, con eje vertical logarítmico. Suma y resta coinciden. Fuente: synthesis-growth.csv; preparación incluida y resultado final conservado.](figures/fig06_gate_growth.png)
+![Figura 6. Número de puertas lógicas de los 24 circuitos sintetizados sin tablas, en escala logarítmica. Los conteos incluyen preparación y conservan el resultado final. Suma y resta presentan valores coincidentes.](figures/fig06_gate_growth.png)
 
-<!-- table: Tabla 3. Puertas lógicas por operador y ancho de cada entrada w, verificadas contra el CSV. -->
+<!-- table: Tabla 3. Número de puertas lógicas por operador y ancho w de cada registro de entrada. -->
 | Operador | w=4 | w=8 | w=12 | w=16 |
 |---|---|---|---|---|
 | Suma | 40 | 112 | 216 | 352 |
@@ -180,15 +169,13 @@ Un importer separado ejecuta el QASM en QuEST 3.7.0 [10]. Ocho casos comparan am
 | Resto | 324 | 1448 | 3756 | 7632 |
 | Menor que | 49 | 97 | 145 | 193 |
 
-A 16 bits, comparación usa 193 puertas y resto 7632. Cada MCX cuenta como una puerta lógica, previa a descomposición. Los datos no prueban optimalidad, complejidad general ni aceleración. No se midieron tiempos de pared.
+A 16 bits, la comparación requiere 193 puertas y el resto 7632. Cada MCX se cuenta como una puerta lógica antes de descomposición. Los conteos describen costos relativos del sintetizador; no incluyen tiempos de ejecución ni descomposición física.
 
-<!-- page -->
+### 6.3 Registros auxiliares y profundidad
 
-### 6.3 Workspace y profundidad
+![Figura 7. Número máximo de qubits representados durante la síntesis. Suma, resta y multiplicación presentan valores coincidentes. La línea horizontal en 24 qubits indica la capacidad de simulación local.](figures/fig07_workspace.png)
 
-![Figura 7. Pico de qubits representados. Suma, resta y multiplicación coinciden; la línea de 24 marca el límite del simulador, no el de síntesis. Fuente: synthesis-growth.csv.](figures/fig07_workspace.png)
-
-<!-- table: Tabla 4. Recursos a w=16. Auxiliares y pico son qubits; profundidad es la dependencia lógica de wires, previa a cualquier mapeo físico. -->
+<!-- table: Tabla 4. Recursos lógicos para w=16. Auxiliares y pico se expresan en qubits; la profundidad corresponde a las dependencias del circuito antes del mapeo físico. -->
 | Operador | Puertas | Auxiliares | Pico de qubits | Profundidad lógica |
 |---|---|---|---|---|
 | Suma | 352 | 16 | 64 | 246 |
@@ -198,36 +185,32 @@ A 16 bits, comparación usa 193 puertas y resto 7632. Cada MCX cuenta como una p
 | Resto | 7632 | 66 | 114 | 5540 |
 | Menor que | 193 | 17 | 50 | 41 |
 
-Para suma, resta y multiplicación, dos entradas y un resultado aportan 48 qubits lógicos; el pico total es 64. Resto llega a 114. Los puntos de 50 a 114 qubits se obtienen por síntesis y contabilización, no simulando sus amplitudes. La profundidad no equivale a duración física, T-depth o profundidad transpilada. Suma y resta tienen igual conteo pero diferente profundidad: el total de puertas no basta para describir paralelismo.
+Las dos entradas y el resultado de suma, resta y multiplicación ocupan 48 qubits; los auxiliares elevan el pico a 64. El resto alcanza 114. Los circuitos de 50 a 114 qubits se analizan por síntesis y contabilización. La profundidad mide dependencias lógicas. Su diferencia entre suma y resta, con igual número de puertas, refleja diferencias de paralelismo.
 
-Los anchos estudiados implican 8, 16, 24 y 32 bits relevantes de entrada. La construcción sin tablas evidencia que estas familias admitidas superan el fallback de 12 bits. No demuestra soporte universal de 64 bits; división de ese ancho requiere workspace adicional aún no soportado.
+Con 8, 16, 24 y 32 bits relevantes, las cargas superan el límite de enumeración de 12 bits. La representación de enteros de 64 bits no garantiza síntesis dentro del presupuesto disponible: la división de ese ancho requiere más auxiliares de los admitidos.
 
 ### 6.4 Amenazas a la validez y restricciones
 
-La evaluación cubre un único entorno de GCC, programas finitos y precisión de punto flotante sin presupuesto global de error. Compartir un motor entre rutas puede correlacionar fallos; QuEST reduce esa dependencia en los casos contrastados. El marcador interno `volatile` ayuda a preservar accesos frente a optimizaciones, pero sus tests no constituyen prueba formal.
+La evaluación utiliza una versión de GCC y cargas finitas. La simulación emplea punto flotante sin cota global del error acumulado. Compartir el motor de ejecución y exportación puede correlacionar errores. QuEST reduce esa dependencia en los casos contrastados, sin constituir una demostración formal.
 
-El análisis de flujo y vidas no modela todos los caminos de C. Persisten restricciones de recursión, llamadas indirectas, composición cuántica entre unidades y retornos de productos. No se admiten flotantes cuánticos generales, VLAs, unions, bitfields o asignación dinámica cuántica. Los módulos unitarios `circuit` e `inverse_circuit` remapean préstamos tipados y exigen auxiliares privados limpios; no completan una ABI C cuántica general.
+El análisis de flujo no cubre todos los caminos de C. Se restringen recursión, llamadas indirectas, composición entre unidades y retornos de productos. No se admiten flotantes cuánticos generales, VLAs, unions, bitfields ni asignación dinámica cuántica. Los módulos unitarios requieren préstamos tipados y auxiliares restaurados, sin constituir una ABI general.
 
-El prototipo no incorpora QPU, ruido, corrección de errores ni mapeo a una topología. `--state` es una herramienta del simulador, sin equivalente como observación libre de hardware. Ningún resultado certifica las metas abiertas de la versión 1.0 [1].
+Se estudian circuitos ideales, sin ejecución en procesadores cuánticos, ruido, corrección de errores ni conectividad física. El acceso a amplitudes completas sirve para validación en simulación y no es una operación de hardware [1].
 
 <!-- page -->
 
 ## 7 Conclusiones
 
-C Ket implementa una ruta experimental desde datos cuánticos en C11 hasta ejecución híbrida y circuitos verificados. Sus contratos de propiedad y dependencias permiten descomputar temporales dentro del subconjunto admitido. La evaluación reproduce corrección observada y exportación, y cuantifica puertas y workspace de seis familias sin tablas. División y resto resultan especialmente exigentes; varios circuitos construibles exceden la capacidad del simulador. Estos hallazgos no establecen ventaja práctica ni corrección general.
+C Ket integra declaraciones cuánticas, cálculo reversible y control clásico en un subconjunto de C11. La disciplina de propiedad y la conservación de dependencias permiten restaurar registros temporales, mientras un motor compartido conecta la ejecución híbrida con la exportación de circuitos. La validación funcional y el contraste independiente aportan evidencia de concordancia dentro de las cargas evaluadas.
 
-Los próximos pasos incluyen ampliar análisis de flujo y ABI, comparar versiones de GCC y medir costos tras descomposición y tiempos con cargas equivalentes. Fuente del artículo, figuras, datos y auditoría acompañan al checkout. Para repetir la evaluación del estado fijado en Linux o WSL:
+El análisis de recursos muestra que la expresividad de los operadores debe evaluarse conjuntamente con sus necesidades de auxiliares. División y resto presentan los mayores costos de las familias estudiadas, y varios circuitos sintetizables exceden la capacidad del simulador. La distinción entre representación, síntesis y simulación es, por ello, esencial para interpretar el alcance del sistema.
 
-```bash
-export CC=gcc-11 CXX=g++-11
-bash docs/paper/audit_project.sh
-```
+El objetivo a largo plazo es una semántica cuántica explícita para todas las construcciones de C11 e interfaces de su biblioteca estándar. El trabajo futuro distingue implementaciones pendientes, cotas de recursos e incompatibilidades semánticas justificadas. Flujo, memoria, tipos numéricos y composición entre unidades requieren validación por etapas. La estabilidad de GCC, la descomposición física y las comparaciones con cargas y tiempos equivalentes complementarían los recursos lógicos presentados.
 
-**Disponibilidad.** El código MIT atribuye autoría a Ignacio Schwindt y colaboradores. El repositorio identificado por el proyecto es privado; la evaluación utilizó el checkout local [1].
 
 ## Referencias
 
-[1] Schwindt, I., y colaboradores. *|c> / cket: C with high-level quantum data*. Versión 0.4.0 experimental, revisión `1ebb2e3`, 2026. Código y documentación consultados localmente; evidencia en `docs/paper/evidence/`. [Repositorio del proyecto](https://github.com/igna-s/cket).
+[1] Schwindt, I. *C Ket: C with high-level quantum data*. Versión 0.4.0, 2026. [Software](https://github.com/igna-s/cket).
 
 [2] Free Software Foundation. *GNU Compiler Collection Internals: Plugin API*. Documentación oficial, consulta: 11 de octubre de 2026. [API de plugins de GCC](https://gcc.gnu.org/onlinedocs/gccint/Plugin-API.html).
 
@@ -246,4 +229,3 @@ bash docs/paper/audit_project.sh
 [9] OpenQASM. *OpenQASM 3.0 Specification: Gates*. Especificación oficial, consulta: 11 de octubre de 2026. [Controles y fases](https://openqasm.com/versions/3.0/language/gates.html).
 
 [10] Jones, T., Brown, A., Bush, I., y Benjamin, S. C. QuEST and High Performance Simulation of Quantum Computers. *Scientific Reports*, 9:10736, 2019. DOI: 10.1038/s41598-019-47174-9. [Preprint](https://arxiv.org/abs/1802.08032).
-

@@ -46,13 +46,13 @@ static const example examples[] = {
     {"repeat_until_success", NULL, 0, 1},
     {"find_multiple", NULL, 1, 1},
     {"search_constraints", NULL, 0, 1},
-    {"coherent_accumulate", NULL, 1, 1}
-};
+    {"coherent_accumulate", NULL, 1, 1}};
 
 typedef struct {
     const char *name, *input, *output;
     int status;
 } input_case;
+
 static const input_case input_cases[] = {
     {"input_sum", "0\n", "count=0 sum=0\n", 0},
     {"input_sum", "1\n", "count=1 sum=1\n", 0},
@@ -84,27 +84,35 @@ static const input_case input_cases[] = {
     {"input_minmax", "1 -1\n", "", 1},
     {"input_minmax", "1 no\n", "", 1},
     {"input_minmax", "no\n", "", 1},
-    {"input_minmax", "", "", 1}
-};
+    {"input_minmax", "", "", 1}};
 
 static const char *sample_input(const example *e) {
-    if (!strcmp(e->name, "input_sum")) return "10\n";
-    if (!strcmp(e->name, "input_minmax")) return "8 42 17 42 0 128 255 9 255\n";
+    if (!strcmp(e->name, "input_sum"))
+        return "10\n";
+    if (!strcmp(e->name, "input_minmax"))
+        return "8 42 17 42 0 128 255 9 255\n";
     return "0\n";
 }
 
 static unsigned checks;
+
 static void require(validation *v, int condition, const char *name, const char *action) {
     if (!condition) {
         char *log = validation_read(v->log);
-        fprintf(stderr, "%s", log); free(log);
+        fprintf(stderr, "%s", log);
+        free(log);
         validation_fail("example %s failed: %s (artifacts: %s)", name, action, v->temp);
     }
     ++checks;
 }
+
 static void check_output(validation *v, const example *e, const char *output) {
-    char *text = validation_read(output); int ok = 0; unsigned a, b, c; char tail;
-    if (e->expected) ok = !strcmp(text, e->expected);
+    char *text = validation_read(output);
+    int ok = 0;
+    unsigned a, b, c;
+    char tail;
+    if (e->expected)
+        ok = !strcmp(text, e->expected);
     else if (!strcmp(e->name, "entanglement"))
         ok = sscanf(text, "%u %u %c", &a, &b, &tail) == 2 && a <= 1 && a == b;
     else if (!strcmp(e->name, "coherent"))
@@ -112,43 +120,54 @@ static void check_output(validation *v, const example *e, const char *output) {
     else if (!strcmp(e->name, "prepare_measure"))
         ok = sscanf(text, "classical=10 quantum=%u %c", &a, &tail) == 1 && a <= 255;
     else if (!strcmp(e->name, "measurement_histogram"))
-        ok = sscanf(text, "zeros=%u ones=%u trials=%u %c", &a, &b, &c, &tail) == 3 &&
-             a <= 32 && b <= 32 && a + b == 32 && c == 32;
+        ok = sscanf(text, "zeros=%u ones=%u trials=%u %c", &a, &b, &c, &tail) == 3 && a <= 32 &&
+             b <= 32 && a + b == 32 && c == 32;
     else if (!strcmp(e->name, "repeat_until_success"))
-        ok = sscanf(text, "found=%u attempts=%u %c", &a, &b, &tail) == 2 &&
-             a <= 1 && b >= 1 && b <= 16 && (a || b == 16);
+        ok = sscanf(text, "found=%u attempts=%u %c", &a, &b, &tail) == 2 && a <= 1 && b >= 1 &&
+             b <= 16 && (a || b == 16);
     else if (!strcmp(e->name, "find_multiple"))
         ok = sscanf(text, "candidate=%u %c", &a, &tail) == 1 && a <= 15 && a % 4 == 1;
     else if (!strcmp(e->name, "search_constraints"))
         ok = !strcmp(text, "Search budget exhausted\n") ||
              (sscanf(text, "candidate=%u %c", &a, &tail) == 1 && a >= 8 && a <= 13 && a % 3 == 1);
     else if (!strcmp(e->name, "coherent_accumulate"))
-        ok = sscanf(text, "flag=%u total=%u %c", &a, &b, &tail) == 2 &&
-             a <= 1 && b == (a ? 15u : 30u);
-    if (!ok) fprintf(stderr, "Unexpected stdout: %s\n", text);
-    free(text); require(v, ok, e->name, "output");
+        ok = sscanf(text, "flag=%u total=%u %c", &a, &b, &tail) == 2 && a <= 1 &&
+             b == (a ? 15u : 30u);
+    if (!ok)
+        fprintf(stderr, "Unexpected stdout: %s\n", text);
+    free(text);
+    require(v, ok, e->name, "output");
 }
 
-static void check_inputs(validation *v, const example *e, char *binary, const char *input, const char *output) {
+static void
+check_inputs(validation *v, const example *e, char *binary, const char *input, const char *output) {
     for (unsigned i = 0; i < sizeof input_cases / sizeof *input_cases; ++i) {
         const input_case *c = &input_cases[i];
-        if (strcmp(c->name, e->name)) continue;
+        if (strcmp(c->name, e->name))
+            continue;
         validation_write(input, c->input);
         char *run[] = {binary, NULL};
-        require(v, validation_run_input(v, run, input, output, 90) == c->status,
-                e->name, "boundary/input status");
+        require(v,
+                validation_run_input(v, run, input, output, 90) == c->status,
+                e->name,
+                "boundary/input status");
         char *text = validation_read(output);
-        require(v, !strcmp(text, c->output), e->name, "boundary/input output"); free(text);
+        require(v, !strcmp(text, c->output), e->name, "boundary/input output");
+        free(text);
         if (c->status) {
             char *log = validation_read(v->log);
-            require(v, strstr(log, "Expected a count") != NULL, e->name, "invalid input diagnostic"); free(log);
+            require(
+                v, strstr(log, "Expected a count") != NULL, e->name, "invalid input diagnostic");
+            free(log);
         }
     }
 }
 
 int main(int argc, char **argv) {
-    if (argc != 1) validation_fail("usage: test_examples");
-    validation v; validation_init(&v, argv[0]);
+    if (argc != 1)
+        validation_fail("usage: test_examples");
+    validation v;
+    validation_init(&v, argv[0]);
     char driver[4096], backend[4096], source[4096], binary[4096], output[4096];
     char input[4096], artifact[4096], seed[32];
     validation_path(driver, sizeof driver, "%s/build/cket", v.root);
@@ -158,7 +177,8 @@ int main(int argc, char **argv) {
     validation_path(input, sizeof input, "%s/stdin", v.temp);
     validation_path(artifact, sizeof artifact, "%s/artifact", v.temp);
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
-    if (setenv("CKET_SEED", "7", 1)) validation_fail("cannot set example seed");
+    if (setenv("CKET_SEED", "7", 1))
+        validation_fail("cannot set example seed");
     for (unsigned i = 0; i < sizeof examples / sizeof *examples; ++i) {
         const example *e = &examples[i];
         validation_path(source, sizeof source, "%s/examples/%s.c", v.root, e->name);
@@ -169,7 +189,8 @@ int main(int argc, char **argv) {
             char *run[] = {binary, NULL};
             int result = validation_run_input(&v, run, input, output, 90);
             require(&v, result == (e->runtime ? 0 : 1), e->name, "execution status");
-            if (e->runtime) check_output(&v, e, output);
+            if (e->runtime)
+                check_output(&v, e, output);
             else {
                 char *log = validation_read(v.log);
                 require(&v, strstr(log, "24") != NULL, e->name, "simulator limit diagnostic");
@@ -181,11 +202,14 @@ int main(int argc, char **argv) {
         for (unsigned action = 0; action < sizeof actions / sizeof *actions; ++action) {
             char *export[] = {driver, source, (char *)actions[action], "-o", artifact, NULL};
             int result = validation_run(&v, export, NULL, 90);
-            require(&v, e->static_export || action < 2 ? result == 0 : result == 1,
-                    e->name, actions[action]);
+            require(&v,
+                    e->static_export || action < 2 ? result == 0 : result == 1,
+                    e->name,
+                    actions[action]);
             if (!result) {
                 char *text = validation_read(artifact);
-                require(&v, *text != 0, e->name, "nonempty artifact"); free(text);
+                require(&v, *text != 0, e->name, "nonempty artifact");
+                free(text);
             }
             if (action == 1) {
                 char *verify[] = {backend, "--validate", artifact, NULL};
@@ -203,66 +227,87 @@ int main(int argc, char **argv) {
         char *run[] = {driver, source, "--run", "--seed", seed, "-o", binary, NULL};
         require(&v, !validation_run(&v, run, output, 90), "entanglement", "seeded --run");
         check_output(&v, &examples[1], output);
-        char *text = validation_read(output); outcomes |= 1u << (unsigned)strtoul(text, NULL, 10); free(text);
+        char *text = validation_read(output);
+        outcomes |= 1u << (unsigned)strtoul(text, NULL, 10);
+        free(text);
     }
     require(&v, outcomes == 3, "entanglement", "both correlated outcomes in fixed seed corpus");
 
     /* Check stochastic contracts over many seeds, rather than pinning samples. */
     for (unsigned i = 16; i < sizeof examples / sizeof *examples; ++i) {
         const example *e = &examples[i];
-        if (e->expected) continue;
+        if (e->expected)
+            continue;
         validation_path(source, sizeof source, "%s/examples/%s.c", v.root, e->name);
         char *compile[] = {driver, source, "-o", binary, NULL};
         require(&v, !validation_run(&v, compile, NULL, 90), e->name, "seed corpus fixture");
         unsigned branches = 0;
         for (unsigned s = 0; s < 16; ++s) {
             snprintf(seed, sizeof seed, "%u", s);
-            if (setenv("CKET_SEED", seed, 1)) validation_fail("cannot set example seed");
+            if (setenv("CKET_SEED", seed, 1))
+                validation_fail("cannot set example seed");
             char *run[] = {binary, NULL};
             require(&v, !validation_run(&v, run, output, 90), e->name, "seed corpus execution");
             check_output(&v, e, output);
             if (!strcmp(e->name, "coherent_accumulate")) {
-                char *text = validation_read(output); unsigned flag;
-                if (sscanf(text, "flag=%u", &flag) != 1) validation_fail("missing coherent flag");
-                branches |= 1u << flag; free(text);
+                char *text = validation_read(output);
+                unsigned flag;
+                if (sscanf(text, "flag=%u", &flag) != 1)
+                    validation_fail("missing coherent flag");
+                branches |= 1u << flag;
+                free(text);
             }
         }
         if (!strcmp(e->name, "coherent_accumulate"))
             require(&v, branches == 3, e->name, "both coherent branch outcomes");
     }
-    if (setenv("CKET_SEED", "7", 1)) validation_fail("cannot restore example seed");
+    if (setenv("CKET_SEED", "7", 1))
+        validation_fail("cannot restore example seed");
 
     validation_path(source, sizeof source, "%s/examples/dynamic_vector.c", v.root);
     char *compile[] = {driver, source, "-o", binary, NULL};
     require(&v, !validation_run(&v, compile, NULL, 90), "dynamic_vector", "input fixture");
     const char *inputs[] = {"1\n", "2\n", "no\n", ""};
     for (unsigned i = 0; i < sizeof inputs / sizeof *inputs; ++i) {
-        validation_write(input, inputs[i]); char *run[] = {binary, NULL};
-        require(&v, validation_run_input(&v, run, input, output, 90) == (i ? 1 : 0),
-                "dynamic_vector", "second index, out of bounds, malformed input and EOF");
+        validation_write(input, inputs[i]);
+        char *run[] = {binary, NULL};
+        require(&v,
+                validation_run_input(&v, run, input, output, 90) == (i ? 1 : 0),
+                "dynamic_vector",
+                "second index, out of bounds, malformed input and EOF");
         char *text = validation_read(output);
-        require(&v, !strcmp(text, i ? "" : "9\n"), "dynamic_vector", "input output"); free(text);
+        require(&v, !strcmp(text, i ? "" : "9\n"), "dynamic_vector", "input output");
+        free(text);
     }
 
     /* A caller's working directory must not determine header/plugin/module locations. */
-    validation remote = v; strcpy(remote.root, v.temp);
+    validation remote = v;
+    strcpy(remote.root, v.temp);
     validation_path(source, sizeof source, "%s/examples/circuit_module.c", v.root);
-    char launcher[4096]; validation_path(launcher, sizeof launcher, "%s/cket", v.root);
+    char launcher[4096];
+    validation_path(launcher, sizeof launcher, "%s/cket", v.root);
     char *away[] = {"bash", launcher, source, "--run", "--seed", "7", "-o", binary, NULL};
-    require(&v, !validation_run(&remote, away, output, 90), "circuit_module", "launcher outside repository");
+    require(&v,
+            !validation_run(&remote, away, output, 90),
+            "circuit_module",
+            "launcher outside repository");
     check_output(&v, &examples[10], output);
     const char *options[] = {"--help", "--version"};
     for (unsigned i = 0; i < sizeof options / sizeof *options; ++i) {
         char *command[] = {driver, (char *)options[i], NULL};
         require(&v, !validation_run(&v, command, output, 30), "driver", options[i]);
         char *text = validation_read(output);
-        require(&v, strstr(text, i ? "0.4.0" : "usage:") != NULL, "driver", "CLI information"); free(text);
+        require(&v, strstr(text, i ? "0.4.0" : "usage:") != NULL, "driver", "CLI information");
+        free(text);
     }
     char *bad_seed[] = {driver, source, "--run", "--seed", "-1", NULL};
     require(&v, validation_run(&v, bad_seed, NULL, 30) == 1, "driver", "invalid seed");
     char *conflict[] = {driver, source, "--run", "--emit-ir", NULL};
     require(&v, validation_run(&v, conflict, NULL, 30) == 1, "driver", "conflicting actions");
-    printf("\n%u checks passed across %zu examples, five optimization levels and CLI/input contracts\n",
-           checks, sizeof examples / sizeof *examples);
-    validation_cleanup(&v); return 0;
+    printf(
+        "\n%u checks passed across %zu examples, five optimization levels and CLI/input contracts\n",
+        checks,
+        sizeof examples / sizeof *examples);
+    validation_cleanup(&v);
+    return 0;
 }

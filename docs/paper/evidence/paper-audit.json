@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 175,
+  "checks": 278,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -13,12 +13,22 @@
       "detail": ""
     },
     {
-      "check": "Ocho páginas planificadas, incluida bibliografía",
+      "check": "Conclusiones y bibliografía comienzan en la página final",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Mismos bloques C, JSON y bash en ambos idiomas",
+      "check": "Mismos bloques C y JSON en ambos idiomas",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Manuscrito sin notas internas de edición",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Manuscrito sin instrucciones de mantenimiento",
       "passed": true,
       "detail": ""
     },
@@ -35,7 +45,7 @@
     {
       "check": "Mismas cifras y contratos cuantitativos en ambos idiomas",
       "passed": true,
-      "detail": "204 cifras ES; 204 cifras EN"
+      "detail": "197 cifras ES; 197 cifras EN"
     },
     {
       "check": "Resultado reproducido: 354 passed, 0 failed",
@@ -443,22 +453,42 @@
       "detail": ""
     },
     {
+      "check": "Fuente local .clang-format",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local .editorconfig",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local .github/workflows/verify.yml",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local CONTRIBUTING.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local LICENSE",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local README.md",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local docs/language.md",
+      "check": "Fuente local cket",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local docs/ir-verification.md",
-      "passed": true,
-      "detail": ""
-    },
-    {
-      "check": "Fuente local docs/circuit-abi.md",
+      "check": "Fuente local docs/audit-evidence/README.md",
       "passed": true,
       "detail": ""
     },
@@ -468,12 +498,347 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-expressions.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-inplace.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-inventory.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-library.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-memcopy.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-roadmap.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-shifts.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/circuit-abi.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/ir-verification.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/language.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/repository-audit.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/v1-plan.md",
       "passed": true,
       "detail": ""
     },
     {
+      "check": "Fuente local examples/circuit_module.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/coherent.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/coherent_accumulate.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/do_while_countdown.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/dot_product.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/dynamic_vector.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/entanglement.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/fibonacci.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/find.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/find_multiple.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/for_sum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/fourier.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/functions.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/hello.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/hybrid_loop.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/increment.qir.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/input_minmax.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/input_sum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/maximum_scan.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/measurement_histogram.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/minimum_scan.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/minmax_array.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/modular_arithmetic.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/nested_for_sum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/pair_maximum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/pair_minimum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/phase_estimation.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/prepare_measure.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/products.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/read_input.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/register_accumulate.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/repeat_until_success.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/search.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/search_constraints.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/search_empty.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/types.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/vector_function.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/while_sum.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local include/quantum.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/archive-audit.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/build-validation.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/build.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/demo.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/format.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/inventory_c11.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/reproduce-paper-baseline.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/requirements-format.txt",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/run-examples.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/sanitize-all.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/sanitize.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/setup-format.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/test-c11-classical.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/test.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/unpack-gcc-deps.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/verify.sh",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/cket.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/cket_backend.c",
       "passed": true,
       "detail": ""
     },
@@ -488,17 +853,32 @@
       "detail": ""
     },
     {
-      "check": "Fuente local src/cket_backend.c",
+      "check": "Fuente local src/engine/arithmetic.inc",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local src/engine/verify.c",
+      "check": "Fuente local src/engine/circuit.inc",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local src/engine/simulator.c",
+      "check": "Fuente local src/engine/inplace.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/internal.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/json.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/json.h",
       "passed": true,
       "detail": ""
     },
@@ -508,12 +888,42 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/engine/quantum.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/simulator.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/structured.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/verify.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_frontend.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_semantics.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/benchmark_synthesis.c",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local tests/validate_qasm.c",
+      "check": "Fuente local tests/c11_classical.c",
       "passed": true,
       "detail": ""
     },
@@ -523,12 +933,102 @@
       "detail": ""
     },
     {
-      "check": "Fuente local include/quantum.h",
+      "check": "Fuente local tests/qasm_reference.c",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Fuente local LICENSE",
+      "check": "Fuente local tests/qasm_reference.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/qasm_samples.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_composition.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_examples.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_exhaustive.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_fourier.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_indexed.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_library.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_memory.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_native.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_properties.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_scalable.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_expressions.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_inplace.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_memcopy.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_qasm.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_shifts.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validation.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validation.h",
       "passed": true,
       "detail": ""
     },
@@ -629,6 +1129,21 @@
     },
     {
       "check": "Tamaño Letter del documento de referencia",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF sin notas internas de edición",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplos C y JSON íntegros en una página",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Títulos unidos al contenido siguiente",
       "passed": true,
       "detail": ""
     },
@@ -883,6 +1398,11 @@
       "detail": ""
     }
   ],
+  "audit_checkout": {
+    "head": "b7a4ab33a3961ab3970ba59252b14869986fcf58",
+    "uncommitted_changes": true,
+    "source_files_in_manifest": 116
+  },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required."
 }

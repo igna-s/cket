@@ -3,13 +3,12 @@
 Manuscritos completos en español e inglés sobre `|c>` / cket 0.4.0 experimental. El estado estudiado
 corresponde al commit `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`.
 
-Cada versión tiene **ocho páginas, incluidas figuras y bibliografía**.
-Su modelo de maquetación es [Attention Is All You Need](https://arxiv.org/pdf/1706.03762):
-papel Letter, una columna de 5,5 pulgadas, cuerpo serif de 10 puntos, título
-centrado entre reglas, resumen sangrado, secciones numeradas y tablas con
-líneas horizontales. Se usa Times New Roman embebida, compatible con la Nimbus
-Roman del modelo; STIX es el fallback editorial. Las siete secciones conservan
-la progresión del artículo de referencia y adaptan sus contenidos al compilador.
+Cada versión tiene **ocho páginas, incluidas figuras y bibliografía**. Su modelo de maquetación es
+[Attention Is All You Need](https://arxiv.org/pdf/1706.03762): papel Letter, una columna de 5,5
+pulgadas, cuerpo serif de 10 puntos, título centrado entre reglas, resumen sangrado, secciones
+numeradas y tablas con líneas horizontales. Se usa Times New Roman embebida, compatible con la
+Nimbus Roman del modelo; STIX es el fallback editorial. Las siete secciones conservan la progresión
+del artículo de referencia y adaptan sus contenidos al compilador.
 
 - Español: [PDF](../../output/pdf/c_ket_paper.pdf), [fuente editable](c_ket_paper.md).
 - Inglés: [PDF](../../output/pdf/c_ket_paper_en.pdf), [fuente editable](c_ket_paper_en.md).
@@ -17,27 +16,38 @@ la progresión del artículo de referencia y adaptan sus contenidos al compilado
 - Figuras originales: [`figures/`](figures/), en PNG y SVG.
 - Datos, logs y comprobaciones: [`evidence/`](evidence/).
 
-Las siete figuras describen arquitectura, descomputación, Bell, Grover, memoria,
-puertas lógicas y workspace. Cada caption identifica si presenta un esquema,
-un cálculo teórico o datos reproducidos del backend.
-Las etiquetas, captions, tablas, texto y notas bibliográficas están traducidos.
-Los títulos oficiales de los artículos citados y el código se conservan.
-Las figuras inglesas están en [`figures/en/`](figures/en/); comparten datos y
-lógica de generación con las españolas. La auditoría comprueba igualdad entre
-idiomas de bloques de código, ecuaciones, cifras y enlaces bibliográficos.
-Las figuras son originales. El título, autoría y contenido corresponden a C Ket.
-La fuente anterior, más extensa, queda preservada en
+Las siete figuras describen arquitectura, descomputación, Bell, Grover, memoria, puertas lógicas y
+workspace. Cada caption identifica si presenta un esquema, un cálculo teórico o datos reproducidos
+del backend. Las etiquetas, captions, tablas, texto y notas bibliográficas están traducidos. Los
+títulos oficiales de los artículos citados y el código se conservan. Las figuras inglesas están en
+[`figures/en/`](figures/en/); comparten datos y lógica de generación con las españolas. La auditoría
+comprueba igualdad entre idiomas de bloques de código, ecuaciones, cifras y enlaces bibliográficos.
+Las figuras son originales. El título, autoría y contenido corresponden a C Ket. Ambos manuscritos
+utilizan redacción académica y omiten notas internas de edición, rutas del repositorio e
+instrucciones de mantenimiento. La revisión exacta y los procedimientos de reproducción se
+documentan aquí y en la auditoría; el cuerpo del artículo conserva métodos, resultados y
+limitaciones científicas. La fuente anterior, más extensa, queda preservada en
 [`evidence/manuscript-before-format.md`](evidence/manuscript-before-format.md).
 
 ## Repetir la validación
 
-Usar Linux o WSL con GCC 11 y sus headers de plugin compatibles. Este comando
-reconstruye el proyecto y renueva los logs de evidencia; la primera construcción
-de QuEST puede necesitar acceso a Internet.
-Ejecutarlo en el commit indicado, preferentemente en un checkout separado.
-El checkout actual incluye ejemplos posteriores: sus 36 programas no son los
-16 del estudio fijado, y sus resultados no deben sobrescribir la evidencia de
-esta revisión del paper.
+Usar Linux o WSL con GCC 11 y sus headers de plugin compatibles. Este comando reconstruye el
+proyecto y renueva los logs de evidencia; la primera construcción de QuEST puede necesitar acceso a
+Internet. Ejecutarlo en el commit indicado, preferentemente en un checkout separado. El checkout
+actual incluye ejemplos posteriores: sus 36 programas no son los 16 del estudio fijado, y sus
+resultados no deben sobrescribir la evidencia de esta revisión del paper.
+
+También se puede reproducir esa revisión desde el checkout actual sin cambiar los logs publicados.
+El siguiente script crea un archivo separado del código histórico, reconstruye sus binarios y
+verifica los recuentos y el CSV original:
+
+```bash
+bash scripts/reproduce-paper-baseline.sh
+```
+
+El snapshot y sus resultados quedan en `build/audit/paper-baseline/`. El script requiere que ese
+destino no exista y no lo borra automáticamente. `audit_project.sh` rechaza una revisión distinta o
+cambios en el compilador; así se evita sobrescribir evidencia histórica con la campaña actual.
 
 ```bash
 export CC=gcc-11
@@ -48,8 +58,8 @@ bash docs/paper/capture_examples.sh
 
 ## Regenerar los documentos
 
-Las dependencias de Python son herramientas editoriales del paper. El compilador
-y sus pruebas conservan su implementación en C/C++ y shell.
+Las dependencias de Python son herramientas editoriales del paper. El compilador y sus pruebas
+conservan su implementación en C/C++ y shell.
 
 ```bash
 bash docs/paper/setup_pdf.sh
@@ -57,27 +67,24 @@ bash docs/paper/setup_pdf.sh
 .deps/paper-venv/bin/python docs/paper/audit_paper.py
 ```
 
-`build_paper.py` genera ambos PDF y sus PNG/SVG de forma predeterminada. Las
-páginas renderizadas se guardan en `tmp/pdfs/es/` y `tmp/pdfs/en/`. Se puede
-seleccionar una edición con `--language es` o `--language en`; `--pdf-only`
-reutiliza las figuras ya generadas. Falla si una versión supera ocho páginas;
-la bibliografía cuenta dentro de ese límite. El render utiliza PyMuPDF; el setup intenta además disponer de un
-Poppler local. Las páginas deben revisarse visualmente después de cambios
-editoriales. `audit_paper.py` no sustituye esa revisión: comprueba cifras,
-referencias, ejemplos, resolución de figuras, texto y límites de página.
-También verifica tamaño Letter, columna, cuerpo serif negro de 10 puntos,
-numeración y presencia de las diez referencias en la última página.
-`audit_paper.py` revisa ambas versiones por defecto y admite el mismo selector
-`--language`. Sus informes son `evidence/paper-audit.json` (ES) y
-`evidence/paper-audit-en.json` (EN); el manifiesto SHA-256 incluye los dos PDF,
-las dos fuentes y todas las figuras. Ambas fuentes deben estar presentes para
-comprobar la equivalencia editorial, incluso al auditar un solo idioma.
-[`evidence/layout-reference.json`](evidence/layout-reference.json) registra
-las decisiones de formato. Para reinspeccionar el modelo, descargar el PDF
-de arXiv en `tmp/pdfs/reference.pdf` y ejecutar `inspect_reference.py` con el
-mismo entorno editorial; las capturas externas son intermediarios de revisión.
+`build_paper.py` genera ambos PDF y sus PNG/SVG de forma predeterminada. Las páginas renderizadas se
+guardan en `tmp/pdfs/es/` y `tmp/pdfs/en/`. Se puede seleccionar una edición con `--language es` o
+`--language en`; `--pdf-only` reutiliza las figuras ya generadas. Falla si una versión supera ocho
+páginas; la bibliografía cuenta dentro de ese límite. El render utiliza PyMuPDF; el setup intenta
+además disponer de un Poppler local. Las páginas deben revisarse visualmente después de cambios
+editoriales. `audit_paper.py` no sustituye esa revisión: comprueba cifras, referencias, ejemplos,
+resolución de figuras, texto y límites de página. También verifica tamaño Letter, columna, cuerpo
+serif negro de 10 puntos, numeración y presencia de las diez referencias en la última página.
+`audit_paper.py` revisa ambas versiones por defecto y admite el mismo selector `--language`. Sus
+informes son `evidence/paper-audit.json` (ES) y `evidence/paper-audit-en.json` (EN); el manifiesto
+SHA-256 incluye los dos PDF, las dos fuentes y todas las figuras. Ambas fuentes deben estar
+presentes para comprobar la equivalencia editorial, incluso al auditar un solo idioma.
+[`evidence/layout-reference.json`](evidence/layout-reference.json) registra las decisiones de
+formato. Para reinspeccionar el modelo, descargar el PDF de arXiv en `tmp/pdfs/reference.pdf` y
+ejecutar `inspect_reference.py` con el mismo entorno editorial; las capturas externas son
+intermediarios de revisión.
 
-El archivo `evidence/environment.txt` describe el entorno de pruebas C;
-`editorial-toolchain.json` describe el entorno Python de publicación. El
-manifiesto SHA-256 vincula PDF, fuente, figuras, datos, logs y archivos relevantes
-del proyecto. La auditoría detallada incluye su alcance y las correcciones.
+El archivo `evidence/environment.txt` describe el entorno de pruebas C; `editorial-toolchain.json`
+describe el entorno Python de publicación. El manifiesto SHA-256 vincula PDF, fuente, figuras,
+datos, logs y archivos relevantes del proyecto. La auditoría detallada incluye su alcance y las
+correcciones.

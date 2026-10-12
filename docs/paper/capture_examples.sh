@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 for example in entanglement find; do
     build/cket "examples/$example.c" --emit-ir -o "docs/paper/evidence/$example.qir.json"
-    build/cket_backend --state "docs/paper/evidence/$example.qir.json" > "docs/paper/evidence/$example.state.json"
+    build/cket_backend --state "docs/paper/evidence/$example.qir.json" >"docs/paper/evidence/$example.state.json"
 done
 python3 - <<'PY'
 from pathlib import Path

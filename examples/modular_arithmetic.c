@@ -4,7 +4,7 @@
 
 int main(void) {
     quant uint8_t value = 250;
-    value += 20;  /* Unsigned updates wrap modulo 256. */
+    value += 20; /* Unsigned updates wrap modulo 256. */
     unsigned added = measure(value);
     value -= 30;
     unsigned subtracted = measure(value);

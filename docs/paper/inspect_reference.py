@@ -15,14 +15,23 @@ for page in doc:
             for span in line["spans"]:
                 sizes[(span["font"], round(span["size"], 2))] += len(span["text"])
 report = {
-    "pages": len(doc), "page_size": list(doc[0].rect),
-    "fonts": [{"font": key[0], "size": key[1], "characters": count}
-              for key, count in sizes.most_common(14)],
-    "first_page_blocks": [{"bbox": list(b["bbox"]),
-                           "text": " ".join(s["text"] for l in b.get("lines", []) for s in l["spans"]),
-                           "fonts": sorted({(s["font"], round(s["size"], 2))
-                                             for l in b.get("lines", []) for s in l["spans"]})}
-                          for b in doc[0].get_text("dict")["blocks"] if b["type"] == 0],
+    "pages": len(doc),
+    "page_size": list(doc[0].rect),
+    "fonts": [
+        {"font": key[0], "size": key[1], "characters": count}
+        for key, count in sizes.most_common(14)
+    ],
+    "first_page_blocks": [
+        {
+            "bbox": list(b["bbox"]),
+            "text": " ".join(s["text"] for l in b.get("lines", []) for s in l["spans"]),
+            "fonts": sorted(
+                {(s["font"], round(s["size"], 2)) for l in b.get("lines", []) for s in l["spans"]}
+            ),
+        }
+        for b in doc[0].get_text("dict")["blocks"]
+        if b["type"] == 0
+    ],
 }
 (TMP / "reference-layout.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 for number in (0, 1, 4, 7):

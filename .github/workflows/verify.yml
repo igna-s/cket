@@ -10,6 +10,18 @@ defaults:
   run:
     shell: bash
 jobs:
+  formatting:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install optional formatting tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-venv curl ca-certificates
+          bash scripts/setup-format.sh
+      - name: Check source and documentation formatting
+        run: .deps/format-venv/bin/python scripts/format.py --check
   verify:
     runs-on: ubuntu-22.04
     timeout-minutes: 45

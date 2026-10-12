@@ -12,5 +12,3 @@ __pycache__/
 *.so
 *.qir.json
 !/examples/*.qir.json
-
-

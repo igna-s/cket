@@ -1,0 +1,1318 @@
+Built |c> native C driver, reversible backend, statevector motor and GCC plugin
+PASS signed structured mul: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured div: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured mod: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured eq: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured ne: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured lt: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured le: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured gt: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured ge: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured gt with a positive leading bit: joint amplitudes, C rounding, inverse and zero garbage
+PASS structured sequence validates discarded arithmetic
+PASS structured signed division rejects MIN/-1
+PASS finite sequence validates discarded arithmetic
+PASS finite signed division rejects MIN/-1
+PASS structured add: joint amplitudes, inverse and zero garbage without tables
+PASS structured sub: joint amplitudes, inverse and zero garbage without tables
+PASS structured mul: joint amplitudes, inverse and zero garbage without tables
+PASS structured div: joint amplitudes, inverse and zero garbage without tables
+PASS structured mod: joint amplitudes, inverse and zero garbage without tables
+PASS structured eq: joint amplitudes, inverse and zero garbage without tables
+PASS structured ne: joint amplitudes, inverse and zero garbage without tables
+PASS structured lt: joint amplitudes, inverse and zero garbage without tables
+PASS structured le: joint amplitudes, inverse and zero garbage without tables
+PASS structured gt: joint amplitudes, inverse and zero garbage without tables
+PASS structured ge: joint amplitudes, inverse and zero garbage without tables
+PASS 16-bit multiplication exports with 32 relevant bits
+PASS 16-bit division exports without input enumeration
+PASS 16-bit remainder exports without input enumeration
+PASS 32-bit register comparison exports
+PASS signed 16-bit multiplication exports with negative operands
+PASS signed division exports beyond twelve relevant bits
+PASS signed remainder exports beyond twelve relevant bits
+PASS large signed overflow remains rejected
+PASS Grover oracle exceeds the former 12-bit limit
+PASS unknown search verifies its successful candidate
+PASS unknown search with no solutions exhausts its budget
+PASS unknown search with all solutions succeeds
+PASS coherent if inside a CPU loop
+PASS GCC boolean complement preserves a controlled XOR
+PASS a signed value conversion preserves its source owner
+PASS CPU paths both consume a register explicitly
+PASS measurement can drive a later CPU decision
+PASS zero-iteration loop does not consume an owner
+PASS one CPU branch does not consume an owner
+PASS early GCC narrowing cannot hide signed multiplication overflow
+PASS unknown search refuses static export
+PASS unknown search compiles a 16-bit domain without counting
+PASS conditional pure function returns compose
+PASS function transfers ownership of a local result
+PASS function returns fresh owned basis storage
+PASS frontend embeds and composes separate controlled inverse modules
+PASS separate circuit ABI remaps borrows, controls global phase and inverts
+PASS unitary module contract rejects measurement
+PASS repeated circuits parse once, synthesize once and reuse a verified plan
+PASS CPU index selects quantum vector update
+PASS CPU indexed subtraction and XOR
+PASS indexed reassociation must not introduce signed overflow
+PASS CPU indexed increment and decrement
+PASS dynamic index evaluated once
+PASS indexed CPU operand evaluated once
+PASS dynamic explicit vector measurement
+PASS dynamic explicit vector reset
+PASS dynamic vector Fourier and inverse
+PASS CPU loop updates dynamically indexed vector
+PASS CPU loop measures indexed vector explicitly
+PASS CPU indexed pointer selects borrowed element
+PASS dynamic index through array function parameter
+PASS negative dynamic pointer offset within borrow
+PASS signed dynamic explicit measurement
+PASS measurement operand precedes indexed update
+PASS clean measured operand is released after evaluation
+PASS measurement selects array element before update
+PASS indexed access cannot implicitly read quantum data
+PASS indexed update cannot substitute another element
+PASS indexed narrowing cannot masquerade as addition
+PASS measuring one unknown element does not consume all owners
+PASS indexed measurement cannot invalidate pending inverse
+PASS indexed coherent update requires a transformation
+PASS measurement in index cannot consume a later transformed owner
+PASS negative array index fails at runtime
+PASS large array index fails at runtime
+PASS static export refuses dynamic register selection
+PASS indexed updates and inverses on every 3-bit basis pair
+PASS indexed Fourier preserves relative phase and other register
+PASS indexed IR rejects duplicate IDs controls and lifetime actions
+PASS basis bit order
+PASS measurement in return
+PASS measurement continuation
+PASS ownership move
+PASS boolean reversible update
+PASS unsigned increment/decrement
+PASS signed division and measurement type
+PASS signed narrowing matches GCC
+PASS classical for
+PASS classical while/do
+PASS explicit measurement as operand
+PASS classical operand evaluated once
+PASS classical aggregate measurement
+PASS allocation after measurement
+PASS 64-bit unsigned expression
+PASS cuant aliases
+PASS move through compatible C typedef
+PASS CPU control with quantum updates
+PASS ordinary C structs pointers functions
+PASS CPU narrowing cast around increment
+PASS CPU narrowing cast around decrement
+PASS CPU signed cast around postincrement
+PASS ordinary helper loop preserves CPU return and quantum state
+PASS reset and storage reuse
+PASS 20 operators, C promotions and clean reuse
+PASS reject use after move
+PASS reject move between distinct C types
+PASS reject find changes input signedness
+PASS reject noninjective conditional update
+PASS reject implicit CPU read
+PASS reject implicit I/O read
+PASS reject destructive assignment
+PASS reject folded zero read
+PASS reject folded difference read
+PASS reject pointer alias
+PASS reject classical measurement
+PASS reject classical preparation
+PASS reject out of range preparation
+PASS reject unsupported preparation range
+PASS reject runtime preparation bounds
+PASS reject coherent I/O
+PASS reject coherent arithmetic I/O
+PASS reject coherent CPU update
+PASS reject coherent CPU postincrement
+PASS reject coherent CPU predecrement
+PASS reject coherent CPU argument effect
+PASS reject coherent inline assembly
+PASS reject quantum while
+PASS reject unmeasured storage
+PASS reject early return
+PASS reject goto skips allocation
+PASS reject quantum pointer
+PASS reject quantum float
+PASS reject noninjective remainder update
+PASS reject boolean addition is noninjective
+PASS reject aggregate hides read
+PASS reject mutation of live oracle input
+PASS reject phase-tainted find input
+PASS reject division by zero on domain
+PASS reject invalid shift on domain
+PASS reject zero known solution count
+PASS reject global quantum storage
+PASS reject quantum floating pointer parameter
+PASS uniform exact support
+PASS coherent phase and all ancillas zero
+PASS GCC logical XOR preserves relative phase and cleanup
+PASS coherent if else joint state
+PASS modulo preserves entanglement
+PASS compute into zero storage
+PASS arithmetic on every superposed input
+PASS short circuit ternary on used domain
+PASS Grover amplitude and oracle cleanup
+PASS Grover with multiple solutions
+PASS nested coherent controls and clean ancillas
+PASS C promotions avoid false modular square roots
+PASS general injective permutation preserves amplitudes
+PASS backend preserves other registers and collapse
+PASS backend rejects reinitialization
+PASS backend rejects dirty release
+PASS malformed IR fails explicitly
+PASS simulation memory limit fails explicitly
+PASS 64-bit export storage does not require a statevector
+PASS reset permits zero storage reuse and norm stays one
+PASS backend protects dependencies before invalidating an inverse
+PASS inverse with changed control pattern
+PASS inverse with missing control
+PASS inverse with another control
+PASS mutation of a live computation control
+PASS measurement of a live computation control
+PASS reset of a live computation control
+PASS mutation of a live computation input
+PASS controlled inverse preserves phases, support and clean output
+PASS control order is normalized in inverse certificates
+PASS safe input phase survives controlled uncomputation
+PASS mixed arithmetic operand types
+PASS ambiguous dynamic addition value
+PASS contradictory coherent controls
+PASS missing binary operand
+PASS extra unary operand
+PASS invalid operator hidden in an unused arm
+PASS string used as signedness
+PASS missing expression signedness
+PASS duplicate instruction keys
+PASS unknown instruction field
+PASS measurement under coherent control
+PASS reset under coherent control
+PASS nonnumeric phase angle
+PASS forged known basis
+PASS forged inactive input bits
+PASS inconsistent occurrences of the same register
+PASS known-zero source cannot alias its output
+PASS clean but borrowed control cannot be released
+PASS find cannot reuse an entangled input
+PASS find cannot ignore a preceding controlled phase
+PASS proven inactive bits permit exact synthesis and clean reuse
+PASS updated basis invalidates stale known value
+PASS updated range invalidates stale active bits
+PASS basis preparation cannot claim a uniform find domain
+PASS allocation signedness cannot be changed by an expression
+PASS output narrowing must be explicit in the expression
+PASS reject duplicate document fields
+PASS reject unbalanced CPU control document
+PASS reject unbalanced CPU control document
+PASS reject unbalanced CPU control document
+PASS quantum predicate in another function
+PASS nested quantum value functions
+PASS mutable register borrow and repeated calls
+PASS borrow with a CPU argument evaluated once
+PASS coherent procedure composition
+PASS owned function temporaries and repeated calls
+PASS fixed quantum array initialization and updates
+PASS quantum array designated initialization
+PASS multidimensional quantum boolean array
+PASS quantum integer structure
+PASS nested quantum product and sizeof
+PASS borrowing a quantum array element
+PASS element ownership move
+PASS static for quantum vector writes and reads
+PASS static descending for quantum vector
+PASS quantum register subtraction
+PASS static for coherent condition
+PASS reject reset through a const quantum pointer parameter
+PASS reject Fourier through a const scalar parameter
+PASS reject measurement through a const quantum borrow
+PASS reject reset through a local const quantum pointer
+PASS reject measurement through a CPU-indexed const quantum pointer
+PASS reject quantum pointer alias cannot discard const borrow
+PASS reject quantum result at the CPU program entry point
+PASS reject mutable quantum parameter alias
+PASS reject borrowed register ownership consumption
+PASS reject direct borrowed parameter result
+PASS reject classical argument for a quantum parameter
+PASS reject quantum argument for a classical parameter
+PASS reject unqualified quantum function result
+PASS reject quantum function pointer escape
+PASS reject recursive quantum composition
+PASS reject borrowed find input
+PASS reject indexed measurement leaves an unconsumed owner
+PASS reject quantum index without QRAM
+PASS reject quantum product pointer escape
+PASS reject quantum product outside bounds
+PASS reject quantum element use after move
+PASS reject destructive quantum field write
+PASS reject quantum structure with pointer field
+PASS reject quantum union
+PASS reject quantum variable length array
+PASS reject quantum vector implicit CPU read
+PASS external predicate Grover amplitudes and clean oracle
+PASS procedure phase and ancilla cleanup on every input
+PASS register addition on all 65536 pairs without a truth table
+PASS register addition computes correlated output rather than cloning
+PASS 32-bit register addition exports without enumeration or ancillas
+PASS every uint8 input, C reference and amplitudes: x+5
+PASS every uint8 input, C reference and amplitudes: x-2
+PASS every uint8 input, C reference and amplitudes: x*3
+PASS every uint8 input, C reference and amplitudes: x/2
+PASS every uint8 input, C reference and amplitudes: x%3
+PASS every uint8 input, C reference and amplitudes: x&3
+PASS every uint8 input, C reference and amplitudes: x|2
+PASS every uint8 input, C reference and amplitudes: x^5
+PASS every uint8 input, C reference and amplitudes: ~x
+PASS every uint8 input, C reference and amplitudes: x<<1
+PASS every uint8 input, C reference and amplitudes: x>>1
+PASS every uint8 input, C reference and amplitudes: x==7
+PASS every uint8 input, C reference and amplitudes: x!=7
+PASS every uint8 input, C reference and amplitudes: x<9
+PASS every uint8 input, C reference and amplitudes: x<=7
+PASS every uint8 input, C reference and amplitudes: x>8
+PASS every uint8 input, C reference and amplitudes: x>=7
+PASS every uint8 input, C reference and amplitudes: !x
+PASS every uint8 input, C reference and amplitudes: x&&2
+PASS every uint8 input, C reference and amplitudes: x||0
+PASS every uint8 input, C reference and amplitudes: x?255/x:7
+PASS exhaustive register addition/subtraction and inverse: 3720 basis pairs
+PASS QFT matrix and inverse on all 126 bases of widths 1..6
+PASS controlled QFT and inverse preserve joint amplitudes
+PASS parameterized phase and condition cleanup
+PASS C Fourier matches independent 256 by 256 DFT
+PASS phase estimation gives 3 with every condition ancilla clean
+PASS C Fourier inverse round trip
+PASS Fourier in borrowed procedure
+PASS runtime phase argument evaluated once
+PASS runtime phase under coherent control
+PASS array expression product initializers
+PASS reject quantum phase angle
+PASS reject infinite phase angle
+PASS reject NaN phase angle
+PASS reject CPU effect in coherent phase
+PASS reject Fourier changes inverse dependency
+PASS reject Fourier on derived storage
+PASS reject borrow consumed into array
+PASS reject measurement in quantum value function
+PASS reject unknown runtime phase static export
+PASS wrapping CPU counter is preserved rather than falsely terminated
+PASS binary64 runtime phase API
+PASS reject infinite runtime phase
+PASS 64-bit Fourier export uses polynomial synthesis
+PASS QASM preserves open controlled Hadamard
+PASS checked local pointer borrow
+PASS checked pointer alias sees register updates
+PASS pointer parameter borrows scalar
+PASS C array parameter borrows fixed vector
+PASS constant pointer arithmetic on vector
+PASS const pointer quantum predicate
+PASS coherent update through pointer
+PASS borrow nested pointer procedures
+PASS register XOR and inverse
+PASS classical XOR argument evaluated once
+PASS XOR of quantum expression
+PASS array procedure with bounded for
+PASS negative offset within borrowed array
+PASS runtime CPU initializer evaluated once
+PASS runtime signed initializer conversion
+PASS runtime bool initializer conversion
+PASS classical read function prepares a quantum basis
+PASS explicit measure prepares fresh basis
+PASS CPU vector initializers evaluated in order
+PASS procedure-local CPU operands evaluated once
+PASS final void return in quantum procedure
+PASS empty quantum procedure returns to caller
+PASS reject borrow of classical scalar
+PASS reject quantum reference escape to CPU call
+PASS reject quantum reference rebinding
+PASS reject pointer reinterpretation cannot change signed C reads
+PASS reject indexed pointer reinterpretation cannot change signed C reads
+PASS reject one-past quantum pointer dereference
+PASS reject unmeasured quantum pointer index
+PASS reject overlapping mutable pointer parameters
+PASS reject overlapping scalar and pointer parameters
+PASS reject pointer parameter ownership consumption
+PASS reject direct pointer parameter result
+PASS reject use after move through alias
+PASS reject destructive self XOR
+PASS reject borrow consumed through a local pointer alias
+PASS reject read-only scalar loan forwarded to mutator
+PASS reject read-only pointer loan forwarded to mutator
+PASS reject conditional early procedure return
+PASS all 65536 inputs through structured predicate: x==40000
+PASS all 65536 inputs through structured predicate: x!=40000
+PASS all 65536 inputs through structured predicate: x<40000
+PASS all 65536 inputs through structured predicate: x<=40000
+PASS all 65536 inputs through structured predicate: x>40000
+PASS all 65536 inputs through structured predicate: x>=40000
+PASS all 65536 inputs through structured predicate: !x
+PASS all 65536 inputs through structured predicate: (x^0x1234)==40000
+PASS quantum XOR creates correlation on every basis
+PASS 32-bit structured predicate frontend exports
+PASS two 32-bit quantum registers XOR without table
+PASS runtime basis initialization refuses static export
+PASS text ingestion rejects embedded NUL and hidden trailing bytes
+PASS 1024 deterministic typed expressions: every input, phase and inverse
+PASS 4096 seeded IR mutations: bounded parse/validation and explicit errors
+PASS stdlib abs preserves a negative quantum source
+PASS stdlib abs preserves a negative quantum source with builtins disabled
+PASS stdlib abs restores integer promotion at signed byte minimum
+PASS stdlib abs restores integer promotion at signed byte minimum with builtins disabled
+PASS stdlib labs preserves a promoted narrow quantum source
+PASS stdlib labs preserves a promoted narrow quantum source with builtins disabled
+PASS stdlib llabs preserves a promoted narrow quantum source
+PASS stdlib llabs preserves a promoted narrow quantum source with builtins disabled
+PASS inttypes imaxabs preserves a promoted narrow quantum source
+PASS inttypes imaxabs preserves a promoted narrow quantum source with builtins disabled
+PASS library adapter does not rewrite a user-defined abs helper
+PASS stdlib abs rejects unrepresentable signed int minimum
+PASS promoted labs exports signed int minimum correctly
+PASS promoted llabs exports signed int minimum correctly
+PASS promoted imaxabs exports signed int minimum correctly
+PASS no-table abs: complete signed domain, phase and inverse
+PASS finite abs: complete signed domain, phase and inverse
+PASS no-table unsigned abs includes signed minimum: complete domain, phase and inverse
+PASS finite unsigned abs includes signed minimum: complete domain, phase and inverse
+PASS no-table narrowed abs keeps original sign: complete domain, phase and inverse
+PASS finite narrowed abs keeps original sign: complete domain, phase and inverse
+PASS ordinary helper loop does not block static quantum export
+PASS unqualified helper cannot add phantom quantum operations
+PASS real GCC semantic types and Quantum IR
+PASS int versus quant int and quant bool
+PASS genuine GCC AST
+PASS OpenQASM 3 export
+PASS logical resource estimation
+PASS native ELF and CPU output
+PASS GCC sanitizer flags reach native linking
+PASS refuse flattening dynamic CPU control
+PASS runtime errors propagate failure
+
+389 passed, 0 failed (native C tests, no external quantum SDK)
+PASS example hello             : five GCC levels, runtime contract and exports
+PASS example entanglement      : five GCC levels, runtime contract and exports
+PASS example find              : five GCC levels, runtime contract and exports
+PASS example search            : five GCC levels, runtime contract and exports
+PASS example search_empty      : five GCC levels, runtime contract and exports
+PASS example coherent          : five GCC levels, runtime contract and exports
+PASS example prepare_measure   : five GCC levels, runtime contract and exports
+PASS example fourier           : five GCC levels, runtime contract and exports
+PASS example phase_estimation  : five GCC levels, runtime contract and exports
+PASS example functions         : five GCC levels, runtime contract and exports
+PASS example circuit_module    : five GCC levels, runtime contract and exports
+PASS example products          : five GCC levels, runtime contract and exports
+PASS example vector_function   : five GCC levels, runtime contract and exports
+PASS example dynamic_vector    : five GCC levels, runtime contract and exports
+PASS example hybrid_loop       : five GCC levels, runtime contract and exports
+PASS example types             : five GCC levels, runtime contract and exports
+PASS example for_sum           : five GCC levels, runtime contract and exports
+PASS example while_sum         : five GCC levels, runtime contract and exports
+PASS example do_while_countdown: five GCC levels, runtime contract and exports
+PASS example nested_for_sum    : five GCC levels, runtime contract and exports
+PASS example register_accumulate: five GCC levels, runtime contract and exports
+PASS example fibonacci         : five GCC levels, runtime contract and exports
+PASS example modular_arithmetic: five GCC levels, runtime contract and exports
+PASS example dot_product       : five GCC levels, runtime contract and exports
+PASS example pair_minimum      : five GCC levels, runtime contract and exports
+PASS example pair_maximum      : five GCC levels, runtime contract and exports
+PASS example minimum_scan      : five GCC levels, runtime contract and exports
+PASS example maximum_scan      : five GCC levels, runtime contract and exports
+PASS example minmax_array      : five GCC levels, runtime contract and exports
+PASS example input_sum         : five GCC levels, runtime contract and exports
+PASS example input_minmax      : five GCC levels, runtime contract and exports
+PASS example measurement_histogram: five GCC levels, runtime contract and exports
+PASS example repeat_until_success: five GCC levels, runtime contract and exports
+PASS example find_multiple     : five GCC levels, runtime contract and exports
+PASS example search_constraints: five GCC levels, runtime contract and exports
+PASS example coherent_accumulate: five GCC levels, runtime contract and exports
+
+1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
+PASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse
+PASS 8-bit variable right shift: no-table circuit generated (117 gates)
+PASS 8-bit variable left shift: no-table circuit generated (117 gates)
+PASS 16-bit variable right shift: no-table circuit generated (294 gates)
+PASS 16-bit variable left shift: no-table circuit generated (294 gates)
+PASS 32-bit variable right shift: physical resource limit diagnosed (37 gates)
+PASS 32-bit variable left shift: physical resource limit diagnosed (37 gates)
+PASS shift definedness: negative/oversized counts, negative left operand and signed overflow rejected in both routes
+PASS shift C integration: functions, array, casts, arithmetic and explicit measurement at five GCC optimization levels
+PASS shift C synthesis: both 16-bit shifts with 20 relevant input bits, no tables, five GCC optimization levels (export only)
+55 shift checks passed; generated wide circuits are distinct from state-validated small domains.
+PASS legacy signed basis: declared expression type, promoted negation and positive result
+PASS 68 joint expression domains: relative phases, C short circuiting, promotions, narrowing, relational/compound guards and clean inverse
+PASS reachable undefined arithmetic rejected; 64-bit truth/zero circuits generated without width-sized scratch (export only)
+PASS expression C integration: function/array/loop/measurement at five GCC levels; 16-bit guarded division and 64-bit logic exported without tables
+97 expression checks passed; generated circuits and complete-state comparisons have separate scopes.
+PASS 192 in-place joint-state comparisons: both synthesis settings, signed promotions, modular arithmetic, bit rotations, open/closed controls, phase and inverse
+PASS 48 Boolean in-place states: truth conversion, logical operations, comparisons, multiplication, phase, controls and inverse
+PASS in-place table policy, noninjective/undefined rejections and 16/32/64-bit generation (export only)
+PASS in-place functions, fixed memory, control, arithmetic and five GCC optimization levels
+271 in-place checks passed; wide circuit generation is distinct from complete-state validation.
+PASS memcpy/memmove complete phased states and inverse, signed layouts, open/closed controls, builtins and five GCC levels
+PASS overlapping memmove in both directions against C, with retained phase and no ancillas
+PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundary, return-pointer diagnostics and classical libc preservation
+PASS 16/32/64-bit linear table-free memory synthesis (generation only)
+414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation.
+Built /tmp/tmp.06vNg4wp9z/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.06vNg4wp9z/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.06vNg4wp9z/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.06vNg4wp9z/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.06vNg4wp9z/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
+5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
+Built C frontend fuzzing, synthesis growth and independent QuEST QASM validation
+PASS frontend 0: all 5 optimization levels
+PASS frontend 1: all 5 optimization levels
+PASS frontend 2: all 5 optimization levels
+PASS frontend 3: all 5 optimization levels
+PASS frontend 4: all 5 optimization levels
+PASS frontend 5: all 5 optimization levels
+PASS frontend 6: all 5 optimization levels
+PASS frontend 7: all 5 optimization levels
+PASS frontend 8: all 5 optimization levels
+PASS frontend 9: all 5 optimization levels
+PASS frontend 10: all 5 optimization levels
+PASS frontend 11: all 5 optimization levels
+PASS frontend 12: all 5 optimization levels
+PASS frontend 13: all 5 optimization levels
+PASS frontend 14: all 5 optimization levels
+PASS frontend 15: all 5 optimization levels
+PASS frontend 16: all 5 optimization levels
+PASS frontend 17: all 5 optimization levels
+PASS frontend 18: all 5 optimization levels
+PASS frontend 19: all 5 optimization levels
+PASS frontend 20: all 5 optimization levels
+PASS frontend 21: all 5 optimization levels
+PASS frontend 22: all 5 optimization levels
+PASS frontend 23: all 5 optimization levels
+PASS frontend 24: all 5 optimization levels
+PASS frontend 25: all 5 optimization levels
+PASS frontend 26: all 5 optimization levels
+PASS frontend 27: all 5 optimization levels
+PASS frontend 28: all 5 optimization levels
+PASS frontend 29: all 5 optimization levels
+PASS frontend 30: all 5 optimization levels
+PASS frontend 31: all 5 optimization levels
+PASS frontend 32: all 5 optimization levels
+PASS frontend 33: all 5 optimization levels
+PASS frontend 34: all 5 optimization levels
+PASS frontend 35: all 5 optimization levels
+PASS frontend 36: all 5 optimization levels
+PASS frontend 37: all 5 optimization levels
+PASS frontend 38: all 5 optimization levels
+PASS frontend 39: all 5 optimization levels
+PASS frontend 40: all 5 optimization levels
+PASS frontend 41: all 5 optimization levels
+PASS frontend 42: all 5 optimization levels
+PASS frontend 43: all 5 optimization levels
+PASS frontend 44: all 5 optimization levels
+PASS frontend 45: all 5 optimization levels
+PASS frontend 46: all 5 optimization levels
+PASS frontend 47: all 5 optimization levels
+PASS frontend 48: all 5 optimization levels
+PASS frontend 49: all 5 optimization levels
+PASS frontend 50: all 5 optimization levels
+PASS frontend 51: all 5 optimization levels
+PASS frontend 52: all 5 optimization levels
+PASS frontend 53: all 5 optimization levels
+PASS frontend 54: all 5 optimization levels
+PASS frontend 55: all 5 optimization levels
+PASS frontend 56: all 5 optimization levels
+PASS frontend 57: all 5 optimization levels
+PASS frontend 58: all 5 optimization levels
+PASS frontend 59: all 5 optimization levels
+PASS frontend 60: all 5 optimization levels
+PASS frontend 61: all 5 optimization levels
+PASS frontend 62: all 5 optimization levels
+PASS frontend 63: all 5 optimization levels
+PASS frontend 64: all 5 optimization levels
+PASS frontend 65: all 5 optimization levels
+PASS frontend 66: all 5 optimization levels
+PASS frontend 67: all 5 optimization levels
+PASS frontend 68: all 5 optimization levels
+PASS frontend 69: all 5 optimization levels
+PASS frontend 70: all 5 optimization levels
+PASS frontend 71: all 5 optimization levels
+PASS frontend 72: all 5 optimization levels
+PASS frontend 73: all 5 optimization levels
+PASS frontend 74: all 5 optimization levels
+PASS frontend 75: all 5 optimization levels
+PASS frontend 76: all 5 optimization levels
+PASS frontend 77: all 5 optimization levels
+PASS frontend 78: all 5 optimization levels
+PASS frontend 79: all 5 optimization levels
+PASS frontend 80: all 5 optimization levels
+PASS frontend 81: all 5 optimization levels
+PASS frontend 82: all 5 optimization levels
+PASS frontend 83: all 5 optimization levels
+PASS frontend 84: all 5 optimization levels
+PASS frontend 85: all 5 optimization levels
+PASS frontend 86: all 5 optimization levels
+PASS frontend 87: all 5 optimization levels
+PASS frontend 88: all 5 optimization levels
+PASS frontend 89: all 5 optimization levels
+PASS frontend 90: all 5 optimization levels
+PASS frontend 91: all 5 optimization levels
+PASS frontend 92: all 5 optimization levels
+PASS frontend 93: all 5 optimization levels
+PASS frontend 94: all 5 optimization levels
+PASS frontend 95: all 5 optimization levels
+PASS frontend 96: all 5 optimization levels
+PASS frontend 97: all 5 optimization levels
+PASS frontend 98: all 5 optimization levels
+PASS frontend 99: all 5 optimization levels
+PASS frontend 100: all 5 optimization levels
+PASS frontend 101: all 5 optimization levels
+PASS frontend 102: all 5 optimization levels
+PASS frontend 103: all 5 optimization levels
+PASS frontend 104: all 5 optimization levels
+PASS frontend 105: all 5 optimization levels
+PASS frontend 106: all 5 optimization levels
+PASS frontend 107: all 5 optimization levels
+PASS frontend 108: all 5 optimization levels
+PASS frontend 109: all 5 optimization levels
+PASS frontend 110: all 5 optimization levels
+PASS frontend 111: all 5 optimization levels
+PASS frontend 112: all 5 optimization levels
+PASS frontend 113: all 5 optimization levels
+PASS frontend 114: all 5 optimization levels
+PASS frontend 115: all 5 optimization levels
+PASS frontend 116: all 5 optimization levels
+PASS frontend 117: all 5 optimization levels
+PASS frontend 118: all 5 optimization levels
+PASS frontend 119: all 5 optimization levels
+PASS frontend 120: all 5 optimization levels
+PASS frontend 121: all 5 optimization levels
+PASS frontend 122: all 5 optimization levels
+PASS frontend 123: all 5 optimization levels
+PASS frontend 124: all 5 optimization levels
+PASS frontend 125: all 5 optimization levels
+PASS frontend 126: all 5 optimization levels
+PASS frontend 127: all 5 optimization levels
+PASS frontend 128: all 5 optimization levels
+PASS frontend 129: all 5 optimization levels
+PASS frontend 130: all 5 optimization levels
+PASS frontend 131: all 5 optimization levels
+PASS frontend 132: all 5 optimization levels
+665 generated frontend compilations passed; seed=20261012 (C generator, SplitMix64)
+PASS growth add width=4: gates=40, ancillas=4
+PASS growth add width=8: gates=112, ancillas=8
+PASS growth add width=12: gates=216, ancillas=12
+PASS growth add width=16: gates=352, ancillas=16
+PASS growth sub width=4: gates=40, ancillas=4
+PASS growth sub width=8: gates=112, ancillas=8
+PASS growth sub width=12: gates=216, ancillas=12
+PASS growth sub width=16: gates=352, ancillas=16
+PASS growth mul width=4: gates=52, ancillas=4
+PASS growth mul width=8: gates=264, ancillas=8
+PASS growth mul width=12: gates=764, ancillas=12
+PASS growth mul width=16: gates=1680, ancillas=16
+PASS growth div width=4: gates=316, ancillas=14
+PASS growth div width=8: gates=1432, ancillas=26
+PASS growth div width=12: gates=3732, ancillas=38
+PASS growth div width=16: gates=7600, ancillas=50
+PASS growth mod width=4: gates=324, ancillas=18
+PASS growth mod width=8: gates=1448, ancillas=34
+PASS growth mod width=12: gates=3756, ancillas=50
+PASS growth mod width=16: gates=7632, ancillas=66
+PASS growth lt width=4: gates=49, ancillas=5
+PASS growth lt width=8: gates=97, ancillas=9
+PASS growth lt width=12: gates=145, ancillas=13
+PASS growth lt width=16: gates=193, ancillas=17
+24 circuits compiled without tables; /mnt/e/Backup/GitHub/Quantum/build/synthesis-growth.csv
+PASS independent QASM importer: 8 malformed artifacts rejected
+PASS independent QASM state and probabilities: entangled arithmetic (16 qubits)
+PASS independent QASM state and probabilities: relative phase and cleanup (9 qubits)
+PASS independent QASM state and probabilities: controlled global phase (2 qubits)
+PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
+PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
+PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
+PASS independent QASM state and probabilities: nested open controls (12 qubits)
+PASS independent QASM state and probabilities: independent controlled module (10 qubits)
+PASS independent QASM state and probabilities: signed absolute value with relative phase (11 qubits)
+PASS independent QASM state and probabilities: function, array, static loop and coherent phase (6 qubits)
+PASS independent QASM state and probabilities: quantum variable left shift and relative phase (14 qubits)
+PASS independent QASM state and probabilities: signed variable right shift and Boolean conversion (13 qubits)
+PASS independent QASM state and probabilities: conditional expression with guarded division (13 qubits)
+PASS independent QASM state and probabilities: short-circuit logic with guarded division (7 qubits)
+PASS independent QASM state and probabilities: conditional signed negation and complement (19 qubits)
+PASS independent QASM state and probabilities: controlled affine in-place arithmetic (10 qubits)
+PASS independent QASM state and probabilities: in-place rotation and complement (9 qubits)
+PASS independent QASM state and probabilities: signed affine update after Fourier (10 qubits)
+PASS independent QASM state and probabilities: coherent library memcpy with relative phase (18 qubits)
+PASS independent QASM state and probabilities: library memmove preserves signed object bits (17 qubits)
+PASS independent QASM state and probabilities: library memmove exact alias preserves interference (9 qubits)
+PASS independent QASM state and probabilities: library copy survives coherent source uncomputation (19 qubits)
+PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
+PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
+PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
+25 exported circuits independently validated with QuEST 3.7.0 (C): 22 states, 3 channels; table-free export
+PASS signed structured mul: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured div: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured mod: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured eq: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured ne: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured lt: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured le: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured gt: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured ge: joint amplitudes, C rounding, inverse and zero garbage
+PASS signed structured gt with a positive leading bit: joint amplitudes, C rounding, inverse and zero garbage
+PASS structured sequence validates discarded arithmetic
+PASS structured signed division rejects MIN/-1
+PASS finite sequence validates discarded arithmetic
+PASS finite signed division rejects MIN/-1
+PASS structured add: joint amplitudes, inverse and zero garbage without tables
+PASS structured sub: joint amplitudes, inverse and zero garbage without tables
+PASS structured mul: joint amplitudes, inverse and zero garbage without tables
+PASS structured div: joint amplitudes, inverse and zero garbage without tables
+PASS structured mod: joint amplitudes, inverse and zero garbage without tables
+PASS structured eq: joint amplitudes, inverse and zero garbage without tables
+PASS structured ne: joint amplitudes, inverse and zero garbage without tables
+PASS structured lt: joint amplitudes, inverse and zero garbage without tables
+PASS structured le: joint amplitudes, inverse and zero garbage without tables
+PASS structured gt: joint amplitudes, inverse and zero garbage without tables
+PASS structured ge: joint amplitudes, inverse and zero garbage without tables
+PASS 16-bit multiplication exports with 32 relevant bits
+PASS 16-bit division exports without input enumeration
+PASS 16-bit remainder exports without input enumeration
+PASS 32-bit register comparison exports
+PASS signed 16-bit multiplication exports with negative operands
+PASS signed division exports beyond twelve relevant bits
+PASS signed remainder exports beyond twelve relevant bits
+PASS large signed overflow remains rejected
+PASS Grover oracle exceeds the former 12-bit limit
+PASS unknown search verifies its successful candidate
+PASS unknown search with no solutions exhausts its budget
+PASS unknown search with all solutions succeeds
+PASS coherent if inside a CPU loop
+PASS GCC boolean complement preserves a controlled XOR
+PASS a signed value conversion preserves its source owner
+PASS CPU paths both consume a register explicitly
+PASS measurement can drive a later CPU decision
+PASS zero-iteration loop does not consume an owner
+PASS one CPU branch does not consume an owner
+PASS early GCC narrowing cannot hide signed multiplication overflow
+PASS unknown search refuses static export
+PASS unknown search compiles a 16-bit domain without counting
+PASS conditional pure function returns compose
+PASS function transfers ownership of a local result
+PASS function returns fresh owned basis storage
+PASS frontend embeds and composes separate controlled inverse modules
+PASS separate circuit ABI remaps borrows, controls global phase and inverts
+PASS unitary module contract rejects measurement
+PASS repeated circuits parse once, synthesize once and reuse a verified plan
+PASS CPU index selects quantum vector update
+PASS CPU indexed subtraction and XOR
+PASS indexed reassociation must not introduce signed overflow
+PASS CPU indexed increment and decrement
+PASS dynamic index evaluated once
+PASS indexed CPU operand evaluated once
+PASS dynamic explicit vector measurement
+PASS dynamic explicit vector reset
+PASS dynamic vector Fourier and inverse
+PASS CPU loop updates dynamically indexed vector
+PASS CPU loop measures indexed vector explicitly
+PASS CPU indexed pointer selects borrowed element
+PASS dynamic index through array function parameter
+PASS negative dynamic pointer offset within borrow
+PASS signed dynamic explicit measurement
+PASS measurement operand precedes indexed update
+PASS clean measured operand is released after evaluation
+PASS measurement selects array element before update
+PASS indexed access cannot implicitly read quantum data
+PASS indexed update cannot substitute another element
+PASS indexed narrowing cannot masquerade as addition
+PASS measuring one unknown element does not consume all owners
+PASS indexed measurement cannot invalidate pending inverse
+PASS indexed coherent update requires a transformation
+PASS measurement in index cannot consume a later transformed owner
+PASS negative array index fails at runtime
+PASS large array index fails at runtime
+PASS static export refuses dynamic register selection
+PASS indexed updates and inverses on every 3-bit basis pair
+PASS indexed Fourier preserves relative phase and other register
+PASS indexed IR rejects duplicate IDs controls and lifetime actions
+PASS basis bit order
+PASS measurement in return
+PASS measurement continuation
+PASS ownership move
+PASS boolean reversible update
+PASS unsigned increment/decrement
+PASS signed division and measurement type
+PASS signed narrowing matches GCC
+PASS classical for
+PASS classical while/do
+PASS explicit measurement as operand
+PASS classical operand evaluated once
+PASS classical aggregate measurement
+PASS allocation after measurement
+PASS 64-bit unsigned expression
+PASS cuant aliases
+PASS move through compatible C typedef
+PASS CPU control with quantum updates
+PASS ordinary C structs pointers functions
+PASS CPU narrowing cast around increment
+PASS CPU narrowing cast around decrement
+PASS CPU signed cast around postincrement
+PASS ordinary helper loop preserves CPU return and quantum state
+PASS reset and storage reuse
+PASS 20 operators, C promotions and clean reuse
+PASS reject use after move
+PASS reject move between distinct C types
+PASS reject find changes input signedness
+PASS reject noninjective conditional update
+PASS reject implicit CPU read
+PASS reject implicit I/O read
+PASS reject destructive assignment
+PASS reject folded zero read
+PASS reject folded difference read
+PASS reject pointer alias
+PASS reject classical measurement
+PASS reject classical preparation
+PASS reject out of range preparation
+PASS reject unsupported preparation range
+PASS reject runtime preparation bounds
+PASS reject coherent I/O
+PASS reject coherent arithmetic I/O
+PASS reject coherent CPU update
+PASS reject coherent CPU postincrement
+PASS reject coherent CPU predecrement
+PASS reject coherent CPU argument effect
+PASS reject coherent inline assembly
+PASS reject quantum while
+PASS reject unmeasured storage
+PASS reject early return
+PASS reject goto skips allocation
+PASS reject quantum pointer
+PASS reject quantum float
+PASS reject noninjective remainder update
+PASS reject boolean addition is noninjective
+PASS reject aggregate hides read
+PASS reject mutation of live oracle input
+PASS reject phase-tainted find input
+PASS reject division by zero on domain
+PASS reject invalid shift on domain
+PASS reject zero known solution count
+PASS reject global quantum storage
+PASS reject quantum floating pointer parameter
+PASS uniform exact support
+PASS coherent phase and all ancillas zero
+PASS GCC logical XOR preserves relative phase and cleanup
+PASS coherent if else joint state
+PASS modulo preserves entanglement
+PASS compute into zero storage
+PASS arithmetic on every superposed input
+PASS short circuit ternary on used domain
+PASS Grover amplitude and oracle cleanup
+PASS Grover with multiple solutions
+PASS nested coherent controls and clean ancillas
+PASS C promotions avoid false modular square roots
+PASS general injective permutation preserves amplitudes
+PASS backend preserves other registers and collapse
+PASS backend rejects reinitialization
+PASS backend rejects dirty release
+PASS malformed IR fails explicitly
+PASS simulation memory limit fails explicitly
+PASS 64-bit export storage does not require a statevector
+PASS reset permits zero storage reuse and norm stays one
+PASS backend protects dependencies before invalidating an inverse
+PASS inverse with changed control pattern
+PASS inverse with missing control
+PASS inverse with another control
+PASS mutation of a live computation control
+PASS measurement of a live computation control
+PASS reset of a live computation control
+PASS mutation of a live computation input
+PASS controlled inverse preserves phases, support and clean output
+PASS control order is normalized in inverse certificates
+PASS safe input phase survives controlled uncomputation
+PASS mixed arithmetic operand types
+PASS ambiguous dynamic addition value
+PASS contradictory coherent controls
+PASS missing binary operand
+PASS extra unary operand
+PASS invalid operator hidden in an unused arm
+PASS string used as signedness
+PASS missing expression signedness
+PASS duplicate instruction keys
+PASS unknown instruction field
+PASS measurement under coherent control
+PASS reset under coherent control
+PASS nonnumeric phase angle
+PASS forged known basis
+PASS forged inactive input bits
+PASS inconsistent occurrences of the same register
+PASS known-zero source cannot alias its output
+PASS clean but borrowed control cannot be released
+PASS find cannot reuse an entangled input
+PASS find cannot ignore a preceding controlled phase
+PASS proven inactive bits permit exact synthesis and clean reuse
+PASS updated basis invalidates stale known value
+PASS updated range invalidates stale active bits
+PASS basis preparation cannot claim a uniform find domain
+PASS allocation signedness cannot be changed by an expression
+PASS output narrowing must be explicit in the expression
+PASS reject duplicate document fields
+PASS reject unbalanced CPU control document
+PASS reject unbalanced CPU control document
+PASS reject unbalanced CPU control document
+PASS quantum predicate in another function
+PASS nested quantum value functions
+PASS mutable register borrow and repeated calls
+PASS borrow with a CPU argument evaluated once
+PASS coherent procedure composition
+PASS owned function temporaries and repeated calls
+PASS fixed quantum array initialization and updates
+PASS quantum array designated initialization
+PASS multidimensional quantum boolean array
+PASS quantum integer structure
+PASS nested quantum product and sizeof
+PASS borrowing a quantum array element
+PASS element ownership move
+PASS static for quantum vector writes and reads
+PASS static descending for quantum vector
+PASS quantum register subtraction
+PASS static for coherent condition
+PASS reject reset through a const quantum pointer parameter
+PASS reject Fourier through a const scalar parameter
+PASS reject measurement through a const quantum borrow
+PASS reject reset through a local const quantum pointer
+PASS reject measurement through a CPU-indexed const quantum pointer
+PASS reject quantum pointer alias cannot discard const borrow
+PASS reject quantum result at the CPU program entry point
+PASS reject mutable quantum parameter alias
+PASS reject borrowed register ownership consumption
+PASS reject direct borrowed parameter result
+PASS reject classical argument for a quantum parameter
+PASS reject quantum argument for a classical parameter
+PASS reject unqualified quantum function result
+PASS reject quantum function pointer escape
+PASS reject recursive quantum composition
+PASS reject borrowed find input
+PASS reject indexed measurement leaves an unconsumed owner
+PASS reject quantum index without QRAM
+PASS reject quantum product pointer escape
+PASS reject quantum product outside bounds
+PASS reject quantum element use after move
+PASS reject destructive quantum field write
+PASS reject quantum structure with pointer field
+PASS reject quantum union
+PASS reject quantum variable length array
+PASS reject quantum vector implicit CPU read
+PASS external predicate Grover amplitudes and clean oracle
+PASS procedure phase and ancilla cleanup on every input
+PASS register addition on all 65536 pairs without a truth table
+PASS register addition computes correlated output rather than cloning
+PASS 32-bit register addition exports without enumeration or ancillas
+PASS every uint8 input, C reference and amplitudes: x+5
+PASS every uint8 input, C reference and amplitudes: x-2
+PASS every uint8 input, C reference and amplitudes: x*3
+PASS every uint8 input, C reference and amplitudes: x/2
+PASS every uint8 input, C reference and amplitudes: x%3
+PASS every uint8 input, C reference and amplitudes: x&3
+PASS every uint8 input, C reference and amplitudes: x|2
+PASS every uint8 input, C reference and amplitudes: x^5
+PASS every uint8 input, C reference and amplitudes: ~x
+PASS every uint8 input, C reference and amplitudes: x<<1
+PASS every uint8 input, C reference and amplitudes: x>>1
+PASS every uint8 input, C reference and amplitudes: x==7
+PASS every uint8 input, C reference and amplitudes: x!=7
+PASS every uint8 input, C reference and amplitudes: x<9
+PASS every uint8 input, C reference and amplitudes: x<=7
+PASS every uint8 input, C reference and amplitudes: x>8
+PASS every uint8 input, C reference and amplitudes: x>=7
+PASS every uint8 input, C reference and amplitudes: !x
+PASS every uint8 input, C reference and amplitudes: x&&2
+PASS every uint8 input, C reference and amplitudes: x||0
+PASS every uint8 input, C reference and amplitudes: x?255/x:7
+PASS exhaustive register addition/subtraction and inverse: 3720 basis pairs
+PASS QFT matrix and inverse on all 126 bases of widths 1..6
+PASS controlled QFT and inverse preserve joint amplitudes
+PASS parameterized phase and condition cleanup
+PASS C Fourier matches independent 256 by 256 DFT
+PASS phase estimation gives 3 with every condition ancilla clean
+PASS C Fourier inverse round trip
+PASS Fourier in borrowed procedure
+PASS runtime phase argument evaluated once
+PASS runtime phase under coherent control
+PASS array expression product initializers
+PASS reject quantum phase angle
+PASS reject infinite phase angle
+PASS reject NaN phase angle
+PASS reject CPU effect in coherent phase
+PASS reject Fourier changes inverse dependency
+PASS reject Fourier on derived storage
+PASS reject borrow consumed into array
+PASS reject measurement in quantum value function
+PASS reject unknown runtime phase static export
+PASS wrapping CPU counter is preserved rather than falsely terminated
+PASS binary64 runtime phase API
+PASS reject infinite runtime phase
+PASS 64-bit Fourier export uses polynomial synthesis
+PASS QASM preserves open controlled Hadamard
+PASS checked local pointer borrow
+PASS checked pointer alias sees register updates
+PASS pointer parameter borrows scalar
+PASS C array parameter borrows fixed vector
+PASS constant pointer arithmetic on vector
+PASS const pointer quantum predicate
+PASS coherent update through pointer
+PASS borrow nested pointer procedures
+PASS register XOR and inverse
+PASS classical XOR argument evaluated once
+PASS XOR of quantum expression
+PASS array procedure with bounded for
+PASS negative offset within borrowed array
+PASS runtime CPU initializer evaluated once
+PASS runtime signed initializer conversion
+PASS runtime bool initializer conversion
+PASS classical read function prepares a quantum basis
+PASS explicit measure prepares fresh basis
+PASS CPU vector initializers evaluated in order
+PASS procedure-local CPU operands evaluated once
+PASS final void return in quantum procedure
+PASS empty quantum procedure returns to caller
+PASS reject borrow of classical scalar
+PASS reject quantum reference escape to CPU call
+PASS reject quantum reference rebinding
+PASS reject pointer reinterpretation cannot change signed C reads
+PASS reject indexed pointer reinterpretation cannot change signed C reads
+PASS reject one-past quantum pointer dereference
+PASS reject unmeasured quantum pointer index
+PASS reject overlapping mutable pointer parameters
+PASS reject overlapping scalar and pointer parameters
+PASS reject pointer parameter ownership consumption
+PASS reject direct pointer parameter result
+PASS reject use after move through alias
+PASS reject destructive self XOR
+PASS reject borrow consumed through a local pointer alias
+PASS reject read-only scalar loan forwarded to mutator
+PASS reject read-only pointer loan forwarded to mutator
+PASS reject conditional early procedure return
+PASS all 65536 inputs through structured predicate: x==40000
+PASS all 65536 inputs through structured predicate: x!=40000
+PASS all 65536 inputs through structured predicate: x<40000
+PASS all 65536 inputs through structured predicate: x<=40000
+PASS all 65536 inputs through structured predicate: x>40000
+PASS all 65536 inputs through structured predicate: x>=40000
+PASS all 65536 inputs through structured predicate: !x
+PASS all 65536 inputs through structured predicate: (x^0x1234)==40000
+PASS quantum XOR creates correlation on every basis
+PASS 32-bit structured predicate frontend exports
+PASS two 32-bit quantum registers XOR without table
+PASS runtime basis initialization refuses static export
+PASS text ingestion rejects embedded NUL and hidden trailing bytes
+PASS 1024 deterministic typed expressions: every input, phase and inverse
+PASS 4096 seeded IR mutations: bounded parse/validation and explicit errors
+PASS stdlib abs preserves a negative quantum source
+PASS stdlib abs preserves a negative quantum source with builtins disabled
+PASS stdlib abs restores integer promotion at signed byte minimum
+PASS stdlib abs restores integer promotion at signed byte minimum with builtins disabled
+PASS stdlib labs preserves a promoted narrow quantum source
+PASS stdlib labs preserves a promoted narrow quantum source with builtins disabled
+PASS stdlib llabs preserves a promoted narrow quantum source
+PASS stdlib llabs preserves a promoted narrow quantum source with builtins disabled
+PASS inttypes imaxabs preserves a promoted narrow quantum source
+PASS inttypes imaxabs preserves a promoted narrow quantum source with builtins disabled
+PASS library adapter does not rewrite a user-defined abs helper
+PASS stdlib abs rejects unrepresentable signed int minimum
+PASS promoted labs exports signed int minimum correctly
+PASS promoted llabs exports signed int minimum correctly
+PASS promoted imaxabs exports signed int minimum correctly
+PASS no-table abs: complete signed domain, phase and inverse
+PASS finite abs: complete signed domain, phase and inverse
+PASS no-table unsigned abs includes signed minimum: complete domain, phase and inverse
+PASS finite unsigned abs includes signed minimum: complete domain, phase and inverse
+PASS no-table narrowed abs keeps original sign: complete domain, phase and inverse
+PASS finite narrowed abs keeps original sign: complete domain, phase and inverse
+PASS ordinary helper loop does not block static quantum export
+PASS unqualified helper cannot add phantom quantum operations
+PASS real GCC semantic types and Quantum IR
+PASS int versus quant int and quant bool
+PASS genuine GCC AST
+PASS OpenQASM 3 export
+PASS logical resource estimation
+PASS native ELF and CPU output
+PASS GCC sanitizer flags reach native linking
+PASS refuse flattening dynamic CPU control
+PASS runtime errors propagate failure
+
+389 passed, 0 failed (native C tests, no external quantum SDK)
+PASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse
+PASS 8-bit variable right shift: no-table circuit generated (117 gates)
+PASS 8-bit variable left shift: no-table circuit generated (117 gates)
+PASS 16-bit variable right shift: no-table circuit generated (294 gates)
+PASS 16-bit variable left shift: no-table circuit generated (294 gates)
+PASS 32-bit variable right shift: physical resource limit diagnosed (37 gates)
+PASS 32-bit variable left shift: physical resource limit diagnosed (37 gates)
+PASS shift definedness: negative/oversized counts, negative left operand and signed overflow rejected in both routes
+PASS shift C integration: functions, array, casts, arithmetic and explicit measurement at five GCC optimization levels
+PASS shift C synthesis: both 16-bit shifts with 20 relevant input bits, no tables, five GCC optimization levels (export only)
+55 shift checks passed; generated wide circuits are distinct from state-validated small domains.
+PASS legacy signed basis: declared expression type, promoted negation and positive result
+PASS 68 joint expression domains: relative phases, C short circuiting, promotions, narrowing, relational/compound guards and clean inverse
+PASS reachable undefined arithmetic rejected; 64-bit truth/zero circuits generated without width-sized scratch (export only)
+PASS expression C integration: function/array/loop/measurement at five GCC levels; 16-bit guarded division and 64-bit logic exported without tables
+97 expression checks passed; generated circuits and complete-state comparisons have separate scopes.
+PASS 192 in-place joint-state comparisons: both synthesis settings, signed promotions, modular arithmetic, bit rotations, open/closed controls, phase and inverse
+PASS 48 Boolean in-place states: truth conversion, logical operations, comparisons, multiplication, phase, controls and inverse
+PASS in-place table policy, noninjective/undefined rejections and 16/32/64-bit generation (export only)
+PASS in-place functions, fixed memory, control, arithmetic and five GCC optimization levels
+271 in-place checks passed; wide circuit generation is distinct from complete-state validation.
+PASS memcpy/memmove complete phased states and inverse, signed layouts, open/closed controls, builtins and five GCC levels
+PASS overlapping memmove in both directions against C, with retained phase and no ancillas
+PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundary, return-pointer diagnostics and classical libc preservation
+PASS 16/32/64-bit linear table-free memory synthesis (generation only)
+414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation.
+PASS example hello             : five GCC levels, runtime contract and exports
+PASS example entanglement      : five GCC levels, runtime contract and exports
+PASS example find              : five GCC levels, runtime contract and exports
+PASS example search            : five GCC levels, runtime contract and exports
+PASS example search_empty      : five GCC levels, runtime contract and exports
+PASS example coherent          : five GCC levels, runtime contract and exports
+PASS example prepare_measure   : five GCC levels, runtime contract and exports
+PASS example fourier           : five GCC levels, runtime contract and exports
+PASS example phase_estimation  : five GCC levels, runtime contract and exports
+PASS example functions         : five GCC levels, runtime contract and exports
+PASS example circuit_module    : five GCC levels, runtime contract and exports
+PASS example products          : five GCC levels, runtime contract and exports
+PASS example vector_function   : five GCC levels, runtime contract and exports
+PASS example dynamic_vector    : five GCC levels, runtime contract and exports
+PASS example hybrid_loop       : five GCC levels, runtime contract and exports
+PASS example types             : five GCC levels, runtime contract and exports
+PASS example for_sum           : five GCC levels, runtime contract and exports
+PASS example while_sum         : five GCC levels, runtime contract and exports
+PASS example do_while_countdown: five GCC levels, runtime contract and exports
+PASS example nested_for_sum    : five GCC levels, runtime contract and exports
+PASS example register_accumulate: five GCC levels, runtime contract and exports
+PASS example fibonacci         : five GCC levels, runtime contract and exports
+PASS example modular_arithmetic: five GCC levels, runtime contract and exports
+PASS example dot_product       : five GCC levels, runtime contract and exports
+PASS example pair_minimum      : five GCC levels, runtime contract and exports
+PASS example pair_maximum      : five GCC levels, runtime contract and exports
+PASS example minimum_scan      : five GCC levels, runtime contract and exports
+PASS example maximum_scan      : five GCC levels, runtime contract and exports
+PASS example minmax_array      : five GCC levels, runtime contract and exports
+PASS example input_sum         : five GCC levels, runtime contract and exports
+PASS example input_minmax      : five GCC levels, runtime contract and exports
+PASS example measurement_histogram: five GCC levels, runtime contract and exports
+PASS example repeat_until_success: five GCC levels, runtime contract and exports
+PASS example find_multiple     : five GCC levels, runtime contract and exports
+PASS example search_constraints: five GCC levels, runtime contract and exports
+PASS example coherent_accumulate: five GCC levels, runtime contract and exports
+
+1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
+Built /tmp/tmp.73WM6jfjgm/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.73WM6jfjgm/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.73WM6jfjgm/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.73WM6jfjgm/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.73WM6jfjgm/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
+5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
+Built C frontend fuzzing, synthesis growth and independent QuEST QASM validation
+PASS frontend 0: all 5 optimization levels
+PASS frontend 1: all 5 optimization levels
+PASS frontend 2: all 5 optimization levels
+PASS frontend 3: all 5 optimization levels
+PASS frontend 4: all 5 optimization levels
+PASS frontend 5: all 5 optimization levels
+PASS frontend 6: all 5 optimization levels
+PASS frontend 7: all 5 optimization levels
+PASS frontend 8: all 5 optimization levels
+PASS frontend 9: all 5 optimization levels
+PASS frontend 10: all 5 optimization levels
+PASS frontend 11: all 5 optimization levels
+PASS frontend 12: all 5 optimization levels
+PASS frontend 13: all 5 optimization levels
+PASS frontend 14: all 5 optimization levels
+PASS frontend 15: all 5 optimization levels
+PASS frontend 16: all 5 optimization levels
+PASS frontend 17: all 5 optimization levels
+PASS frontend 18: all 5 optimization levels
+PASS frontend 19: all 5 optimization levels
+PASS frontend 20: all 5 optimization levels
+PASS frontend 21: all 5 optimization levels
+PASS frontend 22: all 5 optimization levels
+PASS frontend 23: all 5 optimization levels
+PASS frontend 24: all 5 optimization levels
+PASS frontend 25: all 5 optimization levels
+PASS frontend 26: all 5 optimization levels
+PASS frontend 27: all 5 optimization levels
+PASS frontend 28: all 5 optimization levels
+PASS frontend 29: all 5 optimization levels
+PASS frontend 30: all 5 optimization levels
+PASS frontend 31: all 5 optimization levels
+PASS frontend 32: all 5 optimization levels
+PASS frontend 33: all 5 optimization levels
+PASS frontend 34: all 5 optimization levels
+PASS frontend 35: all 5 optimization levels
+PASS frontend 36: all 5 optimization levels
+PASS frontend 37: all 5 optimization levels
+PASS frontend 38: all 5 optimization levels
+PASS frontend 39: all 5 optimization levels
+PASS frontend 40: all 5 optimization levels
+PASS frontend 41: all 5 optimization levels
+PASS frontend 42: all 5 optimization levels
+PASS frontend 43: all 5 optimization levels
+PASS frontend 44: all 5 optimization levels
+PASS frontend 45: all 5 optimization levels
+PASS frontend 46: all 5 optimization levels
+PASS frontend 47: all 5 optimization levels
+PASS frontend 48: all 5 optimization levels
+PASS frontend 49: all 5 optimization levels
+PASS frontend 50: all 5 optimization levels
+PASS frontend 51: all 5 optimization levels
+PASS frontend 52: all 5 optimization levels
+PASS frontend 53: all 5 optimization levels
+PASS frontend 54: all 5 optimization levels
+PASS frontend 55: all 5 optimization levels
+PASS frontend 56: all 5 optimization levels
+PASS frontend 57: all 5 optimization levels
+PASS frontend 58: all 5 optimization levels
+PASS frontend 59: all 5 optimization levels
+PASS frontend 60: all 5 optimization levels
+PASS frontend 61: all 5 optimization levels
+PASS frontend 62: all 5 optimization levels
+PASS frontend 63: all 5 optimization levels
+PASS frontend 64: all 5 optimization levels
+PASS frontend 65: all 5 optimization levels
+PASS frontend 66: all 5 optimization levels
+PASS frontend 67: all 5 optimization levels
+PASS frontend 68: all 5 optimization levels
+PASS frontend 69: all 5 optimization levels
+PASS frontend 70: all 5 optimization levels
+PASS frontend 71: all 5 optimization levels
+PASS frontend 72: all 5 optimization levels
+PASS frontend 73: all 5 optimization levels
+PASS frontend 74: all 5 optimization levels
+PASS frontend 75: all 5 optimization levels
+PASS frontend 76: all 5 optimization levels
+PASS frontend 77: all 5 optimization levels
+PASS frontend 78: all 5 optimization levels
+PASS frontend 79: all 5 optimization levels
+PASS frontend 80: all 5 optimization levels
+PASS frontend 81: all 5 optimization levels
+PASS frontend 82: all 5 optimization levels
+PASS frontend 83: all 5 optimization levels
+PASS frontend 84: all 5 optimization levels
+PASS frontend 85: all 5 optimization levels
+PASS frontend 86: all 5 optimization levels
+PASS frontend 87: all 5 optimization levels
+PASS frontend 88: all 5 optimization levels
+PASS frontend 89: all 5 optimization levels
+PASS frontend 90: all 5 optimization levels
+PASS frontend 91: all 5 optimization levels
+PASS frontend 92: all 5 optimization levels
+PASS frontend 93: all 5 optimization levels
+PASS frontend 94: all 5 optimization levels
+PASS frontend 95: all 5 optimization levels
+PASS frontend 96: all 5 optimization levels
+PASS frontend 97: all 5 optimization levels
+PASS frontend 98: all 5 optimization levels
+PASS frontend 99: all 5 optimization levels
+PASS frontend 100: all 5 optimization levels
+PASS frontend 101: all 5 optimization levels
+PASS frontend 102: all 5 optimization levels
+PASS frontend 103: all 5 optimization levels
+PASS frontend 104: all 5 optimization levels
+PASS frontend 105: all 5 optimization levels
+PASS frontend 106: all 5 optimization levels
+PASS frontend 107: all 5 optimization levels
+PASS frontend 108: all 5 optimization levels
+PASS frontend 109: all 5 optimization levels
+PASS frontend 110: all 5 optimization levels
+PASS frontend 111: all 5 optimization levels
+PASS frontend 112: all 5 optimization levels
+PASS frontend 113: all 5 optimization levels
+PASS frontend 114: all 5 optimization levels
+PASS frontend 115: all 5 optimization levels
+PASS frontend 116: all 5 optimization levels
+PASS frontend 117: all 5 optimization levels
+PASS frontend 118: all 5 optimization levels
+PASS frontend 119: all 5 optimization levels
+PASS frontend 120: all 5 optimization levels
+PASS frontend 121: all 5 optimization levels
+PASS frontend 122: all 5 optimization levels
+PASS frontend 123: all 5 optimization levels
+PASS frontend 124: all 5 optimization levels
+PASS frontend 125: all 5 optimization levels
+PASS frontend 126: all 5 optimization levels
+PASS frontend 127: all 5 optimization levels
+PASS frontend 128: all 5 optimization levels
+PASS frontend 129: all 5 optimization levels
+PASS frontend 130: all 5 optimization levels
+PASS frontend 131: all 5 optimization levels
+PASS frontend 132: all 5 optimization levels
+665 generated frontend compilations passed; seed=20261012 (C generator, SplitMix64)
+PASS growth add width=4: gates=40, ancillas=4
+PASS growth add width=8: gates=112, ancillas=8
+PASS growth add width=12: gates=216, ancillas=12
+PASS growth add width=16: gates=352, ancillas=16
+PASS growth sub width=4: gates=40, ancillas=4
+PASS growth sub width=8: gates=112, ancillas=8
+PASS growth sub width=12: gates=216, ancillas=12
+PASS growth sub width=16: gates=352, ancillas=16
+PASS growth mul width=4: gates=52, ancillas=4
+PASS growth mul width=8: gates=264, ancillas=8
+PASS growth mul width=12: gates=764, ancillas=12
+PASS growth mul width=16: gates=1680, ancillas=16
+PASS growth div width=4: gates=316, ancillas=14
+PASS growth div width=8: gates=1432, ancillas=26
+PASS growth div width=12: gates=3732, ancillas=38
+PASS growth div width=16: gates=7600, ancillas=50
+PASS growth mod width=4: gates=324, ancillas=18
+PASS growth mod width=8: gates=1448, ancillas=34
+PASS growth mod width=12: gates=3756, ancillas=50
+PASS growth mod width=16: gates=7632, ancillas=66
+PASS growth lt width=4: gates=49, ancillas=5
+PASS growth lt width=8: gates=97, ancillas=9
+PASS growth lt width=12: gates=145, ancillas=13
+PASS growth lt width=16: gates=193, ancillas=17
+24 circuits compiled without tables; /mnt/e/Backup/GitHub/Quantum/build/synthesis-growth.csv
+PASS independent QASM importer: 8 malformed artifacts rejected
+PASS independent QASM state and probabilities: entangled arithmetic (16 qubits)
+PASS independent QASM state and probabilities: relative phase and cleanup (9 qubits)
+PASS independent QASM state and probabilities: controlled global phase (2 qubits)
+PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
+PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
+PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
+PASS independent QASM state and probabilities: nested open controls (12 qubits)
+PASS independent QASM state and probabilities: independent controlled module (10 qubits)
+PASS independent QASM state and probabilities: signed absolute value with relative phase (11 qubits)
+PASS independent QASM state and probabilities: function, array, static loop and coherent phase (6 qubits)
+PASS independent QASM state and probabilities: quantum variable left shift and relative phase (14 qubits)
+PASS independent QASM state and probabilities: signed variable right shift and Boolean conversion (13 qubits)
+PASS independent QASM state and probabilities: conditional expression with guarded division (13 qubits)
+PASS independent QASM state and probabilities: short-circuit logic with guarded division (7 qubits)
+PASS independent QASM state and probabilities: conditional signed negation and complement (19 qubits)
+PASS independent QASM state and probabilities: controlled affine in-place arithmetic (10 qubits)
+PASS independent QASM state and probabilities: in-place rotation and complement (9 qubits)
+PASS independent QASM state and probabilities: signed affine update after Fourier (10 qubits)
+PASS independent QASM state and probabilities: coherent library memcpy with relative phase (18 qubits)
+PASS independent QASM state and probabilities: library memmove preserves signed object bits (17 qubits)
+PASS independent QASM state and probabilities: library memmove exact alias preserves interference (9 qubits)
+PASS independent QASM state and probabilities: library copy survives coherent source uncomputation (19 qubits)
+PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
+PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
+PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
+25 exported circuits independently validated with QuEST 3.7.0 (C): 22 states, 3 channels; table-free export
+All compiler, runtime, example, synthesis and independent QASM checks passed.

@@ -16,8 +16,7 @@
 /* High-level intrinsics. There is deliberately no classical implementation. */
 uint64_t superposition(uint64_t lower, uint64_t upper)
     __attribute__((cket_intrinsic("superposition")));
-uint64_t __cket_measure_value(uint64_t value)
-    __attribute__((cket_intrinsic("measure")));
+uint64_t __cket_measure_value(uint64_t value) __attribute__((cket_intrinsic("measure")));
 /* The explicit classical result retains the underlying C integer type. */
 #define measure(value) ((__typeof__(value))__cket_measure_value(value))
 void phase_flip(void) __attribute__((cket_intrinsic("phase_flip")));
@@ -30,7 +29,9 @@ uint64_t find(uint64_t value, bool predicate) __attribute__((cket_intrinsic("fin
 uint64_t find_known(uint64_t value, bool predicate, uint64_t solutions)
     __attribute__((cket_intrinsic("find_known")));
 /* Measurement-based search: false means the attempt budget was exhausted.
- * For a nonempty domain, false has probability <= (7/8)^attempts. */
+ * If a solution exists and trials use independent uniform randomness, false
+ * has probability <= (7/8)^attempts. This is not a guarantee for every PRNG
+ * seed; false for an empty solution set is expected. */
 bool search(uint64_t value, bool predicate, unsigned attempts)
     __attribute__((cket_intrinsic("search")));
 /* Unit-only QIR module, embedded at compile time; typed register borrows. */

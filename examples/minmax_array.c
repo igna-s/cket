@@ -12,8 +12,14 @@ int main(void) {
         reset(sample);
         sample += data[i];
         unsigned value = measure(sample);
-        if (value < minimum) { minimum = value; min_index = i; }
-        if (i == 0 || value > maximum) { maximum = value; max_index = i; }
+        if (value < minimum) {
+            minimum = value;
+            min_index = i;
+        }
+        if (i == 0 || value > maximum) {
+            maximum = value;
+            max_index = i;
+        }
     }
     reset(sample);
     printf("min=%u index=%u max=%u index=%u\n", minimum, min_index, maximum, max_index);

@@ -14,7 +14,7 @@ if [[ "${VALIDATION_SANITIZERS:-0}" == 1 ]]; then
     native_objects=()
     for component in json quantum verify simulator; do
         object="build/validation-deps/sanitized/cket-$component.o"
-        "$compiler" "${flags[@]}" -Wno-misleading-indentation -c "src/engine/$component.c" -o "$object"
+        "$compiler" "${flags[@]}" -c "src/engine/$component.c" -o "$object"
         native_objects+=("$object")
     done
     native_library=build/validation-deps/sanitized/libcket_quantum.a

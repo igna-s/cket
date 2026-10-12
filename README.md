@@ -6,15 +6,29 @@
 [![Version](https://img.shields.io/badge/version-0.4.0--experimental-orange)](docs/releases/v0.4.0.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-`|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write expressions and coherent conditions, and let the compiler build reversible circuits and clean temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C statevector simulator.
+`|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write
+expressions and coherent conditions, and let the compiler build reversible circuits and clean
+temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C
+statevector simulator.
 
-The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR, OpenQASM 3 circuits, and resource reports. The current version is **0.4.0**, with **GCC 11.4.0** as the reference configuration. It implements a documented subset, with [version 1.0 requirements still open](docs/v1-plan.md).
+The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
+OpenQASM 3 circuits, and resource reports. The current version is **0.4.0**, with **GCC 11.4.0** as
+the reference configuration. It implements an intermediate subset, with
+[version 1.0 requirements still open](docs/v1-plan.md).
+
+The final objective is explicit quantum compatibility for **all C11 constructions and
+standard-library interfaces**. The [C11 inventory](docs/c11-inventory.md) and
+[roadmap](docs/c11-roadmap.md) separate implemented cases, missing features, resource bounds and
+justified incompatible contexts. Quantum compatibility with the entire C library is currently
+incomplete; ordinary libc support is not evidence that libc functions operate on unmeasured quantum
+data.
 
 ## Install and build
 
-Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The reference Linux environment is Ubuntu 22.04.
+Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The
+reference Linux environment is Ubuntu 22.04.
 
-Clone the private repository with an account that has access, then install the build dependencies:
+Clone the repository, then install the build dependencies:
 
 ```bash
 git clone https://github.com/igna-s/cket.git
@@ -27,11 +41,17 @@ bash scripts/build.sh
 build/cket --version
 ```
 
-If you already have the repository, start in its root directory and skip cloning. Keep `CC` and `CXX` set in the terminal where you compile or test.
+If you already have the repository, start in its root directory and skip cloning. Keep `CC` and
+`CXX` set in the terminal where you compile or test.
 
-The driver, runtime, backend, engine, and test programs are **C**. The GCC plugin is **C++17** because GCC's internal API requires C++; shell scripts coordinate commands. **Python is not required**, including for tests. No QPU or external quantum SDK is needed to run a compiled program.
+The driver, runtime, backend, engine, and test programs are **C**. The GCC plugin is **C++17**
+because GCC's internal API requires C++; shell scripts coordinate commands. **Python is not
+required**, including for tests. No QPU or external quantum SDK is needed to run a compiled program.
 
-GCC plugin headers must match the compiler. For a custom installation, set `GCC_PLUGIN_INCLUDE` to the directory containing `gcc-plugin.h`. The build also recognizes headers extracted under `.deps/gcc/`. The driver checks that the GCC version used to compile a program matches the plugin build.
+GCC plugin headers must match the compiler. For a custom installation, set `GCC_PLUGIN_INCLUDE` to
+the directory containing `gcc-plugin.h`. The build also recognizes headers extracted under
+`.deps/gcc/`. The driver checks that the GCC version used to compile a program matches the plugin
+build.
 
 ## Your first program
 
@@ -63,35 +83,46 @@ build/cket examples/hello.c -O2 -o build/hello
 ./build/hello
 ```
 
-The output is a native Linux executable with its C runtime linked in. Running it does not invoke GCC, parse the source again, or require a Python process. Keep the compiler's build files together when using `cket`; the driver locates its plugin, header, runtime, and library relative to its own executable.
+The output is a native Linux executable with its C runtime linked in. Running it does not invoke
+GCC, parse the source again, or require a Python process. Keep the compiler's build files together
+when using `cket`; the driver locates its plugin, header, runtime, and library relative to its own
+executable.
 
-The root `cket` file is a shell launcher. `bash cket examples/hello.c --run -o build/hello` is equivalent to calling `build/cket`.
+The root `cket` file is a shell launcher. `bash cket examples/hello.c --run -o build/hello` is
+equivalent to calling `build/cket`.
 
 ## Prepare, measure, and reset
 
 Use small register widths when simulating:
 
 ```c
-quant uint8_t basis = 7;                     // A basis state.
-quant uint8_t x = superposition(0, 15);      // Uniform over 0 through 15.
-uint8_t result = measure(x);                // An explicit classical result.
-reset(basis);                              // Destroy information and leave zero.
+quant uint8_t basis = 7;                // A basis state.
+quant uint8_t x = superposition(0, 15); // Uniform over 0 through 15.
+uint8_t result = measure(x);            // An explicit classical result.
+reset(basis);                           // Destroy information and leave zero.
 ```
 
-An uninitialized quantum local starts at zero. Uniform preparation accepts constant intervals `[0, 2^k - 1]`; arbitrary or CPU-computed interval bounds are rejected. A basis initializer may use a CPU value evaluated once.
+An uninitialized quantum local starts at zero. Uniform preparation accepts constant intervals
+`[0, 2^k - 1]`; arbitrary or CPU-computed interval bounds are rejected. A basis initializer may use
+a CPU value evaluated once.
 
-`measure(x)` collapses the register and returns its underlying C integer type. It preserves correlations and leaves the measured state available for supported later operations. It does not clear a measured one. `reset(x)` explicitly destroys information and leaves zeroed storage.
+`measure(x)` collapses the register and returns its underlying C integer type. It preserves
+correlations and leaves the measured state available for supported later operations. It does not
+clear a measured one. `reset(x)` explicitly destroys information and leaves zeroed storage.
 
-Every owner must eventually be measured, reset, transferred, or safely uncomputed. The compiler never inserts hidden measurements to make coherent code work.
+Every owner must eventually be measured, reset, transferred, or safely uncomputed. The compiler
+never inserts hidden measurements to make coherent code work.
 
-[examples/prepare_measure.c](examples/prepare_measure.c) mixes ordinary CPU values and a quantum measurement:
+[examples/prepare_measure.c](examples/prepare_measure.c) mixes ordinary CPU values and a quantum
+measurement:
 
 ```bash
 build/cket examples/prepare_measure.c --run --seed 7 -o build/prepare
 # Prints classical=10 quantum=<a value from 0 through 255>
 ```
 
-Measurements are probabilistic. To reproduce a run, use `--seed N` with `--run`, or set `CKET_SEED=N` when executing the binary directly:
+Measurements are probabilistic. To reproduce a run, use `--seed N` with `--run`, or set
+`CKET_SEED=N` when executing the binary directly:
 
 ```bash
 CKET_SEED=7 ./build/prepare
@@ -101,19 +132,48 @@ A fixed seed is a reproducibility aid, not a success guarantee for a quantum alg
 
 ## Expressions and ownership
 
-Arithmetic expressions support `+ - * / %`, comparisons, bit operators, constant shifts, and pure Boolean/conditional expressions. GCC's promotions and explicit casts remain significant: with `uint8_t x`, `x * x` is promoted to `int`; it is not truncated to eight bits before a comparison.
+Arithmetic expressions support `+ - * / %`, comparisons, bit operators, constant and variable shifts
+with proven definedness, and pure Boolean/conditional expressions. Variable shifts have a table-free
+barrel network with explicit workspace limits; see [contracts and evidence](docs/c11-shifts.md).
+Pure negation, complement and logical/conditional expressions also have
+[table-free circuits and branch-local definedness proofs](docs/c11-expressions.md). GCC's promotions
+and explicit casts remain significant: with `uint8_t x`, `x * x` is promoted to `int`; it is not
+truncated to eight bits before a comparison.
 
-A computed result preserves its inputs and may become entangled with them. For example, `quant uint8_t parity = x % 2;` computes a reversible result, while `quant uint8_t next = x;` with the same compatible type **transfers ownership**: `x` cannot then be used. This is not an independent copy.
+A computed result preserves its inputs and may become entangled with them. For example,
+`quant uint8_t parity = x % 2;` computes a reversible result, while `quant uint8_t next = x;` with
+the same compatible type **transfers ownership**: `x` cannot then be used. This is not an
+independent copy.
 
-Unsigned `+=`, `-=`, and supported XOR updates are reversible. A distinct quantum source may be preserved during addition/subtraction. Arbitrary overwrites and destructive updates are rejected when they lose information.
+Unsigned `+=`, `-=`, and supported XOR updates are reversible. A distinct quantum source may be
+preserved during addition/subtraction. Arbitrary overwrites and destructive updates are rejected
+when they lose information.
 
-Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure an input while a derived value still needs it for cleanup. Derived values used only as coherent predicates can be uncomputed automatically after their last use.
+In-place bit permutations and affine word updates also have
+[table-free certificates](docs/c11-inplace.md). These include fixed rotations, complement, defined
+negation and multiplication by an odd constant, with no private qubits. Boolean updates retain C
+truth conversion. `--no-tables` also applies to the remaining in-place fallback; general destructive
+history and expression-valued effects remain pending.
 
-Division requires a proven nonzero divisor. Signed arithmetic must have supported range/overflow proofs; division truncates toward zero and remainder follows the dividend's sign. Accepted type widths do not imply every expression can be synthesized or simulated. See the [language contract](docs/language.md) for precise restrictions.
+`memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole integer
+elements and constant extents. Known basis destinations use reversible translation and copying;
+`memmove` checks read-before-write overlap. Coherent controls are supported without hidden channels.
+General byte layouts, unknown overwritten values, dynamic extents and returned-pointer uses remain
+pending.
+
+Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
+an input while a derived value still needs it for cleanup. Derived values used only as coherent
+predicates can be uncomputed automatically after their last use.
+
+Division requires a proven nonzero divisor. Signed arithmetic must have supported range/overflow
+proofs; division truncates toward zero and remainder follows the dividend's sign. Accepted type
+widths do not imply every expression can be synthesized or simulated. See the
+[language contract](docs/language.md) for precise restrictions.
 
 ## Coherent conditions and entanglement
 
-An `if` whose condition is quantum controls operations coherently; it does not measure to select a branch. [examples/entanglement.c](examples/entanglement.c) creates correlated bits:
+An `if` whose condition is quantum controls operations coherently; it does not measure to select a
+branch. [examples/entanglement.c](examples/entanglement.c) creates correlated bits:
 
 ```c
 #include <quantum.h>
@@ -123,7 +183,8 @@ int main(void) {
     quant bool a = 0;
     quant bool b = 0;
     fourier(a);
-    if (a) b ^= 1;
+    if (a)
+        b ^= 1;
     unsigned first = measure(a);
     unsigned second = measure(b);
     printf("%u %u\n", first, second);
@@ -135,11 +196,18 @@ int main(void) {
 build/cket examples/entanglement.c --run --seed 7 -o build/bell
 ```
 
-It prints `0 0` or `1 1`. Fourier on one bit prepares its equal superposition, and the controlled XOR entangles the two registers.
+It prints `0 0` or `1 1`. Fourier on one bit prepares its equal superposition, and the controlled
+XOR entangles the two registers.
 
-Coherent branches accept supported quantum operations and phases. Printing, CPU writes, measurement, reset, and classical jumps inside a quantum condition are rejected. Measure first if you need a CPU decision. The condition must also be safely uncomputed: changing a register it depends on can prevent cleanup.
+Coherent branches accept supported quantum operations and phases. Printing, CPU writes, measurement,
+reset, and classical jumps inside a quantum condition are rejected. Measure first if you need a CPU
+decision. The condition must also be safely uncomputed: changing a register it depends on can
+prevent cleanup.
 
-CPU `for`, `while`, and `do` loops support operations on stable existing owners, including coherent conditions and measurement followed by classical decisions. A loop does not prove it ran even once; lifetime obligations must hold on every path. General coherent loops, dynamic owner creation, and unsafe early returns remain unsupported.
+CPU `for`, `while`, and `do` loops support operations on stable existing owners, including coherent
+conditions and measurement followed by classical decisions. A loop does not prove it ran even once;
+lifetime obligations must hold on every path. General coherent loops, dynamic owner creation, and
+unsafe early returns remain unsupported.
 
 ```bash
 build/cket examples/hybrid_loop.c --run -o build/loop
@@ -169,7 +237,10 @@ build/cket examples/find.c --run --seed 7 -o build/find
 # Output with this seed: 3
 ```
 
-`find(x, predicate)` promises **exactly one solution**. `find_known(x, predicate, M)` accepts another known count, with `1 <= M <= N`. The caller supplies the count; the compiler does not enumerate the domain to verify it. Both consume the original owner and transfer the amplified register to the result. Success remains probabilistic; a wrong promise invalidates the guarantee.
+`find(x, predicate)` promises **exactly one solution**. `find_known(x, predicate, M)` accepts
+another known count, with `1 <= M <= N`. The caller supplies the count; the compiler does not
+enumerate the domain to verify it. Both consume the original owner and transfer the amplified
+register to the result. Success remains probabilistic; a wrong promise invalidates the guarantee.
 
 For an **unknown count**, including zero, use [examples/search.c](examples/search.c):
 
@@ -180,7 +251,8 @@ For an **unknown count**, including zero, use [examples/search.c](examples/searc
 int main(void) {
     quant uint8_t x = superposition(0, 15);
     bool found = search(x, x * x == 9, 80);
-    if (found) printf("%u\n", (unsigned)measure(x));
+    if (found)
+        printf("%u\n", (unsigned)measure(x));
     else {
         reset(x);
         puts("Search budget exhausted");
@@ -196,13 +268,20 @@ build/cket examples/search_empty.c --run --seed 7 -o build/search-empty
 # Output: Search budget exhausted
 ```
 
-`search` measures and verifies candidates, then retries within a constant budget of 1 to 4096 attempts. `true` identifies a valid candidate; `false` means **budget exhausted**, not proof of nonexistence. With a solution and independent uniform randomness, failure is bounded by `(7/8)^attempts`; the PRNG seed is not a per-run guarantee. This strategy needs CPU feedback and cannot export as flat QASM.
+`search` measures and verifies candidates, then retries within a constant budget of 1 to 4096
+attempts. `true` identifies a valid candidate; `false` means **budget exhausted**, not proof of
+nonexistence. With a solution and independent uniform randomness, failure is bounded by
+`(7/8)^attempts`; the PRNG seed is not a per-run guarantee. This strategy needs CPU feedback and
+cannot export as flat QASM.
 
-All search forms require an intact uniform input and a pure predicate. Oracle synthesis, simulator size, and complexity limits apply independently.
+All search forms require an intact uniform input and a pure predicate. Oracle synthesis, simulator
+size, and complexity limits apply independently.
 
 ## Functions, arrays, and circuit modules
 
-Quantum functions currently compose within one C translation unit. Put definitions before their calls. Read-only parameters borrow inputs; mutable parameters may update an existing register but cannot overlap or consume borrowed owners.
+Quantum functions currently compose within one C translation unit. Put definitions before their
+calls. Read-only parameters borrow inputs; mutable parameters may update an existing register but
+cannot overlap or consume borrowed owners.
 
 [examples/functions.c](examples/functions.c) defines a reusable predicate and update:
 
@@ -221,9 +300,11 @@ build/cket examples/functions.c --run --seed 7 -o build/functions
 # Output with this seed: 4
 ```
 
-Pure conditional results and some terminal owned scalar returns are supported. Recursion, indirect quantum calls, arbitrary quantum linking across C files, and general product returns are pending.
+Pure conditional results and some terminal owned scalar returns are supported. Recursion, indirect
+quantum calls, arbitrary quantum linking across C files, and general product returns are pending.
 
-Fixed arrays and integer structures are supported; classical pointers borrow existing quantum storage. [examples/products.c](examples/products.c) uses both:
+Fixed arrays and integer structures are supported; classical pointers borrow existing quantum
+storage. [examples/products.c](examples/products.c) uses both:
 
 ```bash
 build/cket examples/products.c --run -o build/products
@@ -244,22 +325,30 @@ printf '1\n' | ./build/vector
 # Output: 9
 ```
 
-An index outside the two-element array, malformed input, or EOF returns exit status 1. The program explicitly resets both owners; measuring one dynamically chosen element cannot discharge every array lifetime.
+An index outside the two-element array, malformed input, or EOF returns exit status 1. The program
+explicitly resets both owners; measuring one dynamically chosen element cannot discharge every array
+lifetime.
 
-Independent unitary QIR modules are embedded at compile time. Their paths resolve relative to the C source file, so the example can load [increment.qir.json](examples/increment.qir.json):
+Independent unitary QIR modules are embedded at compile time. Their paths resolve relative to the C
+source file, so the example can load [increment.qir.json](examples/increment.qir.json):
 
 ```bash
 build/cket examples/circuit_module.c --run -o build/module
 # Output: 7
 ```
 
-`circuit("module.qir.json", value)` borrows a register; `inverse_circuit` applies its inverse. Supported quantum conditions also provide controlled versions. See the [circuit ABI](docs/circuit-abi.md) for module validation and aliasing requirements.
+`circuit("module.qir.json", value)` borrows a register; `inverse_circuit` applies its inverse.
+Supported quantum conditions also provide controlled versions. See the
+[circuit ABI](docs/circuit-abi.md) for module validation and aliasing requirements.
 
 ## Phases and Fourier transforms
 
-`phase(theta)` applies a finite classical angle in radians to the active controls. Without controls it is a global phase. `phase_flip()` applies pi. Relative phases affect interference even when basis probabilities initially look unchanged.
+`phase(theta)` applies a finite classical angle in radians to the active controls. Without controls
+it is a global phase. `phase_flip()` applies pi. Relative phases affect interference even when basis
+probabilities initially look unchanged.
 
-`fourier(x)` implements the positive quantum DFT on the entire little-endian register. `inverse_fourier(x)` reverses it. Both support coherent controls and preserve correlations.
+`fourier(x)` implements the positive quantum DFT on the entire little-endian register.
+`inverse_fourier(x)` reverses it. Both support coherent controls and preserve correlations.
 
 ```bash
 build/cket examples/fourier.c --run -o build/fourier
@@ -268,15 +357,16 @@ build/cket examples/phase_estimation.c --run --seed 7 -o build/phase-estimation
 # Output: 3
 ```
 
-The phase-estimation example uses a known eigenphase of `3/256`, controlled phases, and inverse Fourier. CPU-computed angles work in native execution but require static values for QASM export.
+The phase-estimation example uses a known eigenphase of `3/256`, controlled phases, and inverse
+Fourier. CPU-computed angles work in native execution but require static values for QASM export.
 
 ## Export and inspect a circuit
 
 Each command selects one output action:
 
-`build/cket --help` lists driver options. Use `--gcc gcc-11` to select a matching
-compiler explicitly. Additional GCC options must be single tokens, such as
-`-O2`, `-I/path/to/headers`, or `-DNAME=1`; pass one C source file per invocation.
+`build/cket --help` lists driver options. Use `--gcc gcc-11` to select a matching compiler
+explicitly. Additional GCC options must be single tokens, such as `-O2`, `-I/path/to/headers`, or
+`-DNAME=1`; pass one C source file per invocation.
 
 ```bash
 build/cket examples/find.c --emit-ast -o build/find.ast
@@ -287,76 +377,94 @@ build/cket_backend --validate build/find.qir.json
 build/cket_backend --resources build/find.qir.json --no-tables
 ```
 
-| Output | Use |
-|---|---|
-| `--emit-ast` | Inspect the GCC tree used by the frontend. |
+| Output                            | Use                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `--emit-ast`                      | Inspect the GCC tree used by the frontend.                                |
 | `--emit-ir` / `--emit-quantum-ir` | Inspect typed `cket.qir` version 1, ownership operations and CPU markers. |
-| `--emit-qasm` | Export the supported static quantum circuit as OpenQASM 3. |
-| `--resources` | Report logical/physical qubits, ancillas, gate counts and depth. |
+| `--emit-qasm`                     | Export the supported static quantum circuit as OpenQASM 3.                |
+| `--resources`                     | Report logical/physical qubits, ancillas, gate counts and depth.          |
 
-The custom IR is **not LLVM QIR**; `--emit-llvm` is not implemented. QASM contains the quantum circuit, not ordinary C I/O. Runtime input, dynamic selection/control, unknown-count search, and dynamic angles need native execution.
+The custom IR is **not LLVM QIR**; `--emit-llvm` is not implemented. QASM contains the quantum
+circuit, not ordinary C I/O. Runtime input, dynamic selection/control, unknown-count search, and
+dynamic angles need native execution.
 
-The backend also accepts `--emit-qasm` and `--state`. State inspection is simulator debugging before document measurements; it does not change program semantics. `--no-tables` requires synthesis without the finite enumeration fallback.
+The backend also accepts `--emit-qasm` and `--state`. State inspection is simulator debugging before
+document measurements; it does not change program semantics. `--no-tables` requires synthesis
+without the finite enumeration fallback.
 
-Resource counts precede device decomposition. Larger controlled operations count as MCX; exported open controls add X gates, so logical and exported gate totals may differ.
+Resource counts precede device decomposition. Larger controlled operations count as MCX; exported
+open controls add X gates, so logical and exported gate totals may differ.
 
 ## Example reference
 
-The collection now contains 36 C examples, including loops, sums, Fibonacci,
-dot products, extrema, interactive input and measurement feedback. See the
-[examples guide](examples/README.md) for the complete catalog, expected results
-and input formats. Run all 35 simulator-compatible examples with:
+The collection now contains 36 C examples, including loops, sums, Fibonacci, dot products, extrema,
+interactive input and measurement feedback. See the [examples guide](examples/README.md) for the
+complete catalog, expected results and input formats. Run all 35 simulator-compatible examples with:
 
 ```bash
 bash scripts/run-examples.sh --all
 ```
 
-All C examples are checked at `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`. Seed-dependent entries below refer to seed 7.
+All C examples are checked at `-O0`, `-O1`, `-O2`, `-O3`, and `-Os`. Seed-dependent entries below
+refer to seed 7.
 
-| File in `examples/` | Behavior | Static QASM |
-|---|---|---|
-| [hello.c](examples/hello.c) | Basis arithmetic; prints 12. | Yes |
-| [entanglement.c](examples/entanglement.c) | Correlated bits, 0 0 or 1 1. | Yes |
-| [prepare_measure.c](examples/prepare_measure.c) | CPU value 10 and quantum result in 0..255. | Yes |
-| [find.c](examples/find.c) | Known single-solution Grover search; prints 3. | Yes |
-| [search.c](examples/search.c) | Verified unknown-count search; prints 3. | No |
-| [search_empty.c](examples/search_empty.c) | Empty domain result; reports budget exhaustion. | No |
-| [coherent.c](examples/coherent.c) | Coherent square predicate, phase and addition; result in 5..20. | Yes |
-| [functions.c](examples/functions.c) | Borrowed predicate/update composition; prints 4. | Yes |
-| [fourier.c](examples/fourier.c) | Fourier followed by inverse; prints 7. | Yes |
-| [phase_estimation.c](examples/phase_estimation.c) | Controlled phases and inverse QFT; prints 3. | Yes |
-| [products.c](examples/products.c) | Array and structure updates; prints 9 2, then 3 7. | Yes |
-| [vector_function.c](examples/vector_function.c) | Array borrow and fixed loop; prints 10 1. | Yes |
-| [dynamic_vector.c](examples/dynamic_vector.c) | Reads CPU index; prints 3 or 9. | No |
-| [hybrid_loop.c](examples/hybrid_loop.c) | CPU loop and quantum updates; prints 29. | No |
-| [circuit_module.c](examples/circuit_module.c) | Controlled module and inverse; prints 7. | Yes |
-| [types.c](examples/types.c) | 32-bit `quant int` type example; export succeeds, simulation exceeds its limit. | Yes |
+| File in `examples/`                               | Behavior                                                                        | Static QASM |
+| ------------------------------------------------- | ------------------------------------------------------------------------------- | ----------- |
+| [hello.c](examples/hello.c)                       | Basis arithmetic; prints 12.                                                    | Yes         |
+| [entanglement.c](examples/entanglement.c)         | Correlated bits, 0 0 or 1 1.                                                    | Yes         |
+| [prepare_measure.c](examples/prepare_measure.c)   | CPU value 10 and quantum result in 0..255.                                      | Yes         |
+| [find.c](examples/find.c)                         | Known single-solution Grover search; prints 3.                                  | Yes         |
+| [search.c](examples/search.c)                     | Verified unknown-count search; prints 3.                                        | No          |
+| [search_empty.c](examples/search_empty.c)         | Empty domain result; reports budget exhaustion.                                 | No          |
+| [coherent.c](examples/coherent.c)                 | Coherent square predicate, phase and addition; result in 5..20.                 | Yes         |
+| [functions.c](examples/functions.c)               | Borrowed predicate/update composition; prints 4.                                | Yes         |
+| [fourier.c](examples/fourier.c)                   | Fourier followed by inverse; prints 7.                                          | Yes         |
+| [phase_estimation.c](examples/phase_estimation.c) | Controlled phases and inverse QFT; prints 3.                                    | Yes         |
+| [products.c](examples/products.c)                 | Array and structure updates; prints 9 2, then 3 7.                              | Yes         |
+| [vector_function.c](examples/vector_function.c)   | Array borrow and fixed loop; prints 10 1.                                       | Yes         |
+| [dynamic_vector.c](examples/dynamic_vector.c)     | Reads CPU index; prints 3 or 9.                                                 | No          |
+| [hybrid_loop.c](examples/hybrid_loop.c)           | CPU loop and quantum updates; prints 29.                                        | No          |
+| [circuit_module.c](examples/circuit_module.c)     | Controlled module and inverse; prints 7.                                        | Yes         |
+| [types.c](examples/types.c)                       | 32-bit `quant int` type example; export succeeds, simulation exceeds its limit. | Yes         |
 
 ## Current limits and troubleshooting
 
-| Limit | Current contract |
-|---|---|
-| Quantum integer width | Up to 64 bits. |
-| Gate storage / statevector simulation | 128 physical qubits / 24 physical qubits. |
-| Finite synthesis fallback | At most 12 relevant input bits; disable with backend `--no-tables`. |
-| Symbolic synthesis | 256 terms per bit and two million work steps. |
-| IR expressions | 100,000 tokens, 128 levels; input files up to 64 MiB. |
-| Fixed loop expansion | At most 4096 checked iterations. |
+| Limit                                 | Current contract                                                    |
+| ------------------------------------- | ------------------------------------------------------------------- |
+| Quantum integer width                 | Up to 64 bits.                                                      |
+| Gate storage / statevector simulation | 128 physical qubits / 24 physical qubits.                           |
+| Finite synthesis fallback             | At most 12 relevant input bits; disable with backend `--no-tables`. |
+| Symbolic synthesis                    | 256 terms per bit and two million work steps.                       |
+| IR expressions                        | 100,000 tokens, 128 levels; input files up to 64 MiB.               |
+| Fixed loop expansion                  | At most 4096 checked iterations.                                    |
 
-The 24-qubit vector alone uses 256 MiB. Full declared widths and temporary ancillas count even when preparation uses a smaller support. Released clean wires can be reused, but vector dimension does not shrink. A 32-bit `quant int` can therefore export while failing to execute on this simulator.
+The 24-qubit vector alone uses 256 MiB. Full declared widths and temporary ancillas count even when
+preparation uses a smaller support. Released clean wires can be reused, but vector dimension does
+not shrink. A 32-bit `quant int` can therefore export while failing to execute on this simulator.
 
-Register synthesis covers addition, subtraction, multiplication, division, remainder, and comparisons beyond 12 relevant bits. Growth tests include two 16-bit inputs, or 32 relevant bits. Complexity budgets can still reject large compositions; 64-bit division needs unsupported extra-width workspace.
+Register synthesis covers addition, subtraction, multiplication, division, remainder, and
+comparisons beyond 12 relevant bits. Growth tests include two 16-bit inputs, or 32 relevant bits.
+Complexity budgets can still reject large compositions; 64-bit division needs unsupported
+extra-width workspace.
 
 If a command fails:
 
-- **Missing plugin headers or GCC version mismatch:** install matching `gcc-plugin-dev`, export matching `CC/CXX`, and rebuild.
-- **Quantum value used as classical data:** call `measure` explicitly; keep I/O outside quantum conditions.
-- **Consumed owner or pending dependency:** end derived lifetimes before modifying their inputs, and do not reuse a name after a move or `find`.
+- **Missing plugin headers or GCC version mismatch:** install matching `gcc-plugin-dev`, export
+  matching `CC/CXX`, and rebuild.
+- **Quantum value used as classical data:** call `measure` explicitly; keep I/O outside quantum
+  conditions.
+- **Consumed owner or pending dependency:** end derived lifetimes before modifying their inputs, and
+  do not reuse a name after a move or `find`.
 - **Simulator qubit limit:** choose smaller widths or export the circuit without executing it.
-- **Dynamic operation cannot export:** run natively; static QASM cannot encode arbitrary CPU feedback.
-- **Synthesis budget or unsupported arithmetic:** inspect typed IR and ranges; a wider type alone does not establish safe or scalable synthesis.
+- **Dynamic operation cannot export:** run natively; static QASM cannot encode arbitrary CPU
+  feedback.
+- **Synthesis budget or unsupported arithmetic:** inspect typed IR and ranges; a wider type alone
+  does not establish safe or scalable synthesis.
 
-General quantum floating point, VLAs, unions, bitfields, dynamic quantum allocation, QPU execution, and full C11 quantum coverage are outside the current subset. GCC integration uses a provisional internal `volatile` marker and differential testing, rather than a proof of every frontend transformation.
+General quantum floating point, VLAs, unions, bitfields, dynamic quantum allocation, QPU execution,
+and full C11 quantum coverage are outside the current subset. GCC integration uses a provisional
+internal `volatile` marker and differential testing, rather than a proof of every frontend
+transformation.
 
 ## Verify the installation
 
@@ -373,15 +481,44 @@ sudo apt-get install -y curl ca-certificates
 bash scripts/verify.sh
 ```
 
-This rebuilds the compiler, runs the native suite and all examples, checks frontend optimization differentials, measures synthesis growth with tables disabled, validates exported circuits independently, and repeats checks with ASan/UBSan. Logs remain in `build/verify-*.log`. To enlarge the frontend campaign, use `CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh`.
+This rebuilds the compiler, runs the native suite and all examples, checks frontend optimization
+differentials, measures synthesis growth with tables disabled, validates exported circuits
+independently, and repeats checks with ASan/UBSan. Logs remain in `build/verify-*.log`. To enlarge
+the frontend campaign, use `CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh`.
 
-Independent validation builds the serial **C** backend of [QuEST 3.7.0](https://github.com/QuEST-Kit/QuEST/releases/tag/v3.7.0), pinned to commit `d4f75f724993b4af8e43a796e3c09ce24ae11670`, with SHA-256 `1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
+Independent validation builds the serial **C** backend of
+[QuEST 3.7.0](https://github.com/QuEST-Kit/QuEST/releases/tag/v3.7.0), pinned to commit
+`d4f75f724993b4af8e43a796e3c09ce24ae11670`, with SHA-256
+`1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their
+license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
-Validation includes 354 native checks; 36 examples at five optimization levels; a default frontend corpus of 29 programs at five levels; 24 growth circuits; and 11 independent QASM cases. QASM cases check eight complete states/final probabilities and three intermediate-measurement/reset channels with 8192 transcripts each. The native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions plus 4096 IR mutations.
+Validation includes 389 native checks; 36 examples at five optimization levels; a default frontend
+corpus of 29 programs at five levels; 24 growth circuits; and 25 independent QASM cases exported
+without tables. QASM cases check twenty-two complete states/final probabilities and three
+intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
+value, variable shifts and combined function/array/control programs. The separate shift suite checks
+55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
+expression suite adds 97 checks, with complete small-state comparisons distinguished from wide
+exports. The in-place suite adds 271 checks of affine maps, bit permutations, Boolean normalization,
+controls, inverse, policy and C composition. The memory-copy suite adds 414 checks of known-basis
+extensions, complete states/inverse, overlap, contracts, C composition and wide generation. The
+native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
+predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
+plus 4096 IR mutations.
 
-Independent state comparisons allow one common global phase and use amplitude tolerance `1e-10`. These finite checks provide evidence for the accepted subset; they are not a formal proof or exhaustive coverage of arbitrary C programs. The QASM reader supports this exporter's static subset.
+`bash scripts/test-c11-classical.sh` additionally compares finite integration programs using the 29
+classical C11 header families against ordinary GCC at five optimization levels. Its quantum code
+uses an explicit measurement boundary; the test does not certify quantum adapters for the whole
+library. The [interface index](docs/c11-library.json) and [roadmap](docs/c11-roadmap.md) record the
+remaining work. The [repository and paper audit](docs/repository-audit.md) records reproduced bugs,
+fixes, campaign scopes and the distinction between historical and current evidence.
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for individual commands and sanitizer details. CI runs the same suites and stores verification evidence.
+Independent state comparisons allow one common global phase and use amplitude tolerance `1e-10`.
+These finite checks provide evidence for the accepted subset; they are not a formal proof or
+exhaustive coverage of arbitrary C programs. The QASM reader supports this exporter's static subset.
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for individual commands and sanitizer details. CI runs the
+same suites and stores verification evidence.
 
 ## Repository layout
 
@@ -404,10 +541,20 @@ docs/                         Detailed language and implementation contracts
 .github/                      CI and contribution templates
 ```
 
-The former root `native/`, `runtime/`, and `backend/` directories are consolidated here. Internal engine headers stay separate from public `include/quantum.h` because they describe different APIs. `.inc` files split large translation units while sharing internal helpers; they are not separate programs.
+The former root `native/`, `runtime/`, and `backend/` directories are consolidated here. Internal
+engine headers stay separate from public `include/quantum.h` because they describe different APIs.
+`.inc` files split large translation units while sharing internal helpers; they are not separate
+programs.
 
-`build/` contains generated binaries, logs, circuits, and validation dependencies. `.deps/` contains optional local GCC headers. Both are excluded from Git and are not additional source modules. Examples teach usage; tests enforce behavior; documents specify contracts.
+`build/` contains generated binaries, logs, circuits, and validation dependencies. `.deps/` contains
+optional local GCC headers. Both are excluded from Git and are not additional source modules.
+Examples teach usage; tests enforce behavior; documents specify contracts.
 
-For implementation details, read the [language contract](docs/language.md), [C11 coverage matrix](docs/c-coverage.md), [IR verification contract](docs/ir-verification.md), [circuit ABI](docs/circuit-abi.md), and [1.0 plan](docs/v1-plan.md). [Release notes](docs/releases/v0.4.0.md) preserve the historical release snapshot.
+For implementation details, read the [language contract](docs/language.md),
+[C11 coverage matrix](docs/c-coverage.md), [IR verification contract](docs/ir-verification.md),
+[circuit ABI](docs/circuit-abi.md), and [1.0 plan](docs/v1-plan.md).
+[Release notes](docs/releases/v0.4.0.md) preserve the historical release snapshot.
 
-The project uses the [MIT license](LICENSE). Contributions follow [CONTRIBUTING.md](CONTRIBUTING.md); vulnerability reports follow [SECURITY.md](SECURITY.md). Repository documentation is in English.
+The project uses the [MIT license](LICENSE). Contributions follow
+[CONTRIBUTING.md](CONTRIBUTING.md); vulnerability reports follow [SECURITY.md](SECURITY.md).
+Repository documentation is in English.

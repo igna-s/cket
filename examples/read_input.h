@@ -13,7 +13,8 @@ static unsigned read_unsigned(unsigned maximum) {
     do {
         ch = getchar();
     } while (ch != EOF && isspace((unsigned char)ch));
-    if (ch == EOF) return maximum + 1;
+    if (ch == EOF)
+        return maximum + 1;
 
     unsigned result = 0;
     int valid = 1;
@@ -22,8 +23,7 @@ static unsigned read_unsigned(unsigned maximum) {
             valid = 0;
         } else if (valid) {
             unsigned digit = (unsigned)(ch - '0');
-            if (result > maximum / 10 ||
-                (result == maximum / 10 && digit > maximum % 10)) {
+            if (result > maximum / 10 || (result == maximum / 10 && digit > maximum % 10)) {
                 valid = 0;
             } else {
                 result = result * 10 + digit;

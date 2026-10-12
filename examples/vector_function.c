@@ -11,7 +11,6 @@ void accumulate(quant uint8_t values[2]) {
 int main(void) {
     quant uint8_t values[2] = {7, 2};
     accumulate(values);
-    printf("%u %u\n", (unsigned)measure(values[0]),
-                         (unsigned)measure(values[1]));
+    printf("%u %u\n", (unsigned)measure(values[0]), (unsigned)measure(values[1]));
     return 0;
 }

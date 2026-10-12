@@ -25,8 +25,8 @@ extra=()
 if [[ -d .deps/gcc/usr/include ]]; then
     extra+=(-I.deps/gcc/usr/include -I.deps/gcc/usr/include/x86_64-linux-gnu)
 fi
-flags=(-std=c11 -O1 -g -Wall -Wextra -Werror -Wno-misleading-indentation -Isrc/engine
-       -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie)
+flags=(-std=c11 -O1 -g -Wall -Wextra -Werror -Isrc/engine
+    -fsanitize=address,undefined -fno-omit-frame-pointer -fno-pie -no-pie)
 "$real_cxx" -std=c++17 -O1 -g -Wall -Wextra -Wno-unused-parameter -Wno-format-diag \
     -fPIC -shared -fno-rtti -fsanitize=address,undefined -fno-omit-frame-pointer \
     -I"$headers" "${extra[@]}" src/cket_plugin.cpp -o "$san_root/build/cket_plugin.so"
@@ -40,8 +40,12 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" src/cket_backend.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/cket_backend"
 "$real_cc" "${flags[@]}" tests/test_native.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/cket_tests"
 "$real_cc" "${flags[@]}" tests/test_examples.c tests/validation.c -o "$san_root/build/test_examples"
-"$real_cc" -dumpfullversion > "$san_root/build/gcc-version.txt"
-cat > "$san_root/build/gcc-wrapper" <<'WRAPPER'
+"$real_cc" "${flags[@]}" tests/validate_shifts.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_shifts"
+"$real_cc" "${flags[@]}" tests/validate_expressions.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_expressions"
+"$real_cc" "${flags[@]}" tests/validate_inplace.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_inplace"
+"$real_cc" "${flags[@]}" tests/validate_memcopy.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memcopy"
+"$real_cc" -dumpfullversion >"$san_root/build/gcc-version.txt"
+cat >"$san_root/build/gcc-wrapper" <<'WRAPPER'
 #!/usr/bin/env bash
 set -euo pipefail
 compiler="${CKET_REAL_GCC:-gcc}"
@@ -56,4 +60,8 @@ export CKET_REAL_GCC="$real_cc"
 export CC="$san_root/build/gcc-wrapper"
 export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/cket_tests" "$san_root"
+"$san_root/build/validate_shifts"
+"$san_root/build/validate_expressions"
+"$san_root/build/validate_inplace"
+"$san_root/build/validate_memcopy"
 exec "$san_root/build/test_examples"

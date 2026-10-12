@@ -8,4 +8,3 @@ build/cket examples/find.c --emit-qasm -o build/demo.qasm
 build/cket examples/find.c --resources -o build/demo.resources.txt
 build/cket examples/find.c --run --seed 7 -o build/demo
 cat build/demo.resources.txt
-
