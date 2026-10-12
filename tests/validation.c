@@ -11,7 +11,7 @@
 #include <time.h>
 #include <unistd.h>
 
-void validation_fail(const char *format, ...) {
+_Noreturn void validation_fail(const char *format, ...) {
     va_list args;
     va_start(args, format);
     vfprintf(stderr, format, args);
@@ -57,10 +57,80 @@ int validation_run(validation *v, char *const argv[], const char *output, unsign
     return validation_run_input(v, argv, NULL, output, timeout);
 }
 
+static int source_excerpt(const char *line, const char *end) {
+    while (line < end && (*line == ' ' || *line == '\t'))
+        ++line;
+    const char *digits = line;
+    while (line < end && *line >= '0' && *line <= '9')
+        ++line;
+    if (line == digits)
+        return 0;
+    while (line < end && (*line == ' ' || *line == '\t'))
+        ++line;
+    return line < end && *line == '|';
+}
+
+static const char *diagnostic_fault(const char *text) {
+    static const char *const markers[] = {"ERROR: AddressSanitizer",
+                                          "AddressSanitizer:DEADLYSIGNAL",
+                                          "SUMMARY: AddressSanitizer",
+                                          "ERROR: LeakSanitizer",
+                                          "ERROR: UndefinedBehaviorSanitizer",
+                                          "UndefinedBehaviorSanitizer:DEADLYSIGNAL",
+                                          "SUMMARY: UndefinedBehaviorSanitizer",
+                                          "WARNING: ThreadSanitizer",
+                                          "FATAL: ThreadSanitizer",
+                                          "WARNING: MemorySanitizer",
+                                          "runtime error:",
+                                          "internal compiler error:",
+                                          NULL};
+    if (text)
+        for (const char *line = text; *line;) {
+            const char *end = strchr(line, '\n');
+            if (!end)
+                end = line + strlen(line);
+            // GCC echoes source strings on numbered excerpt lines. They are
+            // neither sanitizer reports nor semantic diagnostic messages.
+            if (!source_excerpt(line, end))
+                for (unsigned i = 0; markers[i]; ++i) {
+                    const char *match = strstr(line, markers[i]);
+                    if (match && match < end && strlen(markers[i]) <= (size_t)(end - match))
+                        return markers[i];
+                }
+            line = *end ? end + 1 : end;
+        }
+    return NULL;
+}
+
+int validation_rejected(int status, const char *diagnostics, const char *expected) {
+    if (status != 1 || !diagnostics || diagnostic_fault(diagnostics))
+        return 0;
+    for (const char *line = diagnostics; *line;) {
+        const char *end = strchr(line, '\n');
+        if (!end)
+            end = line + strlen(line);
+        const char *prefix = strstr(line, "|c>");
+        if (prefix && prefix < end && !source_excerpt(line, end)) {
+            const char *match = expected ? strstr(prefix, expected) : prefix;
+            if (match && match < end && (!expected || strlen(expected) <= (size_t)(end - match)))
+                return 1;
+        }
+        line = *end ? end + 1 : end;
+    }
+    return 0;
+}
+
+static _Noreturn void command_fault(validation *v, const char *executable, const char *reason) {
+    char *text = validation_read(v->log);
+    validation_fail("validation infrastructure failure: %s: %s\n%s", executable, reason, text);
+}
+
 int validation_run_input(
     validation *v, char *const argv[], const char *input, const char *output, unsigned timeout) {
     if (fflush(NULL))
         validation_fail("cannot flush validation output");
+    // Setup failure must not leave an older semantic diagnostic in the log.
+    validation_write(v->log, "");
     pid_t pid = fork();
     if (pid < 0)
         validation_fail("cannot start validation subprocess");
@@ -88,14 +158,22 @@ int validation_run_input(
             (void)kill(-pid, SIGKILL);
             while (waitpid(pid, &status, 0) < 0 && errno == EINTR) {
             }
-            fprintf(
-                stderr, "validation command timed out after %u seconds: %s\n", timeout, argv[0]);
-            return 124;
+            command_fault(v, argv[0], "timed out");
         }
         struct timespec pause = {0, 10000000};
         (void)nanosleep(&pause, NULL);
     }
-    return WIFEXITED(status) ? WEXITSTATUS(status) : 128 + WTERMSIG(status);
+    if (!WIFEXITED(status))
+        command_fault(v, argv[0], "terminated by a signal");
+    int result = WEXITSTATUS(status);
+    if (result == 126 || result == 127)
+        command_fault(v, argv[0], "subprocess setup or execution failed");
+    char *diagnostics = validation_read(v->log);
+    const char *fault = diagnostic_fault(diagnostics);
+    if (fault)
+        command_fault(v, argv[0], fault);
+    free(diagnostics);
+    return result;
 }
 
 char *validation_read(const char *path) {
@@ -112,6 +190,9 @@ char *validation_read(const char *path) {
         validation_fail("out of memory reading %s", path);
     if (fread(text, 1, (size_t)n, f) != (size_t)n || fclose(f))
         validation_fail("cannot read %s", path);
+    if (memchr(text, 0, (size_t)n))
+        validation_fail("validation infrastructure failure: embedded NUL in text log/artifact: %s",
+                        path);
     text[n] = 0;
     return text;
 }

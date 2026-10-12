@@ -1,6 +1,7 @@
 #define _GNU_SOURCE
 #include "quantum.h"
 #include "json.h"
+#include "validation.h"
 #include <errno.h>
 #include <limits.h>
 #include <math.h>
@@ -45,35 +46,17 @@ static int compile_extra(const char *body, const char *action, const char *optio
     fclose(f);
     char driver[PATH_MAX + 32];
     snprintf(driver, sizeof driver, "%s/build/cket", root);
-    pid_t pid = fork();
-    if (pid < 0)
-        return 0;
-    if (!pid) {
-        if (!freopen(output_path, "w", stdout) || !freopen(error_path, "w", stderr))
-            _exit(126);
-        if (!strcmp(action, "--run"))
-            execl(driver,
-                  driver,
-                  source_path,
-                  action,
-                  "--seed",
-                  "7",
-                  "-o",
-                  artifact,
-                  option,
-                  (char *)NULL);
-        else
-            execl(driver, driver, source_path, action, "-o", artifact, option, (char *)NULL);
-        _exit(127);
-    }
-    int status;
-    pid_t wait;
-    do
-        wait = waitpid(pid, &status, 0);
-    while (wait < 0 && errno == EINTR);
-    int code = wait < 0 ? 255 : WIFEXITED(status) ? WEXITSTATUS(status) : 255;
+    validation process = {0};
+    validation_path(process.root, sizeof process.root, "%s", root);
+    validation_path(process.log, sizeof process.log, "%s", error_path);
+    char *run_args[] = {
+        driver, source_path, (char *)action, "--seed", "7", "-o", artifact, (char *)option, NULL};
+    char *compile_args[] = {
+        driver, source_path, (char *)action, "-o", artifact, (char *)option, NULL};
+    int code = validation_run(
+        &process, !strcmp(action, "--run") ? run_args : compile_args, output_path, 60);
     char *errors = qc_read_file(error_path);
-    int ok = success ? code == 0 : code != 0 && errors && strstr(errors, "|c>");
+    int ok = success ? code == 0 : validation_rejected(code, errors, NULL);
     if (!ok)
         fprintf(
             stderr, "Compilation/run mismatch (%d):\n%s\n%s\n", code, body, errors ? errors : "");

@@ -285,6 +285,7 @@ def main(language):
                 'docs/c11-expressions.md',
                 'docs/c11-inplace.md',
                 'docs/c11-memcopy.md',
+                'docs/audit-validation.md',
                 'CONTRIBUTING.md',
                 '.clang-format',
                 '.editorconfig',

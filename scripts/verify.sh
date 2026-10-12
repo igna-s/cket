@@ -4,6 +4,7 @@ cd "$(dirname "$0")/.."
 mkdir -p build
 bash scripts/build.sh 2>&1 | tee build/verify-build.log
 bash scripts/test.sh 2>&1 | tee build/verify-native.log
+build/validate_harness 2>&1 | tee build/verify-harness.log
 build/validate_shifts 2>&1 | tee build/verify-shifts.log
 build/validate_expressions 2>&1 | tee build/verify-expressions.log
 build/validate_inplace 2>&1 | tee build/verify-inplace.log

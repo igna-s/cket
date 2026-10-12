@@ -24,6 +24,7 @@ hardware execution. The historical paper evidence remains in `docs/paper/evidenc
 different fixed revision and campaign.
 
 The current campaign includes 55 shift checks, 97 pure-expression checks, 271 in-place checks and
-414 memory-copy checks in each configuration. Wide circuit-generation checks are not counted as
-complete state validation. The source manifest also records the formatting configuration, optional
-tool versions and CI workflow used for this source tree.
+414 memory-copy checks and 18 validation-runner fault-injection checks in each configuration. Wide
+circuit-generation checks are not counted as complete state validation. The source manifest also
+records the formatting configuration, optional tool versions and CI workflow used for this source
+tree.

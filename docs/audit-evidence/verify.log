@@ -428,6 +428,25 @@ PASS example search_constraints: five GCC levels, runtime contract and exports
 PASS example coherent_accumulate: five GCC levels, runtime contract and exports
 
 1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
+PASS validation harness: success
+PASS validation harness: semantic
+PASS validation harness: unrelated
+PASS validation harness: wrong-line
+PASS validation harness: high-exit
+PASS validation harness: benign-asan
+PASS validation harness: asan
+PASS validation harness: asan-deadly
+PASS validation harness: leak
+PASS validation harness: ubsan
+PASS validation harness: ice
+PASS validation harness: signal
+PASS validation harness: timeout
+PASS validation harness: setup
+PASS validation harness: missing
+PASS validation harness: quoted-source
+PASS validation harness: source-only
+PASS validation harness: nul
+18 validation harness checks passed; infrastructure faults cannot count as semantic rejections.
 PASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse
 PASS 8-bit variable right shift: no-table circuit generated (117 gates)
 PASS 8-bit variable left shift: no-table circuit generated (117 gates)
@@ -454,19 +473,19 @@ PASS overlapping memmove in both directions against C, with retained phase and n
 PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundary, return-pointer diagnostics and classical libc preservation
 PASS 16/32/64-bit linear table-free memory synthesis (generation only)
 414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation.
-Built /tmp/tmp.06vNg4wp9z/quantum
+Built /tmp/tmp.1bmtgvZ1Az/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.06vNg4wp9z/quantum
+Built /tmp/tmp.1bmtgvZ1Az/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.06vNg4wp9z/quantum
+Built /tmp/tmp.1bmtgvZ1Az/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.06vNg4wp9z/quantum
+Built /tmp/tmp.1bmtgvZ1Az/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.06vNg4wp9z/quantum
+Built /tmp/tmp.1bmtgvZ1Az/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -1048,6 +1067,25 @@ PASS refuse flattening dynamic CPU control
 PASS runtime errors propagate failure
 
 389 passed, 0 failed (native C tests, no external quantum SDK)
+PASS validation harness: success
+PASS validation harness: semantic
+PASS validation harness: unrelated
+PASS validation harness: wrong-line
+PASS validation harness: high-exit
+PASS validation harness: benign-asan
+PASS validation harness: asan
+PASS validation harness: asan-deadly
+PASS validation harness: leak
+PASS validation harness: ubsan
+PASS validation harness: ice
+PASS validation harness: signal
+PASS validation harness: timeout
+PASS validation harness: setup
+PASS validation harness: missing
+PASS validation harness: quoted-source
+PASS validation harness: source-only
+PASS validation harness: nul
+18 validation harness checks passed; infrastructure faults cannot count as semantic rejections.
 PASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse
 PASS 8-bit variable right shift: no-table circuit generated (117 gates)
 PASS 8-bit variable left shift: no-table circuit generated (117 gates)
@@ -1112,19 +1150,19 @@ PASS example search_constraints: five GCC levels, runtime contract and exports
 PASS example coherent_accumulate: five GCC levels, runtime contract and exports
 
 1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
-Built /tmp/tmp.73WM6jfjgm/quantum
+Built /tmp/tmp.8bRoaUZj2v/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.73WM6jfjgm/quantum
+Built /tmp/tmp.8bRoaUZj2v/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.73WM6jfjgm/quantum
+Built /tmp/tmp.8bRoaUZj2v/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.73WM6jfjgm/quantum
+Built /tmp/tmp.8bRoaUZj2v/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.73WM6jfjgm/quantum
+Built /tmp/tmp.8bRoaUZj2v/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.

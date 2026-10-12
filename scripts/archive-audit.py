@@ -33,12 +33,15 @@ def main():
         'expressions': r'^97 expression checks passed; generated circuits and complete-state comparisons have separate scopes\.$',
         'inplace': r'^271 in-place checks passed; wide circuit generation is distinct from complete-state validation\.$',
         'memcopy': r'^414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation\.$',
+        'harness': r'^18 validation harness checks passed; infrastructure faults cannot count as semantic rejections\.$',
     }
     for name, pattern in patterns.items():
         if len(re.findall(pattern, content, re.M)) != 2:
             raise SystemExit('Missing normal/sanitized result: ' + name)
     if re.search(
-        r'^FAIL\b|ERROR: (?:AddressSanitizer|LeakSanitizer)|runtime error:', content, re.M
+        r'^FAIL\b|ERROR: (?:AddressSanitizer|LeakSanitizer)|runtime error:|internal compiler error:|validation infrastructure failure|validation command timed out',
+        content,
+        re.M,
     ) or not content.rstrip().endswith(
         'All compiler, runtime, example, synthesis and independent QASM checks passed.'
     ):
@@ -97,6 +100,7 @@ def main():
             'expression_checks': 97,
             'inplace_checks': 271,
             'memory_copy_checks': 414,
+            'harness_checks': 18,
             'external_qasm_states': 22,
             'external_qasm_channels': 3,
         },

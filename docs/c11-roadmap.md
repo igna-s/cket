@@ -237,6 +237,11 @@ assignments and the rest of M2 remain open.
 
 ## Search, external validation and GCC guarantees
 
+M8 now includes the [failure-classification audit](audit-validation.md): 18 subprocess tests, fatal
+infrastructure failures, bounded text without NUL truncation, and specific diagnostics for all 170
+negative memory cases. Native negatives share the supervised runner, though some still require
+narrower per-case messages. Diagnostic-format coverage and the rest of M8 remain open.
+
 M4/M7 now include the partial memory-copy contracts above. The 414 finite checks distinguish
 complete states/inverse and C execution from wide generation, and four further QuEST cases contrast
 the emitted circuits. History, byte layouts, dynamic memory, pointer-result ABI and the remaining

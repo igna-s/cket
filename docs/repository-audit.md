@@ -6,7 +6,7 @@ subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y 
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `b7a4ab33a3961ab3970ba59252b14869986fcf58` e incluye cambios locales. El manifiesto
+parte de `34d0eee9259924c4de9859b76ffb43e1150e8983` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -168,13 +168,14 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **389 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 25 casos QASM por configuración**. Incluye las correcciones
-del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
-expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
-política de tablas para actualizaciones reversibles y los adaptadores de memoria. Los veinticinco
-casos externos corresponden a veintidós estados y tres canales; los once casos del paper siguen
-identificados como evidencia histórica.
+reversibles, 414 de copias de memoria, 18 de supervisión de validación, cinco comparaciones de
+integración clásica, 665 compilaciones frontend, 24 circuitos de crecimiento y 25 casos QASM por
+configuración**. Incluye las correcciones del absoluto sin signo y del signo anterior al
+estrechamiento, la red de desplazamientos variables, expresiones condicionales puras, las
+regresiones de interpretación firmada y suma booleana, y la política de tablas para actualizaciones
+reversibles, los adaptadores de memoria y el rechazo de fallos de infraestructura como pruebas
+negativas. Los veinticinco casos externos corresponden a veintidós estados y tres canales; los once
+casos del paper siguen identificados como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -188,10 +189,11 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-memory-full.log` después de reproducir la
-campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica. Los
-metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes permiten
-contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de CI.
+`python3 scripts/archive-audit.py --log build/audit/verify-harness-full.log` después de reproducir
+la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica.
+Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes
+permiten contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de
+CI.
 
 ## Papers y garantías abiertas
 
@@ -216,8 +218,15 @@ transformaciones previas al pase; se contrasta una versión con programas finito
 completa, más targets, validación externa ampliada y publicación de una revisión final verificable
 siguen siendo criterios de cierre, no resultados de esta auditoría.
 
-También queda por fortalecer el clasificador de fallos de las suites: algunos casos negativos
-comprueban un retorno fallido sin exigir el diagnóstico semántico concreto, de modo que esa
-comprobación por sí sola no distingue rechazo, timeout y fallo interno. Las comparaciones positivas
-de valores/estados aportan evidencia independiente; el estado verde no sustituye esa garantía
-pendiente del harness.
+Se reprodujo y corrigió una debilidad del clasificador: timeout (124), fallo de ejecución (127) y un
+reporte ASan sintético (1) satisfacían la antigua condición de rechazo. El runner ahora aborta ante
+esas clases de infraestructura, señales, reportes de sanitizadores y errores internos del
+compilador, incluso cuando la herramienta retorna cero. Rechaza NUL en texto y descarta los
+fragmentos numerados de fuente de GCC al clasificar mensajes.
+
+Dieciocho pruebas de procesos contrastan esas fronteras, normales y ASan/UBSan; los 170 negativos de
+memoria requieren ahora su mensaje semántico correspondiente. Los negativos nativos utilizan el
+mismo runner y exigen un diagnóstico C Ket con estado 1; algunos todavía necesitan mensajes
+individuales más precisos. La [auditoría del runner](audit-validation.md) distingue fallos reales de
+supervisión, reportes sintéticos y límites de detección. Esto fortalece la evidencia sin convertir
+las pruebas finitas en una certificación de C11 completo.

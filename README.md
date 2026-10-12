@@ -506,6 +506,12 @@ native suite also exhausts selected eight-bit expressions, 3720 adder basis pair
 predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
 plus 4096 IR mutations.
 
+The shared [validation runner](docs/audit-validation.md) has 18 fault-injection checks. Signals,
+timeouts, setup failures, captured sanitizer reports and compiler internal errors cannot satisfy an
+expected semantic rejection. Negative memory cases require their specific diagnostic; the native
+suite uses the same bounded runner. These checks strengthen finite evidence without certifying the
+entire language or library.
+
 `bash scripts/test-c11-classical.sh` additionally compares finite integration programs using the 29
 classical C11 header families against ordinary GCC at five optimization levels. Its quantum code
 uses an explicit measurement boundary; the test does not certify quantum adapters for the whole

@@ -8,8 +8,13 @@
 static unsigned checks;
 static const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
 
-static char *compile_case(
-    validation *v, const char *program, unsigned level, int builtins, int run, int expected) {
+static char *compile_case(validation *v,
+                          const char *program,
+                          unsigned level,
+                          int builtins,
+                          int run,
+                          int expected,
+                          const char *diagnostic) {
     char source[4096], compiler[4096], artifact[4096];
     validation_path(source, sizeof source, "%s/memory.c", v->temp);
     validation_path(compiler, sizeof compiler, "%s/build/cket", v->root);
@@ -24,8 +29,8 @@ static char *compile_case(
                        artifact,
                        NULL};
     int code = validation_run(v, command, NULL, 60);
-    if ((code == 0) != expected) {
-        char *log = validation_read(v->log);
+    char *log = validation_read(v->log);
+    if (expected ? code != 0 : !validation_rejected(code, log, diagnostic)) {
         validation_fail("memory case failed %s builtins=%d expected=%d: %s\n%s",
                         levels[level],
                         builtins,
@@ -33,6 +38,7 @@ static char *compile_case(
                         program,
                         log);
     }
+    free(log);
     return !run && expected ? validation_read(artifact) : NULL;
 }
 
@@ -79,7 +85,7 @@ static void states(validation *v) {
                                        : 0,
                         profile == 1 ? "fourier(a);" : "",
                         condition);
-                    char *ir = compile_case(v, program, level, builtins, 0, 1);
+                    char *ir = compile_case(v, program, level, builtins, 0, 1, NULL);
                     for (unsigned tables = 0; tables < 2; ++tables) {
                         qc_context *c = qc_create(1, 7);
                         if (!c)
@@ -163,7 +169,7 @@ static void overlap(validation *v) {
             backward ? "superposition(0,3),17,42" : "42,17,superposition(0,3)",
             backward ? "(a+1)" : "a",
             backward ? "a" : "(a+1)");
-        char *ir = compile_case(v, program, 2, 1, 0, 1);
+        char *ir = compile_case(v, program, 2, 1, 0, 1, NULL);
         for (unsigned tables = 0; tables < 2; ++tables) {
             qc_context *c = qc_create(1, 7);
             cj_doc d = {0};
@@ -246,6 +252,25 @@ static void contracts(validation *v) {
         "quant uint8_t a=7,b=0;quant uint8_t child=b+1;memcpy((void*)&b,(const void*)&a,1);measure(child);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;quant uint8_t child=a-a;memcpy((void*)&child,(const void*)&b,1);measure(child);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;int n=2;while(n--)memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);"};
+    const char *diagnostics[] = {"destination in a known basis state",
+                                 "destination in a known basis state",
+                                 "overlapping quantum memcpy",
+                                 "overlapping quantum memcpy",
+                                 "constant byte count",
+                                 "partial-element quantum byte copy",
+                                 "equal-size integer elements",
+                                 "exceeds its checked storage bounds",
+                                 "classical initialization",
+                                 "quantum pointer needs an initialized checked borrow",
+                                 "mixed CPU/quantum memory copy",
+                                 "mixed CPU/quantum memory copy",
+                                 "equal-size integer elements without padding",
+                                 "mutable destination storage",
+                                 "destination in a known basis state",
+                                 "destination in a known basis state",
+                                 "per-iteration basis/history proof"};
+    _Static_assert(sizeof diagnostics / sizeof *diagnostics == sizeof invalid / sizeof *invalid,
+                   "every negative memory case needs its semantic diagnostic");
     for (unsigned level = 0; level < 5; ++level)
         for (unsigned builtins = 0; builtins < 2; ++builtins)
             for (unsigned expected = 0; expected < 2; ++expected) {
@@ -262,7 +287,13 @@ static void contracts(validation *v) {
                             sizeof program,
                             "#include <quantum.h>\n#include <string.h>\nint main(void){%s}\n",
                             cases[i]);
-                    free(compile_case(v, program, level, builtins, expected, expected));
+                    free(compile_case(v,
+                                      program,
+                                      level,
+                                      builtins,
+                                      expected,
+                                      expected,
+                                      expected ? NULL : diagnostics[i]));
                     ++checks;
                 }
             }
@@ -285,7 +316,7 @@ static void wide(validation *v) {
                     types[type],
                     upper[type],
                     move ? "memmove" : "memcpy");
-                char *ir = compile_case(v, program, level, 1, 0, 1);
+                char *ir = compile_case(v, program, level, 1, 0, 1, NULL);
                 qc_context *c = qc_create(0, 7);
                 if (!c)
                     validation_fail("wide memory context allocation failed");
