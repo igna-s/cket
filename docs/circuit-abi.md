@@ -33,6 +33,10 @@ allocate private workspace, but must uncompute and release it without leaving pe
 Measurement, reset, search, and CPU feedback are rejected. Parameters remain borrowed when the
 module finishes.
 
+The current module ABI also rejects `ctype_require` CPU locale preconditions. Declaring and
+transporting an immutable character profile through independently compiled modules remains pending;
+the ordinary [C-locale character adapters](c11-ctype.md) support expanded quantum functions.
+
 The API in [src/engine/quantum.h](../src/engine/quantum.h) compiles once with `qc_circuit_compile`,
 applies to context identities with `qc_circuit_apply`, and destroys the module with
 `qc_circuit_destroy`. Wires are remapped; availability, width, signedness, aliasing, and

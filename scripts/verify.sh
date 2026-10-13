@@ -12,6 +12,7 @@ build/validate_memcopy 2>&1 | tee build/verify-memcopy.log
 build/validate_division 2>&1 | tee build/verify-division.log
 build/validate_bindings 2>&1 | tee build/verify-bindings.log
 build/validate_history 2>&1 | tee build/verify-history.log
+build/validate_ctype 2>&1 | tee build/verify-ctype.log
 bash scripts/test-c11-classical.sh 2>&1 | tee build/verify-classical.log
 bash scripts/build-validation.sh 2>&1 | tee build/verify-validation-build.log
 fuzz_options=(--seed "${CKET_FUZZ_SEED:-20261011}" --cases "${CKET_FUZZ_CASES:-24}")

@@ -130,7 +130,14 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
     if (!fields(c, d, e, composite))
         return 0;
     int arity = 0, matching = 0, comparison = 0, shift = 0;
-    const char *unary[] = {"cast", "neg", "bnot", "not", "abs", "uabs", NULL};
+    int ctype = 0;
+    const char *unary[] = {"cast",          "neg",           "bnot",
+                           "not",           "abs",           "uabs",
+                           "ctype_isalnum", "ctype_isalpha", "ctype_isblank",
+                           "ctype_iscntrl", "ctype_isdigit", "ctype_isgraph",
+                           "ctype_islower", "ctype_isprint", "ctype_ispunct",
+                           "ctype_isspace", "ctype_isupper", "ctype_isxdigit",
+                           "ctype_tolower", "ctype_toupper", NULL};
     const char *binary[] = {"add",  "sub", "mul",  "div", "mod",      "band", "bor",
                             "bxor", "shl", "shr",  "eq",  "ne",       "lt",   "le",
                             "gt",   "ge",  "land", "lor", "sequence", NULL};
@@ -138,6 +145,9 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
         if (cj_equal(d, op, unary[i])) {
             arity = 1;
             matching = i == 1 || i == 2 || i == 4;
+            ctype = i >= 6;
+            if (ctype && (bits != 32 || !sign))
+                return qc_fail(c, "ctype result requires the declared signed int representation");
         }
     for (unsigned i = 0; binary[i]; ++i)
         if (cj_equal(d, op, binary[i])) {
@@ -165,6 +175,8 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
     for (int j = 0; j < n; ++j)
         if (!bounded_expression(c, d, nodes[j], depth + 1))
             return 0;
+    if (ctype && !same_type(d, e, nodes[0]))
+        return qc_fail(c, "ctype argument requires an explicit conversion to signed int");
     if (matching)
         for (int j = 0; j < n; ++j)
             if (!same_type(d, e, nodes[j]))
@@ -393,7 +405,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         allowed = search;
     else if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
              cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
-             cj_equal(d, op, "ccontrol_else"))
+             cj_equal(d, op, "ccontrol_else") || cj_equal(d, op, "ctype_require"))
         allowed = marker;
     else
         return qc_fail(c, "unsupported quantum instruction");

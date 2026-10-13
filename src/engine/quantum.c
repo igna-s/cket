@@ -1,6 +1,9 @@
 #include "internal.h"
+#include <ctype.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
+#include <locale.h>
 #include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -458,6 +461,8 @@ static __int128 numeric(uint64_t v, unsigned bits, int sign) {
 }
 
 /* Constant evaluation during reversible synthesis, never execution of C. */
+#include "ctype.inc"
+
 static int evaluate(
     qc_context *c, const cj_doc *d, int e, const domain *dom, const uint64_t *vals, uint64_t *out) {
     uint64_t bits64;
@@ -524,7 +529,12 @@ static int evaluate(
     __int128 b = numeric(bv, (unsigned)bbits, n > 1 && cj_bool(d, cj_get(d, nodes[1], "signed")));
     __int128 r = 0;
     int check = 0;
-    if (cj_equal(d, op, "cast"))
+    const qc_ctype_profile *ctype = ctype_profile(d, op);
+    if (ctype) {
+        if (a < EOF || a > UCHAR_MAX)
+            return qc_fail(c, "ctype argument must be EOF or representable as unsigned char");
+        r = ctype_value(ctype, (int)a);
+    } else if (cj_equal(d, op, "cast"))
         r = a;
     else if (cj_equal(d, op, "add")) {
         r = sign ? a + b : (__int128)((unsigned __int128)av + bv);
@@ -1454,6 +1464,13 @@ int qc_apply_token(qc_context *c,
     if (has_argument == 1 && !cj_equal(d, op, "qadd_inplace") && !cj_equal(d, op, "qxor_inplace") &&
         !cj_equal(d, op, "qprepare"))
         return qc_fail(c, "integer runtime argument requires addition, XOR or preparation");
+    if (cj_equal(d, op, "ctype_require")) {
+        const char *locale = setlocale(LC_CTYPE, NULL);
+        return (locale && (!strcmp(locale, "C") || !strcmp(locale, "POSIX"))) ||
+               qc_fail(
+                   c,
+                   "quantum ctype currently requires the C locale; locale snapshots are pending");
+    }
     if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
         cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
         cj_equal(d, op, "ccontrol_else"))

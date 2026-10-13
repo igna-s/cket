@@ -169,6 +169,20 @@ def semantics(header, name, kind, optional):
             [],
             "Optional Annex K target profile; no quantum adapter is implemented.",
         )
+    if header == "ctype.h":
+        return (
+            "partial",
+            ["P", "R", "S"],
+            "M2/M7",
+            ["tests/validate_ctype.c", "tests/validate_qasm.c"],
+            "Input-preserving C-locale ASCII classification and case conversion on the declared "
+            "GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument "
+            "definedness are preserved. Direct interval-prefix synthesis has no input truth table; "
+            "saved inverses retain the original profile. General locale snapshots, indirect calls, "
+            "module precondition ABI and full source provenance before GCC folding remain pending. "
+            "Native simulation and physical/gate budgets are resource bounds. Arguments outside "
+            "EOF/unsigned-char have no defined C11 meaning, not an omitted adapter.",
+        )
     if name in ABS:
         return (
             "partial",

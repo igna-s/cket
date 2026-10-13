@@ -165,8 +165,8 @@ canales.
 El ABI general de productos cuánticos y los argumentos cuánticos con efectos siguen pendientes
 (**P**). Un producto con dos campos de 64 bits más una entrada viva exige al menos 129 qubits; el
 límite actual de 128 se documenta y prueba como recursos (**R**), no como imposibilidad semántica.
-El índice conserva 1224 interfaces: 368 de metadatos, 57 parciales y 799 pendientes. Ni ocho
-entradas adicionales parciales ni esta campaña completan los hitos de C11.
+El índice conserva 1224 interfaces: 368 de metadatos, 71 parciales y 785 pendientes. Ni estos
+adaptadores parciales ni esta campaña completan los hitos de C11.
 
 ## Captura CPU y preparación de productos clásicos
 
@@ -366,17 +366,17 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **391 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 2332 de historial, 18
-de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 49 casos QASM por configuración**. Incluye las correcciones
-del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
-expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
-política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
-rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
-los guards puros de UBSan en ramas coherentes y las versiones seleccionadas con predicados
-guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta y nueve casos externos
-corresponden a cuarenta y tres estados y seis canales; los once casos del paper siguen identificados
-como evidencia histórica.
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 2332 de historial,
+635 de caracteres C-locale, 18 de supervisión de validación, cinco comparaciones de integración
+clásica, 665 compilaciones frontend, 24 circuitos de crecimiento y 51 casos QASM por
+configuración**. Incluye las correcciones del absoluto sin signo y del signo anterior al
+estrechamiento, la red de desplazamientos variables, expresiones condicionales puras, las
+regresiones de interpretación firmada y suma booleana, y la política de tablas para actualizaciones
+reversibles, los adaptadores de memoria y división, y el rechazo de fallos de infraestructura como
+pruebas negativas, la preparación de productos clásicos y los guards puros de UBSan en ramas
+coherentes y las versiones seleccionadas con predicados guardados, las uniones escalares CPU y la
+limpieza diferida. Los cincuenta y un casos externos corresponden a cuarenta y cinco estados y seis
+canales; los once casos del paper siguen identificados como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -390,12 +390,23 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-lazy-values-full.log` después de
-reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción
-histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los
-hashes permiten contrastarlo con la revisión que publique esos archivos; no se presenta como
-ejecución de CI. Las 112 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
-permanecieron iguales al finalizar; también se contrastan con los bytes publicados.
+`python3 scripts/archive-audit.py --log build/audit/verify-ctype-full.log --sources build/audit/ctype-frozen-sources-v1.json`
+después de reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la
+reconstrucción histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su
+publicación. Los hashes permiten contrastarlo con la revisión que publique esos archivos; no se
+presenta como ejecución de CI. Las 115 fuentes de esta campaña se congelaron antes de ejecutarla y
+sus hashes permanecieron iguales al finalizar; también se contrastan con los bytes publicados.
+
+## Clasificación y conversiones de caracteres
+
+Las catorce interfaces de [`ctype.h`](c11-ctype.md) tienen adaptadores parciales para el locale `C`,
+ASCII y el ABI GCC/glibc declarado. Conservan máscaras, EOF y las entradas; la síntesis por prefijos
+de intervalos no enumera el dominio. Las fórmulas guardadas permiten descomputar tras un cambio
+clásico posterior del locale. La campaña incorpora 635 checks y dos contrastes externos QuEST. Los
+snapshots generales de locale, llamadas indirectas, precondiciones del ABI de módulos y la
+procedencia antes de los plegados de GCC siguen pendientes (P); los límites de recursos son R y los
+argumentos sin significado definido en C mantienen su contrato S. Esto no completa C11 ni la
+biblioteca.
 
 ## Papers y garantías abiertas
 

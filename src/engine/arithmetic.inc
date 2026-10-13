@@ -444,6 +444,36 @@ static int ar_bound(ar_builder *p, int e, unsigned depth) {
     } else {
         if (!n)
             return 0;
+        const qc_ctype_profile *ctype = ctype_profile(p->d, op);
+        if (ctype) {
+            if (!ar_bound(p, nodes[0], depth + 1))
+                return 0;
+            ar_range input = p->ranges[nodes[0]];
+            if (input.lo < EOF || input.hi > UCHAR_MAX)
+                return qc_fail(
+                    p->c, "ctype argument must be proven EOF or representable as unsigned char");
+            if (input.lo == input.hi) {
+                r->lo = r->hi = ctype_value(ctype, (int)input.lo);
+            } else if (ctype_mapping(ctype)) {
+                r->lo = input.lo;
+                r->hi = input.hi;
+                if (input.lo <= (int)ctype->bounds[0][1] && input.hi >= (int)ctype->bounds[0][0]) {
+                    __int128 lo =
+                        input.lo > (int)ctype->bounds[0][0] ? input.lo : ctype->bounds[0][0];
+                    __int128 hi =
+                        input.hi < (int)ctype->bounds[0][1] ? input.hi : ctype->bounds[0][1];
+                    int delta = ctype == ctype_profiles + 12 ? 32 : -32;
+                    if (lo + delta < r->lo)
+                        r->lo = lo + delta;
+                    if (hi + delta > r->hi)
+                        r->hi = hi + delta;
+                }
+            } else {
+                r->lo = 0;
+                r->hi = ctype_mask(ctype);
+            }
+            goto facts;
+        }
         int lazy =
             cj_equal(p->d, op, "select") || cj_equal(p->d, op, "land") || cj_equal(p->d, op, "lor");
         if (lazy) {
@@ -1037,6 +1067,28 @@ ar_lower_arm(ar_builder *p, int e, unsigned arm, int value, unsigned requested, 
     return ok;
 }
 
+/* Cover an interval by disjoint binary prefixes. One MCX per prefix toggles
+ * the output; the cover is O(byte width), with no per-input enumeration. */
+static int ar_ctype_interval(
+    ar_builder *p, const ar_value *source, unsigned lo, unsigned hi, unsigned target) {
+    while (lo <= hi) {
+        unsigned power = 0;
+        while (power < 8 && !(lo & ((1u << (power + 1)) - 1)) && lo + (1u << (power + 1)) - 1 <= hi)
+            ++power;
+        ar_bit bits[8];
+        int values[8];
+        unsigned count = 0;
+        for (unsigned bit = power; bit < 8; ++bit) {
+            bits[count] = ar_at(source, bit);
+            values[count++] = !!(lo & (1u << bit));
+        }
+        if (!ar_condition(p, target, bits, values, count))
+            return 0;
+        lo += 1u << power;
+    }
+    return 1;
+}
+
 static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
     ar_range range = p->ranges[e];
     unsigned width = range.width < requested ? range.width : requested;
@@ -1090,6 +1142,38 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
         for (unsigned j = 0; j < width; ++j)
             out->bit[j] = ar_at(&source, j);
+        return 1;
+    }
+    const qc_ctype_profile *ctype = ctype_profile(p->d, op);
+    if (ctype) {
+        ar_value source, flag;
+        if (!ar_lower(p, nodes[0], 32, &source) || !ar_temp(p, 1, &flag))
+            return 0;
+        for (unsigned j = 0; j < ctype->intervals; ++j)
+            if (!ar_ctype_interval(
+                    p, &source, ctype->bounds[j][0], ctype->bounds[j][1], ar_wire(flag.bit[0])))
+                return 0;
+        *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
+        if (ctype_mapping(ctype)) {
+            for (unsigned bit = 0; bit < width; ++bit)
+                out->bit[bit] = ar_at(&source, bit);
+            if (width > 5) {
+                ar_value mapped;
+                if (!ar_temp(p, 1, &mapped))
+                    return 0;
+                ar_bit bit = ar_at(&source, 5);
+                int one = 1;
+                if (!ar_condition(p, ar_wire(mapped.bit[0]), &bit, &one, 1) ||
+                    !ar_condition(p, ar_wire(mapped.bit[0]), &flag.bit[0], &one, 1))
+                    return 0;
+                out->bit[5] = mapped.bit[0];
+            }
+        } else {
+            unsigned mask = (unsigned)ctype_mask(ctype);
+            for (unsigned bit = 0; bit < width; ++bit)
+                if (mask & (1u << bit))
+                    out->bit[bit] = flag.bit[0];
+        }
         return 1;
     }
     if (cj_equal(p->d, op, "sequence")) {

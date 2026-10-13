@@ -3,6 +3,7 @@
 // at each caller by the ordinary quantum semantic pass.
 tree expand_quantum_program(tree value);
 bool standard_integer_division(tree fn);
+std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
 
 struct QuantumReference {
@@ -42,6 +43,8 @@ bool quantum_pure_expression(tree value) {
     auto code = TREE_CODE(value);
     if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
         return quantum_pure_expression(TREE_OPERAND(value, 1));
+    if (code == CALL_EXPR && !standard_ctype(value).empty())
+        return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
     if (code == CALL_EXPR || code == MODIFY_EXPR || code == INIT_EXPR || code == COMPOUND_EXPR ||
         code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
         code == POSTDECREMENT_EXPR || code == ADDR_EXPR)
@@ -175,7 +178,7 @@ bool quantum_return_is_pure(tree value) {
     if (TREE_CODE(value) == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
         return quantum_return_is_pure(TREE_OPERAND(value, 1));
     if (TREE_CODE(value) == CALL_EXPR) {
-        if (!quantum_function(get_callee_fndecl(value)))
+        if (!quantum_function(get_callee_fndecl(value)) && standard_ctype(value).empty())
             return false;
         for (int i = 0; i < call_expr_nargs(value); ++i)
             if (!quantum_return_is_pure(CALL_EXPR_ARG(value, i)))
@@ -799,6 +802,35 @@ bool standard_integer_division(tree fn) {
     return name == "div" || name == "ldiv" || name == "lldiv" || name == "imaxdiv";
 }
 
+std::string standard_ctype(tree call) {
+    if (!call || TREE_CODE(call) != CALL_EXPR)
+        return "";
+    tree fn = get_callee_fndecl(call);
+    if (!fn || !TREE_PUBLIC(fn) || !in_system_header_at(DECL_SOURCE_LOCATION(fn)))
+        return "";
+    std::string name = name_of(fn), effect = intrinsic(call);
+    if (effect.compare(0, 6, "ctype:") == 0)
+        name = effect.substr(6);
+    const char *names[] = {"isalnum",
+                           "isalpha",
+                           "isblank",
+                           "iscntrl",
+                           "isdigit",
+                           "isgraph",
+                           "islower",
+                           "isprint",
+                           "ispunct",
+                           "isspace",
+                           "isupper",
+                           "isxdigit",
+                           "tolower",
+                           "toupper"};
+    for (const char *candidate : names)
+        if (name == candidate)
+            return name;
+    return "";
+}
+
 tree snapshot_classical_leaves(tree value, std::map<tree, tree> &captures) {
     if (!value || CONSTANT_CLASS_P(value) || TYPE_P(value))
         return value;
@@ -1104,7 +1136,8 @@ tree expand_static_for_block(tree block) {
         if (code == CALL_EXPR) {
             bool move = false;
             tree fn = get_callee_fndecl(value);
-            if (standard_memory_copy(fn, move) || quantum_function(fn)) {
+            if (standard_memory_copy(fn, move) || quantum_function(fn) ||
+                !standard_ctype(value).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))

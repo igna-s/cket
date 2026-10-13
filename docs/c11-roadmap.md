@@ -301,7 +301,7 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is forty-three state cases and
+comparison, and external simulator comparison. Current QuEST coverage is forty-five state cases and
 six sampled channels, not every generated circuit. Extend it to integrated library, memory, history
 and control workloads; state checks alone cannot validate intermediate measurement/reset channels.
 
@@ -325,6 +325,13 @@ structure-return initializers now retain evaluations and values instead of silen
 their quantum fields. The 399 finite checks and two additional QuEST states provide evidence for
 these contracts; general quantum product ABI, coherent CPU effects and full C11 coverage remain
 open.
+
+M2/M7 also include [C-locale character adapters](c11-ctype.md) for all fourteen C11 interfaces. The
+635 finite checks cover every byte, exact classification masks, phased states, mapping bits, scalar
+effects, functions, memory, loops, explicit observation and classical GCC differentials. Two more
+QuEST fixtures contrast exported circuits. General locale snapshots, indirect calls, module
+preconditions, concurrency and source provenance before GCC folding remain P/R; invalid arguments
+retain the C undefined-domain contract (S). This is partial library coverage, not completion of M7.
 
 ## Completion rule
 

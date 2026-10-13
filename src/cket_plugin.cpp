@@ -24,6 +24,7 @@
 #include <string>
 #include <vector>
 #include <cmath>
+#include <climits>
 
 int plugin_is_GPL_compatible;
 
@@ -420,7 +421,8 @@ void finish_function(void *event, void *) {
         walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
     if (name_of(fn) != "main" && !has_quantum) {
         auto quantum_effect = [](tree *node, int *walk, void *) -> tree {
-            if (!intrinsic(*node).empty())
+            std::string effect = intrinsic(*node);
+            if (!effect.empty() && effect.compare(0, 6, "ctype:") != 0)
                 return *node;
             if (DECL_P(*node) || TYPE_P(*node))
                 *walk = 0;

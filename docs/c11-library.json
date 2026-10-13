@@ -1265,13 +1265,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1280,13 +1285,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1295,13 +1305,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1310,13 +1325,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1325,13 +1345,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1340,13 +1365,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1355,13 +1385,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1370,13 +1405,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1385,13 +1425,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1400,13 +1445,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1415,13 +1465,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1430,13 +1485,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1445,13 +1505,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "ctype.h",
@@ -1460,13 +1525,18 @@
       "source_index": "B.3",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
-        "P"
+        "P",
+        "R",
+        "S"
       ],
-      "milestone": "M7",
-      "tests": [],
-      "contract": "Not implemented: Capture an immutable declared locale; input is EOF or an unsigned-char value promoted to int. Produce the classification/mapped value reversibly without measuring the input."
+      "milestone": "M2/M7",
+      "tests": [
+        "tests/validate_ctype.c",
+        "tests/validate_qasm.c"
+      ],
+      "contract": "Input-preserving C-locale ASCII classification and case conversion on the declared GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument definedness are preserved. Direct interval-prefix synthesis has no input truth table; saved inverses retain the original profile. General locale snapshots, indirect calls, module precondition ABI and full source provenance before GCC folding remain pending. Native simulation and physical/gate budgets are resource bounds. Arguments outside EOF/unsigned-char have no defined C11 meaning, not an omitted adapter."
     },
     {
       "header": "errno.h",

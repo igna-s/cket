@@ -28,6 +28,10 @@ it. GCC remains the sole C parser.
 - `qmeasure`, `qobserve`, `qreset`, `qprepare`, `qalloc`, `qrelease`, `qretain` and `qhistory_end`
   do not accept a coherent control field.
 - Phase angles must be representable finite numbers.
+- The fourteen `ctype_*` unary operators require signed 32-bit `int` operands and results. Reachable
+  arguments require EOF or the unsigned-char domain of the declared C-locale profile.
+  `ctype_require` accepts only its opcode and checks the CPU locale for a new computation. Saved
+  inverses use the original profile without querying mutable locale state.
 - Documents check format, version, header fields, and balanced CPU control markers.
 
 `qretain` and `qhistory_end` accept only `op` and the register `id`. Retaining a prepared value

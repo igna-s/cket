@@ -42,6 +42,7 @@ tree observe_fn = NULL_TREE;
 tree lower_node(tree value);
 bool gcc_quantum_sanitizer_guard(tree value);
 bool quantum_pure_expression(tree value);
+std::string standard_ctype(tree call);
 
 tree selected_storage(tree value) {
     value = strip(value);
@@ -417,11 +418,37 @@ tree normalize_quantum_saves(tree value) {
 }
 
 std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps);
+std::string expression(tree value, std::set<unsigned> &deps);
+
+std::string ctype_expression(tree call, const std::string &name, std::set<unsigned> &deps) {
+    if (call_expr_nargs(call) != 1 || CHAR_BIT != 8 || EOF != -1 || 'A' != 65 || 'a' != 97 ||
+        TYPE_PRECISION(integer_type_node) != 32) {
+        error_at(at(call),
+                 "|c>: quantum ctype currently requires the ASCII, 8-bit-byte, 32-bit-int profile");
+        return "{}";
+    }
+    if (expression_frames.empty()) {
+        error_at(at(call), "|c>: quantum ctype requires a scheduled expression consumer");
+        return "{}";
+    }
+    // This is a CPU precondition for new computations. Saved inverses use the
+    // original formula and do not consult a subsequently changed locale.
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    append(expression_frames.back()->prefix,
+           emit_operation("{\"op\":\"ctype_require\"}", at(call)));
+    active_cpu_parameters.swap(parameters);
+    return "{\"op\":" + json("ctype_" + name) + type_json(integer_type_node) + ",\"args\":[" +
+           expression(fold_convert(integer_type_node, CALL_EXPR_ARG(call, 0)), deps) + "]}";
+}
 
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
     auto code = TREE_CODE(value);
+    std::string ctype = standard_ctype(value);
+    if (!ctype.empty() && has_quantum(value))
+        return ctype_expression(value, ctype, deps);
     // GCC inserts scalar UBSan handlers before this pass. In a coherent arm,
     // pure arithmetic belongs to the circuit, whose backend checks definedness.
     // Executing a host handler would eagerly evaluate an inactive branch.
@@ -2196,6 +2223,8 @@ tree lower_node(tree value) {
     }
     if (code == CALL_EXPR) {
         auto kind = intrinsic(value);
+        if (kind.compare(0, 6, "ctype:") == 0 && !has_quantum(value))
+            kind.clear(); // The header's assembler alias calls ordinary libc.
         if (kind == "circuit" || kind == "inverse_circuit") {
             tree filename = strip(CALL_EXPR_ARG(value, 0));
             if (TREE_CODE(filename) == ADDR_EXPR)

@@ -315,6 +315,11 @@ budgets still apply. Ordinary CPU calls retain libc/GCC behavior. These four ada
 quantum compatibility of other library interfaces; [the interface index](c11-library.json) records
 open work.
 
+The fourteen [C-locale character interfaces](c11-ctype.md) preserve source storage, glibc's
+classification masks, case conversions and EOF on the declared ASCII target. Calls have reversible
+interval-prefix synthesis and saved inverse cleanup. New computations require the C locale; general
+locale snapshots, indirect calls and independent module preconditions remain pending.
+
 Const quantum borrows allow basis-value reads. They reject measurement, reset, Fourier transforms,
 ownership-consuming search and module calls that require mutable registers. This is a storage/effect
 contract, not a promise that a basis-controlled phase leaves every amplitude unchanged. A borrow may

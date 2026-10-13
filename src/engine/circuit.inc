@@ -51,10 +51,11 @@ compile_circuit(const char *ir, char *error, size_t size, int allow_tables, unsi
                 cj_equal(&d, op, "qphi") || cj_equal(&d, op, "qdispose") ||
                 cj_equal(&d, op, "cloop_begin") || cj_equal(&d, op, "cloop_end") ||
                 cj_equal(&d, op, "ccontrol_begin") || cj_equal(&d, op, "ccontrol_end") ||
-                cj_equal(&d, op, "ccontrol_else") || cj_bool(&d, cj_get(&d, t, "dynamic"))) {
+                cj_equal(&d, op, "ccontrol_else") || cj_equal(&d, op, "ctype_require") ||
+                cj_bool(&d, cj_get(&d, t, "dynamic"))) {
                 ok = qc_fail(
                     c,
-                    "compiled unitary modules cannot measure, reset, search or execute CPU feedback");
+                    "compiled unitary modules cannot measure, reset, search, execute CPU feedback or require a CPU locale precondition");
                 break;
             }
             ok = qc_apply_token(c, &d, t, 0, 0, &result);

@@ -186,6 +186,11 @@ for pure quantum arguments, captured CPU arguments and fresh quotient/remainder 
 power-of-two division uses table-free bit views and signed rounding corrections. General quantum
 product ABI and wider resource budgets remain open.
 
+The [C-locale character contract](docs/c11-ctype.md) adds partial adapters for all fourteen
+`ctype.h` interfaces. Its 635 checks contrast every byte, masks, phases, inverse cleanup,
+functions/memory/control combinations, explicit observation and native classical behavior. General
+locale snapshots and the full C11/library objective remain open.
+
 [CPU integer bindings and classical product preparation](docs/c11-bindings.md) capture values once
 and retain them for cleanup. Changing a CPU variable afterward does not change a saved inverse.
 Unbound templates receive structural validation; numerical checks and static exports require
@@ -520,8 +525,8 @@ Independent validation builds the serial **C** backend of
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
 Validation includes 391 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 49 independent QASM cases exported
-without tables. QASM cases check 43 complete states/final probabilities and six
+corpus of 29 programs at five levels; 24 growth circuits; and 51 independent QASM cases exported
+without tables. QASM cases check 45 complete states/final probabilities and six
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
