@@ -38,6 +38,14 @@ no implicit measurement, reset or partial trace. Derived history instead uses th
 inverse and clean release. Current/peak retained qubits are included in existing resource totals.
 See [history contracts](c11-history.md) for compiler scope and remaining control/memory obligations.
 
+`qphi` performs gate-free ownership transport for a bound classical branch decision, relabeling
+saved inverse dependencies without copying physical state. `qdispose` ends an optional logical
+lifetime and defers actual inverse/release until its dependents finish. Unknown roots remain
+retained outputs. Both have strict schemas, and borrowed unitary modules reject them. CPU templates
+with version joins receive structural/type checks; selected native executions retain the physical
+inverse checks. Unbound control cannot be exported as a flat circuit. See the
+[CPU join contract](c11-cpu-control.md) for precise lifetime and validation boundaries.
+
 Structural branch checking does not force its arithmetic to execute. Domain evaluation preserves C
 short-circuit semantics: division in an unselected branch is not executed.
 

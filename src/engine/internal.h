@@ -23,7 +23,7 @@ typedef struct {
     uint32_t id;
     unsigned width, wires[64];
     uint64_t epoch;
-    int alive, clean, prepared, ancillary, history;
+    int alive, clean, prepared, ancillary, history, finished;
     int signed_type, basis_known, uniform;
     uint64_t basis_value, zero_mask, uniform_upper;
     char *definition;
@@ -56,7 +56,8 @@ typedef struct qc_module_cache {
 } qc_module_cache;
 
 struct qc_context {
-    int simulate, validation, structural, ignore_measurements, allow_tables;
+    int simulate, validation, structural, ignore_measurements, allow_tables, cpu_versions,
+        collecting;
     unsigned symbolic_work;
     int recording;
     unsigned module_depth;

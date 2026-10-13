@@ -43,6 +43,7 @@ struct Variable {
     std::set<unsigned> dependencies;
     bool basis_known = false;
     bool history = false;
+    bool optional_definition = false;
     bool pending_destruction = false;
     bool pristine_uniform = false;
 };
@@ -411,6 +412,7 @@ void finish_function(void *event, void *) {
     coherent_expression_depth = 0;
     controls.clear();
     dynamic_depth = 0;
+    cpu_branches.clear();
     if (has_quantum)
         walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
     if (name_of(fn) != "main" && !has_quantum) {

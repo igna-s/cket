@@ -1,4 +1,5 @@
 #include "validation.h"
+#include "select_cpu_trace.inc"
 #include "qasm_reference.h"
 #include "internal.h"
 #include <math.h>
@@ -81,7 +82,13 @@ static const test_case
              {"nested coherent history joins",
               "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){if(x)x=false;else x=true;}if(x)phase(.31);measure(x);measure(c);"},
              {"coherent CPU predicate snapshot inverse",
-              "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);int d=1;if(c<d)x+=1;d=0;if(x)phase(.31);measure(x);measure(c);"}};
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);int d=1;if(c<d)x+=1;d=0;if(x)phase(.31);measure(x);measure(c);"},
+             {"CPU two-arm assignment trace",
+              "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag)x=false;else x=true;if(x)phase(.31);measure(x);measure(c);"},
+             {"CPU condition snapshot trace",
+              "int d=1;quant bool n=superposition(0,1),x=!n;if(x)phase(.19);if(d){x+=1;d=0;}else x=false;if(x)phase(.31);measure(x);measure(n);"},
+             {"CPU coherent branch trace",
+              "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag){if(c)x=false;else x=true;}else x=!x;if(x)phase(.31);measure(x);measure(c);"}};
 static const test_case channels[] = {
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},
@@ -110,8 +117,13 @@ static void check_importer(void) {
     puts("PASS independent QASM importer: 8 malformed artifacts rejected");
 }
 
-static void
-exported(validation *v, const char *body, char *ir, reference_circuit *c, unsigned binding_value) {
+static void exported(validation *v,
+                     const char *body,
+                     char *ir,
+                     reference_circuit *c,
+                     unsigned binding_value,
+                     const unsigned *cpu_decisions,
+                     size_t cpu_count) {
     char source[4096], qasm[4096], compiler[4096], backend[4096], program[8192];
     validation_path(source, sizeof source, "%s/program.c", v->temp);
     validation_path(ir, 4096, "%s/program.json", v->temp);
@@ -173,6 +185,13 @@ exported(validation *v, const char *body, char *ir, reference_circuit *c, unsign
         cj_free(&d);
         free(template);
     }
+    if (cpu_count) {
+        char *template = validation_read(ir);
+        char *trace = select_cpu_trace(template, cpu_decisions, cpu_count);
+        validation_write(ir, trace);
+        free(trace);
+        free(template);
+    }
     if (validation_run(v, export, qasm, 30)) {
         char *log = validation_read(v->log);
         validation_fail("QASM export failed: %s", log);
@@ -195,12 +214,17 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
         body = module;
     }
     reference_circuit c;
+    unsigned cpu_count = !strcmp(test->name, "CPU two-arm assignment trace") ||
+                         !strcmp(test->name, "CPU condition snapshot trace") ||
+                         !strcmp(test->name, "CPU coherent branch trace");
     unsigned binding_value = !strcmp(test->name, "CPU-bound library division")                ? 2
                              : !strcmp(test->name, "saved CPU snapshot inverse")              ? 5
                              : !strcmp(test->name, "history CPU snapshot inverse")            ? 1
                              : !strcmp(test->name, "coherent CPU predicate snapshot inverse") ? 1
+                             : cpu_count                                                      ? 1
                                                                                               : 0;
-    exported(v, body, ir, &c, binding_value);
+    unsigned cpu_decisions[] = {1};
+    exported(v, body, ir, &c, binding_value, cpu_decisions, cpu_count);
     char *text = validation_read(ir);
     cj_doc d = {0};
     qc_context *native = qc_create(1, 7);
@@ -276,7 +300,7 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
 static void check_channel(validation *v, QuESTEnv env, const test_case *test) {
     char ir[4096], sampler[4096], counts_path[4096];
     reference_circuit c;
-    exported(v, test->body, ir, &c, 0);
+    exported(v, test->body, ir, &c, 0, NULL, 0);
     validation_path(sampler,
                     sizeof sampler,
                     "%s/build/qasm_samples%s",

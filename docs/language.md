@@ -76,8 +76,9 @@ masks, even multiplication and constant overwrites. Updates of derived values or
 dependents compute into fresh storage and retain the previous version. A valid inverse or
 known-basis restoration releases history; unknown root history remains part of the joint output
 until the quantum context ends. [Structured coherent joins](c11-control.md) preserve old values on
-inactive amplitudes and retain needed predicates. CPU/CFG joins and runtime iterations still need
-version support.
+inactive amplitudes and retain needed predicates. [Structured CPU scalar joins](c11-cpu-control.md)
+transfer selected owners and their actual saved inverse dependencies. General CFG and runtime
+iterations still need further version support.
 
 An effectful CPU operand, such as `x += measure(y)` or `x += ++n`, is evaluated once before updating
 x. The plugin preserves GCC's shared `SAVE_EXPR` and emits explicit measurement before addition in

@@ -148,6 +148,8 @@ static void clear_definition(qc_register *r) {
 }
 
 static int unborrowed(qc_context *c, uint32_t id) {
+    if (c->validation && c->structural && c->cpu_versions)
+        return 1; /* CPU templates check types; native paths enforce certificates. */
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive || !r->definition)
@@ -1216,6 +1218,166 @@ static int indexed_action(qc_context *c,
 
 static int apply_module(qc_context *c, const cj_doc *d, int inst);
 
+static int inverse_disposed(qc_context *c, uint32_t id) {
+    qc_register *r = reg(c, id);
+    for (unsigned j = 0; j < r->ndeps; ++j) {
+        qc_register *input = reg(c, r->deps[j]);
+        if ((!input || !input->alive || input->epoch != r->epochs[j]) &&
+            !(c->validation && c->structural && c->cpu_versions))
+            return qc_fail(c, "optional inverse dependencies changed");
+    }
+    cj_doc local = {0};
+    const cj_doc *saved = parsed_operation(c, r->definition, &local);
+    int ok = saved &&
+             (c->structural || compute(c, saved, 0, r, r->definition_mask, r->definition_pattern));
+    cj_free(&local);
+    if (!ok)
+        return 0;
+    r = reg(c, id);
+    clear_definition(r);
+    r->clean = r->basis_known = 1;
+    r->basis_value = 0;
+    r->zero_mask = bits_mask(r->width);
+    ++r->epoch;
+    return 1;
+}
+
+static int collect_disposed(qc_context *c) {
+    if (c->collecting)
+        return 1;
+    c->collecting = 1;
+    int progress;
+    do {
+        progress = 0;
+        for (size_t i = 0; i < c->nregisters; ++i) {
+            qc_register *r = &c->registers[i];
+            if (!r->alive || !r->finished)
+                continue;
+            int borrowed = 0;
+            for (size_t j = 0; j < c->nregisters && !borrowed; ++j)
+                if (c->registers[j].alive && c->registers[j].definition)
+                    for (unsigned k = 0; k < c->registers[j].ndeps; ++k)
+                        borrowed |= c->registers[j].deps[k] == r->id;
+            if (borrowed)
+                continue;
+            uint32_t id = r->id;
+            if (r->definition && !inverse_disposed(c, id))
+                goto failed;
+            r = reg(c, id);
+            if (!r->clean && r->basis_known) {
+                uint64_t value = r->basis_value;
+                for (unsigned bit = 0; bit < r->width; ++bit)
+                    if ((value >> bit) & 1)
+                        if (!qc_emit(c, QC_X, r->wires[bit], 0, 0, 0))
+                            goto failed;
+                r->clean = 1;
+                r->basis_value = 0;
+                r->zero_mask = bits_mask(r->width);
+            }
+            if (r->clean) {
+                if (!release(c, r))
+                    goto failed;
+                progress = 1;
+            } else {
+                r->history = 1; /* Unknown roots remain joint outputs; never reset. */
+            }
+        }
+    } while (progress);
+    unsigned history = 0;
+    for (size_t i = 0; i < c->nregisters; ++i)
+        if (c->registers[i].alive && c->registers[i].history)
+            history += c->registers[i].width;
+    if (history > c->history_peak)
+        c->history_peak = history;
+    c->collecting = 0;
+    return 1;
+failed:
+    c->collecting = 0;
+    return 0;
+}
+
+// Relabel saved register references, preserving the JSON shape and all other
+// operands. This is ownership transport, not a copy of a quantum state.
+static char *relabel_definition(qc_context *c, const char *text, uint32_t from, uint32_t to) {
+    cj_doc d = {0};
+    if (!cj_parse(&d, text)) {
+        qc_fail(c, "cannot parse a transferred inverse definition");
+        cj_free(&d);
+        return NULL;
+    }
+    size_t size = strlen(text) + (size_t)d.count * 10 + 1;
+    char *result = malloc(size);
+    if (!result) {
+        cj_free(&d);
+        qc_fail(c, "cannot allocate a transferred inverse definition");
+        return NULL;
+    }
+    size_t copied = 0, used = 0;
+    for (int token = 0; token < d.count; ++token) {
+        uint64_t id;
+        if (d.tokens[token].kind != '{' || !cj_equal(&d, cj_get(&d, token, "op"), "reg"))
+            continue;
+        int value = cj_get(&d, token, "id");
+        if (!cj_u64(&d, value, &id) || id != from)
+            continue;
+        size_t begin = d.tokens[value].begin, end = d.tokens[value].end;
+        memcpy(result + used, text + copied, begin - copied);
+        used += begin - copied;
+        used += (size_t)snprintf(result + used, size - used, "%" PRIu32, to);
+        copied = end;
+    }
+    strcpy(result + used, text + copied);
+    cj_free(&d);
+    return result;
+}
+
+static int transfer_owner(qc_context *c, uint32_t from, uint32_t to) {
+    char **definitions = calloc(c->nregisters, sizeof *definitions);
+    if (!definitions)
+        return qc_fail(c, "cannot allocate CPU owner transfer");
+    for (size_t i = 0; i < c->nregisters; ++i)
+        if (c->registers[i].alive && c->registers[i].definition) {
+            definitions[i] = relabel_definition(c, c->registers[i].definition, from, to);
+            if (!definitions[i]) {
+                for (size_t j = 0; j < c->nregisters; ++j)
+                    free(definitions[j]);
+                free(definitions);
+                return 0;
+            }
+        }
+    if (c->nregisters == c->register_capacity) {
+        size_t capacity = c->register_capacity ? c->register_capacity * 2 : 16;
+        qc_register *registers = realloc(c->registers, capacity * sizeof *registers);
+        if (!registers) {
+            for (size_t i = 0; i < c->nregisters; ++i)
+                free(definitions[i]);
+            free(definitions);
+            return qc_fail(c, "cannot grow CPU owner metadata");
+        }
+        c->registers = registers;
+        c->register_capacity = capacity;
+    }
+    for (size_t i = 0; i < c->nregisters; ++i) {
+        qc_register *r = &c->registers[i];
+        if (definitions[i]) {
+            free(r->definition);
+            r->definition = definitions[i];
+        }
+        for (unsigned j = 0; j < r->ndeps; ++j)
+            if (r->deps[j] == from)
+                r->deps[j] = to;
+    }
+    free(definitions);
+    qc_register *source = reg(c, from), *target = &c->registers[c->nregisters++];
+    *target = *source;
+    target->id = to;
+    target->history = target->finished = 0;
+    source->alive = 0;
+    source->definition = NULL;
+    source->ndeps = 0;
+    return 1;
+}
+
 int qc_apply_token(qc_context *c,
                    const cj_doc *d,
                    int inst,
@@ -1245,8 +1407,22 @@ int qc_apply_token(qc_context *c,
     }
     if (!qc_verify_instruction(c, d, inst))
         return 0;
+    if (!collect_disposed(c))
+        return 0;
     *result = 0;
     uint64_t id = 0;
+    if (cj_equal(d, op, "qphi")) {
+        int sources = cj_get(d, inst, "sources"), condition = cj_get(d, inst, "condition");
+        uint64_t value, from;
+        if (!number(c, d, inst, "id", &id) || !number(c, d, condition, "value", &value))
+            return 0;
+        int source = sources + 1;
+        if (!value)
+            source = d->tokens[source].next;
+        if (!cj_u64(d, source, &from))
+            return qc_fail(c, "invalid CPU phi source");
+        return transfer_owner(c, (uint32_t)from, (uint32_t)id);
+    }
     if (cj_equal(d, op, "qmodule"))
         return !has_argument ? apply_module(c, d, inst)
                              : qc_fail(c, "module arguments must be typed register borrows");
@@ -1272,7 +1448,8 @@ int qc_apply_token(qc_context *c,
         !cj_equal(d, op, "qprepare"))
         return qc_fail(c, "integer runtime argument requires addition, XOR or preparation");
     if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
-        cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end"))
+        cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
+        cj_equal(d, op, "ccontrol_else"))
         return c->validation ||
                qc_fail(
                    c,
@@ -1326,6 +1503,11 @@ int qc_apply_token(qc_context *c,
         return qc_emit(c, QC_PHASE, 0, mask, pattern, value);
     }
     qc_register *r = reg(c, (uint32_t)id);
+    if (cj_equal(d, op, "qdispose")) {
+        if (r && r->alive)
+            r->finished = 1;
+        return collect_disposed(c);
+    }
     if (!r || !r->alive)
         return qc_fail(c, "use of unknown or released quantum storage");
     if (!cj_equal(d, op, "qmove") && !cj_equal(d, op, "qretain") && !unborrowed(c, r->id))
@@ -1775,8 +1957,12 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
     c->validation = validation;
     c->ignore_measurements = ignore_measurements;
     if (ok && validation)
-        for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next)
+        for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next) {
             c->structural |= cj_equal(&d, cj_get(&d, t, "op"), "qbind");
+            int instruction =
+                cj_equal(&d, cj_get(&d, t, "op"), "qbind") ? cj_get(&d, t, "instruction") : t;
+            c->cpu_versions |= cj_equal(&d, cj_get(&d, instruction, "op"), "qphi");
+        }
     if (c->structural && c->simulate) {
         cj_free(&d);
         return qc_fail(c, "CPU template validation requires a nonsimulating context");

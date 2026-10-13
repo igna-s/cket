@@ -220,12 +220,17 @@ int qc_verify_document(qc_context *c, const cj_doc *d) {
             end = 1;
         else if (cj_equal(d, op, "ccontrol_end"))
             end = 2;
+        else if (cj_equal(d, op, "ccontrol_else")) {
+            if (!depth || nesting[depth - 1] != 2)
+                return qc_fail(c, "CPU else marker requires a matching first arm");
+            nesting[depth - 1] = 3;
+        }
         if (begin) {
             if (depth == 256)
                 return qc_fail(c, "too many nested CPU control regions");
             nesting[depth++] = begin;
         } else if (end) {
-            if (!depth || nesting[depth - 1] != end)
+            if (!depth || (nesting[depth - 1] != end && !(end == 2 && nesting[depth - 1] == 3)))
                 return qc_fail(c, "unbalanced CPU control markers");
             --depth;
         }
@@ -234,6 +239,35 @@ int qc_verify_document(qc_context *c, const cj_doc *d) {
 }
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
+    if (cj_equal(d, cj_get(d, inst, "op"), "qphi")) {
+        static const char *const phi[] = {
+            "op", "id", "width", "signed", "sources", "condition", NULL};
+        uint64_t id, width, value, bits;
+        int sources = cj_get(d, inst, "sources"), condition = cj_get(d, inst, "condition");
+        if (!fields(c, d, inst, phi) || !unsigned_field(c, d, inst, "id", &id) || id > UINT32_MAX ||
+            qc_lookup(c, (uint32_t)id) || !unsigned_field(c, d, inst, "width", &width) || !width ||
+            width > 64 || !boolean_field(c, d, inst, "signed", 0) || sources < 0 ||
+            d->tokens[sources].kind != '[' || d->tokens[sources].children != 2 ||
+            !cj_equal(d, cj_get(d, condition, "op"), "const") || !expression(c, d, condition) ||
+            !unsigned_field(c, d, condition, "bits", &bits) || bits != 1 ||
+            !unsigned_field(c, d, condition, "value", &value) || value > 1)
+            return qc_fail(c, "CPU phi requires a fresh owner and a bound Boolean condition");
+        uint64_t seen = UINT64_MAX;
+        unsigned index = 0;
+        for (int token = sources + 1; token < d->tokens[sources].next;
+             token = d->tokens[token].next, ++index) {
+            uint64_t source;
+            if (!cj_u64(d, token, &source) || source > UINT32_MAX || source == seen)
+                return qc_fail(c, "invalid or duplicate CPU phi source");
+            qc_register *r = qc_lookup(c, (uint32_t)source);
+            if ((index == (value ? 0u : 1u) && (!r || !r->alive || !r->prepared || r->finished)) ||
+                (r && r->alive &&
+                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")))))
+                return qc_fail(c, "CPU phi needs available sources of the same C representation");
+            seen = source;
+        }
+        return 1;
+    }
     if (cj_equal(d, cj_get(d, inst, "op"), "qmodule")) {
         static const char *const module[] = {"op", "circuit", "ids", "inverse", "controls", NULL};
         if (!fields(c, d, inst, module) || !boolean_field(c, d, inst, "inverse", 0))
@@ -348,7 +382,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     else if (cj_equal(d, op, "qmeasure"))
         allowed = measure;
     else if (cj_equal(d, op, "qrelease") || cj_equal(d, op, "qreset") ||
-             cj_equal(d, op, "qretain") || cj_equal(d, op, "qhistory_end"))
+             cj_equal(d, op, "qretain") || cj_equal(d, op, "qhistory_end") ||
+             cj_equal(d, op, "qdispose"))
         allowed = simple;
     else if (cj_equal(d, op, "qmove"))
         allowed = move;
@@ -357,7 +392,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     else if (cj_equal(d, op, "qsearch"))
         allowed = search;
     else if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
-             cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end"))
+             cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
+             cj_equal(d, op, "ccontrol_else"))
         allowed = marker;
     else
         return qc_fail(c, "unsupported quantum instruction");
@@ -392,6 +428,9 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                    qc_fail(c, "one-bit storage uses unsigned bool representation");
         }
         qc_register *r = qc_lookup(c, (uint32_t)id);
+        // An optional owner may never have been created on this CPU path.
+        if (cj_equal(d, op, "qdispose"))
+            return 1;
         if (!r || !r->alive)
             return qc_fail(c, "unavailable quantum storage");
         if (allowed == fourier) {

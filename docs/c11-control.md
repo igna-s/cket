@@ -2,7 +2,8 @@
 
 This advances M2/M3/M4 toward full C11 coverage. Structured coherent `if` statements can update
 supported scalar owners, including fixed array/field/pointer aliases and mutable same-unit quantum
-procedures. General CFG, runtime CPU versions, dynamic memory, ABI, floating/complex and library
+procedures. [Structured CPU scalar versions](c11-cpu-control.md) have a separate ownership transport
+contract. General CFG, runtime iteration history, dynamic memory, ABI, floating/complex and library
 contracts remain required.
 
 ## Selected values and preserved branch decisions
@@ -106,7 +107,7 @@ build/validate_qasm
 ```
 
 Completed campaign counts and hashes are recorded in the
-[evidence archive](audit-evidence/README.md). CPU branch joins and runtime loop iterations still
-need a version/ownership model. Declarations inside controlled flow, products, dynamic indexed
+[evidence archive](audit-evidence/README.md). General CFG and runtime loop iterations still need
+further version/ownership support. Declarations inside controlled flow, products, dynamic indexed
 writes, `switch`, jumps and early returns remain separate P/R obligations. This finite stage does
 not close M3 or the full C11 objective.

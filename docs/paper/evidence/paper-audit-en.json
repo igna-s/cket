@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 289,
+  "checks": 294,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -513,6 +513,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-cpu-control.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/c11-division.md",
       "passed": true,
       "detail": ""
@@ -978,12 +983,32 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/select_cpu_trace.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/test_coherent_history.inc",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Fuente local tests/test_composition.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_cpu_history.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_cpu_owners.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/test_cpu_word_history.inc",
       "passed": true,
       "detail": ""
     },
@@ -1454,9 +1479,9 @@
     }
   ],
   "audit_checkout": {
-    "head": "22113c9f688e5a79c2577f0422d6d82491209990",
+    "head": "48b0b25cb2633fb86e8cc278a9498bb994c8ec3a",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 127
+    "source_files_in_manifest": 132
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required."

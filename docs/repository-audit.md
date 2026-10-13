@@ -255,13 +255,45 @@ selección de historial para saturación booleana bajo control, conservando el c
 que GCC usa para XOR con `true`: esa ruta reversible sigue permitiendo medir el control antes del
 destino, como en el ejemplo entrelazado existente.
 
-La suite de historial suma 348 comprobaciones. Agrega 110 estados booleanos conjuntos y 30 estados
-con salidas de ocho bits, firmadas y sin signo, a cinco niveles GCC y dos políticas de síntesis. Los
-casos de palabras usan entradas en una base conocida y aliases fijos; no prueban todos los estados
-de palabras de ocho bits. Se contrastan fase relativa, todas las líneas privadas, restauración
-conocida, conteos de medición y vida de predicados. QuEST agrega cuatro circuitos para ramas,
-controles propios, anidamiento y capturas CPU. Las uniones CPU/CFG, bucles dinámicos, declaraciones
-dentro de ramas, memoria general y el resto de C11 siguen abiertos P/R.
+La etapa de control coherente amplió la suite a 348 comprobaciones. Agregó 110 estados booleanos
+conjuntos y 30 estados con salidas de ocho bits, firmadas y sin signo, a cinco niveles GCC y dos
+políticas de síntesis. Los casos de palabras usan entradas en una base conocida y aliases fijos; no
+prueban todos los estados de palabras de ocho bits. Se contrastan fase relativa, todas las líneas
+privadas, restauración conocida, conteos de medición y vida de predicados. QuEST agrega cuatro
+circuitos para ramas, controles propios, anidamiento y capturas CPU. Las uniones CFG generales,
+bucles dinámicos, declaraciones dentro de ramas, memoria general y el resto de C11 siguen abiertos
+P/R.
+
+## Uniones de ramas CPU y limpieza diferida
+
+Se implementaron [uniones escalares de control CPU](c11-cpu-control.md), incluidas ramas anidadas.
+El compilador anterior rechazaba cambios de versión aunque las ramas fueran clásicamente
+excluyentes. Ahora sólo ejecuta el brazo seleccionado y transfiere su propietario mediante `qphi`:
+se conservan las mismas líneas físicas, amplitudes, épocas y definiciones inversas. La unión no
+agrega puertas ni copia el estado. Las referencias guardadas por otras inversas se actualizan al
+nuevo identificador.
+
+La condición se captura una sola vez antes del despacho. Un propietario creado por una unión anidada
+se usa sólo en la ruta donde existe; no se adelanta su retención antes de la creación. `qdispose`
+distingue el fin lógico de la reclamación física: espera a los dependientes, invierte la definición
+realmente ejecutada y libera únicamente almacenamiento limpio. Los valores de base conocida se
+restauran con X; las raíces desconocidas siguen siendo salidas conjuntas hasta el fin del contexto.
+No se introducen mediciones, resets ni descarte parcial para recuperar espacio.
+
+La evidencia adicional comprende 46 contratos del motor, 55 programas C a cinco niveles GCC, 120
+rutas nativas y 240 estados completos de trazas CPU seleccionadas con ambas políticas de síntesis.
+Los programas nativos comprueban resultados determinados y correlaciones, además de la evaluación
+única de condiciones con efectos. Los casos de ocho bits usan bases conocidas y aliases escalares,
+de array y parámetros; no agotan todos los estados de ocho bits. QuEST contrasta otras tres trazas
+sin tablas, incluidas una condición modificada en el cuerpo y una rama coherente bajo control CPU.
+
+Las plantillas CPU reciben validación estructural y de tipos; no acreditan las obligaciones físicas
+de todas las rutas posibles. La ejecución nativa y las trazas concretas mantienen los controles de
+dependencias y épocas. La exportación plana rechaza el despacho sin resolver, y los módulos
+unitarios prestados rechazan estas operaciones de propiedad hasta disponer de un contrato ABI. Se
+reserva actualmente el almacenamiento fresco de ambos brazos; ese costo es explícito y puede superar
+el límite nativo. Los bucles con historial, CFG general, declaraciones controladas, productos,
+memoria dinámica, flotantes/complejos y cobertura total de biblioteca siguen abiertos.
 
 ## Formato y legibilidad
 
@@ -291,16 +323,17 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **391 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 348 de historial, 18
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 809 de historial, 18
 de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 37 casos QASM por configuración**. Incluye las correcciones
+frontend, 24 circuitos de crecimiento y 40 casos QASM por configuración**. Incluye las correcciones
 del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
 expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
 política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
 rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
 los guards puros de UBSan en ramas coherentes y las versiones seleccionadas con predicados
-guardados. Los treinta y siete casos externos corresponden a treinta y cuatro estados y tres
-canales; los once casos del paper siguen identificados como evidencia histórica.
+guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta casos externos
+corresponden a treinta y siete estados y tres canales; los once casos del paper siguen identificados
+como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -314,11 +347,12 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-control-full.log` después de reproducir
-la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción histórica.
-Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los hashes
-permiten contrastarlo con la revisión que publique esos archivos; no se presenta como ejecución de
-CI.
+`python3 scripts/archive-audit.py --log build/audit/verify-cpu-joins-full-v2.log` después de
+reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción
+histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los
+hashes permiten contrastarlo con la revisión que publique esos archivos; no se presenta como
+ejecución de CI. Las 108 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
+permanecieron iguales al finalizar; también se contrastan con los bytes publicados.
 
 ## Papers y garantías abiertas
 

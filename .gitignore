@@ -1,6 +1,7 @@
 /.deps/
 /build/
 /out/
+/tmp/pdfs/
 __pycache__/
 *.qir
 *.qasm

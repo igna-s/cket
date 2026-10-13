@@ -152,13 +152,15 @@ original inputs, and the new owner receives freshly computed storage. Unknown ol
 of the joint circuit output unless a valid cleanup is available.
 [Structured coherent branches](docs/c11-control.md) select fresh values with the previous value on
 inactive amplitudes and preserve their original branch decisions through cleanup.
+[Classical scalar branch joins](docs/c11-cpu-control.md) transfer the selected owner's physical
+storage without adding gates or copying its state, including nested branches and saved inverses.
 
 In-place bit permutations and affine word updates also have
 [table-free certificates](docs/c11-inplace.md). These include fixed rotations, complement, defined
 negation and multiplication by an odd constant, with no private qubits. Boolean updates retain C
-truth conversion. `--no-tables` also applies to the remaining in-place fallback. Versioned CPU/CFG
-joins, runtime iteration history, general memory overwrites and expression-valued effects remain
-pending. History has an explicit qubit cost; no measurement or reset is inserted to erase it.
+truth conversion. `--no-tables` also applies to the remaining in-place fallback. General CFG joins,
+runtime iteration history, general memory overwrites and expression-valued effects remain pending.
+History has an explicit qubit cost; no measurement or reset is inserted to erase it.
 
 `memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole integer
 elements and constant extents. Known basis destinations use reversible translation and copying;
@@ -509,8 +511,8 @@ Independent validation builds the serial **C** backend of
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
 Validation includes 391 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 37 independent QASM cases exported
-without tables. QASM cases check thirty-four complete states/final probabilities and three
+corpus of 29 programs at five levels; 24 growth circuits; and 40 independent QASM cases exported
+without tables. QASM cases check thirty-seven complete states/final probabilities and three
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
@@ -521,12 +523,12 @@ extensions, complete states/inverse, overlap, contracts, C composition and wide 
 division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
 coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The binding
 suite adds 399 checks of complete states and saved inverse, typed integer endpoints, malformed
-inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 348
+inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 809
 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU snapshot
-cleanup, coherent control joins, Boolean/word states and explicit pending-contract diagnostics. The
-native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
-predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
-plus 4096 IR mutations.
+cleanup, coherent and CPU scalar joins, Boolean/word states, deferred ownership cleanup and explicit
+pending-contract diagnostics. The native suite also exhausts selected eight-bit expressions, 3720
+adder basis pairs and 65,536-input predicates, checks 126 Fourier bases against the DFT, and
+exercises 1024 generated typed expressions plus 4096 IR mutations.
 
 The shared [validation runner](docs/audit-validation.md) has 18 fault-injection checks. Signals,
 timeouts, setup failures, captured sanitizer reports and compiler internal errors cannot satisfy an

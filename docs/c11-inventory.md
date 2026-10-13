@@ -70,9 +70,10 @@ The lexical keyword index contains all 44 C11 keywords: `auto`, `break`, `case`,
 [Versioned scalar assignments](c11-history.md) are partial implementation: unconditional and
 [structured coherent updates](c11-control.md) preserve old inputs and live dependents in retained
 registers. Derived history has checked inverse cleanup; known basis roots can be restored; unknown
-root history remains a joint output until context end. General CPU/CFG joins, runtime iterations,
-general memory overwrites and expression-valued effects remain P/R. The assignment rows below refer
-to this bounded contract.
+root history remains a joint output until context end.
+[Structured CPU scalar joins](c11-cpu-control.md) transport selected owners and actual saved inverse
+dependencies. General CFG joins, runtime iterations, general memory overwrites and expression-valued
+effects remain P/R. The assignment rows below refer to this bounded contract.
 
 | Clause / element                                          | Classical behavior                     | Current quantum behavior                                                                                                            | Remaining work / class / stage                                                                                                |
 | --------------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
@@ -127,7 +128,7 @@ establish a quantum transformation.
 | 6.8.1 labels, `case`, `default`                    | GCC CFG                      | No complete quantum CFG                                                       | Label state joins and controlled dispatch; P/R, M3                                                           |
 | 6.8.2 blocks                                       | GCC scopes                   | Fixed stable owners and expanded scopes                                       | All dynamic lifetimes and exit cleanup; P, M3/M4                                                             |
 | 6.8.3 expression/null statements                   | GCC value/effects            | Supported standalone quantum effects                                          | Complete discarded-result/history handling; P, M2/M3                                                         |
-| 6.8.4 `if` / `else`, classical condition           | GCC CPU branches             | Conservative joins; stable owners                                             | Allocation/identity changes and precise all-path proof; P, M3                                                |
+| 6.8.4 `if` / `else`, classical condition           | GCC CPU branches             | Scalar versions, nested ownership transport and deferred inverse cleanup      | Controlled declarations/products, general CFG and precise all-path proof; P/R, M3                            |
 | 6.8.4 `if` / `else`, quantum condition             | Requires language extension  | Controlled in-place effects; scalar selected versions and predicate lifetimes | Declarations/products, general CFG/channel cleanup and stronger correlations; P/R, M3; implicit CPU I/O is S |
 | 6.8.4 `switch`, fall-through                       | GCC CPU dispatch             | P for general quantum integration                                             | Classical CFG and coherent predicate masks/history; P/R, M3                                                  |
 | 6.8.5 `for`, `while`, `do`, classical condition    | GCC CPU iteration            | Stable-owner updates; some checked static expansion                           | All owner/borrow/exit effects and dynamic allocation; P/R, M3/M4                                             |

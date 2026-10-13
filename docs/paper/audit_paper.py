@@ -289,6 +289,7 @@ def main(language):
                 'docs/c11-bindings.md',
                 'docs/c11-history.md',
                 'docs/c11-control.md',
+                'docs/c11-cpu-control.md',
                 'docs/audit-validation.md',
                 'CONTRIBUTING.md',
                 '.clang-format',

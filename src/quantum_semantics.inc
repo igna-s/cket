@@ -15,6 +15,14 @@ std::set<tree> cpu_library_saves;
 unsigned coherent_expression_depth = 0;
 std::vector<std::pair<unsigned, unsigned>> controls;
 unsigned dynamic_depth = 0;
+
+struct CpuBranch {
+    std::vector<std::string> operations;
+    std::vector<tree> prefix;
+    std::set<unsigned> incoming, allocations, retained;
+};
+
+std::vector<CpuBranch *> cpu_branches;
 size_t embedded_module_bytes = 0;
 tree apply_fn = NULL_TREE, apply_arg_fn = NULL_TREE;
 tree apply_values_fn = NULL_TREE;
@@ -146,6 +154,36 @@ tree emit_operation(std::string operation, location_t loc, tree argument = NULL_
     return argument ? build_call_expr_loc(
                           loc, fn, 2, text, fold_convert(long_long_unsigned_type_node, argument))
                     : build_call_expr_loc(loc, fn, 1, text);
+}
+
+// Storage for either CPU arm exists cleanly before dispatch. Only the selected
+// arm computes values; inactive storage is never a measurement or reset.
+tree emit_cpu_storage(std::string operation, location_t loc, unsigned id, bool allocation) {
+    if (cpu_branches.empty() || dynamic_depth > cpu_branches.size())
+        return emit_operation(operation, loc);
+    auto &branch = *cpu_branches.front();
+    // A nested join creates its owner only on the executed CPU path. Retain
+    // that owner in the branch instead of using it before dispatch.
+    if (!allocation && !branch.incoming.count(id) && !branch.allocations.count(id))
+        return emit_operation(operation, loc);
+    if (!(allocation ? branch.allocations : branch.retained).insert(id).second)
+        return NULL_TREE;
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    tree call = emit_operation(operation, loc);
+    instructions.pop_back();
+    branch.operations.push_back(operation);
+    branch.prefix.push_back(call);
+    if (allocation) {
+        std::string prepare =
+            "{\"op\":\"qprepare\",\"id\":" + std::to_string(id) + ",\"lower\":0,\"upper\":0}";
+        tree zero = emit_operation(prepare, loc);
+        instructions.pop_back();
+        branch.operations.push_back(prepare);
+        branch.prefix.push_back(zero);
+    }
+    active_cpu_parameters.swap(parameters);
+    return NULL_TREE;
 }
 
 void append(tree *list, tree value) {
@@ -516,6 +554,15 @@ void cleanup(tree *list) {
         changed = false;
         for (auto &entry : variables) {
             auto &var = entry.second;
+            if (var.lowered && var.optional_definition && !var.released && !var.moved &&
+                !var.measured && !var.pending_destruction && !remaining[var.id]) {
+                append(list,
+                       emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(var.id) + '}',
+                                      at(var.decl)));
+                var.released = true;
+                changed = true;
+                continue;
+            }
             if (var.lowered && var.history && !var.derived && !var.released && !var.moved &&
                 !remaining[var.id] && !dependent(var.id)) {
                 append(list,
@@ -538,10 +585,16 @@ void cleanup(tree *list) {
             if (!var.lowered || !var.derived || var.released || var.measured || var.moved ||
                 remaining[var.id] || dependent(var.id))
                 continue;
-            append(list, emit_operation(inverse_operation(var.id, var.creation), at(var.decl)));
-            append(list,
-                   emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(var.id) + '}',
-                                  at(var.decl)));
+            if (var.optional_definition)
+                append(list,
+                       emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(var.id) + '}',
+                                      at(var.decl)));
+            else {
+                append(list, emit_operation(inverse_operation(var.id, var.creation), at(var.decl)));
+                append(list,
+                       emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(var.id) + '}',
+                                      at(var.decl)));
+            }
             var.released = true;
             changed = true;
         }
@@ -600,7 +653,7 @@ bool lossy_assignment(tree value, unsigned width, unsigned depth = 0) {
     int parity = width > 1 ? affine_parity(value, width, affine_source) : -1;
     if (parity >= 0)
         return parity == 0;
-    if (width == 1 && !dynamic_depth) {
+    if (width == 1 && dynamic_depth == cpu_branches.size()) {
         if (code == TRUTH_NOT_EXPR ||
             (code == BIT_NOT_EXPR && TYPE_PRECISION(TREE_TYPE(value)) == 1) || quantum(value))
             return false;
@@ -688,7 +741,7 @@ void versioned_assignment(Variable &var,
                           const std::set<unsigned> &deps,
                           location_t loc,
                           tree *list) {
-    if (dynamic_depth) {
+    if (dynamic_depth > cpu_branches.size()) {
         error_at(
             loc,
             "|c>: versioned assignment needs implemented CPU branch merges or a static per-iteration expansion; CPU-loop history is pending");
@@ -712,12 +765,16 @@ void versioned_assignment(Variable &var,
     remaining[old_id] = 0;
     std::set<unsigned> parameters;
     parameters.swap(active_cpu_parameters);
-    append(list, emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(old_id) + '}', loc));
     append(list,
-           emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(new_id) +
-                              ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
-                              (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
-                          loc));
+           emit_cpu_storage(
+               "{\"op\":\"qretain\",\"id\":" + std::to_string(old_id) + '}', loc, old_id, false));
+    append(list,
+           emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(new_id) +
+                                ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
+                                (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                            loc,
+                            new_id,
+                            true));
     active_cpu_parameters.swap(parameters);
     append(list,
            emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(new_id) +
@@ -725,6 +782,7 @@ void versioned_assignment(Variable &var,
                           loc));
     var.id = new_id;
     var.derived = true;
+    var.optional_definition = !cpu_branches.empty();
     var.history = false;
     var.dependencies = sources;
     var.creation = value;
@@ -767,6 +825,122 @@ void merge_cpu_paths(const std::map<tree, Variable> &left,
         a.range_max = std::max(a.range_max, b.range_max);
         a.epoch = std::max(a.epoch, b.epoch);
     }
+}
+
+std::map<unsigned, unsigned> branch_uses(tree value) {
+    auto saved_remaining = remaining;
+    auto saved_saves = counted_saves;
+    remaining.clear();
+    counted_saves.clear();
+    if (value)
+        walk_tree(&value, count_uses, nullptr, nullptr);
+    auto result = remaining;
+    remaining = std::move(saved_remaining);
+    counted_saves = std::move(saved_saves);
+    return result;
+}
+
+void merge_cpu_versions(const std::map<tree, Variable> &incoming,
+                        const std::map<tree, Variable> &left,
+                        const std::map<tree, Variable> &right,
+                        const std::map<unsigned, unsigned> &after,
+                        tree choice,
+                        location_t loc,
+                        tree *join) {
+    variables = incoming;
+    bool transferred = false;
+    for (auto &entry : variables) {
+        auto l = left.find(entry.first), r = right.find(entry.first);
+        if (l == left.end() || r == right.end()) {
+            error_at(loc, "|c>: CPU paths require compatible scalar owners");
+            continue;
+        }
+        const auto &a = l->second, &b = r->second;
+        unsigned uses = after.count(entry.second.id) ? after.at(entry.second.id) : 0;
+        if (a.lowered != b.lowered || a.moved != b.moved || a.released != b.released ||
+            a.width != b.width || a.is_signed != b.is_signed) {
+            error_at(loc, "|c>: CPU paths disagree on quantum ownership");
+            continue;
+        }
+        auto &merged = entry.second;
+        if (a.id == b.id) {
+            if (a.derived != b.derived || a.dependencies != b.dependencies) {
+                error_at(loc, "|c>: CPU paths disagree on inverse dependencies");
+                continue;
+            }
+            merged = a;
+            merged.measured &= b.measured;
+            merged.clean &= b.clean;
+            merged.basis_known &= b.basis_known && a.lower == b.lower;
+            merged.pristine_uniform &= b.pristine_uniform && a.epoch == b.epoch;
+            merged.range_max = std::max(a.range_max, b.range_max);
+            merged.epoch = std::max(a.epoch, b.epoch);
+        } else {
+            transferred = true;
+            if (!a.lowered || a.moved || a.released || a.measured || b.measured) {
+                error_at(loc, "|c>: CPU version joins require unmeasured available scalar owners");
+                continue;
+            }
+            unsigned id = next_id++;
+            std::string predicate = cpu_parameter(choice);
+            append(join,
+                   emit_operation("{\"op\":\"qphi\",\"id\":" + std::to_string(id) +
+                                      ",\"width\":" + std::to_string(a.width) +
+                                      ",\"signed\":" + (a.is_signed ? "true" : "false") +
+                                      ",\"sources\":[" + std::to_string(a.id) + ',' +
+                                      std::to_string(b.id) + "],\"condition\":" + predicate + '}',
+                                  loc));
+            merged = a;
+            merged.id = id;
+            merged.creation.clear();
+            merged.dependencies.insert(b.dependencies.begin(), b.dependencies.end());
+            merged.derived = a.derived || b.derived;
+            merged.optional_definition = true;
+            merged.history = false;
+            merged.measured = merged.clean = merged.basis_known = merged.pristine_uniform = false;
+            merged.range_max = a.width == 64 ? UINT64_MAX : ((uint64_t{1} << a.width) - 1);
+            merged.epoch = std::max(a.epoch, b.epoch) + 1;
+        }
+        remaining[merged.id] = uses;
+    }
+    std::set<unsigned> owners;
+    for (const auto &entry : variables)
+        if (!entry.second.moved && !entry.second.released)
+            owners.insert(entry.second.id);
+    std::map<unsigned, Variable> history;
+    for (const auto *path : {&left, &right})
+        for (const auto &entry : *path) {
+            const auto &var = entry.second;
+            if (!var.lowered || var.moved || var.released || owners.count(var.id))
+                continue;
+            auto found = history.find(var.id);
+            if (found == history.end())
+                history.emplace(var.id, var);
+            else
+                found->second.dependencies.insert(var.dependencies.begin(), var.dependencies.end());
+        }
+    for (auto &entry : history) {
+        auto &var = entry.second;
+        var.history = true;
+        var.optional_definition = true;
+        var.name += ".cpu.history." + std::to_string(var.id);
+        var.decl = build_decl(loc, VAR_DECL, get_identifier(var.name.c_str()), TREE_TYPE(var.decl));
+        variables.emplace(var.decl, var);
+        remaining[var.id] = 0;
+        const auto &branch = *cpu_branches.front();
+        if (branch.incoming.count(var.id) || branch.allocations.count(var.id))
+            append(join,
+                   emit_cpu_storage("{\"op\":\"qretain\",\"id\":" + std::to_string(var.id) + '}',
+                                    loc,
+                                    var.id,
+                                    false));
+    }
+    // A transfer can relabel inputs of existing saved definitions. Runtime
+    // cleanup follows those exact definitions, including branch-local ones.
+    if (transferred)
+        for (auto &entry : variables)
+            if (entry.second.lowered && !entry.second.moved)
+                entry.second.optional_definition = true;
 }
 
 tree lower_quantum_decl(Variable &var) {
@@ -1218,9 +1392,11 @@ tree lower_node(tree value) {
         std::set<unsigned> parameters;
         parameters.swap(active_cpu_parameters);
         append(&list,
-               emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(flag) +
-                                  ",\"width\":1,\"signed\":false,\"ancilla\":true}",
-                              at(value)));
+               emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(flag) +
+                                    ",\"width\":1,\"signed\":false,\"ancilla\":true}",
+                                at(value),
+                                flag,
+                                true));
         active_cpu_parameters.swap(parameters);
         append(&list,
                emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(flag) +
@@ -1232,6 +1408,7 @@ tree lower_node(tree value) {
         guard.width = 1;
         guard.range_max = 1;
         guard.lowered = guard.derived = true;
+        guard.optional_definition = !cpu_branches.empty();
         guard.dependencies = deps;
         guard.creation = predicate;
         tree key =
@@ -1246,8 +1423,10 @@ tree lower_node(tree value) {
         if (dependent(flag)) {
             variables.at(key).history = true;
             append(&list,
-                   emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(flag) + '}',
-                                  at(value)));
+                   emit_cpu_storage("{\"op\":\"qretain\",\"id\":" + std::to_string(flag) + '}',
+                                    at(value),
+                                    flag,
+                                    false));
         } else {
             variables.erase(key);
             append(&list, emit_operation(inverse_operation(flag, predicate), at(value)));
@@ -1263,21 +1442,72 @@ tree lower_node(tree value) {
                      "|c>: classical branch inside quantum control is not supported yet");
             return value;
         }
-        TREE_OPERAND(value, 0) = lower_node(TREE_OPERAND(value, 0));
+        tree choice =
+            save_expr(fold_convert(boolean_type_node, lower_node(TREE_OPERAND(value, 0))));
+        TREE_OPERAND(value, 0) = choice;
         invalidate_cpu_ranges();
         auto incoming = variables;
+        auto before = remaining;
+        auto then_uses = branch_uses(TREE_OPERAND(value, 1));
+        auto else_uses = branch_uses(TREE_OPERAND(value, 2));
+        auto after = before;
+        for (auto &entry : after) {
+            unsigned branch = then_uses[entry.first] + else_uses[entry.first];
+            entry.second = entry.second > branch ? entry.second - branch : 0;
+        }
+        size_t position = instructions.size();
+        CpuBranch region;
+        for (const auto &entry : incoming)
+            if (entry.second.lowered && !entry.second.released && !entry.second.moved)
+                region.incoming.insert(entry.second.id);
+        cpu_branches.push_back(&region);
         // Record dynamic CPU control explicitly, never flatten it for export.
         instructions.push_back("{\"op\":\"ccontrol_begin\"}");
         ++dynamic_depth;
+        remaining = after;
+        for (const auto &entry : then_uses)
+            remaining[entry.first] += entry.second;
         TREE_OPERAND(value, 1) = lower_node(TREE_OPERAND(value, 1));
         auto then_state = variables;
         variables = incoming;
+        remaining = after;
+        for (const auto &entry : else_uses)
+            remaining[entry.first] += entry.second;
+        instructions.push_back("{\"op\":\"ccontrol_else\"}");
         TREE_OPERAND(value, 2) = lower_node(TREE_OPERAND(value, 2));
         auto else_state = variables;
-        merge_cpu_paths(then_state, else_state, at(value));
-        --dynamic_depth;
         instructions.push_back("{\"op\":\"ccontrol_end\"}");
-        return value;
+        tree join = alloc_stmt_list();
+        merge_cpu_versions(incoming, then_state, else_state, after, choice, at(value), &join);
+        --dynamic_depth;
+        cpu_branches.pop_back();
+        tree result = alloc_stmt_list();
+        if (cpu_branches.empty()) {
+            // Evaluate the source condition before any storage operations and
+            // keep its value for joins even if an arm mutates its CPU inputs.
+            append(&result, choice);
+            for (tree call : region.prefix)
+                append(&result, call);
+            instructions.insert(instructions.begin() + position,
+                                region.operations.begin(),
+                                region.operations.end());
+        }
+        append(&result, value);
+        append(&result, join);
+        if (cpu_branches.empty()) {
+            for (unsigned id : region.allocations) {
+                bool represented = false;
+                for (const auto &entry : variables)
+                    represented |=
+                        entry.second.id == id && !entry.second.released && !entry.second.moved;
+                if (!represented)
+                    append(&result,
+                           emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(id) + '}',
+                                          at(value)));
+            }
+            cleanup(&result);
+        }
+        return result;
     }
     if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT || code == LOOP_EXPR) {
         tree condition = code == WHILE_STMT ? WHILE_COND(value)

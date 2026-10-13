@@ -411,10 +411,13 @@ static void documents(validation *v) {
 }
 
 #include "test_coherent_history.inc"
+#include "test_cpu_history.inc"
+#include "test_cpu_owners.inc"
+#include "test_cpu_word_history.inc"
 
 static void rejections(validation *v) {
     const char *bodies[] = {
-        "quant uint8_t x=superposition(0,3);volatile int c=1;if(c)x%=2;measure(x);",
+        "quant uint8_t x=superposition(0,3);volatile int c=1;if(c){quant bool local=false;measure(local);}measure(x);",
         "quant uint8_t x=superposition(0,3);volatile int count=2;while(count--)x%=2;measure(x);",
         "volatile int flag=1;quant bool c=superposition(0,1);quant uint8_t x=superposition(0,3);if(c){if(flag)x%=2;}measure(x);measure(c);",
         "quant bool n=superposition(0,1);quant uint8_t x=(unsigned)n+3;int factor=2;x*=factor;measure(x);measure(n);"};
@@ -432,7 +435,8 @@ static void rejections(validation *v) {
                 compiler, source, "--run", (char *)levels[level], "-o", executable, NULL};
             int status = validation_run(v, command, NULL, 60);
             char *log = validation_read(v->log);
-            const char *diagnostic = i == 3   ? "GCC narrowed a multiplication"
+            const char *diagnostic = i == 0   ? "quantum allocation inside a controlled branch"
+                                     : i == 3 ? "GCC narrowed a multiplication"
                                      : i == 2 ? "classical branch inside quantum control"
                                               : "versioned assignment";
             if (!validation_rejected(status, log, diagnostic))
@@ -444,7 +448,7 @@ static void rejections(validation *v) {
             ++checks;
         }
     puts(
-        "PASS 20 pending-contract diagnostics: CPU joins/iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels");
+        "PASS 20 pending-contract diagnostics: controlled declarations, runtime iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels");
 }
 
 int main(int argc, char **argv) {
@@ -452,12 +456,15 @@ int main(int argc, char **argv) {
         validation_fail("usage: validate_history");
     states();
     lifetimes();
+    cpu_owner_contracts();
     validation v;
     validation_init(&v, argv[0]);
     programs(&v);
     documents(&v);
     coherent_documents(&v);
     coherent_word_documents(&v);
+    cpu_history_documents(&v);
+    cpu_word_history_documents(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

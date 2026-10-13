@@ -176,7 +176,12 @@ int main(int argc, char **argv) {
         return error("cannot locate workspace");
     *slash = 0;
     strcpy(workspace, executable);
-    snprintf(temporary, sizeof temporary, "/tmp/cket-XXXXXX");
+    const char *temporary_root = getenv("TMPDIR");
+    if (!temporary_root || !*temporary_root)
+        temporary_root = "/tmp";
+    int temporary_size = snprintf(temporary, sizeof temporary, "%s/cket-XXXXXX", temporary_root);
+    if (temporary_size < 0 || (size_t)temporary_size >= sizeof temporary)
+        return error("temporary compilation path is too long");
     if (!mkdtemp(temporary))
         return error("cannot create temporary compilation directory");
     atexit(cleanup);
