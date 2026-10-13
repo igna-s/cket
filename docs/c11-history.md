@@ -19,6 +19,10 @@ values or values with live old dependents. Existing safe in-place addition/XOR a
 transformations keep their separate paths. Some Boolean updates use versions even when a smaller
 in-place circuit would be possible; that is an optimization obligation.
 
+[Value-producing updates](c11-effect-values.md) retain old reads across an effect and return the
+appropriate quantum old/new value. Their pending-read protection participates in the same history
+and cleanup rules. Lazy expression effects and general computed measurement operands remain open.
+
 Pure CPU integer inputs specialize the new computation through the binding contract. Its concrete
 definition retains the original values for its inverse. Generic effectful operands still require
 sequenced capture. When GCC has already narrowed a signed multiplication and erased its promoted

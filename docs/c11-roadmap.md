@@ -224,8 +224,8 @@ dependencies, not an invented delivery estimate.
 
 M2 now includes [preserved-input variable shifts](c11-shifts.md) with a table-free barrel network,
 clean private inverse, interval-definedness checks, small complete-state comparisons, wide exports
-and GCC composition tests. This advances one gate; expression-valued effects, general write history,
-all assignments and the rest of M2 remain open.
+and GCC composition tests. This advances one gate; remaining value/effect contexts, general write
+history, all assignments and the rest of M2 remain open.
 
 M2 also includes [pure integer expression synthesis](c11-expressions.md): negation, complement,
 logical short circuiting and conditional selection with branch-local definedness and clean private
@@ -237,19 +237,26 @@ flow.
 M2 now also includes [in-place bit/affine certificates](c11-inplace.md), with zero private qubits,
 proper Boolean truth conversion and an enforced table policy. Its 271 finite checks cover complete
 small states, inverse, C composition and wide generation; three more QuEST states contrast the
-emitted updates. General noninjective history, support extensions, expression-valued effects, all
-assignments and the rest of M2 remain open.
+emitted updates. General noninjective history, support extensions, remaining value/effect contexts,
+all assignments and the rest of M2 remain open.
 
-M2/M3/M4 now include [versioned assignments](c11-history.md). The 809 checks distinguish complete
-phased domains and derived inverses, lifetime/ownership guards, compiled C integrations and specific
-pending-contract diagnostics. Three further table-free QuEST cases contrast derived cleanup, unknown
-retained outputs and CPU snapshot inverses. Four further QuEST cases cover
+M2/M3/M4 now include [versioned assignments](c11-history.md). Its baseline checks distinguish
+complete phased domains and derived inverses, lifetime/ownership guards, compiled C integrations and
+specific pending-contract diagnostics. Three further table-free QuEST cases contrast derived
+cleanup, unknown retained outputs and CPU snapshot inverses. Four further QuEST cases cover
 [coherent joins](c11-control.md), self controls, nesting and CPU predicate snapshots. General CFG
-joins, runtime iterations, general memory, history handles and expression-valued effects remain
-open. [Structured CPU scalar joins](c11-cpu-control.md) add gate-free owner transport and deferred
-cleanup, with 46 engine contracts, 55 C programs, 120 native paths and 240 selected-trace states.
-Three further QuEST cases contrast concrete CPU decisions; unbound CPU templates remain distinct
-from verified circuits.
+joins, runtime iterations, general memory, history handles and remaining value/effect contexts
+remain open. [Structured CPU scalar joins](c11-cpu-control.md) add gate-free owner transport and
+deferred cleanup, with 46 engine contracts, 55 C programs, 120 native paths and 240 selected-trace
+states. Three further QuEST cases contrast concrete CPU decisions; unbound CPU templates remain
+distinct from verified circuits.
+
+M2 also includes [ordered scalar value-producing updates](c11-effect-values.md): assignment values,
+prefix/postfix new/old values and comma ordering, with protected reads and retained versions. Its
+220 additional checks distinguish 120 native results, 60 complete phased states and 40 diagnostics
+at five GCC levels. Three further QuEST fixtures contrast postfix, prefix and comma exports. Lazy
+expression effects, computed measurement operands, effectful function returns, full source-level
+sequencing and the rest of C11 remain P/R; this advances M2 without closing it.
 
 ## Search, external validation and GCC guarantees
 
@@ -280,10 +287,9 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is thirty-seven state cases
-and three sampled channels, not every generated circuit. Extend it to integrated library, memory,
-history and control workloads; state checks alone cannot validate intermediate measurement/reset
-channels.
+comparison, and external simulator comparison. Current QuEST coverage is forty state cases and three
+sampled channels, not every generated circuit. Extend it to integrated library, memory, history and
+control workloads; state checks alone cannot validate intermediate measurement/reset channels.
 
 GCC transformations before `PLUGIN_PRE_GENERICIZE` are currently trusted. Optimization differentials
 and sanitizers are finite evidence, not a compiler correctness proof. Qualification/effect

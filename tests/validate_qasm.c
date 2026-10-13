@@ -88,7 +88,13 @@ static const test_case
              {"CPU condition snapshot trace",
               "int d=1;quant bool n=superposition(0,1),x=!n;if(x)phase(.19);if(d){x+=1;d=0;}else x=false;if(x)phase(.31);measure(x);measure(n);"},
              {"CPU coherent branch trace",
-              "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag){if(c)x=false;else x=true;}else x=!x;if(x)phase(.31);measure(x);measure(c);"}};
+              "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag){if(c)x=false;else x=true;}else x=!x;if(x)phase(.31);measure(x);measure(c);"},
+             {"postfix value retains phased history",
+              "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=x++;if(y)phase(.31);measure(y);measure(x);"},
+             {"prefix value and reversible decrement",
+              "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=--x;if(y)phase(.31);measure(y);measure(x);"},
+             {"comma returns the updated quantum value",
+              "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"}};
 static const test_case channels[] = {
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},

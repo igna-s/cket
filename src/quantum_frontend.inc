@@ -1383,8 +1383,8 @@ tree expand_quantum_program(tree value) {
         TREE_OPERAND(value, 0) = expand_quantum_program(TREE_OPERAND(value, 0));
         if (CONSTANT_CLASS_P(TREE_OPERAND(value, 0)))
             return TREE_OPERAND(value, 0);
-        if (has_quantum(TREE_OPERAND(value, 0)) && quantum_pure_expression(TREE_OPERAND(value, 0)))
-            return TREE_OPERAND(value, 0);
+        // A shared quantum read can precede a later update (notably GCC's
+        // Boolean postfix lowering). Preserve its once-only value snapshot.
         return value;
     }
     if (code == COMPOUND_EXPR) {

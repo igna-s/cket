@@ -414,6 +414,7 @@ static void documents(validation *v) {
 #include "test_cpu_history.inc"
 #include "test_cpu_owners.inc"
 #include "test_cpu_word_history.inc"
+#include "test_effect_values.inc"
 
 static void rejections(validation *v) {
     const char *bodies[] = {
@@ -465,6 +466,9 @@ int main(int argc, char **argv) {
     coherent_word_documents(&v);
     cpu_history_documents(&v);
     cpu_word_history_documents(&v);
+    effect_value_programs(&v);
+    effect_value_states(&v);
+    effect_value_rejections(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

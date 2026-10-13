@@ -79,13 +79,14 @@ The papers retain their distinct historical campaign.
 
 ## Remaining work
 
-Expression-valued assignments, increments with old/new results, sequenced effects, aggregate
-selection and destructive history are pending (**P**). Nonlinear predicates, general correlated
-range reasoning and facts passed through arbitrary derived registers require stronger proof
-machinery (**P**). The tested GCC version and finite optimization corpus do not establish that all
-transformations before the plugin preserve quantum qualification or expose all source-level
-undefined behavior. Signed/unsigned combinations, wider arithmetic workspace and general library
-adapters remain open.
+Ordered scalar assignments, prefix/postfix old/new results and comma effects have an
+[implemented value/history contract](c11-effect-values.md). Effects in lazy expression arms, general
+computed measurement operands and aggregate selection remain pending (**P**). Nonlinear predicates,
+general correlated range reasoning and facts passed through arbitrary derived registers require
+stronger proof machinery (**P**). The tested GCC version and finite optimization corpus do not
+establish that all transformations before the plugin preserve quantum qualification or expose all
+source-level undefined behavior. Signed/unsigned combinations, wider arithmetic workspace and
+general library adapters remain open.
 
 Discarding distinguishable quantum values without retained information or an explicit channel is an
 incompatible context (**S**). That does not make C assignment, logical operators or conditional

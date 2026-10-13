@@ -112,10 +112,10 @@ their separate historical evaluation.
 ## Remaining coverage
 
 General nonlinear injective functions, variable quantum/CPU factors, full dynamic indexed updates,
-all signed range correlations, expression-valued assignments and increments, and general
-retained-history transformations remain **P**. Unconditional scalar history is partial; coherent
-joins and runtime iterations still require implementation. Wider representations and
-proof/gate/storage budgets are **P/R**. The rejection of a noninjective full-space map does not rule
-out a proven support extension. Erasing distinguishable inputs without retained information or an
-explicit channel is an incompatible context (**S**), not a reason to remove C assignment or a whole
-library family from the final objective.
+all signed range correlations, remaining expression effect contexts, and general retained-history
+transformations remain **P**. Unconditional scalar history is partial; coherent joins and runtime
+iterations still require implementation. Wider representations and proof/gate/storage budgets are
+**P/R**. The rejection of a noninjective full-space map does not rule out a proven support
+extension. Erasing distinguishable inputs without retained information or an explicit channel is an
+incompatible context (**S**), not a reason to remove C assignment or a whole library family from the
+final objective.

@@ -397,6 +397,7 @@ void finish_function(void *event, void *) {
         return;
     }
     DECL_SAVED_TREE(fn) = expand_quantum_program(DECL_SAVED_TREE(fn));
+    DECL_SAVED_TREE(fn) = normalize_quantum_saves(DECL_SAVED_TREE(fn));
     walk_tree_without_duplicates(&DECL_SAVED_TREE(fn), discover_declarations, nullptr);
     bool has_quantum = false;
     for (const auto &item : variables)
@@ -406,10 +407,12 @@ void finish_function(void *event, void *) {
     remaining.clear();
     counted_saves.clear();
     expression_saves.clear();
+    expression_frames.clear();
     cpu_parameter_ids.clear();
     cpu_parameter_values.clear();
     active_cpu_parameters.clear();
     coherent_expression_depth = 0;
+    lazy_effect_depth = 0;
     controls.clear();
     dynamic_depth = 0;
     cpu_branches.clear();
@@ -443,6 +446,7 @@ void finish_function(void *event, void *) {
     // Per-call analysis is discarded; saved function templates are explicitly
     // marked through PLUGIN_GGC_MARKING. The emitted IR contains no GCC trees.
     variables.clear();
+    quantum_snapshot_updates.clear();
     quantum_products.clear();
     quantum_division_products.clear();
     quantum_references.clear();
@@ -453,11 +457,13 @@ void finish_function(void *event, void *) {
     expanded_product_leaves = 0;
     counted_saves.clear();
     expression_saves.clear();
+    expression_frames.clear();
     cpu_parameter_ids.clear();
     cpu_parameter_values.clear();
     active_cpu_parameters.clear();
     cpu_library_saves.clear();
     coherent_expression_depth = 0;
+    lazy_effect_depth = 0;
     prepare_fn = measure_fn = NULL_TREE;
     apply_fn = apply_arg_fn = NULL_TREE;
     apply_values_fn = NULL_TREE;

@@ -13,6 +13,16 @@ std::vector<tree> cpu_parameter_values;
 std::set<unsigned> active_cpu_parameters;
 std::set<tree> cpu_library_saves;
 unsigned coherent_expression_depth = 0;
+unsigned lazy_effect_depth = 0;
+
+// Reads already serialized for a value must survive any later effect in that
+// expression. They borrow the old owner until the consuming circuit is emitted.
+struct ExpressionFrame {
+    tree *prefix;
+    std::set<unsigned> reads;
+};
+
+std::vector<ExpressionFrame *> expression_frames;
 std::vector<std::pair<unsigned, unsigned>> controls;
 unsigned dynamic_depth = 0;
 
@@ -286,6 +296,125 @@ std::string register_expression(const Variable &var) {
            (var.basis_known ? ",\"known\":" + std::to_string(var.lower) : "") + '}';
 }
 
+struct QuantumAccesses {
+    std::set<tree> reads, writes;
+};
+
+std::map<tree, std::set<tree>> quantum_snapshot_updates;
+
+QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
+    QuantumAccesses result;
+    std::vector<tree> pending{value};
+    std::set<tree> visited;
+    while (!pending.empty()) {
+        tree current = pending.back();
+        pending.pop_back();
+        if (!current || !visited.insert(current).second)
+            continue;
+        if (quantum(current)) {
+            result.reads.insert(current);
+            continue;
+        }
+        if (DECL_P(current) || TYPE_P(current) || !EXPR_P(current))
+            continue;
+        auto code = TREE_CODE(current);
+        if (sequencing && code == SAVE_EXPR) {
+            auto saved = quantum_snapshot_updates.find(current);
+            if (saved != quantum_snapshot_updates.end())
+                result.writes.insert(saved->second.begin(), saved->second.end());
+        }
+        bool update = code == MODIFY_EXPR || code == INIT_EXPR || code == PREINCREMENT_EXPR ||
+                      code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
+                      code == POSTDECREMENT_EXPR;
+        tree target = update ? strip(TREE_OPERAND(current, 0)) : NULL_TREE;
+        if (target && quantum(target))
+            result.writes.insert(target);
+        for (int i = 0; i < TREE_OPERAND_LENGTH(current); ++i) {
+            // Assignment's lvalue occurrence is not a value read. Its RHS
+            // contains the actual read for compound assignments.
+            if (!i && (code == MODIFY_EXPR || code == INIT_EXPR) && quantum(target))
+                continue;
+            pending.push_back(TREE_OPERAND(current, i));
+        }
+    }
+    return result;
+}
+
+bool conflicting_accesses(const QuantumAccesses &a, const QuantumAccesses &b) {
+    for (tree target : a.writes)
+        if (b.writes.count(target) || b.reads.count(target))
+            return true;
+    for (tree target : b.writes)
+        if (a.reads.count(target))
+            return true;
+    return false;
+}
+
+tree collect_quantum_snapshots(tree *node, int *walk, void *data) {
+    auto &saved = *static_cast<std::set<tree> *>(data);
+    if (DECL_P(*node) || TYPE_P(*node)) {
+        *walk = 0;
+        return NULL_TREE;
+    }
+    if (TREE_CODE(*node) == DECL_EXPR) {
+        *walk = 0;
+        tree decl = DECL_EXPR_DECL(*node);
+        if (DECL_INITIAL(decl))
+            walk_tree(&DECL_INITIAL(decl), collect_quantum_snapshots, data, nullptr);
+        return NULL_TREE;
+    }
+    if (TREE_CODE(*node) == COMPOUND_EXPR) {
+        auto writes = quantum_accesses(TREE_OPERAND(*node, 0)).writes;
+
+        struct Search {
+            std::set<tree> &saved;
+            const std::set<tree> &writes;
+        } search{saved, writes};
+
+        auto find_saved = [](tree *candidate, int *descend, void *context) -> tree {
+            auto &search = *static_cast<Search *>(context);
+            if (DECL_P(*candidate) || TYPE_P(*candidate))
+                *descend = 0;
+            if (TREE_CODE(*candidate) == SAVE_EXPR) {
+                auto reads = quantum_accesses(TREE_OPERAND(*candidate, 0)).reads;
+                for (tree source : reads)
+                    if (search.writes.count(source)) {
+                        search.saved.insert(*candidate);
+                        quantum_snapshot_updates[*candidate].insert(source);
+                    }
+            }
+            return NULL_TREE;
+        };
+        tree right = TREE_OPERAND(*node, 1);
+        walk_tree(&right, find_saved, &search, nullptr);
+    }
+    return NULL_TREE;
+}
+
+tree normalize_quantum_save(tree *node, int *walk, void *data) {
+    if (DECL_P(*node) || TYPE_P(*node))
+        *walk = 0;
+    if (TREE_CODE(*node) == DECL_EXPR) {
+        *walk = 0;
+        tree decl = DECL_EXPR_DECL(*node);
+        if (DECL_INITIAL(decl))
+            walk_tree(&DECL_INITIAL(decl), normalize_quantum_save, data, nullptr);
+        return NULL_TREE;
+    }
+    if (TREE_CODE(*node) == SAVE_EXPR && !static_cast<std::set<tree> *>(data)->count(*node) &&
+        has_quantum(TREE_OPERAND(*node, 0)) && quantum_pure_expression(TREE_OPERAND(*node, 0)))
+        *node = TREE_OPERAND(*node, 0);
+    return NULL_TREE;
+}
+
+tree normalize_quantum_saves(tree value) {
+    std::set<tree> snapshots;
+    quantum_snapshot_updates.clear();
+    walk_tree(&value, collect_quantum_snapshots, &snapshots, nullptr);
+    walk_tree(&value, normalize_quantum_save, &snapshots, nullptr);
+    return value;
+}
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
@@ -341,6 +470,9 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             cached = expression_saves.emplace(value, saved).first;
         }
         deps.insert(cached->second.sources.begin(), cached->second.sources.end());
+        if (!expression_frames.empty())
+            expression_frames.back()->reads.insert(cached->second.sources.begin(),
+                                                   cached->second.sources.end());
         active_cpu_parameters.insert(cached->second.parameters.begin(),
                                      cached->second.parameters.end());
         return cached->second.text;
@@ -361,10 +493,38 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         auto &var = variables.at(value);
         consume(var);
         deps.insert(var.id);
+        if (!expression_frames.empty())
+            expression_frames.back()->reads.insert(var.id);
         if (!var.lowered || var.released || var.moved)
             error_at(at(value), "|c>: use of unavailable, released or moved quantum storage");
         // Range information is valid only until an update/measurement invalidates it.
         return register_expression(var);
+    }
+    bool increment = code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
+                     code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR;
+    if ((increment || code == MODIFY_EXPR || code == INIT_EXPR) &&
+        quantum(strip(TREE_OPERAND(value, 0)))) {
+        if (expression_frames.empty() || lazy_effect_depth) {
+            error_at(
+                at(value),
+                "|c>: quantum value effects need an ordered consumer; effects in lazy expression arms are pending");
+            return "{}";
+        }
+        tree target = strip(TREE_OPERAND(value, 0));
+        bool postfix = code == POSTINCREMENT_EXPR || code == POSTDECREMENT_EXPR;
+        // The expression result is an additional read absent from the lvalue
+        // occurrence counted in GCC's tree. Postfix freezes that read first.
+        ++remaining[variables.at(target).id];
+        std::string result;
+        if (postfix)
+            result = expression(target, deps);
+        std::set<unsigned> parameters;
+        parameters.swap(active_cpu_parameters);
+        append(expression_frames.back()->prefix, lower_node(value));
+        active_cpu_parameters.insert(parameters.begin(), parameters.end());
+        if (!postfix)
+            result = expression(target, deps);
+        return result;
     }
     if (code == ABSU_EXPR) {
         // GCC uses this distinct unsigned-result operation when a promoted
@@ -387,6 +547,15 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         input = "{\"op\":\"cast\"" + type + ",\"args\":[" + input + "]}";
         std::string result = "{\"op\":\"abs\"" + type + ",\"args\":[" + input + "]}";
         return "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + result + "]}";
+    }
+    if ((TREE_CODE_CLASS(code) == tcc_binary || TREE_CODE_CLASS(code) == tcc_comparison) &&
+        code != TRUTH_ANDIF_EXPR && code != TRUTH_ORIF_EXPR && code != COMPOUND_EXPR) {
+        if (conflicting_accesses(quantum_accesses(TREE_OPERAND(value, 0), true),
+                                 quantum_accesses(TREE_OPERAND(value, 1), true))) {
+            error_at(at(value),
+                     "|c>: unsequenced quantum modification and access have no defined C11 result");
+            return "{}";
+        }
     }
     const char *op = nullptr;
     int arity = 2;
@@ -513,15 +682,27 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     for (int i = 0; i < arity; ++i) {
         if (i)
             result += ',';
-        bool coherent_arm =
-            i && ((code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
-                   code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR) &&
-                  has_quantum(TREE_OPERAND(value, 0)));
+        bool lazy_arm =
+            i && (code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
+                  code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR);
+        bool coherent_arm = lazy_arm && has_quantum(TREE_OPERAND(value, 0));
+        // Until conditional effect scheduling is implemented, reject effects
+        // in either classical or coherent lazy arms rather than executing both.
         coherent_expression_depth += coherent_arm;
+        lazy_effect_depth += lazy_arm;
         result += expression(TREE_OPERAND(value, i), deps);
+        lazy_effect_depth -= lazy_arm;
         coherent_expression_depth -= coherent_arm;
     }
     return result + "]}";
+}
+
+std::string evaluate_expression(tree value, std::set<unsigned> &deps, tree *prefix) {
+    ExpressionFrame frame{prefix, {}};
+    expression_frames.push_back(&frame);
+    std::string result = expression(value, deps);
+    expression_frames.pop_back();
+    return result;
 }
 
 std::string inverse_operation(unsigned id, const std::string &expression) {
@@ -537,6 +718,9 @@ std::string cast_result(std::string expr, Variable &var) {
 }
 
 bool dependent(unsigned id) {
+    for (const auto *frame : expression_frames)
+        if (frame->reads.count(id))
+            return true;
     for (auto &entry : variables) {
         auto &var = entry.second;
         if (var.lowered && var.derived && !var.released &&
@@ -554,6 +738,11 @@ void cleanup(tree *list) {
         changed = false;
         for (auto &entry : variables) {
             auto &var = entry.second;
+            bool borrowed = false;
+            for (const auto *frame : expression_frames)
+                borrowed |= frame->reads.count(var.id) != 0;
+            if (borrowed)
+                continue;
             if (var.lowered && var.optional_definition && !var.released && !var.moved &&
                 !var.measured && !var.pending_destruction && !remaining[var.id]) {
                 append(list,
@@ -1047,7 +1236,8 @@ tree lower_quantum_decl(Variable &var) {
                           at(var.decl)));
     var.lowered = true;
     if (var.expression_init) {
-        var.creation = cast_result(expression(var.original_init, var.dependencies), var);
+        var.creation =
+            cast_result(evaluate_expression(var.original_init, var.dependencies, &list), var);
         if (var.dependencies.empty())
             error_at(
                 at(var.decl),
@@ -1382,7 +1572,7 @@ tree lower_node(tree value) {
         tree list = alloc_stmt_list();
         std::set<unsigned> deps;
         std::string predicate = "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[" +
-                                expression(TREE_OPERAND(value, 0), deps) + "]}";
+                                evaluate_expression(TREE_OPERAND(value, 0), deps, &list) + "]}";
         predicate = select_controls(predicate,
                                     "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}",
                                     1,
@@ -1581,7 +1771,7 @@ tree lower_node(tree value) {
             (lossy_assignment(rhs, var.width) &&
              (!var.clean || references_storage(rhs, var.decl)))) {
             std::set<unsigned> deps;
-            std::string expr = cast_result(expression(rhs, deps), var);
+            std::string expr = cast_result(evaluate_expression(rhs, deps, &list), var);
             versioned_assignment(var, expr, deps, at(value), &list);
             return list;
         }
@@ -1605,7 +1795,7 @@ tree lower_node(tree value) {
             consume(var);
             if (has_quantum(xor_operand)) {
                 std::set<unsigned> deps;
-                std::string expr = cast_result(expression(xor_operand, deps), var);
+                std::string expr = cast_result(evaluate_expression(xor_operand, deps, &list), var);
                 if (deps.count(var.id)) {
                     error_at(at(value),
                              "|c>: XOR operand cannot depend on the overwritten register");
@@ -1686,7 +1876,7 @@ tree lower_node(tree value) {
                                       argument));
         } else {
             std::set<unsigned> deps;
-            std::string expr = cast_result(expression(rhs, deps), var);
+            std::string expr = cast_result(evaluate_expression(rhs, deps, &list), var);
             if (var.clean && !var.derived && !deps.count(var.id) && controls.empty() &&
                 !dynamic_depth) {
                 var.derived = true;

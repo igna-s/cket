@@ -498,21 +498,24 @@ PASS 110 coherent C complete states: one/two arms, self controls, nesting, CPU s
 PASS 30 coherent word states: signed/unsigned eight-bit outputs, known-basis history restoration and fixed pointer/array aliases at five GCC levels with both synthesis policies
 PASS CPU history: 40 C programs, 90 native paths and 180 complete selected-trace states; five GCC levels and both synthesis policies
 PASS CPU word history: 15 C programs, 30 native paths and 60 complete selected-trace states; known-basis eight-bit words, scalar/array/parameter aliases, five GCC levels and both synthesis policies
+PASS 120 native quantum effect values: prefix/postfix, all assignment forms, comma and fixed aliases at five GCC levels
+PASS 60 quantum effect complete states: old/new values, correlations, relative phase, history and zero private garbage; five GCC levels and both synthesis policies
+PASS 40 quantum effect diagnostics: undefined unsequenced accesses, pending lazy effects and expression measurement at five GCC levels
 PASS 20 pending-contract diagnostics: controlled declarations, runtime iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels
-809 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
-Built /tmp/tmp.yMSyjCpzil/quantum
+1029 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
+Built /tmp/tmp.DAIlqdKfp8/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.yMSyjCpzil/quantum
+Built /tmp/tmp.DAIlqdKfp8/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.yMSyjCpzil/quantum
+Built /tmp/tmp.DAIlqdKfp8/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.yMSyjCpzil/quantum
+Built /tmp/tmp.DAIlqdKfp8/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.yMSyjCpzil/quantum
+Built /tmp/tmp.DAIlqdKfp8/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -714,10 +717,13 @@ PASS independent QASM state and probabilities: coherent CPU predicate snapshot i
 PASS independent QASM state and probabilities: CPU two-arm assignment trace (4 qubits)
 PASS independent QASM state and probabilities: CPU condition snapshot trace (7 qubits)
 PASS independent QASM state and probabilities: CPU coherent branch trace (7 qubits)
+PASS independent QASM state and probabilities: postfix value retains phased history (5 qubits)
+PASS independent QASM state and probabilities: prefix value and reversible decrement (3 qubits)
+PASS independent QASM state and probabilities: comma returns the updated quantum value (6 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-40 exported circuits independently validated with QuEST 3.7.0 (C): 37 states, 3 channels; table-free export
+43 exported circuits independently validated with QuEST 3.7.0 (C): 40 states, 3 channels; table-free export
 PASS signed structured mul: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured div: joint amplitudes, C rounding, inverse and zero garbage
 PASS signed structured mod: joint amplitudes, C rounding, inverse and zero garbage
@@ -1179,8 +1185,11 @@ PASS 110 coherent C complete states: one/two arms, self controls, nesting, CPU s
 PASS 30 coherent word states: signed/unsigned eight-bit outputs, known-basis history restoration and fixed pointer/array aliases at five GCC levels with both synthesis policies
 PASS CPU history: 40 C programs, 90 native paths and 180 complete selected-trace states; five GCC levels and both synthesis policies
 PASS CPU word history: 15 C programs, 30 native paths and 60 complete selected-trace states; known-basis eight-bit words, scalar/array/parameter aliases, five GCC levels and both synthesis policies
+PASS 120 native quantum effect values: prefix/postfix, all assignment forms, comma and fixed aliases at five GCC levels
+PASS 60 quantum effect complete states: old/new values, correlations, relative phase, history and zero private garbage; five GCC levels and both synthesis policies
+PASS 40 quantum effect diagnostics: undefined unsequenced accesses, pending lazy effects and expression measurement at five GCC levels
 PASS 20 pending-contract diagnostics: controlled declarations, runtime iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels
-809 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
+1029 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.
 PASS example hello             : five GCC levels, runtime contract and exports
 PASS example entanglement      : five GCC levels, runtime contract and exports
 PASS example find              : five GCC levels, runtime contract and exports
@@ -1219,19 +1228,19 @@ PASS example search_constraints: five GCC levels, runtime contract and exports
 PASS example coherent_accumulate: five GCC levels, runtime contract and exports
 
 1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
-Built /tmp/tmp.V7MTTL93TM/quantum
+Built /tmp/tmp.SQ1Dz1QaRw/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.V7MTTL93TM/quantum
+Built /tmp/tmp.SQ1Dz1QaRw/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.V7MTTL93TM/quantum
+Built /tmp/tmp.SQ1Dz1QaRw/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.V7MTTL93TM/quantum
+Built /tmp/tmp.SQ1Dz1QaRw/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
-Built /tmp/tmp.V7MTTL93TM/quantum
+Built /tmp/tmp.SQ1Dz1QaRw/quantum
 Execution backend: linked native C statevector motor
 PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
 5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
@@ -1433,8 +1442,11 @@ PASS independent QASM state and probabilities: coherent CPU predicate snapshot i
 PASS independent QASM state and probabilities: CPU two-arm assignment trace (4 qubits)
 PASS independent QASM state and probabilities: CPU condition snapshot trace (7 qubits)
 PASS independent QASM state and probabilities: CPU coherent branch trace (7 qubits)
+PASS independent QASM state and probabilities: postfix value retains phased history (5 qubits)
+PASS independent QASM state and probabilities: prefix value and reversible decrement (3 qubits)
+PASS independent QASM state and probabilities: comma returns the updated quantum value (6 qubits)
 PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
 PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
 PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
-40 exported circuits independently validated with QuEST 3.7.0 (C): 37 states, 3 channels; table-free export
+43 exported circuits independently validated with QuEST 3.7.0 (C): 40 states, 3 channels; table-free export
 All compiler, runtime, example, synthesis and independent QASM checks passed.
