@@ -151,10 +151,10 @@ static void effect_value_rejections(validation *v) {
         "quant bool x=false;quant bool y=x+++x;measure(y);measure(x);",
         "quant bool x=false;quant bool y=x+++x++;measure(y);measure(x);",
         "quant bool x=false;quant bool y=x++==x;measure(y);measure(x);",
-        "quant bool c=superposition(0,1);quant bool x=false;quant bool y=c?x++:x;measure(y);measure(x);measure(c);",
-        "quant bool c=superposition(0,1);quant bool x=false;quant bool y=c&&x++;measure(y);measure(x);measure(c);",
-        "quant bool c=superposition(0,1);quant bool x=false;quant bool y=c||x++;measure(y);measure(x);measure(c);",
-        "int flag=1;quant bool x=false;quant bool y=flag?x++:x;measure(y);measure(x);",
+        "int n=0;quant bool c=superposition(0,1);quant bool x=false;quant bool y=c?(n++,x++):x;measure(y);measure(x);measure(c);",
+        "int n=0;quant bool c=superposition(0,1);quant bool x=false;quant bool y=c&&(n++,x++);measure(y);measure(x);measure(c);",
+        "int n=0;quant bool c=superposition(0,1);quant bool x=false;quant bool y=c||(n++,x++);measure(y);measure(x);measure(c);",
+        "int flag=1;quant bool x=false;quant bool y=flag++?x++:x;measure(y);measure(x);",
         "quant bool x=false;unsigned value=measure(3);measure(x);return value;"};
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
     unsigned count = 0;
@@ -173,10 +173,10 @@ static void effect_value_rejections(validation *v) {
                 compiler, source, "--run", (char *)levels[level], "-o", executable, NULL};
             int status = validation_run(v, command, NULL, 60);
             char *log = validation_read(v->log);
-            const char *diagnostic = profile < 3 ? "unsequenced quantum modification"
-                                     : profile == 7
-                                         ? "measurement requires a quantum integer expression"
-                                         : "effects in lazy expression arms are pending";
+            const char *diagnostic =
+                profile < 3    ? "unsequenced quantum modification"
+                : profile == 7 ? "measurement requires a quantum integer expression"
+                               : "CPU effects in quantum expressions require once-only capture";
             if (!validation_rejected(status, log, diagnostic))
                 validation_fail("quantum effect diagnostic failed case=%u level=%s\n%s",
                                 profile,
@@ -187,6 +187,6 @@ static void effect_value_rejections(validation *v) {
         }
     checks += count;
     printf(
-        "PASS %u quantum effect diagnostics: undefined unsequenced accesses, pending lazy effects and classical-only measurement at five GCC levels\n",
+        "PASS %u quantum effect diagnostics: undefined unsequenced accesses, pending CPU effects and classical-only measurement at five GCC levels\n",
         count);
 }

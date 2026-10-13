@@ -167,13 +167,13 @@ static void observation_diagnostics(validation *v) {
     const char *bodies[] = {
         "quant bool x=false;measure((double)x);measure(x);",
         "quant bool x=false;measure((long double)x);measure(x);",
-        "quant bool x=false;int flag=0;measure(flag?x++:x);measure(x);",
+        "quant bool x=false;int flag=0;measure(flag++?x++:x);measure(x);",
         "quant bool x=false;measure(x+++x);measure(x);",
         "quant bool c=superposition(0,1),x=false;if(c)measure(!x);measure(x);measure(c);",
         "quant bool x=false;unsigned n=measure(3);measure(x);return n;"};
     const char *messages[] = {"other encodings are pending",
                               "other encodings are pending",
-                              "effects in lazy expression arms are pending",
+                              "CPU effects in quantum expressions require once-only capture",
                               "unsequenced quantum modification",
                               "measurement/reset requires explicit classical control",
                               "measurement requires a quantum integer expression"};

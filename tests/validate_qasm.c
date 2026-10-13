@@ -94,7 +94,13 @@ static const test_case
              {"prefix value and reversible decrement",
               "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=--x;if(y)phase(.31);measure(y);measure(x);"},
              {"comma returns the updated quantum value",
-              "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"}};
+              "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"},
+             {"lazy conditional selected updates and phases",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?x++:x--;if(y)phase(.37);measure(y);measure(x);measure(c);"},
+             {"nested logical AND and OR selected updates",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c&&(x||x++);if(y)phase(.37);measure(y);measure(x);measure(c);"},
+             {"lazy self condition retains its original decision",
+              "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?c++:c--;if(y)phase(.37);measure(y);measure(x);measure(c);"}};
 static const test_case channels[] = {
     {"logical value observation preserves fiber coherence",
      "quant bool a=superposition(0,1),b=superposition(0,1);if(a)phase(.19);if(b)phase(.37);measure(a||b);fourier(a);fourier(b);measure(a);measure(b);"},

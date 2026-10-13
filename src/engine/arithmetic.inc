@@ -208,6 +208,77 @@ static int ar_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wanted)
     return 1;
 }
 
+static int ar_register_boolean_constant(ar_builder *p, uint32_t id, int *value, unsigned depth);
+
+/* Certify a fixed truth value without evaluating the statevector. Definitions
+ * remain conditional on every recorded input epoch, even for constants. */
+static int ar_boolean_constant(ar_builder *p, const cj_doc *d, int e, int *value, unsigned depth) {
+    if (depth > 128 || ++p->work > QC_ARITH_WORK)
+        return qc_fail(p->c, "Boolean constant proof work/depth budget exceeded");
+    int op = cj_get(d, e, "op"), nodes[3];
+    unsigned n = expr_nodes(d, e, nodes);
+    uint64_t width, raw;
+    if (!cj_u64(d, cj_get(d, e, "bits"), &width))
+        return 0;
+    if (cj_equal(d, op, "const") && cj_u64(d, cj_get(d, e, "value"), &raw)) {
+        *value = (raw & bits_mask((unsigned)width)) != 0;
+        return 1;
+    }
+    if (cj_equal(d, op, "reg") && width == 1 && cj_u64(d, cj_get(d, e, "id"), &raw))
+        return ar_register_boolean_constant(p, (uint32_t)raw, value, depth + 1);
+    if (cj_equal(d, op, "cast") && n == 1) {
+        uint64_t from;
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &from) || (width != 1 && width < from))
+            return 0;
+        return ar_boolean_constant(p, d, nodes[0], value, depth + 1);
+    }
+    if ((cj_equal(d, op, "not") || (cj_equal(d, op, "bnot") && width == 1)) && n == 1) {
+        if (!ar_boolean_constant(p, d, nodes[0], value, depth + 1))
+            return 0;
+        *value ^= 1;
+        return 1;
+    }
+    if (cj_equal(d, op, "select") && n == 3) {
+        int decision;
+        if (!ar_boolean_constant(p, d, nodes[0], &decision, depth + 1))
+            return 0;
+        return ar_boolean_constant(p, d, nodes[decision ? 1 : 2], value, depth + 1);
+    }
+    uint32_t source;
+    int inverted = 0;
+    if (!ar_boolean_alias(p, d, e, &source, &inverted, depth + 1))
+        return 0;
+    qc_register *original = reg(p->c, source);
+    if (!original || !original->basis_known)
+        return 0;
+    *value = (original->basis_value != 0) ^ inverted;
+    return 1;
+}
+
+static int ar_register_boolean_constant(ar_builder *p, uint32_t id, int *value, unsigned depth) {
+    if (depth > 128 || ++p->work > QC_ARITH_WORK)
+        return qc_fail(p->c, "Boolean constant proof work/depth budget exceeded");
+    qc_register *r = reg(p->c, id);
+    if (!r || !r->alive || !r->prepared || r->width != 1)
+        return 0;
+    if (r->basis_known) {
+        *value = r->basis_value != 0;
+        return 1;
+    }
+    if (!r->definition || r->definition_mask)
+        return 0;
+    for (unsigned j = 0; j < r->ndeps; ++j) {
+        qc_register *input = reg(p->c, r->deps[j]);
+        if (!input || !input->alive || input->epoch != r->epochs[j])
+            return 0;
+    }
+    cj_doc local = {0};
+    const cj_doc *saved = parsed_operation(p->c, r->definition, &local);
+    int found = saved && ar_boolean_constant(p, saved, 0, value, depth + 1);
+    cj_free(&local);
+    return found;
+}
+
 static int ar_zero_constant(ar_builder *p, int e) {
     uint64_t value, width;
     return cj_equal(p->d, cj_get(p->d, e, "op"), "const") &&
@@ -364,6 +435,11 @@ static int ar_bound(ar_builder *p, int e, unsigned depth) {
                 r->lo = 0;
                 r->hi = (__int128)(bits_mask(s->width) & ~s->zero_mask);
             }
+            int fixed;
+            if (s->width == 1 && ar_register_boolean_constant(p, s->id, &fixed, 0))
+                r->lo = r->hi = numeric((uint64_t)fixed, 1, r->sign);
+            if (*p->c->error)
+                return 0;
         }
     } else {
         if (!n)

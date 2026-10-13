@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 299,
+  "checks": 301,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -548,6 +548,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-lazy-values.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/c11-library.json",
       "passed": true,
       "detail": ""
@@ -1053,6 +1058,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/test_lazy_values.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/test_library.inc",
       "passed": true,
       "detail": ""
@@ -1504,9 +1514,9 @@
     }
   ],
   "audit_checkout": {
-    "head": "8d7d641e64c12ed3d941b3a2c29f744ef43b70ab",
+    "head": "bdb0dfcc2a81d61c1ee6eed236305403655a7e9e",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 137
+    "source_files_in_manifest": 139
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required."

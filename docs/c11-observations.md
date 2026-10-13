@@ -56,9 +56,12 @@ range solver or a promise of minimum qubits.
 Physical storage, retained histories, synthesis workspace and the native simulator's 24-qubit limit
 remain explicit resource requirements R. Large circuits generated within the backend's 128-qubit
 limit are distinct from complete-state validation. Floating/complex measurement, general computed
-dynamic-index reads, effects in lazy expression arms, coherent measurement control and general
+dynamic-index reads, mixed CPU effects in lazy arms, coherent measurement control and general
 function/CFG lifetimes remain P/R. Source borrows require the existing mutable capability; arbitrary
 classical operands do not become quantum states through `measure`.
+
+Supported scalar effects in lazy arms follow the [saved-decision contract](c11-lazy-values.md),
+including their use in explicit integer observations.
 
 ## Finite evidence
 

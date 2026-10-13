@@ -663,11 +663,17 @@ static int synthesize_compute(
      * on inconsistent rows to extend the value function reversibly; never
      * evaluate C arithmetic on a branch certified unreachable. */
     unsigned alias[QC_MAX_SOURCES];
-    int inverted[QC_MAX_SOURCES];
+    int inverted[QC_MAX_SOURCES], fixed[QC_MAX_SOURCES];
     ar_builder proof = {.c = c, .d = d};
     for (unsigned j = 0; j < dom.count; ++j) {
         alias[j] = j;
         inverted[j] = 0;
+        fixed[j] = -1;
+        int constant;
+        if (ar_register_boolean_constant(&proof, dom.sources[j].id, &constant, 0))
+            fixed[j] = constant;
+        if (*c->error)
+            return 0;
         uint32_t source;
         int polarity = 0;
         if (!ar_register_boolean_alias(&proof, dom.sources[j].id, &source, &polarity, 0)) {
@@ -695,7 +701,8 @@ static int synthesize_compute(
         values(&dom, i, vals);
         int reachable = 1;
         for (unsigned j = 0; j < dom.count; ++j)
-            if (vals[j] != (vals[alias[j]] ^ (uint64_t)inverted[j])) {
+            if ((fixed[j] >= 0 && vals[j] != (uint64_t)fixed[j]) ||
+                vals[j] != (vals[alias[j]] ^ (uint64_t)inverted[j])) {
                 reachable = 0;
                 break;
             }

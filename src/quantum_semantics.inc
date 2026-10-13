@@ -416,6 +416,8 @@ tree normalize_quantum_saves(tree value) {
     return value;
 }
 
+std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps);
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
@@ -506,9 +508,7 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     if ((increment || code == MODIFY_EXPR || code == INIT_EXPR) &&
         quantum(strip(TREE_OPERAND(value, 0)))) {
         if (expression_frames.empty() || lazy_effect_depth) {
-            error_at(
-                at(value),
-                "|c>: quantum value effects need an ordered consumer; effects in lazy expression arms are pending");
+            error_at(at(value), "|c>: quantum value effects require a scheduled ordered consumer");
             return "{}";
         }
         tree target = strip(TREE_OPERAND(value, 0));
@@ -526,6 +526,14 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         if (!postfix)
             result = expression(target, deps);
         return result;
+    }
+    bool lazy = code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
+                code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR;
+    if (lazy && INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+        unsigned arms = code == COND_EXPR ? 3 : 2;
+        for (unsigned i = 1; i < arms; ++i)
+            if (!quantum_accesses(TREE_OPERAND(value, i), true).writes.empty())
+                return lazy_quantum_expression(value, deps);
     }
     if (code == ABSU_EXPR) {
         // GCC uses this distinct unsigned-result operation when a promoted
@@ -687,8 +695,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             i && (code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
                   code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR);
         bool coherent_arm = lazy_arm && has_quantum(TREE_OPERAND(value, 0));
-        // Until conditional effect scheduling is implemented, reject effects
-        // in either classical or coherent lazy arms rather than executing both.
+        // Effectful scalar arms have already used a saved decision above.
+        // Pure arms still keep their arithmetic within the selected branch.
         coherent_expression_depth += coherent_arm;
         lazy_effect_depth += lazy_arm;
         result += expression(TREE_OPERAND(value, i), deps);
@@ -924,6 +932,85 @@ std::string select_controls(std::string value,
                 "]}";
     }
     return value;
+}
+
+// Snapshot a lazy decision before its selected effects. The result uses that
+// same decision even when an arm overwrites the source condition. All storage
+// has an unconditional lifetime; only value transformations are controlled.
+std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
+    if (expression_frames.empty()) {
+        error_at(at(value), "|c>: lazy quantum value effects require an ordered consumer");
+        return "{}";
+    }
+    auto code = TREE_CODE(value);
+    tree *prefix = expression_frames.back()->prefix;
+    std::set<unsigned> previous_parameters, condition_sources;
+    previous_parameters.swap(active_cpu_parameters);
+    std::string predicate = "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[" +
+                            expression(TREE_OPERAND(value, 0), condition_sources) + "]}";
+    predicate = select_controls(predicate,
+                                "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}",
+                                1,
+                                false,
+                                condition_sources);
+    unsigned flag = next_id++;
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    append(prefix,
+           emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(flag) +
+                                ",\"width\":1,\"signed\":false,\"ancilla\":true}",
+                            at(value),
+                            flag,
+                            true));
+    active_cpu_parameters.swap(parameters);
+    append(prefix,
+           emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(flag) +
+                              ",\"expr\":" + predicate + '}',
+                          at(value)));
+    Variable guard{};
+    guard.id = flag;
+    guard.width = 1;
+    guard.range_max = 1;
+    guard.lowered = guard.derived = guard.history = true;
+    guard.optional_definition = !cpu_branches.empty();
+    guard.dependencies = condition_sources;
+    guard.creation = predicate;
+    guard.decl =
+        build_decl(at(value), VAR_DECL, get_identifier("__cket_lazy_guard"), boolean_type_node);
+    variables.emplace(guard.decl, guard);
+    deps.insert(flag);
+    expression_frames.back()->reads.insert(flag);
+    unsigned previous_lazy_depth = lazy_effect_depth;
+    lazy_effect_depth = 0;
+    ++coherent_expression_depth;
+    std::string yes, no;
+    if (code == COND_EXPR) {
+        controls.push_back({flag, 1});
+        yes = expression(TREE_OPERAND(value, 1), deps);
+        controls.back().second = 0;
+        no = expression(TREE_OPERAND(value, 2), deps);
+        controls.pop_back();
+    } else {
+        bool conjunction = code == TRUTH_ANDIF_EXPR || code == TRUTH_AND_EXPR;
+        controls.push_back({flag, conjunction ? 1u : 0u});
+        std::string right = "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[" +
+                            expression(TREE_OPERAND(value, 1), deps) + "]}";
+        controls.pop_back();
+        yes = conjunction ? right : "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":1}";
+        no = conjunction ? "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}" : right;
+    }
+    --coherent_expression_depth;
+    lazy_effect_depth = previous_lazy_depth;
+    active_cpu_parameters.insert(previous_parameters.begin(), previous_parameters.end());
+    append(prefix,
+           emit_cpu_storage(
+               "{\"op\":\"qretain\",\"id\":" + std::to_string(flag) + '}', at(value), flag, false));
+    std::string decision =
+        "{\"op\":\"reg\",\"id\":" + std::to_string(flag) + ",\"bits\":1,\"signed\":false}";
+    yes = "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + yes + "]}";
+    no = "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + no + "]}";
+    return "{\"op\":\"select\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + decision + ',' +
+           yes + ',' + no + "]}";
 }
 
 void versioned_assignment(Variable &var,

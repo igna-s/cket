@@ -53,7 +53,7 @@ The restrictions below remain part of the unfinished objective:
 
 | Class | Remaining restriction                                                                                                | Required work                                                                                             |
 | ----- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| P     | Effects in value-producing conditional selection, logical AND and logical OR are rejected                            | Schedule only selected effects, preserve branch values/history and validate combinations                  |
+| P     | Mixed CPU effects and general products in conditional selection and logical short circuits                           | Extend the [selected scalar contract](c11-lazy-values.md) with effect boundaries, layouts and lifetimes   |
 | P/R   | Floating/complex and general memory measurement operands remain pending                                              | Extend the [integer observation contract](c11-observations.md) with encodings, layouts and lifetime rules |
 | P     | General calls, effectful return templates, dynamic-index value reads and aggregate expression results                | Complete function/CFG and memory contracts                                                                |
 | P     | Arbitrary mixed CPU effects and full source-level sequencing analysis                                                | Capture CPU effects once with their C sequencing; retain information lost before the plugin               |
@@ -72,7 +72,7 @@ claim that GCC exposes every source-level sequencing violation to the plugin.
 values, every assignment form, comma ordering and fixed array/pointer aliases at five GCC
 optimization levels. Complete joint-state comparisons cover Boolean prefix/postfix, assignment and
 comma results, retained history, correlations, relative phase and private workspace, with table
-synthesis enabled and disabled. Negative cases distinguish unsequenced conflicts from pending lazy
+synthesis enabled and disabled. Negative cases distinguish unsequenced conflicts from pending CPU
 effects and classical-only measurement operands. Supported computed integer observations have a
 [separate channel contract](c11-observations.md).
 

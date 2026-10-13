@@ -416,6 +416,7 @@ static void documents(validation *v) {
 #include "test_cpu_word_history.inc"
 #include "test_effect_values.inc"
 #include "test_observations.inc"
+#include "test_lazy_values.inc"
 
 static void rejections(validation *v) {
     const char *bodies[] = {
@@ -460,6 +461,7 @@ int main(int argc, char **argv) {
     lifetimes();
     cpu_owner_contracts();
     observation_channels();
+    lazy_constant_contracts();
     validation v;
     validation_init(&v, argv[0]);
     programs(&v);
@@ -474,6 +476,10 @@ int main(int argc, char **argv) {
     observation_programs(&v);
     compiled_observation_channels(&v);
     observation_diagnostics(&v);
+    lazy_value_programs(&v);
+    lazy_value_combinations(&v);
+    lazy_value_states(&v);
+    lazy_value_rejections(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

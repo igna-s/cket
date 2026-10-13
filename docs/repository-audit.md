@@ -6,7 +6,7 @@ subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y 
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `8d7d641e64c12ed3d941b3a2c29f744ef43b70ab` e incluye cambios locales. El manifiesto
+parte de `bdb0dfcc2a81d61c1ee6eed236305403655a7e9e` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -322,6 +322,21 @@ Markdown. El formateador rechaza pérdida de palabras o contenido de código inl
 regresiones comprueban ese fallo y sus alternativas válidas. La biblioteca completa, las
 representaciones flotantes/complejas y el resto del objetivo siguen pendientes.
 
+## Efectos seleccionados y prueba de predicados constantes
+
+Se extendieron [las expresiones condicionales y lógicas](c11-lazy-values.md) con decisiones
+guardadas, efectos ejecutados en la rama seleccionada y valores C tipados. Las decisiones sobreviven
+a cambios de la condición y se descomputan junto con el historial derivado cuando terminan sus
+dependientes. Los efectos CPU, la memoria general, el ABI y el historial de bucles dinámicos siguen
+pendientes.
+
+Se reprodujo además un rechazo de división por cero en una rama conocida como inactiva: el predicado
+guardado perdía su verdad constante si la fuente original no estaba en el dominio inmediato. Las
+rutas con y sin tablas usan ahora certificados de verdad fija con epochs comprobados. Ocho contratos
+directos contrastan la limpieza, las fases y el rechazo sin mutación para epochs obsoletos o
+definiciones parcialmente controladas. Las 573 comprobaciones adicionales y tres estados QuEST son
+evidencia finita para esta extensión, no cobertura completa de C11.
+
 ## Reproducibilidad y estado de las campañas
 
 La etapa de [expresiones con resultado cuántico](c11-effect-values.md) corrigió ocho rechazos
@@ -334,7 +349,7 @@ representación adelantada de los postfixes booleanos que produce GCC.
 Las 220 comprobaciones nuevas distinguen 120 ejecuciones C, 60 estados conjuntos completos con fase
 e historial y 40 diagnósticos en cinco niveles de optimización. Los estados se contrastan con y sin
 tablas; se verifican los canales explícitos y el workspace privado. Tres fixtures QuEST adicionales
-contrastan las exportaciones de postfix, prefijo y coma. Los efectos en ramas perezosas,
+contrastan las exportaciones de postfix, prefijo y coma. Los efectos CPU en ramas perezosas,
 observaciones generales de memoria/flotantes, retornos con efectos, memoria dinámica y el análisis
 general de secuenciación permanecen pendientes; el avance no completa M2 ni el objetivo de C11.
 
@@ -351,17 +366,17 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **391 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 1759 de historial, 18
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 2332 de historial, 18
 de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 46 casos QASM por configuración**. Incluye las correcciones
+frontend, 24 circuitos de crecimiento y 49 casos QASM por configuración**. Incluye las correcciones
 del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
 expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
 política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
 rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
 los guards puros de UBSan en ramas coherentes y las versiones seleccionadas con predicados
-guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta y seis casos externos
-corresponden a cuarenta estados y seis canales; los once casos del paper siguen identificados como
-evidencia histórica.
+guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta y nueve casos externos
+corresponden a cuarenta y tres estados y seis canales; los once casos del paper siguen identificados
+como evidencia histórica.
 
 ```bash
 export CC=gcc-11 CXX=g++-11
@@ -375,11 +390,11 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-observations-full.log` después de
+`python3 scripts/archive-audit.py --log build/audit/verify-lazy-values-full.log` después de
 reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción
 histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los
 hashes permiten contrastarlo con la revisión que publique esos archivos; no se presenta como
-ejecución de CI. Las 111 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
+ejecución de CI. Las 112 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
 permanecieron iguales al finalizar; también se contrastan con los bytes publicados.
 
 ## Papers y garantías abiertas

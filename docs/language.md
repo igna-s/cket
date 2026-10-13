@@ -95,6 +95,11 @@ Quantum IR. These CPU effects are rejected under coherent quantum control.
 
 ## Control flow and effects
 
+[Selected scalar effects](c11-lazy-values.md) extend conditional expressions and logical short
+circuits with a saved decision, selected updates and retained old values. Nested decisions and
+condition overwrites preserve the selected arm; mixed CPU effects and general ABI/memory lifetimes
+remain pending. Selection and cleanup add no measurement or reset.
+
 Standard [memory-copy adapters](c11-memcopy.md) accept checked fixed integer ranges and constant
 byte counts. Nonidentity destinations need an independent known basis value; translation and XOR
 copying preserve amplitudes and coherent controls. Exact `memmove` aliases are identity, and overlap
