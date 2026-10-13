@@ -45,13 +45,13 @@ compile_circuit(const char *ir, char *error, size_t size, int allow_tables, unsi
                 }
             } else
                 parameters_closed = 1;
-            if (cj_equal(&d, op, "qmeasure") || cj_equal(&d, op, "qreset") ||
-                cj_equal(&d, op, "qfind") || cj_equal(&d, op, "qsearch") ||
-                cj_equal(&d, op, "qindexed") || cj_equal(&d, op, "qphi") ||
-                cj_equal(&d, op, "qdispose") || cj_equal(&d, op, "cloop_begin") ||
-                cj_equal(&d, op, "cloop_end") || cj_equal(&d, op, "ccontrol_begin") ||
-                cj_equal(&d, op, "ccontrol_end") || cj_equal(&d, op, "ccontrol_else") ||
-                cj_bool(&d, cj_get(&d, t, "dynamic"))) {
+            if (cj_equal(&d, op, "qmeasure") || cj_equal(&d, op, "qobserve") ||
+                cj_equal(&d, op, "qreset") || cj_equal(&d, op, "qfind") ||
+                cj_equal(&d, op, "qsearch") || cj_equal(&d, op, "qindexed") ||
+                cj_equal(&d, op, "qphi") || cj_equal(&d, op, "qdispose") ||
+                cj_equal(&d, op, "cloop_begin") || cj_equal(&d, op, "cloop_end") ||
+                cj_equal(&d, op, "ccontrol_begin") || cj_equal(&d, op, "ccontrol_end") ||
+                cj_equal(&d, op, "ccontrol_else") || cj_bool(&d, cj_get(&d, t, "dynamic"))) {
                 ok = qc_fail(
                     c,
                     "compiled unitary modules cannot measure, reset, search or execute CPU feedback");

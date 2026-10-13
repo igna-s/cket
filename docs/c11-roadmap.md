@@ -255,8 +255,15 @@ M2 also includes [ordered scalar value-producing updates](c11-effect-values.md):
 prefix/postfix new/old values and comma ordering, with protected reads and retained versions. Its
 220 additional checks distinguish 120 native results, 60 complete phased states and 40 diagnostics
 at five GCC levels. Three further QuEST fixtures contrast postfix, prefix and comma exports. Lazy
-expression effects, computed measurement operands, effectful function returns, full source-level
+expression effects, general memory/float observations, effectful function returns, full source-level
 sequencing and the rest of C11 remain P/R; this advances M2 without closing it.
+
+M2 now also includes [explicit integer expression observation](c11-observations.md): typed old/new
+results, predicate channels that preserve coherence within fibers, a retained compute inverse and
+clean temporary release. The 730 additional checks distinguish native C, conditional full states,
+lifetime guards and pending contracts. Three further QuEST channel fixtures compare interference and
+postfix ownership. Full source-level GCC value/effect preservation, general memory/float
+observation, lazy effects and the rest of C11 remain open.
 
 ## Search, external validation and GCC guarantees
 
@@ -287,7 +294,7 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is forty state cases and three
+comparison, and external simulator comparison. Current QuEST coverage is forty state cases and six
 sampled channels, not every generated circuit. Extend it to integrated library, memory, history and
 control workloads; state checks alone cannot validate intermediate measurement/reset channels.
 

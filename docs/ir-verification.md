@@ -25,8 +25,8 @@ it. GCC remains the sole C parser.
   result.
 - Controls require available Boolean registers. Contradictory controls and control/target aliases
   are rejected.
-- `qmeasure`, `qreset`, `qprepare`, `qalloc`, `qrelease`, `qretain` and `qhistory_end` do not accept
-  a coherent control field.
+- `qmeasure`, `qobserve`, `qreset`, `qprepare`, `qalloc`, `qrelease`, `qretain` and `qhistory_end`
+  do not accept a coherent control field.
 - Phase angles must be representable finite numbers.
 - Documents check format, version, header fields, and balanced CPU control markers.
 
@@ -163,3 +163,10 @@ Caches do not replace per-call verification. Keys retain the expression, proven 
 representation, and controls; a plan's private workspace must not overlap live registers. The format
 remains version 1 with additional accepted operations; older tools must explicitly reject
 unsupported operations.
+
+`qobserve` shares the measurement fields `op`, `id`, optional `width` and optional `result`. It
+requires a saved computed definition with unchanged live input epochs. It preserves that definition
+through the explicit channel so a following checked inverse can clean the temporary. It is rejected
+in unit-only modules and does not permit coherent controls. Predicate observations preserve
+coherence inside each function fiber; source inputs are not additionally measured or reset. See
+[integer observations](c11-observations.md).

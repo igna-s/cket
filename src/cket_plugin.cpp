@@ -469,6 +469,7 @@ void finish_function(void *event, void *) {
     apply_values_fn = NULL_TREE;
     apply_phase_fn = NULL_TREE;
     apply_index_fn = NULL_TREE;
+    observe_fn = NULL_TREE;
 }
 
 void finish(void *, void *) {

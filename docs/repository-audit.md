@@ -1,12 +1,12 @@
 # Auditoría del repositorio y de los papers
 
-Revisión del 12 de octubre de 2026. El objetivo final es una semántica cuántica explícita para todas
+Revisión del 13 de octubre de 2026. El objetivo final es una semántica cuántica explícita para todas
 las construcciones e interfaces de C11 del perfil declarado. El compilador actual implementa un
 subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y contrasta programas
 finitos; no certifica C11 completo, todas las funciones de libc ni ausencia de cualquier bug.
 
 La referencia histórica del paper es `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. La revisión actual
-parte de `fc7a9de916f377f812b4ffb5709fd77298baccd3` e incluye cambios locales. El manifiesto
+parte de `8d7d641e64c12ed3d941b3a2c29f744ef43b70ab` e incluye cambios locales. El manifiesto
 documental conserva hashes del código actual y distingue esos archivos de los logs históricos. No se
 atribuyen las nuevas pruebas al commit del paper.
 
@@ -39,7 +39,7 @@ signo y la pérdida del signo al estrechar un resultado de valor absoluto; ambos
 
 QuEST contrasta además el valor absoluto con fase relativa y un programa que combina función, array,
 bucle estático y control coherente. La exportación de los casos actuales se realiza con
-`--no-tables`. Se comparan estados y probabilidades completas, salvo una fase global, y tres canales
+`--no-tables`. Se comparan estados y probabilidades completas, salvo una fase global, y seis canales
 con 8192 transcripciones por implementación. El lector externo cubre el subconjunto QASM emitido, no
 todo el lenguaje OpenQASM 3 ni dispositivos físicos.
 
@@ -308,6 +308,20 @@ evitar columnas rotas. Los manuscritos y PDFs conservan su composición auditada
 históricos y dependencias mantienen sus bytes. La guía reproducible está en
 [CONTRIBUTING.md](../CONTRIBUTING.md).
 
+## Observación explícita de expresiones enteras
+
+Se incorporó [medición de expresiones](c11-observations.md) con tipo C conservado, efectos evaluados
+una vez y observación de predicados que preserva coherencia dentro de cada fibra. `qobserve`
+conserva la definición calculada para descomputar y liberar el temporal tras el canal solicitado; no
+mide ni resetea las fuentes para limpiarlas. Los retornos tipados del helper sobreviven a las
+promociones ABI de GCC. Las 730 comprobaciones nuevas y tres canales QuEST distinguen resultados C,
+estados condicionales, inversas, lifetimes y diagnósticos.
+
+También se corrigió una fila cuyo operador OR sin escape hacía perder columnas al formatear
+Markdown. El formateador rechaza pérdida de palabras o contenido de código inline, y tres
+regresiones comprueban ese fallo y sus alternativas válidas. La biblioteca completa, las
+representaciones flotantes/complejas y el resto del objetivo siguen pendientes.
+
 ## Reproducibilidad y estado de las campañas
 
 La etapa de [expresiones con resultado cuántico](c11-effect-values.md) corrigió ocho rechazos
@@ -321,8 +335,8 @@ Las 220 comprobaciones nuevas distinguen 120 ejecuciones C, 60 estados conjuntos
 e historial y 40 diagnósticos en cinco niveles de optimización. Los estados se contrastan con y sin
 tablas; se verifican los canales explícitos y el workspace privado. Tres fixtures QuEST adicionales
 contrastan las exportaciones de postfix, prefijo y coma. Los efectos en ramas perezosas,
-`measure(x++)`, retornos con efectos, memoria dinámica y el análisis general de secuenciación
-permanecen pendientes; el avance no completa M2 ni el objetivo de C11.
+observaciones generales de memoria/flotantes, retornos con efectos, memoria dinámica y el análisis
+general de secuenciación permanecen pendientes; el avance no completa M2 ni el objetivo de C11.
 
 El script `scripts/reproduce-paper-baseline.sh` reconstruyó el código histórico en un directorio
 separado y confirmó 354 pruebas nativas, 426 comprobaciones de 16 ejemplos, 145 compilaciones
@@ -337,16 +351,16 @@ deben leerse junto con sus transcripciones y el manifiesto actual.
 
 La campaña completa terminó sin fallos, normal y con ASan/UBSan: **391 pruebas nativas, 1452
 comprobaciones de 36 ejemplos, 55 checks de desplazamientos, 97 de expresiones, 271 de asignaciones
-reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 1029 de historial, 18
+reversibles, 414 de copias de memoria, 990 de división, 399 de parámetros CPU, 1759 de historial, 18
 de supervisión de validación, cinco comparaciones de integración clásica, 665 compilaciones
-frontend, 24 circuitos de crecimiento y 43 casos QASM por configuración**. Incluye las correcciones
+frontend, 24 circuitos de crecimiento y 46 casos QASM por configuración**. Incluye las correcciones
 del absoluto sin signo y del signo anterior al estrechamiento, la red de desplazamientos variables,
 expresiones condicionales puras, las regresiones de interpretación firmada y suma booleana, y la
 política de tablas para actualizaciones reversibles, los adaptadores de memoria y división, y el
 rechazo de fallos de infraestructura como pruebas negativas, la preparación de productos clásicos y
 los guards puros de UBSan en ramas coherentes y las versiones seleccionadas con predicados
-guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta y tres casos externos
-corresponden a cuarenta estados y tres canales; los once casos del paper siguen identificados como
+guardados, las uniones escalares CPU y la limpieza diferida. Los cuarenta y seis casos externos
+corresponden a cuarenta estados y seis canales; los once casos del paper siguen identificados como
 evidencia histórica.
 
 ```bash
@@ -361,11 +375,11 @@ bash scripts/reproduce-paper-baseline.sh
 
 La transcripción final y el resumen con hashes de las fuentes se conservan en
 [audit-evidence](audit-evidence/README.md). Se pueden archivar otra vez con
-`python3 scripts/archive-audit.py --log build/audit/verify-effect-values-full.log` después de
+`python3 scripts/archive-audit.py --log build/audit/verify-observations-full.log` después de
 reproducir la campaña. El directorio local `build/audit/paper-baseline/` conserva la reconstrucción
 histórica. Los metadatos describen el árbol de trabajo al archivar, antes de su publicación. Los
 hashes permiten contrastarlo con la revisión que publique esos archivos; no se presenta como
-ejecución de CI. Las 109 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
+ejecución de CI. Las 111 fuentes de esta campaña se congelaron antes de ejecutarla y sus hashes
 permanecieron iguales al finalizar; también se contrastan con los bytes publicados.
 
 ## Papers y garantías abiertas

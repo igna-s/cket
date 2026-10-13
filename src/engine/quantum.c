@@ -1823,9 +1823,19 @@ int qc_apply_token(qc_context *c,
         clear_definition(r);
         return 1;
     }
-    if (cj_equal(d, op, "qmeasure")) {
+    if (cj_equal(d, op, "qmeasure") || cj_equal(d, op, "qobserve")) {
+        int observation = cj_equal(d, op, "qobserve");
         if (!r->prepared)
             return qc_fail(c, "measurement requires prepared or computed storage");
+        if (observation) {
+            if (!r->definition)
+                return qc_fail(c, "value observation requires a saved computed definition");
+            for (unsigned j = 0; j < r->ndeps; ++j) {
+                qc_register *source = reg(c, r->deps[j]);
+                if (!source || !source->alive || source->epoch != r->epochs[j])
+                    return qc_fail(c, "value observation requires unchanged live inputs");
+            }
+        }
         qc_mask seen = 0;
         taint_uniform(c, r->id, &seen);
         for (unsigned b = 0; b < r->width; ++b) {
@@ -1835,7 +1845,11 @@ int qc_apply_token(qc_context *c,
                 return 0;
         }
         ++r->epoch;
-        clear_definition(r);
+        // Measuring a computed basis value projects its inputs onto a fiber of
+        // that function. Their basis values remain unchanged, so the recorded
+        // compute inverse can still clean this temporary after qobserve.
+        if (!observation)
+            clear_definition(r);
         return 1;
     }
     if (c->structural && (cj_equal(d, op, "qfind") || cj_equal(d, op, "qsearch"))) {

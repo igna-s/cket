@@ -155,7 +155,7 @@ static void effect_value_rejections(validation *v) {
         "quant bool c=superposition(0,1);quant bool x=false;quant bool y=c&&x++;measure(y);measure(x);measure(c);",
         "quant bool c=superposition(0,1);quant bool x=false;quant bool y=c||x++;measure(y);measure(x);measure(c);",
         "int flag=1;quant bool x=false;quant bool y=flag?x++:x;measure(y);measure(x);",
-        "quant bool x=false;unsigned old=measure(x++);measure(x);return old;"};
+        "quant bool x=false;unsigned value=measure(3);measure(x);return value;"};
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
     unsigned count = 0;
     for (unsigned profile = 0; profile < sizeof bodies / sizeof *bodies; ++profile)
@@ -175,7 +175,7 @@ static void effect_value_rejections(validation *v) {
             char *log = validation_read(v->log);
             const char *diagnostic = profile < 3 ? "unsequenced quantum modification"
                                      : profile == 7
-                                         ? "measurement/reset requires available quantum storage"
+                                         ? "measurement requires a quantum integer expression"
                                          : "effects in lazy expression arms are pending";
             if (!validation_rejected(status, log, diagnostic))
                 validation_fail("quantum effect diagnostic failed case=%u level=%s\n%s",
@@ -187,6 +187,6 @@ static void effect_value_rejections(validation *v) {
         }
     checks += count;
     printf(
-        "PASS %u quantum effect diagnostics: undefined unsequenced accesses, pending lazy effects and expression measurement at five GCC levels\n",
+        "PASS %u quantum effect diagnostics: undefined unsequenced accesses, pending lazy effects and classical-only measurement at five GCC levels\n",
         count);
 }

@@ -17,8 +17,40 @@
 uint64_t superposition(uint64_t lower, uint64_t upper)
     __attribute__((cket_intrinsic("superposition")));
 uint64_t __cket_measure_value(uint64_t value) __attribute__((cket_intrinsic("measure")));
-/* The explicit classical result retains the underlying C integer type. */
-#define measure(value) ((__typeof__(value))__cket_measure_value(value))
+uint64_t __cket_measure_unsupported(uint64_t value)
+    __attribute__((cket_intrinsic("unsupported_measurement")));
+/* Typed returns preserve the representation despite ABI argument promotions.
+ * _Generic and typeof inspect types without evaluating the operand. */
+#define CKET_DECLARE_MEASUREMENT(type, suffix) \
+    type __cket_measure_##suffix(type value) __attribute__((cket_intrinsic("measure")))
+CKET_DECLARE_MEASUREMENT(_Bool, bool);
+CKET_DECLARE_MEASUREMENT(char, char);
+CKET_DECLARE_MEASUREMENT(signed char, schar);
+CKET_DECLARE_MEASUREMENT(unsigned char, uchar);
+CKET_DECLARE_MEASUREMENT(short, short);
+CKET_DECLARE_MEASUREMENT(unsigned short, ushort);
+CKET_DECLARE_MEASUREMENT(int, int);
+CKET_DECLARE_MEASUREMENT(unsigned int, uint);
+CKET_DECLARE_MEASUREMENT(long, long);
+CKET_DECLARE_MEASUREMENT(unsigned long, ulong);
+CKET_DECLARE_MEASUREMENT(long long, llong);
+CKET_DECLARE_MEASUREMENT(unsigned long long, ullong);
+#undef CKET_DECLARE_MEASUREMENT
+#define measure(value)                                    \
+    ((__typeof__(value))_Generic(*(__typeof__(value) *)0, \
+        _Bool: __cket_measure_bool,                       \
+        char: __cket_measure_char,                        \
+        signed char: __cket_measure_schar,                \
+        unsigned char: __cket_measure_uchar,              \
+        short: __cket_measure_short,                      \
+        unsigned short: __cket_measure_ushort,            \
+        int: __cket_measure_int,                          \
+        unsigned int: __cket_measure_uint,                \
+        long: __cket_measure_long,                        \
+        unsigned long: __cket_measure_ulong,              \
+        long long: __cket_measure_llong,                  \
+        unsigned long long: __cket_measure_ullong,        \
+        default: __cket_measure_unsupported)(value))
 void phase_flip(void) __attribute__((cket_intrinsic("phase_flip")));
 void phase(double radians) __attribute__((cket_intrinsic("phase")));
 void fourier(uint64_t value) __attribute__((cket_intrinsic("fourier")));

@@ -51,15 +51,15 @@ evaluation order; this does not give a C result to undefined behavior.
 
 The restrictions below remain part of the unfinished objective:
 
-| Class | Remaining restriction                                                                                                | Required work                                                                                            |
-| ----- | -------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| P     | Effects in value-producing `?:`, `&&` and \`                                                                         |                                                                                                          |
-| P     | `measure(x++)` and general computed measurement operands are rejected                                                | Materialize typed values and define measurement/ownership lifetime without an implicit channel           |
-| P     | General calls, effectful return templates, dynamic-index value reads and aggregate expression results                | Complete function/CFG and memory contracts                                                               |
-| P     | Arbitrary mixed CPU effects and full source-level sequencing analysis                                                | Capture CPU effects once with their C sequencing; retain information lost before the plugin              |
-| P/R   | Runtime loop history and general dynamic memory                                                                      | Bounded ownership/iteration analyses and explicit allocation contracts                                   |
-| R     | Retained versions and synthesis/simulator workspace                                                                  | Report and check existing budgets; exceeding the native simulator is distinct from unsupported semantics |
-| S     | An implicit CPU result from an unmeasured quantum value, or arbitrary coherent erasure without preserved information | Require explicit measurement or a valid information-preserving transformation                            |
+| Class | Remaining restriction                                                                                                | Required work                                                                                             |
+| ----- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| P     | Effects in value-producing conditional selection, logical AND and logical OR are rejected                            | Schedule only selected effects, preserve branch values/history and validate combinations                  |
+| P/R   | Floating/complex and general memory measurement operands remain pending                                              | Extend the [integer observation contract](c11-observations.md) with encodings, layouts and lifetime rules |
+| P     | General calls, effectful return templates, dynamic-index value reads and aggregate expression results                | Complete function/CFG and memory contracts                                                                |
+| P     | Arbitrary mixed CPU effects and full source-level sequencing analysis                                                | Capture CPU effects once with their C sequencing; retain information lost before the plugin               |
+| P/R   | Runtime loop history and general dynamic memory                                                                      | Bounded ownership/iteration analyses and explicit allocation contracts                                    |
+| R     | Retained versions and synthesis/simulator workspace                                                                  | Report and check existing budgets; exceeding the native simulator is distinct from unsupported semantics  |
+| S     | An implicit CPU result from an unmeasured quantum value, or arbitrary coherent erasure without preserved information | Require explicit measurement or a valid information-preserving transformation                             |
 
 The language reference is the
 [WG14 N1570 C11 draft](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf), sections 6.5,
@@ -73,7 +73,8 @@ values, every assignment form, comma ordering and fixed array/pointer aliases at
 optimization levels. Complete joint-state comparisons cover Boolean prefix/postfix, assignment and
 comma results, retained history, correlations, relative phase and private workspace, with table
 synthesis enabled and disabled. Negative cases distinguish unsequenced conflicts from pending lazy
-effects and computed measurement operands.
+effects and classical-only measurement operands. Supported computed integer observations have a
+[separate channel contract](c11-observations.md).
 
 `tests/validate_qasm.c` also exports postfix, prefix and comma fixtures for independent QuEST
 simulation. These export comparisons complement the separately computed language/state references;

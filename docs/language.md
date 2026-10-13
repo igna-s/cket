@@ -43,6 +43,15 @@ its C conversion, and prepares a new basis state. It does not read another regis
 measurement. Products may also have CPU initializers. Dynamic preparation requires native execution
 and cannot be flattened into static QASM.
 
+## Explicit expression observations
+
+`measure` accepts supported quantum integer expressions with their C type. Old/new effects execute
+once before the requested channel. Computed results are observed in a temporary whose inverse
+restores clean storage afterward; the input is projected onto the observed function fiber.
+Compatible storage references retain their existing measurement contract. See
+[the channel/lifetime contract](c11-observations.md) for zero-high-bit compression, retained inputs
+and pending contexts.
+
 ## New values and assignment
 
 ```c

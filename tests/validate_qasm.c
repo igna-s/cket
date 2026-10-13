@@ -96,6 +96,12 @@ static const test_case
              {"comma returns the updated quantum value",
               "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"}};
 static const test_case channels[] = {
+    {"logical value observation preserves fiber coherence",
+     "quant bool a=superposition(0,1),b=superposition(0,1);if(a)phase(.19);if(b)phase(.37);measure(a||b);fourier(a);fourier(b);measure(a);measure(b);"},
+    {"explicit Boolean cast measures a predicate",
+     "quant bool a=superposition(0,1),b=superposition(0,1);if(a)phase(.19);if(b)phase(.37);measure((bool)(a||b));fourier(a);fourier(b);measure(a);measure(b);"},
+    {"postfix observation and updated owner",
+     "quant bool x=superposition(0,1);if(x)phase(.19);measure(x++);measure(x);"},
     {"intermediate entangled measurement",
      "quant bool a=superposition(0,1),b=false;if(a)b^=true;measure(a);fourier(b);if(b)phase(.4);inverse_fourier(b);measure(b);"},
     {"reset of an entangled input",
@@ -241,7 +247,8 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
     unsigned mapping[20], bits = 0;
     int list = cj_get(&d, 0, "instructions");
     for (int t = list + 1; t < d.tokens[list].next; t = d.tokens[t].next) {
-        if (cj_equal(&d, cj_get(&d, t, "op"), "qmeasure")) {
+        if (cj_equal(&d, cj_get(&d, t, "op"), "qmeasure") ||
+            cj_equal(&d, cj_get(&d, t, "op"), "qobserve")) {
             uint64_t id;
             if (!cj_u64(&d, cj_get(&d, t, "id"), &id))
                 validation_fail("invalid measured register");
@@ -349,7 +356,8 @@ static void check_channel(validation *v, QuESTEnv env, const test_case *test) {
         initZeroState(q);
         ++actual[reference_execute(&c, q, 1)];
     }
-    double tolerance = 2 * sqrt(log(4.0 * 3 * outcomes / 1e-6) / (2 * 8192));
+    double tolerance =
+        2 * sqrt(log(4.0 * (sizeof channels / sizeof *channels) * outcomes / 1e-6) / (2 * 8192));
     for (size_t i = 0; i < outcomes; ++i)
         if (fabs((double)native[i] / 8192 - (double)actual[i] / 8192) >= tolerance)
             validation_fail("independent channel mismatch: %s outcome=%zu", test->name, i);

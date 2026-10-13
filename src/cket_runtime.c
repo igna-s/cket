@@ -104,6 +104,16 @@ uint64_t __cket_measure(uint64_t id) {
     return result;
 }
 
+uint64_t __cket_observe(uint64_t id) {
+    start_engine();
+    char operation[128];
+    uint64_t result;
+    snprintf(operation, sizeof operation, "{\"op\":\"qobserve\",\"id\":%" PRIu64 "}", id);
+    if (!qc_apply(engine, operation, &result))
+        fail();
+    return result;
+}
+
 /* ABI retained: storage placeholders are never CPU reads of quantum data. */
 uint64_t __cket_prepare(uint64_t id, uint64_t width, uint64_t low, uint64_t high) {
     char operation[256];

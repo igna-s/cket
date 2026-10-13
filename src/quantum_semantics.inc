@@ -38,6 +38,7 @@ tree apply_fn = NULL_TREE, apply_arg_fn = NULL_TREE;
 tree apply_values_fn = NULL_TREE;
 tree apply_phase_fn = NULL_TREE;
 tree apply_index_fn = NULL_TREE;
+tree observe_fn = NULL_TREE;
 tree lower_node(tree value);
 bool gcc_quantum_sanitizer_guard(tree value);
 bool quantum_pure_expression(tree value);
@@ -1343,6 +1344,206 @@ tree lower_indexed_operation(
     return sequence;
 }
 
+// Conversion chains preserve a storage measurement only when every cast
+// preserves all of its bits and the result has the same width. A narrowing
+// cast followed by widening must instead observe the computed expression.
+tree measurement_storage(tree value, tree result_type) {
+    tree storage = strip(value);
+    unsigned width = 0;
+    if (quantum(storage))
+        width = TYPE_PRECISION(TREE_TYPE(storage));
+    else if (selected_storage(storage))
+        width = TYPE_PRECISION(
+            TREE_TYPE(quantum_indexed_accesses.at(selected_storage(storage)).elements.front()));
+    if (!width || !INTEGRAL_TYPE_P(result_type) || TYPE_PRECISION(result_type) != width)
+        return NULL_TREE;
+    while (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR) {
+        if (!INTEGRAL_TYPE_P(TREE_TYPE(value)) || TYPE_PRECISION(TREE_TYPE(value)) < width)
+            return NULL_TREE;
+        value = TREE_OPERAND(value, 0);
+    }
+    return storage;
+}
+
+tree prefixed_value(tree list, tree result) {
+    for (auto it = tsi_last(list); !tsi_end_p(it); tsi_prev(&it))
+        result = build2(COMPOUND_EXPR, TREE_TYPE(result), tsi_stmt(it), result);
+    return result;
+}
+
+// A conservative nonnegative bound can omit provably zero high result bits.
+// Original typed arithmetic still checks C definedness before this narrowing.
+bool observation_bound(tree value, uint64_t &bound, unsigned depth = 0) {
+    if (!value || depth > 128 || !INTEGRAL_TYPE_P(TREE_TYPE(value)))
+        return false;
+    auto code = TREE_CODE(value);
+    unsigned width = TYPE_PRECISION(TREE_TYPE(value));
+    if (!width || width > 64)
+        return false;
+    uint64_t maximum = width == 64 ? UINT64_MAX : ((uint64_t{1} << width) - 1);
+    if (!TYPE_UNSIGNED(TREE_TYPE(value)))
+        maximum >>= 1;
+    if (code == INTEGER_CST) {
+        if (!tree_fits_uhwi_p(value))
+            return false;
+        bound = tree_to_uhwi(value);
+        return bound <= maximum;
+    }
+    if (TREE_CODE_CLASS(code) == tcc_comparison || code == TRUTH_NOT_EXPR ||
+        code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR || code == TRUTH_AND_EXPR ||
+        code == TRUTH_OR_EXPR || code == TRUTH_XOR_EXPR ||
+        TREE_CODE(TREE_TYPE(value)) == BOOLEAN_TYPE) {
+        bound = 1;
+        return true;
+    }
+    if (code == SAVE_EXPR || code == NON_LVALUE_EXPR)
+        return observation_bound(TREE_OPERAND(value, 0), bound, depth + 1);
+    if (code == COMPOUND_EXPR)
+        return observation_bound(TREE_OPERAND(value, 1), bound, depth + 1);
+    if (CONVERT_EXPR_P(value)) {
+        if (!observation_bound(TREE_OPERAND(value, 0), bound, depth + 1))
+            return false;
+        if (TYPE_UNSIGNED(TREE_TYPE(value)))
+            bound = std::min(bound, maximum);
+        return bound <= maximum;
+    }
+    if (quantum(value)) {
+        const auto &source = variables.at(value);
+        bound = source.basis_known ? source.lower : source.range_max;
+        return bound <= maximum;
+    }
+    if (code == VAR_DECL && TYPE_UNSIGNED(TREE_TYPE(value))) {
+        bound = maximum;
+        return true;
+    }
+    uint64_t a, b;
+    if (code == COND_EXPR) {
+        if (!observation_bound(TREE_OPERAND(value, 1), a, depth + 1) ||
+            !observation_bound(TREE_OPERAND(value, 2), b, depth + 1))
+            return false;
+        bound = std::max(a, b);
+        return bound <= maximum;
+    }
+    if (!EXPR_P(value) || TREE_OPERAND_LENGTH(value) != 2 ||
+        !observation_bound(TREE_OPERAND(value, 0), a, depth + 1) ||
+        !observation_bound(TREE_OPERAND(value, 1), b, depth + 1))
+        return false;
+    if (a > maximum || b > maximum)
+        return false;
+    switch (code) {
+    case PLUS_EXPR:
+        if (a > maximum - b)
+            return false;
+        bound = a + b;
+        return true;
+    case MULT_EXPR:
+        if (b && a > maximum / b)
+            return false;
+        bound = a * b;
+        return true;
+    case TRUNC_DIV_EXPR:
+        // This bounds defined evaluations. The original typed expression
+        // still rejects a reachable zero divisor, including in lazy arms.
+        bound = a;
+        return true;
+    case TRUNC_MOD_EXPR:
+        bound = b ? std::min(a, b - 1) : 0;
+        return true;
+    case BIT_AND_EXPR:
+        bound = std::min(a, b);
+        return true;
+    default:
+        return false;
+    }
+}
+
+tree lower_expression_measurement(tree value) {
+    tree input = CALL_EXPR_ARG(value, 0), type = TYPE_MAIN_VARIANT(TREE_TYPE(value));
+    if (!has_quantum(input) || !INTEGRAL_TYPE_P(type) || TYPE_PRECISION(type) > 64) {
+        error_at(at(value), "|c>: measurement requires a quantum integer expression");
+        return constant(0);
+    }
+    Variable temporary{};
+    temporary.id = next_id++;
+    temporary.width = TYPE_PRECISION(type);
+    temporary.is_signed = !TYPE_UNSIGNED(type);
+    temporary.name = "__cket_observation_" + std::to_string(temporary.id);
+    temporary.decl = build_decl(at(value), VAR_DECL, get_identifier(temporary.name.c_str()), type);
+    variables.emplace(temporary.decl, temporary);
+    auto &owner = variables.at(temporary.decl);
+    tree list = alloc_stmt_list();
+    std::string expression_value = evaluate_expression(input, owner.dependencies, &list);
+    uint64_t bound;
+    if (observation_bound(input, bound)) {
+        unsigned needed = 1;
+        while (needed < 64 && (bound >> needed))
+            ++needed;
+        if (needed < owner.width) {
+            owner.width = needed;
+            owner.is_signed = false;
+        }
+    }
+    owner.range_max = owner.width == 64 ? UINT64_MAX : ((uint64_t{1} << owner.width) - 1);
+    owner.lowered = owner.clean = true;
+    owner.derived = true;
+    owner.creation = cast_result(expression_value, owner);
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    append(&list,
+           emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(owner.id) +
+                              ",\"width\":" + std::to_string(owner.width) + ",\"signed\":" +
+                              (owner.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                          at(value)));
+    active_cpu_parameters.swap(parameters);
+    owner.clean = false;
+    append(&list,
+           emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(owner.id) +
+                              ",\"expr\":" + owner.creation + '}',
+                          at(value)));
+    owner.measured = owner.pending_destruction = true;
+    taint_uniform(owner.id);
+    if (!observe_fn)
+        observe_fn = runtime_function("__cket_observe", 1);
+    tree measured = save_expr(build_call_expr_loc(at(value), observe_fn, 1, constant(owner.id)));
+    instructions.push_back("{\"op\":\"qobserve\",\"id\":" + std::to_string(owner.id) +
+                           ",\"result\":\"m" + std::to_string(next_measurement++) +
+                           "\",\"width\":" + std::to_string(owner.width) + '}');
+    append(&list, measured);
+    append(&list, emit_operation(inverse_operation(owner.id, owner.creation), at(value)));
+    append(
+        &list,
+        emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(owner.id) + '}', at(value)));
+    owner.pending_destruction = false;
+    owner.released = true;
+    if (!dynamic_depth) {
+        // Dead inputs may end as retained joint outputs. Live inputs retain
+        // their owner; no extra channel closes an observation's input lifetime.
+        std::set<unsigned> ancestors = owner.dependencies;
+        bool changed;
+        do {
+            changed = false;
+            for (const auto &entry : variables)
+                if (ancestors.count(entry.second.id))
+                    for (unsigned parent : entry.second.dependencies)
+                        changed |= ancestors.insert(parent).second;
+        } while (changed);
+        for (auto &entry : variables) {
+            auto &source = entry.second;
+            if (ancestors.count(source.id) && source.lowered && !source.derived &&
+                !source.measured && !source.released && !source.moved && !source.history &&
+                !remaining[source.id]) {
+                source.history = true;
+                append(
+                    &list,
+                    emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(source.id) + '}',
+                                   at(value)));
+            }
+        }
+    }
+    cleanup(&list);
+    return prefixed_value(list, fold_convert(TREE_TYPE(value), measured));
+}
+
 tree lower_node(tree value) {
     if (!value)
         return value;
@@ -1458,14 +1659,16 @@ tree lower_node(tree value) {
         std::string kind = intrinsic(value);
         if ((kind == "measure" || kind == "reset" || kind == "fourier" ||
              kind == "inverse_fourier") &&
-            selected_storage(CALL_EXPR_ARG(value, 0)))
-            return lower_indexed_operation(selected_storage(CALL_EXPR_ARG(value, 0)),
-                                           kind == "measure" ? "qmeasure"
-                                           : kind == "reset" ? "qreset"
-                                                             : "qfourier",
-                                           NULL_TREE,
-                                           kind == "inverse_fourier",
-                                           at(value));
+            selected_storage(CALL_EXPR_ARG(value, 0)) &&
+            (kind != "measure" || measurement_storage(CALL_EXPR_ARG(value, 0), TREE_TYPE(value))))
+            return fold_convert(TREE_TYPE(value),
+                                lower_indexed_operation(selected_storage(CALL_EXPR_ARG(value, 0)),
+                                                        kind == "measure" ? "qmeasure"
+                                                        : kind == "reset" ? "qreset"
+                                                                          : "qfourier",
+                                                        NULL_TREE,
+                                                        kind == "inverse_fourier",
+                                                        at(value)));
         if (quantum_indexed_accesses.count(value)) {
             error_at(
                 at(value),
@@ -2080,6 +2283,9 @@ tree lower_node(tree value) {
                     "|c>: measurement/reset requires explicit classical control and a proven register lifetime");
                 return constant(0);
             }
+            if (kind == "measure" &&
+                !measurement_storage(CALL_EXPR_ARG(value, 0), TREE_TYPE(value)))
+                return lower_expression_measurement(value);
             tree arg = strip(CALL_EXPR_ARG(value, 0));
             auto found = variables.find(arg);
             if (found == variables.end() || !found->second.lowered || found->second.released ||
@@ -2128,12 +2334,12 @@ tree lower_node(tree value) {
             }
             var.pending_destruction = false;
             // GCC COMPOUND_EXPR preserves cleanup-before-measure inside printf/initializers.
-            tree sequence = call;
+            tree sequence = fold_convert(TREE_TYPE(value), call);
             std::vector<tree> prefix;
             for (auto it = tsi_start(list); !tsi_end_p(it); tsi_next(&it))
                 prefix.push_back(tsi_stmt(it));
             for (auto it = prefix.rbegin(); it != prefix.rend(); ++it)
-                sequence = build2(COMPOUND_EXPR, TREE_TYPE(call), *it, sequence);
+                sequence = build2(COMPOUND_EXPR, TREE_TYPE(sequence), *it, sequence);
             return sequence;
         }
         if (!kind.empty()) {

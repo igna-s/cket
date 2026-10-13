@@ -31,7 +31,8 @@ int main(int argc, char **argv) {
         unsigned bits = 0;
         ok = c && qc_verify_document(c, &d);
         for (int t = list + 1; ok && t < d.tokens[list].next; t = d.tokens[t].next) {
-            int measured = cj_equal(&d, cj_get(&d, t, "op"), "qmeasure");
+            int measured = cj_equal(&d, cj_get(&d, t, "op"), "qmeasure") ||
+                           cj_equal(&d, cj_get(&d, t, "op"), "qobserve");
             unsigned width = 0;
             if (measured) {
                 uint64_t id;

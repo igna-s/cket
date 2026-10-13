@@ -164,8 +164,8 @@ pending.
 
 [Ordered scalar expression effects](docs/c11-effect-values.md) now preserve postfix old values,
 return prefix/assignment new values and sequence comma operands with retained history. Lazy-arm
-effects and computed measurement operands remain pending. History has an explicit qubit cost; no
-measurement or reset is inserted to erase it.
+effects and general memory/float measurement operands remain pending. History has an explicit qubit
+cost; no measurement or reset is inserted to erase it.
 
 `memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole integer
 elements and constant extents. Known basis destinations use reversible translation and copying;
@@ -516,8 +516,8 @@ Independent validation builds the serial **C** backend of
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
 Validation includes 391 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 43 independent QASM cases exported
-without tables. QASM cases check forty complete states/final probabilities and three
+corpus of 29 programs at five levels; 24 growth circuits; and 46 independent QASM cases exported
+without tables. QASM cases check forty complete states/final probabilities and six
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
@@ -528,7 +528,7 @@ extensions, complete states/inverse, overlap, contracts, C composition and wide 
 division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
 coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The binding
 suite adds 399 checks of complete states and saved inverse, typed integer endpoints, malformed
-inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 1029
+inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 1759
 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU snapshot
 cleanup, coherent and CPU scalar joins, old/new expression results, sequencing, Boolean/word states,
 deferred ownership cleanup and explicit pending-contract diagnostics. The native suite also exhausts

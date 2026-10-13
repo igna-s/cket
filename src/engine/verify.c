@@ -379,7 +379,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         allowed = phase;
     else if (cj_equal(d, op, "qfourier"))
         allowed = fourier;
-    else if (cj_equal(d, op, "qmeasure"))
+    else if (cj_equal(d, op, "qmeasure") || cj_equal(d, op, "qobserve"))
         allowed = measure;
     else if (cj_equal(d, op, "qrelease") || cj_equal(d, op, "qreset") ||
              cj_equal(d, op, "qretain") || cj_equal(d, op, "qhistory_end") ||

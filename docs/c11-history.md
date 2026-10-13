@@ -21,7 +21,9 @@ in-place circuit would be possible; that is an optimization obligation.
 
 [Value-producing updates](c11-effect-values.md) retain old reads across an effect and return the
 appropriate quantum old/new value. Their pending-read protection participates in the same history
-and cleanup rules. Lazy expression effects and general computed measurement operands remain open.
+and cleanup rules. Supported integer expression observations have a
+[channel contract](c11-observations.md). Lazy effects and general memory/float observations remain
+open.
 
 Pure CPU integer inputs specialize the new computation through the binding contract. Its concrete
 definition retains the original values for its inverse. Generic effectful operands still require

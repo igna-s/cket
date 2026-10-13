@@ -415,6 +415,7 @@ static void documents(validation *v) {
 #include "test_cpu_owners.inc"
 #include "test_cpu_word_history.inc"
 #include "test_effect_values.inc"
+#include "test_observations.inc"
 
 static void rejections(validation *v) {
     const char *bodies[] = {
@@ -458,6 +459,7 @@ int main(int argc, char **argv) {
     states();
     lifetimes();
     cpu_owner_contracts();
+    observation_channels();
     validation v;
     validation_init(&v, argv[0]);
     programs(&v);
@@ -469,6 +471,9 @@ int main(int argc, char **argv) {
     effect_value_programs(&v);
     effect_value_states(&v);
     effect_value_rejections(&v);
+    observation_programs(&v);
+    compiled_observation_channels(&v);
+    observation_diagnostics(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

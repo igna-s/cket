@@ -284,6 +284,7 @@ def main(language):
                 'docs/c11-shifts.md',
                 'docs/c11-expressions.md',
                 'docs/c11-effect-values.md',
+                'docs/c11-observations.md',
                 'docs/c11-inplace.md',
                 'docs/c11-memcopy.md',
                 'docs/c11-division.md',

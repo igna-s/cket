@@ -22,6 +22,8 @@ jobs:
           bash scripts/setup-format.sh
       - name: Check source and documentation formatting
         run: .deps/format-venv/bin/python scripts/format.py --check
+      - name: Check formatter contract preservation
+        run: .deps/format-venv/bin/python scripts/test-format.py
   verify:
     runs-on: ubuntu-22.04
     timeout-minutes: 45

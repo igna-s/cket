@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import Counter
 import json
 import re
 import subprocess
@@ -135,7 +136,24 @@ def format_text(path: Path, text: str) -> str:
             # their prose and code layout; their PDF builder owns typesetting.
             return text.rstrip("\n") + "\n"
         formatted = mdformat.text(text, options={"wrap": 100}, extensions={"gfm"})
-        return FENCE.sub(format_fence, formatted)
+        formatted = FENCE.sub(format_fence, formatted)
+
+        # GFM parses unescaped pipes as table separators, including in code
+        # spans. A formatter must not silently discard extra cells/contracts.
+        def content(source: str) -> tuple[Counter, Counter]:
+            source = re.sub(r"(?m)^\s*\d+[.)]\s+", "", source)
+            words = Counter(re.findall(r"\w+", source))
+            code = Counter(
+                span.replace(r"\|", "|").strip()
+                for span in re.findall(r"(?<![\\`])`(?!`)([^`\n]*)`(?!`)", source)
+            )
+            return words, code
+
+        original_words, original_code = content(text)
+        updated_words, updated_code = content(formatted)
+        if original_words - updated_words or original_code - updated_code:
+            raise ValueError(f"Markdown content loss: {relative}")
+        return formatted
     if path.suffix == ".json":
         return json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
     # YAML/configuration whitespace is already structural. Only normalize

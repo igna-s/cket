@@ -1268,6 +1268,28 @@ tree expand_quantum_program(tree value) {
                 return expanded;
         }
         std::string effect = intrinsic(value);
+        if (effect == "unsupported_measurement") {
+            error_at(
+                at(value),
+                "|c>: measurement currently requires a supported C integer type; other encodings are pending");
+            return value;
+        }
+        if (effect == "measure") {
+            auto readonly_input = [](tree *node, int *walk, void *) -> tree {
+                if (readonly_quantum_access(*node))
+                    return *node;
+                if (DECL_P(*node) || TYPE_P(*node))
+                    *walk = 0;
+                return NULL_TREE;
+            };
+            tree input = CALL_EXPR_ARG(value, 0);
+            if (walk_tree(&input, readonly_input, nullptr, nullptr)) {
+                error_at(
+                    at(value),
+                    "|c>: this operation requires a mutable quantum borrow; const borrows cannot measure, reset or transform storage");
+                return value;
+            }
+        }
         bool destructive = effect == "measure" || effect == "reset" || effect == "fourier" ||
                            effect == "inverse_fourier" || effect == "find" ||
                            effect == "find_known" || effect == "search";
