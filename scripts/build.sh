@@ -44,6 +44,7 @@ ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build
 "$gcc_compiler" "${flags[@]}" tests/validate_memory_sequences.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_memory_sequences
 "$gcc_compiler" "${flags[@]}" tests/validate_memory_returns.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_memory_returns
 "$gcc_compiler" "${flags[@]}" tests/validate_pointer_differences.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_pointer_differences
+"$gcc_compiler" "${flags[@]}" tests/validate_controlled_operands.c tests/validation.c -o build/validate_controlled_operands
 "$gcc_compiler" "${flags[@]}" tests/validate_byte_snapshots.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_byte_snapshots
 "$gcc_compiler" "${flags[@]}" tests/validate_division.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_division
 "$gcc_compiler" "${flags[@]}" tests/validate_bindings.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_bindings

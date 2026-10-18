@@ -486,18 +486,60 @@ bool pure_cpu_scalar_read(tree value) {
            quantum_pure_expression(value);
 }
 
+// A deferred CPU calculation needs its selected-domain proof saved with the
+// result. Pure scalar captures and literals do not: retaining a new version
+// for every reversible controlled update would pin its control and history.
+bool deferred_cpu_operand(tree value, unsigned depth = 0) {
+    if (!value)
+        return false;
+    if (depth > 128)
+        return true;
+    if (!has_quantum(value)) {
+        tree leaf = strip(value);
+        while (TREE_CODE(leaf) == SAVE_EXPR)
+            leaf = strip(TREE_OPERAND(leaf, 0));
+        return TREE_CODE(leaf) != INTEGER_CST && !pure_cpu_scalar_read(leaf);
+    }
+    if (DECL_P(value) || TYPE_P(value))
+        return false;
+    for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
+        if (deferred_cpu_operand(TREE_OPERAND(value, i), depth + 1))
+            return true;
+    return false;
+}
+
+// Recognize the real standard declaration or builtin, including -fno-builtin.
+// User definitions with matching names keep their own C semantics.
+bool standard_integer_absolute(tree fn) {
+    bool recognized =
+        fn && !DECL_SAVED_TREE(fn) &&
+        (fndecl_built_in_p(fn, BUILT_IN_ABS) || fndecl_built_in_p(fn, BUILT_IN_LABS) ||
+         fndecl_built_in_p(fn, BUILT_IN_LLABS) || fndecl_built_in_p(fn, BUILT_IN_IMAXABS));
+    if (fn && !recognized && DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
+        in_system_header_at(DECL_SOURCE_LOCATION(fn))) {
+        std::string name = name_of(fn);
+        recognized = name == "abs" || name == "labs" || name == "llabs" || name == "imaxabs";
+    }
+    return recognized;
+}
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
     auto code = TREE_CODE(value);
+    // CPU arithmetic in every controlled consumer must remain lazy.
+    bool coherent = coherent_expression_depth || !controls.empty();
+    if (coherent && code == CALL_EXPR && call_expr_nargs(value) == 1 &&
+        standard_integer_absolute(get_callee_fndecl(value)))
+        return expression(
+            build1_loc(at(value), ABS_EXPR, TREE_TYPE(value), CALL_EXPR_ARG(value, 0)), deps);
     std::string ctype = standard_ctype(value);
     if (!ctype.empty() && has_quantum(value))
         return ctype_expression(value, ctype, deps);
     // GCC inserts scalar UBSan handlers before this pass. In a coherent arm,
     // pure arithmetic belongs to the circuit, whose backend checks definedness.
     // Executing a host handler would eagerly evaluate an inactive branch.
-    if (coherent_expression_depth && code == COMPOUND_EXPR &&
-        gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)) &&
+    if (coherent && code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)) &&
         quantum_pure_expression(TREE_OPERAND(value, 1)))
         return expression(TREE_OPERAND(value, 1), deps);
     if (code != INTEGER_CST && !has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value))) {
@@ -512,10 +554,10 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // sequence pure CPU reads; they do not introduce a coherent CPU effect.
         if (cpu_byte_saves.count(inner))
             effect = false;
-        if (coherent_expression_depth && quantum_pure_expression(value))
+        if (coherent && quantum_pure_expression(value))
             effect = false;
         bool captured = cpu_library_saves.count(inner);
-        if (effect && (!captured || !controls.empty() || coherent_expression_depth)) {
+        if (effect && (!captured || !controls.empty() || coherent)) {
             error_at(
                 at(value),
                 "|c>: CPU effects in quantum expressions require once-only capture outside coherent control");
@@ -527,8 +569,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // Pure arithmetic in a coherent arm is lowered lazily on the quantum
         // side. Eager CPU evaluation could otherwise execute inactive UB.
         if (TREE_CODE(inner) != INTEGER_CST &&
-            (!coherent_expression_depth || TREE_CODE(leaf) == VAR_DECL ||
-             pure_cpu_scalar_read(leaf) || cpu_byte_saves.count(inner))) {
+            (!coherent || TREE_CODE(leaf) == VAR_DECL || pure_cpu_scalar_read(leaf) ||
+             cpu_byte_saves.count(inner))) {
             if (TYPE_PRECISION(TREE_TYPE(value)) > 64) {
                 error_at(at(value),
                          "|c>: CPU integer expression bindings currently require at most 64 bits");
@@ -1739,12 +1781,24 @@ tree lower_node(tree value) {
             return build_zero_cst(TREE_TYPE(value));
         }
         cleanup(&list);
-        if (operation.elements.empty() && !has_quantum(operation.fill)) {
+        if (operation.elements.empty() && !has_quantum(operation.fill) && controls.empty()) {
             // Even a zero-length C call evaluates its value argument once.
             append(&list, lower_node(operation.fill));
         } else {
             std::set<unsigned> fill_dependencies;
             std::string byte = evaluate_expression(operation.fill, fill_dependencies, &list);
+            if (!operation.elements.empty())
+                byte = select_controls(byte,
+                                       "{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":0}",
+                                       8,
+                                       false,
+                                       fill_dependencies);
+            if (operation.elements.empty())
+                byte = select_controls(byte,
+                                       "{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":0}",
+                                       8,
+                                       false,
+                                       fill_dependencies);
             std::set<unsigned> fill_parameters = active_cpu_parameters;
             if (operation.elements.empty()) {
                 // Evaluate a quantum argument's definedness even for n=0,
@@ -1848,8 +1902,8 @@ tree lower_node(tree value) {
                     target, cast_result(pattern, target), dependencies, at(value), &list);
             }
         }
-        // A checked C return-pointer ABI is separate pending work; CPU value
-        // consumers reject this quantum marker, as for the copy adapter.
+        // Local destination borrows have already been resolved by the frontend.
+        // Unsupported general CPU consumers still reject this marker.
         tree result = build_zero_cst(TREE_TYPE(value));
         for (auto it = tsi_last(list); !tsi_end_p(it); tsi_prev(&it))
             result = build2(COMPOUND_EXPR, TREE_TYPE(value), tsi_stmt(it), result);
@@ -2009,6 +2063,15 @@ tree lower_node(tree value) {
             (quantum(strip(TREE_OPERAND(update, 0))) ||
              selected_storage(TREE_OPERAND(update, 0))) &&
             !has_quantum(TREE_OPERAND(value, 0))) {
+            // UBSan can mark a shared pure arithmetic SAVE_EXPR as effectful.
+            // Its actual consumer must serialize it inside the controlled
+            // expression. Only skip the duplicate prefix when that same
+            // SAVE_EXPR occurs in the update; an unrelated comma operand
+            // still has its own evaluation and definedness obligations.
+            tree prefix = TREE_OPERAND(value, 0);
+            if (!controls.empty() && TREE_CODE(prefix) == SAVE_EXPR &&
+                quantum_pure_expression(prefix) && references_storage(update, prefix))
+                return lower_node(update);
             // GCC saves a side-effecting compound-assignment operand before
             // updating the destination. Keep its shared SAVE_EXPR intact so
             // native C evaluates the operand exactly once.
@@ -2312,9 +2375,18 @@ tree lower_node(tree value) {
         }
         if (xor_operand) {
             consume(var);
-            if (has_quantum(xor_operand)) {
+            bool lazy_cpu_operand = !controls.empty() && quantum_pure_expression(xor_operand) &&
+                                    TREE_CODE(strip(xor_operand)) != INTEGER_CST &&
+                                    !pure_cpu_scalar_read(xor_operand);
+            if (has_quantum(xor_operand) || lazy_cpu_operand) {
                 std::set<unsigned> deps;
                 std::string expr = cast_result(evaluate_expression(xor_operand, deps, &list), var);
+                expr = select_controls(expr,
+                                       "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
+                                           ",\"signed\":false,\"value\":0}",
+                                       var.width,
+                                       var.is_signed,
+                                       deps);
                 if (deps.count(var.id)) {
                     error_at(at(value),
                              "|c>: XOR operand cannot depend on the overwritten register");
@@ -2367,7 +2439,9 @@ tree lower_node(tree value) {
                            ",\"subtract\":" + (TREE_CODE(simple) == MINUS_EXPR ? "true" : "false") +
                            control_json() + '}',
                        at(value)));
-        } else if (addend && !has_quantum(addend) && !var.is_signed && var.width > 1) {
+        } else if (addend && !has_quantum(addend) && !var.is_signed && var.width > 1 &&
+                   (controls.empty() || TREE_CODE(strip(addend)) == INTEGER_CST ||
+                    pure_cpu_scalar_read(addend) || !quantum_pure_expression(addend))) {
             if (!controls.empty() && TREE_SIDE_EFFECTS(addend)) {
                 error_at(
                     at(value),
@@ -2409,7 +2483,10 @@ tree lower_node(tree value) {
                                       at(value)));
                 return list;
             }
-            if (deps != std::set<unsigned>{var.id}) {
+            // A controlled typed fallback retains its selected-domain proof
+            // in the saved definition; gate controls alone do not guard it.
+            if (deps != std::set<unsigned>{var.id} ||
+                (!controls.empty() && deferred_cpu_operand(rhs))) {
                 versioned_assignment(var, expr, deps, at(value), &list);
                 return list;
             }

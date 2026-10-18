@@ -47,6 +47,8 @@ bool quantum_pure_expression(tree value) {
     auto code = TREE_CODE(value);
     if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
         return quantum_pure_expression(TREE_OPERAND(value, 1));
+    if (code == CALL_EXPR && standard_integer_absolute(get_callee_fndecl(value)))
+        return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
     if (code == CALL_EXPR && !standard_ctype(value).empty())
         return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
     if (code == CALL_EXPR || code == MODIFY_EXPR || code == INIT_EXPR || code == COMPOUND_EXPR ||
@@ -1543,15 +1545,7 @@ tree expand_quantum_program(tree value) {
         // These standard integer interfaces are pure basis-value functions.
         // Recognize the actual GCC builtin or an external system declaration;
         // never rewrite a user function merely because its name matches.
-        bool standard_abs =
-            fn && !DECL_SAVED_TREE(fn) &&
-            (fndecl_built_in_p(fn, BUILT_IN_ABS) || fndecl_built_in_p(fn, BUILT_IN_LABS) ||
-             fndecl_built_in_p(fn, BUILT_IN_LLABS) || fndecl_built_in_p(fn, BUILT_IN_IMAXABS));
-        if (fn && !standard_abs && DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
-            in_system_header_at(DECL_SOURCE_LOCATION(fn))) {
-            std::string name = name_of(fn);
-            standard_abs = name == "abs" || name == "labs" || name == "llabs" || name == "imaxabs";
-        }
+        bool standard_abs = standard_integer_absolute(fn);
         if (standard_abs && call_expr_nargs(value) == 1 && has_quantum(CALL_EXPR_ARG(value, 0)))
             return build1_loc(at(value), ABS_EXPR, TREE_TYPE(value), CALL_EXPR_ARG(value, 0));
         return value;
