@@ -1,0 +1,184 @@
+{
+  "native": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "393 passed, 0 failed (native C tests, no external quantum SDK)",
+      "393 passed, 0 failed (native C tests, no external quantum SDK)"
+    ]
+  },
+  "examples": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "1452 checks passed across 36 examples, five optimization levels and CLI/input contracts",
+      "1452 checks passed across 36 examples, five optimization levels and CLI/input contracts"
+    ]
+  },
+  "classical": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.",
+      "5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete."
+    ]
+  },
+  "frontend": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "145 generated frontend compilations passed; seed=20261011 (C generator, SplitMix64)",
+      "145 generated frontend compilations passed; seed=20261011 (C generator, SplitMix64)"
+    ]
+  },
+  "synthesis": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "24 circuits compiled without tables;",
+      "24 circuits compiled without tables;"
+    ]
+  },
+  "qasm": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "70 exported circuits independently validated with QuEST 3.7.0 (C): 64 states, 6 channels; table-free export",
+      "70 exported circuits independently validated with QuEST 3.7.0 (C): 64 states, 6 channels; table-free export"
+    ]
+  },
+  "shifts": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "55 shift checks passed; generated wide circuits are distinct from state-validated small domains.",
+      "55 shift checks passed; generated wide circuits are distinct from state-validated small domains."
+    ]
+  },
+  "expressions": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "97 expression checks passed; generated circuits and complete-state comparisons have separate scopes.",
+      "97 expression checks passed; generated circuits and complete-state comparisons have separate scopes."
+    ]
+  },
+  "inplace": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "271 in-place checks passed; wide circuit generation is distinct from complete-state validation.",
+      "271 in-place checks passed; wide circuit generation is distinct from complete-state validation."
+    ]
+  },
+  "memcopy": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation.",
+      "414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation."
+    ]
+  },
+  "memcmp": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "302 memcmp checks passed; coherent byte comparisons are distinct from general memory/library completeness.",
+      "302 memcmp checks passed; coherent byte comparisons are distinct from general memory/library completeness."
+    ]
+  },
+  "strncmp": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "246 strncmp checks passed; NUL-terminated comparisons remain distinct from complete string/library support.",
+      "246 strncmp checks passed; NUL-terminated comparisons remain distinct from complete string/library support."
+    ]
+  },
+  "byte_snapshots": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "650 CPU byte snapshot checks passed; dynamic addresses, volatile/atomic access and complete quantum C11 remain pending.",
+      "650 CPU byte snapshot checks passed; dynamic addresses, volatile/atomic access and complete quantum C11 remain pending."
+    ]
+  },
+  "memset": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "800 memset checks passed; dense states, labeled paths, native executions, rejections and wide generation have distinct proof scopes.",
+      "800 memset checks passed; dense states, labeled paths, native executions, rejections and wide generation have distinct proof scopes."
+    ]
+  },
+  "memory_sequences": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "360 memory sequence checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes.",
+      "360 memory sequence checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes."
+    ]
+  },
+  "memory_returns": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "290 memory return checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes.",
+      "290 memory return checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes."
+    ]
+  },
+  "pointer_differences": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "170 pointer difference checks passed; native distances, finite coherent action and unsupported contexts have separate scopes.",
+      "170 pointer difference checks passed; native distances, finite coherent action and unsupported contexts have separate scopes."
+    ]
+  },
+  "controlled_operands": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "1270 controlled operand checks passed; native values, undefined-domain diagnostics, effect boundaries and independent archived states have separate scopes.",
+      "1270 controlled operand checks passed; native values, undefined-domain diagnostics, effect boundaries and independent archived states have separate scopes."
+    ]
+  },
+  "harness": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "18 validation harness checks passed; infrastructure faults cannot count as semantic rejections.",
+      "18 validation harness checks passed; infrastructure faults cannot count as semantic rejections."
+    ]
+  },
+  "division": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes.",
+      "990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes."
+    ]
+  },
+  "bindings": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.",
+      "399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes."
+    ]
+  },
+  "history": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.",
+      "2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct."
+    ]
+  },
+  "ctype": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "1815 ctype checks passed; immutable byte-locale coverage is distinct from wide-character, concurrency and source-folding contracts.",
+      "1815 ctype checks passed; immutable byte-locale coverage is distinct from wide-character, concurrency and source-folding contracts."
+    ]
+  },
+  "profiles": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "96 immutable profile proof checks passed; distinct locale functions cannot share branch facts.",
+      "96 immutable profile proof checks passed; distinct locale functions cannot share branch facts."
+    ]
+  },
+  "numeric_locale": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "70 numeric locale checks passed; JSON phases and QASM decimals preserve global/thread locales.",
+      "70 numeric locale checks passed; JSON phases and QASM decimals preserve global/thread locales."
+    ]
+  },
+  "library": {
+    "normal_and_sanitized_matches": 2,
+    "result_lines": [
+      "2100 libc boundary checks passed across 210 interfaces; rejections are not quantum implementations.",
+      "2100 libc boundary checks passed across 210 interfaces; rejections are not quantum implementations."
+    ]
+  }
+}

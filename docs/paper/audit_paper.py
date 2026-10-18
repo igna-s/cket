@@ -759,6 +759,9 @@ def main(language):
     integrated_ci = json.loads(
         (ROOT / 'docs/audit-evidence/integrated137-remote-ci/summary.json').read_text()
     )
+    current_ci = json.loads(
+        (ROOT / 'docs/audit-evidence/integrated138-remote-ci/summary.json').read_text()
+    )
     check(
         'V5 candidate: positive native and independent inverse scopes preserve the earlier runner failure',
         operand_v5['status'] == 'verified-scoped-v5-not-integrated'
@@ -790,12 +793,24 @@ def main(language):
         and integrated_ci['normal_and_sanitized']['fuzz_compilations_each'] == 145
         and integrated_ci['normal_and_sanitized']['fuzz_seed'] == 20261011,
     )
+    check(
+        'Integrated138 CI: the completed workflow verifies the exact current source integration',
+        current_ci['status'] == 'verified-remote-ci-passed'
+        and current_ci['source_files'] == 138
+        and current_ci['source_sha256'] == current_integration['source_sha256']
+        and current_ci['normal_and_sanitized']['native_each'] == 393
+        and current_ci['normal_and_sanitized']['controlled_operand_checks_each'] == 1270
+        and current_ci['normal_and_sanitized']['fuzz_compilations_each'] == 145
+        and current_ci['normal_and_sanitized']['fuzz_seed'] == 20261011
+        and all(job['conclusion'] == 'success' for job in current_ci['jobs']),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
         ('coherent-control-full', previous_full),
         ('controlled-operands-v5', operand_v5),
         ('integrated137-remote-ci', integrated_ci),
+        ('integrated138-remote-ci', current_ci),
     )
     check(
         'Current evidence: internal capsule artifacts match their recorded bytes after formatting',
@@ -839,6 +854,7 @@ def main(language):
                 'controlled-operands-regression-failure',
                 'controlled-operands-v5',
                 'integrated137-remote-ci',
+                'integrated138-remote-ci',
                 'coherent-control-full',
                 'controlled-operands-full',
                 'controlled-operands-integration',

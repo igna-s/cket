@@ -32,6 +32,12 @@ y 40 ejecuciones de los cuatro programas exactos del [contrato](c11-controlled-o
 aplicación a Windows comprueba los hashes de las mismas 138 entradas; esa transferencia no equivale
 a ejecutar la regresión completa en Windows.
 
+El [CI remoto de esta integración](audit-evidence/integrated138-remote-ci/README.es.md) también
+terminó correctamente sobre el commit `08b9f3c`: formato y verificación completa normal y con
+ASan/UBSan. Se comprobaron las mismas 138 entradas del commit y los resultados de las 26 suites en
+ambas configuraciones. Su fuzzing usa 145 compilaciones por configuración y semilla 20261011; la
+campaña local ampliada conserva sus 665 compilaciones y semilla 20261012 por separado.
+
 Las [pruebas independientes de v5](audit-evidence/controlled-operands-v5/README.es.md) conservan
 8000 estados complejos e inversas de operandos, más 1200 estados y 600 ejecuciones nativas de XOR
 booleano y bucles. Se conserva el fallo de coordinación del primer controlador y la continuación
