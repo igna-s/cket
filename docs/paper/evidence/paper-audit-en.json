@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 362,
+  "checks": 363,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1816,13 +1816,18 @@
       "check": "Integrated137 CI: completed repository workflow remains distinct from v5 and larger local fuzzing",
       "passed": true,
       "detail": ""
+    },
+    {
+      "check": "Current evidence: internal capsule artifacts match their recorded bytes after formatting",
+      "passed": true,
+      "detail": ""
     }
   ],
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
     "source_files_in_manifest": 185,
-    "execution_scope": "Current138 inputs match the passed76-command broad normal/sanitizer campaign and a separate fresh installation that passed393 native,1270 controlled checks and40 exact contract executions per configuration. Historical137 CI/fuzz and operand failures retain their identities. Windows source application is separately hash-guarded and is not a second broad execution. Deferred phase angles, inactive CPU loads and complete C11 remain pending. Cybersecurity classical and unchanged."
+    "execution_scope": "Current138 source hashes and closed broad/targeted compiler tests are unchanged. Artifact capture was corrected after prose formatting; the four compiled C programs remain byte-identical. Both paper audits also verify internal hashes of the five current capsules. Historical metadata/draft are preserved in the recovery archive. Complete C11, phase angles and CPU-load bugs remain pending; cybersecurity unchanged."
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

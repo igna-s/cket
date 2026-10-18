@@ -790,6 +790,22 @@ def main(language):
         and integrated_ci['normal_and_sanitized']['fuzz_compilations_each'] == 145
         and integrated_ci['normal_and_sanitized']['fuzz_seed'] == 20261011,
     )
+    current_capsules = (
+        ('controlled-operands-integration', current_integration),
+        ('controlled-operands-full', current_full),
+        ('coherent-control-full', previous_full),
+        ('controlled-operands-v5', operand_v5),
+        ('integrated137-remote-ci', integrated_ci),
+    )
+    check(
+        'Current evidence: internal capsule artifacts match their recorded bytes after formatting',
+        all(
+            hashlib.sha256((ROOT / 'docs/audit-evidence' / folder / name).read_bytes()).hexdigest()
+            == expected
+            for folder, capsule in current_capsules
+            for name, expected in capsule['artifact_sha256'].items()
+        ),
+    )
     targets = [
         *SOURCES.values(),
         *PDFS.values(),

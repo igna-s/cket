@@ -14,3 +14,8 @@ La aplicación de fuentes y herramientas normales a la copia Linux sigue a esas 
 importación de fuentes a Windows comprueba hashes y conserva un respaldo; no constituye una segunda
 ejecución de la regresión completa. La semántica del ángulo de `phase`, las cargas CPU inactivas y
 C11 completo siguen pendientes. La ciberseguridad permanece clásica y sin cambios.
+
+El [registro de recuperación](postcheck-artifact-recovery.json) conserva una captura de hash
+anterior al formato de la prosa del borrador. Los cuatro programas C probados conservaron sus bytes
+exactos. El resumen y borrador anteriores se guardan juntos; los hashes internos actuales se
+verifican también dentro de la auditoría de papers.

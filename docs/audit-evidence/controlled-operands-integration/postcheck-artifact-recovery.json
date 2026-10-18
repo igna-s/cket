@@ -1,0 +1,8 @@
+{
+  "status": "corrected-artifact-capture-after-prose-format",
+  "old_summary_sha256": "339dcfed87b58df109ea6a6cf26006bdfa293b6610253ef161116e974e808cd5",
+  "old_expected_draft_sha256": "95dd8809bdeed413772651723bd95db6fff21b25c64a88930eebaa3a106e1624",
+  "formatted_draft_sha256": "9dfe2fcb3dcc8bd26bb03b462f2e333dcbdeaf6010bdf64bb4146cedbce8bcb1",
+  "exact_compiled_programs_unchanged": 4,
+  "reason": "The actual application runner captured artifact hashes before mdformat wrapped prose in its copied contract draft. All four C programs remained byte-identical to the compiled fixtures. Only artifact metadata and paper checks are corrected; compiler sources and closed tests remain identical. The original summary and draft are retained together in the before-fix archive."
+}
