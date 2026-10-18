@@ -1,0 +1,26 @@
+{
+  "status": "passed-in-segments",
+  "started_utc": "2026-10-18T13:34:48.997957+00:00",
+  "source_files": 137,
+  "source_manifest_sha256": "e1706282c1063d5abc1444d9c07cf4e44aed5fbdc31ef370a05577fcc609d077",
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 137 frozen inputs. Repository validation commands run as individually recorded suites, rather than one scripts/verify.sh process. Fuzz cases are split into archived derived-driver ranges; original generator/program/oracle and all 133 case indices, five levels, 256 inputs and seed 20261012 are retained. Counts are explicit aggregates. Includes the coherent CPU-predicate and inactive-arithmetic correction, with the former rejection now checked positively in the 170-check suite. Invalid conditional CPU-memory accesses remain pending. No main promotion, complete C11, hardware or speedup claim. No security configuration changes.",
+  "normal_fresh_core_sha256": {
+    "cket": "422b9d1e90084672f74b61d66f61874b83da077b12c12a06ef40f160c23d4012",
+    "cket_backend": "cdcd41ad690169acc0c48b223419039077064bc12075a10235a925add44edd81",
+    "cket_plugin.so": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "907361a217f5e211c8434a910dcf6d0032c0cf9f9e34f819460ab05fe32fcf61"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "3bd779caa89bf268769d636503108c5bf0467536f856b7cf745dbca4eed422a4",
+    "cket_backend": "d561c8984b449b68490624f701ccf1d8b4629d0ea4459082ef732a65b87047c2",
+    "cket_plugin.so": "c202af8693db96dd1b0cc88d06824f9ed4e56006c54b03b1f7270ae58f8c6492",
+    "cket_runtime.o": "8a47f66f6ec0426a43661ccebe8552c4f56751c1d2265e13266f3720765bd0c2",
+    "libcket_quantum.a": "5148af6f6a2ef2e6fe1749dcbc662c19d9938f78216358edd2a916be558703f4"
+  },
+  "sanitized_status": "passed-in-segments",
+  "exit_code": 0,
+  "finished_utc": "2026-10-18T15:57:25.999985+00:00",
+  "combined_log_sha256": "0862019709b6329cc459b6d2c5b5ee0a0b4779ad1ec3acbb5fb033e7f000d5ef"
+}

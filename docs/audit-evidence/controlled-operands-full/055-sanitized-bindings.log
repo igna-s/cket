@@ -1,0 +1,7 @@
+PASS 96 bound arithmetic domains: full phases, controls, table policies and saved inverse
+PASS 52 typed binding endpoints including signed minimum and unsigned maximum
+PASS 10 malformed CPU descriptor cases reject before state changes
+PASS 11 whole-document binding/preparation contracts before circuit mutation
+PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer widths, products, callbacks in loops and nested initializer regression
+PASS 40 C template specializations: libc projections, CPU mutation, complete phases and structural/export separation
+399 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes.

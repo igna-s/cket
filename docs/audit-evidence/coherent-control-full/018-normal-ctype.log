@@ -1,0 +1,10 @@
+PASS 560 ctype full states in C: all 256 bytes, exact classification masks, all mapping bits, phases, clean private wires, two call forms, five GCC levels and both table policies
+PASS 560 ctype full states in C.UTF-8: all 256 bytes, exact classification masks, all mapping bits, phases, clean private wires, two call forms, five GCC levels and both table policies
+PASS 560 ctype full states in en_US.ISO-8859-1: all 256 bytes, exact classification masks, all mapping bits, phases, clean private wires, two call forms, five GCC levels and both table policies
+PASS 30 coherent EOF/byte-255 complete states: three locales, five GCC levels and both synthesis policies
+PASS 12 immutable locale profile contracts: malformed intervals, explicit static specialization and unavailable locale
+PASS 3 locale module contracts: unresolved capture rejection, immutable phased byte states and full inverses under another locale
+PASS 70 ctype combined programs: EOF, once-only effects, memory borrows, quantum functions, static loops, lazy domains, captured inverses and native classical calls
+PASS 10 ctype diagnostics: reachable invalid domains, five GCC levels
+PASS 10 ctype classical differentials: 14 interfaces, EOF and all bytes, raw results and once-only arguments
+1815 ctype checks passed; immutable byte-locale coverage is distinct from wide-character, concurrency and source-folding contracts.

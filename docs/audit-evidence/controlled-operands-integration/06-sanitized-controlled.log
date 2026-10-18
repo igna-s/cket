@@ -1,0 +1,2 @@
+PASS 1000 defined native controlled operands, 200 undefined-domain diagnostics, 60 CPU-effect rejections and 10 internal homonyms; 100 ordinary C executions separate.
+1270 controlled operand checks passed; native values, undefined-domain diagnostics, effect boundaries and independent archived states have separate scopes.

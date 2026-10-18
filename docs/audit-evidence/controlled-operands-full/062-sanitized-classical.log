@@ -1,0 +1,16 @@
+Built /tmp/tmp.tzw2vFysZS/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.tzw2vFysZS/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.tzw2vFysZS/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.tzw2vFysZS/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.tzw2vFysZS/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
+5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.

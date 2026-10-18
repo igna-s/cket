@@ -1,0 +1,4 @@
+PASS 100 complete memory return basis-action circuits: known and coherent byte views, zero-count effects, pointer control, relative phases, saved inverses and private zeros; verified H preparations, both synthesis policies, maximum 49 physical wires
+PASS 130 native memory returns: typed/void borrows, byte offsets, pointer relations, helper/loop scopes and classical libc; five GCC levels, both builtin modes; 26 ordinary C reference executions
+PASS 60 memory return rejection contracts: CPU reads/escapes, const/type violations, rebinding and coherent CPU effects; 6 ordinary C syntax checks
+290 memory return checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes.

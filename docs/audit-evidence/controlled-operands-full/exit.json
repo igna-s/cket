@@ -1,0 +1,26 @@
+{
+  "status": "passed-in-segments",
+  "started_utc": "2026-10-18T15:19:09.776706+00:00",
+  "source_files": 138,
+  "source_manifest_sha256": "cab169eff975bce73d52f20e548a17e4adfaba986d247dfe87b586ff6810612c",
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 138 frozen inputs. Repository validation commands run as individually recorded suites, rather than one scripts/verify.sh process. Fuzz cases are split into archived derived-driver ranges; original generator/program/oracle and all 133 case indices, five levels, 256 inputs and seed 20261012 are retained. Counts are explicit aggregates. V5 revises only the assignment fallback: literals and pure scalar snapshots retain their reversible in-place path, while deferred CPU calculations still save the selected-domain proof. Native393 and controlled-operand1270 suites run first. Previous v4 scoped and broad failure evidence is separate; no inherited v5 pass claim. Prior scoped core files exist but both core configurations are rebuilt in this fresh campaign. Phase-angle and inactive invalid CPU reads remain pending. No main promotion, complete C11, hardware or speedup claim. No security configuration changes.",
+  "normal_fresh_core_sha256": {
+    "cket": "422b9d1e90084672f74b61d66f61874b83da077b12c12a06ef40f160c23d4012",
+    "cket_backend": "cdcd41ad690169acc0c48b223419039077064bc12075a10235a925add44edd81",
+    "cket_plugin.so": "e4f0aae1f750d49e3fbfea05ad32045b0ce34fc5e52ba361dc21346ea0ce0485",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "907361a217f5e211c8434a910dcf6d0032c0cf9f9e34f819460ab05fe32fcf61"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "0da2740530082693a3552d11af3b49ffa3ec20a66438546ac5a44517f22b6899",
+    "cket_backend": "e1a78c4ee46eed3ac6d5e583dc4e7cbe99de96ac2296b6913aadad092a9bd9db",
+    "cket_plugin.so": "fc388b8417d9da3374e2aa76e8038b3cc77b72612776bc7df7c61eb04b459a3d",
+    "cket_runtime.o": "54ed654fa2b5f52ec14027cd060561bdcbfc791f68dec32aa8b57d9fabedee3a",
+    "libcket_quantum.a": "3bbc9c7385eba72084bd088ed2e43116f9d63adac65e8ba5cf4362796583f66a"
+  },
+  "sanitized_status": "passed-in-segments",
+  "exit_code": 0,
+  "finished_utc": "2026-10-18T17:13:48.878990+00:00",
+  "combined_log_sha256": "9d66fb986046146b25915f8507262cbc9f676ef6a7ada0c592eb075c3d27b840"
+}

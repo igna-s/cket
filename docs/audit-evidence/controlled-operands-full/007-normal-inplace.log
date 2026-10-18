@@ -1,0 +1,5 @@
+PASS 192 in-place joint-state comparisons: both synthesis settings, signed promotions, modular arithmetic, bit rotations, open/closed controls, phase and inverse
+PASS 48 Boolean in-place states: truth conversion, logical operations, comparisons, multiplication, phase, controls and inverse
+PASS in-place table policy, noninjective/undefined rejections and 16/32/64-bit generation (export only)
+PASS in-place functions, fixed memory, control, arithmetic and five GCC optimization levels
+271 in-place checks passed; wide circuit generation is distinct from complete-state validation.

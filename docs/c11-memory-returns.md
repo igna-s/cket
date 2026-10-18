@@ -1,9 +1,10 @@
 # Retornos de memoria y condiciones coherentes
 
-El adaptador parcial está integrado sobre 137 entradas. El
-[registro de integración](audit-evidence/coherent-memory-integration/integration-summary.json)
-identifica las reconstrucciones normales e instrumentadas y sus pruebas específicas. La regresión
-amplia sigue en ejecución.
+Los retornos y las condiciones se integraron originalmente sobre
+[137 entradas](audit-evidence/coherent-memory-integration/integration-summary.json). Su
+[regresión amplia](audit-evidence/coherent-control-full/summary.json) terminó correctamente. La
+[integración posterior de 138 entradas](audit-evidence/controlled-operands-integration/integration-summary.json)
+conserva estos contratos y añade la corrección de operandos enteros del cuerpo de las ramas.
 
 ## Qué representa el puntero
 
@@ -113,6 +114,8 @@ implementada. Estas pruebas no completan C11 ni demuestran ejecución en hardwar
 aceleración. La ciberseguridad permanece clásica y sin cambios.
 
 Los [ocho contrastes posteriores](audit-evidence/coherent-arm-operands/failure-summary.json)
-reprodujeron siete fallos aún abiertos en operandos de asignación, suma, XOR, `memset`, `abs` y
-`phase` bajo control inactivo. El octavo caso, la condición anidada, pasó con esta corrección. Se
-probaron a O2 con builtins; no se presenta esa exploración como una matriz de todos los niveles.
+reprodujeron siete fallos en la versión anterior de 137 entradas. La integración posterior corrige
+los seis perfiles enteros de asignación, suma, XOR, `memset` y absolutos; el ángulo de `phase` y las
+cargas CPU inválidas siguen pendientes. El [contrato de operandos](c11-controlled-operands.md) y el
+[informe nuevo](re-audit-2026-10-18-controlled-operands.md) separan los resultados actuales de
+aquellos fallos históricos.

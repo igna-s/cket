@@ -1,0 +1,1 @@
+PASS locale sanitizer boundary: libc-only LOCPATH reproduction status=1; scoped exclusion preserves project and locale-handle leak detection

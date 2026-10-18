@@ -1,0 +1,1022 @@
+{
+  "status": "passed-in-segments",
+  "started_utc": "2026-10-18T13:34:48.997957+00:00",
+  "source_files": 137,
+  "source_manifest_sha256": "e1706282c1063d5abc1444d9c07cf4e44aed5fbdc31ef370a05577fcc609d077",
+  "commands": [
+    {
+      "name": "fresh-normal-build",
+      "command": [
+        "bash",
+        "scripts/build.sh"
+      ],
+      "started_utc": "2026-10-18T13:34:49.025295+00:00",
+      "finished_utc": "2026-10-18T13:35:16.843176+00:00",
+      "returncode": 0,
+      "log": "001-fresh-normal-build.log",
+      "log_sha256": "2fb1a07d126f14a5f747874b960f737cb9698a8fe5a77a7849e7b80dff457aba"
+    },
+    {
+      "name": "normal-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained"
+      ],
+      "started_utc": "2026-10-18T13:35:16.847327+00:00",
+      "finished_utc": "2026-10-18T13:35:43.876441+00:00",
+      "returncode": 0,
+      "log": "002-normal-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    },
+    {
+      "name": "normal-harness",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_harness"
+      ],
+      "started_utc": "2026-10-18T13:35:43.877740+00:00",
+      "finished_utc": "2026-10-18T13:35:45.246202+00:00",
+      "returncode": 0,
+      "log": "003-normal-harness.log",
+      "log_sha256": "e20b96519ca344d568c8a9c774dfec0490eca2201d28c3996572948831350292"
+    },
+    {
+      "name": "normal-shifts",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_shifts"
+      ],
+      "started_utc": "2026-10-18T13:35:45.246936+00:00",
+      "finished_utc": "2026-10-18T13:35:46.842553+00:00",
+      "returncode": 0,
+      "log": "004-normal-shifts.log",
+      "log_sha256": "d580bb1ca7dc0acc8e69488d4e6a2b7cd2509e060a6a5ad9876a486f4ed6b4e0"
+    },
+    {
+      "name": "normal-expressions",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_expressions"
+      ],
+      "started_utc": "2026-10-18T13:35:46.843311+00:00",
+      "finished_utc": "2026-10-18T13:35:49.160081+00:00",
+      "returncode": 0,
+      "log": "005-normal-expressions.log",
+      "log_sha256": "4e2f73c3afcaa367f0891aab27ce89dd51a5cb141c6b35a3dc8ffe8623a66921"
+    },
+    {
+      "name": "normal-inplace",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_inplace"
+      ],
+      "started_utc": "2026-10-18T13:35:49.160863+00:00",
+      "finished_utc": "2026-10-18T13:35:50.413800+00:00",
+      "returncode": 0,
+      "log": "006-normal-inplace.log",
+      "log_sha256": "3390ecb7f97c1b7aa25807bac7140b94a5e955d8262ad7e945436a6eef970634"
+    },
+    {
+      "name": "normal-memcopy",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_memcopy"
+      ],
+      "started_utc": "2026-10-18T13:35:50.414911+00:00",
+      "finished_utc": "2026-10-18T13:36:18.235173+00:00",
+      "returncode": 0,
+      "log": "007-normal-memcopy.log",
+      "log_sha256": "ab937d3983f46029c82f5a9e1715aa3746dba22f5f0ab9470928726917d14953"
+    },
+    {
+      "name": "normal-memcmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_memcmp"
+      ],
+      "started_utc": "2026-10-18T13:36:18.235944+00:00",
+      "finished_utc": "2026-10-18T13:37:47.123784+00:00",
+      "returncode": 0,
+      "log": "008-normal-memcmp.log",
+      "log_sha256": "650afff30905091673fd1190014ba04b4bbca9aa787694cf2cd722099560ba7c"
+    },
+    {
+      "name": "normal-strncmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_strncmp"
+      ],
+      "started_utc": "2026-10-18T13:37:47.124663+00:00",
+      "finished_utc": "2026-10-18T13:38:35.679832+00:00",
+      "returncode": 0,
+      "log": "009-normal-strncmp.log",
+      "log_sha256": "0cbc2cf175a076aab82c284ab2c3df835fbc92c06f3dbc06d72e3fb2873f9500"
+    },
+    {
+      "name": "normal-memset",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_memset"
+      ],
+      "started_utc": "2026-10-18T13:38:35.680829+00:00",
+      "finished_utc": "2026-10-18T13:41:11.503465+00:00",
+      "returncode": 0,
+      "log": "010-normal-memset.log",
+      "log_sha256": "b6bd70275228d2b4dbaab47f143b9284417437788ca2f0bde7de0ec0b62572c9"
+    },
+    {
+      "name": "normal-memory_sequences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_memory_sequences"
+      ],
+      "started_utc": "2026-10-18T13:41:11.504670+00:00",
+      "finished_utc": "2026-10-18T13:41:54.538213+00:00",
+      "returncode": 0,
+      "log": "011-normal-memory_sequences.log",
+      "log_sha256": "26b42f892f2919f2c136e05707e368449409b6718c5a9b650d2ccfbf77bc699f"
+    },
+    {
+      "name": "normal-memory_returns",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_memory_returns"
+      ],
+      "started_utc": "2026-10-18T13:41:54.539257+00:00",
+      "finished_utc": "2026-10-18T13:42:12.654292+00:00",
+      "returncode": 0,
+      "log": "012-normal-memory_returns.log",
+      "log_sha256": "844850014fca7b2c45bae73036a965e088cede8c625f9d072fcd6000ea242f08"
+    },
+    {
+      "name": "normal-pointer_differences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_pointer_differences"
+      ],
+      "started_utc": "2026-10-18T13:42:12.655134+00:00",
+      "finished_utc": "2026-10-18T13:42:26.728373+00:00",
+      "returncode": 0,
+      "log": "013-normal-pointer_differences.log",
+      "log_sha256": "0d35e2262b4f1b30a8c871b662c24dd8072527478e25720e2bc8e53bd53756ab"
+    },
+    {
+      "name": "normal-byte_snapshots",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_byte_snapshots"
+      ],
+      "started_utc": "2026-10-18T13:42:26.729655+00:00",
+      "finished_utc": "2026-10-18T13:50:02.637589+00:00",
+      "returncode": 0,
+      "log": "014-normal-byte_snapshots.log",
+      "log_sha256": "f10e9d995a0628201cc87a31e4f727af247eba91a11b8fd9b64d677e67d60a50"
+    },
+    {
+      "name": "normal-division",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_division"
+      ],
+      "started_utc": "2026-10-18T13:50:02.640921+00:00",
+      "finished_utc": "2026-10-18T13:50:49.800934+00:00",
+      "returncode": 0,
+      "log": "015-normal-division.log",
+      "log_sha256": "7cfdcf107236d5c819ed42be18207011d0a73dc5cd0ee853b89c57c2675792d3"
+    },
+    {
+      "name": "normal-bindings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_bindings"
+      ],
+      "started_utc": "2026-10-18T13:50:49.801932+00:00",
+      "finished_utc": "2026-10-18T13:51:04.143219+00:00",
+      "returncode": 0,
+      "log": "016-normal-bindings.log",
+      "log_sha256": "55f5540d3d72ff81a7166fef654fbba580e6136a79b06f4382a231b440ee298f"
+    },
+    {
+      "name": "normal-history",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_history"
+      ],
+      "started_utc": "2026-10-18T13:51:04.144277+00:00",
+      "finished_utc": "2026-10-18T13:55:24.484485+00:00",
+      "returncode": 0,
+      "log": "017-normal-history.log",
+      "log_sha256": "99374c97d7f203277279752efa16204f07535900597c924ac95f956a67b62d44"
+    },
+    {
+      "name": "normal-ctype",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_ctype"
+      ],
+      "started_utc": "2026-10-18T13:55:24.487415+00:00",
+      "finished_utc": "2026-10-18T13:56:56.764804+00:00",
+      "returncode": 0,
+      "log": "018-normal-ctype.log",
+      "log_sha256": "47a3447ff060d5dda9dd0e43e3fb333cc11658f33d45b04b3fca552b8c7d72b2"
+    },
+    {
+      "name": "normal-profiles",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_profiles"
+      ],
+      "started_utc": "2026-10-18T13:56:56.768759+00:00",
+      "finished_utc": "2026-10-18T13:56:56.851718+00:00",
+      "returncode": 0,
+      "log": "019-normal-profiles.log",
+      "log_sha256": "5a7666bbfb1b0459750fbf6c1a9ae0cb32c9c88386ed3ca2f532dea818ef4876"
+    },
+    {
+      "name": "normal-numeric_locale",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_numeric_locale"
+      ],
+      "started_utc": "2026-10-18T13:56:56.852679+00:00",
+      "finished_utc": "2026-10-18T13:57:00.299350+00:00",
+      "returncode": 0,
+      "log": "020-normal-numeric_locale.log",
+      "log_sha256": "648b18f9712b19b771a92b6e5da64438b4dc379a083a8a63bf8c727b66ef7655"
+    },
+    {
+      "name": "normal-library",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_library"
+      ],
+      "started_utc": "2026-10-18T13:57:00.300972+00:00",
+      "finished_utc": "2026-10-18T13:59:45.997095+00:00",
+      "returncode": 0,
+      "log": "021-normal-library.log",
+      "log_sha256": "39b25588789f5e9f699cc97550f211e729b362b489351de8a125a8ec8aa258d6"
+    },
+    {
+      "name": "normal-examples",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/test_examples"
+      ],
+      "started_utc": "2026-10-18T13:59:45.998979+00:00",
+      "finished_utc": "2026-10-18T14:00:48.927686+00:00",
+      "returncode": 0,
+      "log": "022-normal-examples.log",
+      "log_sha256": "a0adfe2a9a3ee98975479b6786108f5c53c71918665497a54b48956de3125499"
+    },
+    {
+      "name": "normal-classical",
+      "command": [
+        "bash",
+        "scripts/test-c11-classical.sh"
+      ],
+      "started_utc": "2026-10-18T14:00:48.928719+00:00",
+      "finished_utc": "2026-10-18T14:00:50.437850+00:00",
+      "returncode": 0,
+      "log": "023-normal-classical.log",
+      "log_sha256": "575f1bd2be03b5505d7360d04af378d14bb67c7013fb05e2c8380782c223b86d"
+    },
+    {
+      "name": "normal-validation-build",
+      "command": [
+        "bash",
+        "scripts/build-validation.sh"
+      ],
+      "started_utc": "2026-10-18T14:00:50.439013+00:00",
+      "finished_utc": "2026-10-18T14:00:55.585566+00:00",
+      "returncode": 0,
+      "log": "024-normal-validation-build.log",
+      "log_sha256": "e3d5a54cf590996a0eeb950c53465753d22b5acdcc91642e7ab6f5bf8e54211a"
+    },
+    {
+      "name": "normal-build-resumable-fuzz",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Itests",
+        "-O2",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/full-campaign-v1/resumable-fuzz-driver.c",
+        "tests/validation.c",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full"
+      ],
+      "started_utc": "2026-10-18T14:00:55.586355+00:00",
+      "finished_utc": "2026-10-18T14:00:55.884387+00:00",
+      "returncode": 0,
+      "log": "025-normal-build-resumable-fuzz.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "normal-fuzz-000-016",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "0",
+        "--limit",
+        "16"
+      ],
+      "started_utc": "2026-10-18T14:00:55.885276+00:00",
+      "finished_utc": "2026-10-18T14:02:14.863198+00:00",
+      "returncode": 0,
+      "log": "026-normal-fuzz-000-016.log",
+      "log_sha256": "bc0b2d08736e2141cf788afd9e2f4cc797237256dba6085f5cc774c871852294"
+    },
+    {
+      "name": "normal-fuzz-016-032",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "16",
+        "--limit",
+        "32"
+      ],
+      "started_utc": "2026-10-18T14:02:14.865534+00:00",
+      "finished_utc": "2026-10-18T14:03:29.250816+00:00",
+      "returncode": 0,
+      "log": "027-normal-fuzz-016-032.log",
+      "log_sha256": "ff1c9776f04f1fa6fd0111fc820d065e4cf1c3403c2a91d1f6686033f03991c4"
+    },
+    {
+      "name": "normal-fuzz-032-048",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "32",
+        "--limit",
+        "48"
+      ],
+      "started_utc": "2026-10-18T14:03:29.252046+00:00",
+      "finished_utc": "2026-10-18T14:04:32.488067+00:00",
+      "returncode": 0,
+      "log": "028-normal-fuzz-032-048.log",
+      "log_sha256": "8e3b3bded3f1c67894cffae8afd190fb3296d8612a850515695728d051517dfb"
+    },
+    {
+      "name": "normal-fuzz-048-064",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "48",
+        "--limit",
+        "64"
+      ],
+      "started_utc": "2026-10-18T14:04:32.489833+00:00",
+      "finished_utc": "2026-10-18T14:05:36.886392+00:00",
+      "returncode": 0,
+      "log": "029-normal-fuzz-048-064.log",
+      "log_sha256": "5bc212447bce53ac4484333a080806416bb5c992f40ec093d154a3af244bb2b9"
+    },
+    {
+      "name": "normal-fuzz-064-080",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "64",
+        "--limit",
+        "80"
+      ],
+      "started_utc": "2026-10-18T14:05:36.887661+00:00",
+      "finished_utc": "2026-10-18T14:06:42.093033+00:00",
+      "returncode": 0,
+      "log": "030-normal-fuzz-064-080.log",
+      "log_sha256": "df5e967f53ed30eb76c7166b2d684827f4b237ca5c4a1e183790cdee900b1fa0"
+    },
+    {
+      "name": "normal-fuzz-080-096",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "80",
+        "--limit",
+        "96"
+      ],
+      "started_utc": "2026-10-18T14:06:42.094596+00:00",
+      "finished_utc": "2026-10-18T14:07:46.550112+00:00",
+      "returncode": 0,
+      "log": "031-normal-fuzz-080-096.log",
+      "log_sha256": "12f75e05d3997a3e7dcd6f9a8631d76d95e0760367661b8621d37bdf0811151a"
+    },
+    {
+      "name": "normal-fuzz-096-112",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "96",
+        "--limit",
+        "112"
+      ],
+      "started_utc": "2026-10-18T14:07:46.551785+00:00",
+      "finished_utc": "2026-10-18T14:08:49.377910+00:00",
+      "returncode": 0,
+      "log": "032-normal-fuzz-096-112.log",
+      "log_sha256": "3c052efa7d4ff1a6805c215ae5993f373e7d5252d8ed809e7ae723cbedc7d5fa"
+    },
+    {
+      "name": "normal-fuzz-112-128",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "112",
+        "--limit",
+        "128"
+      ],
+      "started_utc": "2026-10-18T14:08:49.379002+00:00",
+      "finished_utc": "2026-10-18T14:09:52.878916+00:00",
+      "returncode": 0,
+      "log": "033-normal-fuzz-112-128.log",
+      "log_sha256": "f87fbd1ff5b5a46d8653525959835e11fed9ce1dccc03fe4062714a806a4f75e"
+    },
+    {
+      "name": "normal-fuzz-128-133",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "128",
+        "--limit",
+        "133"
+      ],
+      "started_utc": "2026-10-18T14:09:52.880714+00:00",
+      "finished_utc": "2026-10-18T14:10:14.445803+00:00",
+      "returncode": 0,
+      "log": "034-normal-fuzz-128-133.log",
+      "log_sha256": "f33bcbf68bee6ec04bb61f4d62a8e8ac3175ac0b6d7dda075eb9a5d23140c738"
+    },
+    {
+      "name": "normal-growth",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/benchmark_synthesis"
+      ],
+      "started_utc": "2026-10-18T14:10:14.447307+00:00",
+      "finished_utc": "2026-10-18T14:10:14.700369+00:00",
+      "returncode": 0,
+      "log": "035-normal-growth.log",
+      "log_sha256": "cb887c4e38bb5f1354a651bc582e0231f54645f82647083952cc44acebec3be7"
+    },
+    {
+      "name": "normal-qasm",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/validate_qasm"
+      ],
+      "started_utc": "2026-10-18T14:10:14.701545+00:00",
+      "finished_utc": "2026-10-18T14:11:35.197930+00:00",
+      "returncode": 0,
+      "log": "036-normal-qasm.log",
+      "log_sha256": "9c17f4edf4946f03dfd789fc7bd029c6430df21f0cbeac41a6d8126bdb5cf27b"
+    },
+    {
+      "name": "locale-sanitizer-boundary",
+      "command": [
+        "bash",
+        "scripts/test-locale-sanitizer.sh"
+      ],
+      "started_utc": "2026-10-18T14:11:35.199744+00:00",
+      "finished_utc": "2026-10-18T14:11:35.631405+00:00",
+      "returncode": 0,
+      "log": "037-locale-sanitizer-boundary.log",
+      "log_sha256": "3f418c89f34921bd430370f00192dd75fbd74c7ba1652b133abd7415461dd3d4"
+    },
+    {
+      "name": "fresh-sanitizer-build",
+      "command": [
+        "bash",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/full-campaign-v1/fresh-sanitizer-build-only.sh"
+      ],
+      "started_utc": "2026-10-18T14:11:35.655765+00:00",
+      "finished_utc": "2026-10-18T14:13:14.177397+00:00",
+      "returncode": 0,
+      "log": "038-fresh-sanitizer-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sanitized-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized"
+      ],
+      "started_utc": "2026-10-18T14:13:14.294156+00:00",
+      "finished_utc": "2026-10-18T14:14:36.613176+00:00",
+      "returncode": 0,
+      "log": "039-sanitized-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    },
+    {
+      "name": "sanitized-harness",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_harness"
+      ],
+      "started_utc": "2026-10-18T14:14:36.614259+00:00",
+      "finished_utc": "2026-10-18T14:14:38.395301+00:00",
+      "returncode": 0,
+      "log": "040-sanitized-harness.log",
+      "log_sha256": "e20b96519ca344d568c8a9c774dfec0490eca2201d28c3996572948831350292"
+    },
+    {
+      "name": "sanitized-shifts",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_shifts"
+      ],
+      "started_utc": "2026-10-18T14:14:38.396235+00:00",
+      "finished_utc": "2026-10-18T14:14:43.237489+00:00",
+      "returncode": 0,
+      "log": "041-sanitized-shifts.log",
+      "log_sha256": "d580bb1ca7dc0acc8e69488d4e6a2b7cd2509e060a6a5ad9876a486f4ed6b4e0"
+    },
+    {
+      "name": "sanitized-expressions",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_expressions"
+      ],
+      "started_utc": "2026-10-18T14:14:43.238658+00:00",
+      "finished_utc": "2026-10-18T14:14:49.810379+00:00",
+      "returncode": 0,
+      "log": "042-sanitized-expressions.log",
+      "log_sha256": "4e2f73c3afcaa367f0891aab27ce89dd51a5cb141c6b35a3dc8ffe8623a66921"
+    },
+    {
+      "name": "sanitized-inplace",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_inplace"
+      ],
+      "started_utc": "2026-10-18T14:14:49.811558+00:00",
+      "finished_utc": "2026-10-18T14:14:54.884975+00:00",
+      "returncode": 0,
+      "log": "043-sanitized-inplace.log",
+      "log_sha256": "3390ecb7f97c1b7aa25807bac7140b94a5e955d8262ad7e945436a6eef970634"
+    },
+    {
+      "name": "sanitized-memcopy",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_memcopy"
+      ],
+      "started_utc": "2026-10-18T14:14:54.886256+00:00",
+      "finished_utc": "2026-10-18T14:16:22.302876+00:00",
+      "returncode": 0,
+      "log": "044-sanitized-memcopy.log",
+      "log_sha256": "ab937d3983f46029c82f5a9e1715aa3746dba22f5f0ab9470928726917d14953"
+    },
+    {
+      "name": "sanitized-memcmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_memcmp"
+      ],
+      "started_utc": "2026-10-18T14:16:22.305150+00:00",
+      "finished_utc": "2026-10-18T14:20:21.967695+00:00",
+      "returncode": 0,
+      "log": "045-sanitized-memcmp.log",
+      "log_sha256": "650afff30905091673fd1190014ba04b4bbca9aa787694cf2cd722099560ba7c"
+    },
+    {
+      "name": "sanitized-strncmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_strncmp"
+      ],
+      "started_utc": "2026-10-18T14:20:21.969398+00:00",
+      "finished_utc": "2026-10-18T14:22:40.645197+00:00",
+      "returncode": 0,
+      "log": "046-sanitized-strncmp.log",
+      "log_sha256": "0cbc2cf175a076aab82c284ab2c3df835fbc92c06f3dbc06d72e3fb2873f9500"
+    },
+    {
+      "name": "sanitized-memset",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_memset"
+      ],
+      "started_utc": "2026-10-18T14:22:40.646762+00:00",
+      "finished_utc": "2026-10-18T14:29:54.200665+00:00",
+      "returncode": 0,
+      "log": "047-sanitized-memset.log",
+      "log_sha256": "b6bd70275228d2b4dbaab47f143b9284417437788ca2f0bde7de0ec0b62572c9"
+    },
+    {
+      "name": "sanitized-memory_sequences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_memory_sequences"
+      ],
+      "started_utc": "2026-10-18T14:29:54.205566+00:00",
+      "finished_utc": "2026-10-18T14:32:49.335593+00:00",
+      "returncode": 0,
+      "log": "048-sanitized-memory_sequences.log",
+      "log_sha256": "26b42f892f2919f2c136e05707e368449409b6718c5a9b650d2ccfbf77bc699f"
+    },
+    {
+      "name": "sanitized-memory_returns",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_memory_returns"
+      ],
+      "started_utc": "2026-10-18T14:32:49.336710+00:00",
+      "finished_utc": "2026-10-18T14:34:06.784952+00:00",
+      "returncode": 0,
+      "log": "049-sanitized-memory_returns.log",
+      "log_sha256": "844850014fca7b2c45bae73036a965e088cede8c625f9d072fcd6000ea242f08"
+    },
+    {
+      "name": "sanitized-pointer_differences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_pointer_differences"
+      ],
+      "started_utc": "2026-10-18T14:34:06.785923+00:00",
+      "finished_utc": "2026-10-18T14:34:53.957361+00:00",
+      "returncode": 0,
+      "log": "050-sanitized-pointer_differences.log",
+      "log_sha256": "0d35e2262b4f1b30a8c871b662c24dd8072527478e25720e2bc8e53bd53756ab"
+    },
+    {
+      "name": "sanitized-byte_snapshots",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_byte_snapshots"
+      ],
+      "started_utc": "2026-10-18T14:34:53.958551+00:00",
+      "finished_utc": "2026-10-18T14:55:54.312435+00:00",
+      "returncode": 0,
+      "log": "051-sanitized-byte_snapshots.log",
+      "log_sha256": "f10e9d995a0628201cc87a31e4f727af247eba91a11b8fd9b64d677e67d60a50"
+    },
+    {
+      "name": "sanitized-division",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_division"
+      ],
+      "started_utc": "2026-10-18T14:55:54.315703+00:00",
+      "finished_utc": "2026-10-18T14:58:35.888611+00:00",
+      "returncode": 0,
+      "log": "052-sanitized-division.log",
+      "log_sha256": "7cfdcf107236d5c819ed42be18207011d0a73dc5cd0ee853b89c57c2675792d3"
+    },
+    {
+      "name": "sanitized-bindings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_bindings"
+      ],
+      "started_utc": "2026-10-18T14:58:35.889837+00:00",
+      "finished_utc": "2026-10-18T14:59:37.069251+00:00",
+      "returncode": 0,
+      "log": "053-sanitized-bindings.log",
+      "log_sha256": "55f5540d3d72ff81a7166fef654fbba580e6136a79b06f4382a231b440ee298f"
+    },
+    {
+      "name": "sanitized-history",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_history"
+      ],
+      "started_utc": "2026-10-18T14:59:37.070503+00:00",
+      "finished_utc": "2026-10-18T15:08:46.667964+00:00",
+      "returncode": 0,
+      "log": "054-sanitized-history.log",
+      "log_sha256": "99374c97d7f203277279752efa16204f07535900597c924ac95f956a67b62d44"
+    },
+    {
+      "name": "sanitized-ctype",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_ctype"
+      ],
+      "started_utc": "2026-10-18T15:08:46.669175+00:00",
+      "finished_utc": "2026-10-18T15:12:08.901269+00:00",
+      "returncode": 0,
+      "log": "055-sanitized-ctype.log",
+      "log_sha256": "47a3447ff060d5dda9dd0e43e3fb333cc11658f33d45b04b3fca552b8c7d72b2"
+    },
+    {
+      "name": "sanitized-profiles",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_profiles"
+      ],
+      "started_utc": "2026-10-18T15:12:08.902422+00:00",
+      "finished_utc": "2026-10-18T15:12:09.222470+00:00",
+      "returncode": 0,
+      "log": "056-sanitized-profiles.log",
+      "log_sha256": "5a7666bbfb1b0459750fbf6c1a9ae0cb32c9c88386ed3ca2f532dea818ef4876"
+    },
+    {
+      "name": "sanitized-numeric_locale",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_numeric_locale"
+      ],
+      "started_utc": "2026-10-18T15:12:09.223488+00:00",
+      "finished_utc": "2026-10-18T15:12:13.781430+00:00",
+      "returncode": 0,
+      "log": "057-sanitized-numeric_locale.log",
+      "log_sha256": "648b18f9712b19b771a92b6e5da64438b4dc379a083a8a63bf8c727b66ef7655"
+    },
+    {
+      "name": "sanitized-library",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_library"
+      ],
+      "started_utc": "2026-10-18T15:12:13.782387+00:00",
+      "finished_utc": "2026-10-18T15:26:03.994944+00:00",
+      "returncode": 0,
+      "log": "058-sanitized-library.log",
+      "log_sha256": "39b25588789f5e9f699cc97550f211e729b362b489351de8a125a8ec8aa258d6"
+    },
+    {
+      "name": "sanitized-examples",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/test_examples"
+      ],
+      "started_utc": "2026-10-18T15:26:03.997110+00:00",
+      "finished_utc": "2026-10-18T15:29:37.482905+00:00",
+      "returncode": 0,
+      "log": "059-sanitized-examples.log",
+      "log_sha256": "a0adfe2a9a3ee98975479b6786108f5c53c71918665497a54b48956de3125499"
+    },
+    {
+      "name": "sanitized-classical",
+      "command": [
+        "bash",
+        "scripts/test-c11-classical.sh"
+      ],
+      "started_utc": "2026-10-18T15:29:37.485709+00:00",
+      "finished_utc": "2026-10-18T15:29:48.455584+00:00",
+      "returncode": 0,
+      "log": "060-sanitized-classical.log",
+      "log_sha256": "01a328f356751dabb48644183ac1cb41da480fcc08bd6e8d5f28d8b4916a9ffe"
+    },
+    {
+      "name": "sanitized-validation-build",
+      "command": [
+        "bash",
+        "scripts/build-validation.sh"
+      ],
+      "started_utc": "2026-10-18T15:29:48.457364+00:00",
+      "finished_utc": "2026-10-18T15:30:22.534509+00:00",
+      "returncode": 0,
+      "log": "061-sanitized-validation-build.log",
+      "log_sha256": "e3d5a54cf590996a0eeb950c53465753d22b5acdcc91642e7ab6f5bf8e54211a"
+    },
+    {
+      "name": "sanitized-build-resumable-fuzz",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Itests",
+        "-O1",
+        "-g",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-fno-pie",
+        "-no-pie",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/full-campaign-v1/resumable-fuzz-driver.c",
+        "tests/validation.c",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full"
+      ],
+      "started_utc": "2026-10-18T15:30:22.546422+00:00",
+      "finished_utc": "2026-10-18T15:30:23.080111+00:00",
+      "returncode": 0,
+      "log": "062-sanitized-build-resumable-fuzz.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sanitized-fuzz-000-016",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "0",
+        "--limit",
+        "16"
+      ],
+      "started_utc": "2026-10-18T15:30:23.081494+00:00",
+      "finished_utc": "2026-10-18T15:34:06.306642+00:00",
+      "returncode": 0,
+      "log": "063-sanitized-fuzz-000-016.log",
+      "log_sha256": "bc0b2d08736e2141cf788afd9e2f4cc797237256dba6085f5cc774c871852294"
+    },
+    {
+      "name": "sanitized-fuzz-016-032",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "16",
+        "--limit",
+        "32"
+      ],
+      "started_utc": "2026-10-18T15:34:06.308291+00:00",
+      "finished_utc": "2026-10-18T15:36:53.190887+00:00",
+      "returncode": 0,
+      "log": "064-sanitized-fuzz-016-032.log",
+      "log_sha256": "ff1c9776f04f1fa6fd0111fc820d065e4cf1c3403c2a91d1f6686033f03991c4"
+    },
+    {
+      "name": "sanitized-fuzz-032-048",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "32",
+        "--limit",
+        "48"
+      ],
+      "started_utc": "2026-10-18T15:36:53.216745+00:00",
+      "finished_utc": "2026-10-18T15:40:21.077213+00:00",
+      "returncode": 0,
+      "log": "065-sanitized-fuzz-032-048.log",
+      "log_sha256": "8e3b3bded3f1c67894cffae8afd190fb3296d8612a850515695728d051517dfb"
+    },
+    {
+      "name": "sanitized-fuzz-048-064",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "48",
+        "--limit",
+        "64"
+      ],
+      "started_utc": "2026-10-18T15:40:21.079598+00:00",
+      "finished_utc": "2026-10-18T15:43:24.759807+00:00",
+      "returncode": 0,
+      "log": "066-sanitized-fuzz-048-064.log",
+      "log_sha256": "5bc212447bce53ac4484333a080806416bb5c992f40ec093d154a3af244bb2b9"
+    },
+    {
+      "name": "sanitized-fuzz-064-080",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "64",
+        "--limit",
+        "80"
+      ],
+      "started_utc": "2026-10-18T15:43:24.761407+00:00",
+      "finished_utc": "2026-10-18T15:45:45.978260+00:00",
+      "returncode": 0,
+      "log": "067-sanitized-fuzz-064-080.log",
+      "log_sha256": "df5e967f53ed30eb76c7166b2d684827f4b237ca5c4a1e183790cdee900b1fa0"
+    },
+    {
+      "name": "sanitized-fuzz-080-096",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "80",
+        "--limit",
+        "96"
+      ],
+      "started_utc": "2026-10-18T15:45:45.981444+00:00",
+      "finished_utc": "2026-10-18T15:48:08.323784+00:00",
+      "returncode": 0,
+      "log": "068-sanitized-fuzz-080-096.log",
+      "log_sha256": "12f75e05d3997a3e7dcd6f9a8631d76d95e0760367661b8621d37bdf0811151a"
+    },
+    {
+      "name": "sanitized-fuzz-096-112",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "96",
+        "--limit",
+        "112"
+      ],
+      "started_utc": "2026-10-18T15:48:08.325686+00:00",
+      "finished_utc": "2026-10-18T15:50:10.824013+00:00",
+      "returncode": 0,
+      "log": "069-sanitized-fuzz-096-112.log",
+      "log_sha256": "3c052efa7d4ff1a6805c215ae5993f373e7d5252d8ed809e7ae723cbedc7d5fa"
+    },
+    {
+      "name": "sanitized-fuzz-112-128",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "112",
+        "--limit",
+        "128"
+      ],
+      "started_utc": "2026-10-18T15:50:10.825496+00:00",
+      "finished_utc": "2026-10-18T15:52:22.183178+00:00",
+      "returncode": 0,
+      "log": "070-sanitized-fuzz-112-128.log",
+      "log_sha256": "f87fbd1ff5b5a46d8653525959835e11fed9ce1dccc03fe4062714a806a4f75e"
+    },
+    {
+      "name": "sanitized-fuzz-128-133",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "128",
+        "--limit",
+        "133"
+      ],
+      "started_utc": "2026-10-18T15:52:22.184847+00:00",
+      "finished_utc": "2026-10-18T15:53:10.506289+00:00",
+      "returncode": 0,
+      "log": "071-sanitized-fuzz-128-133.log",
+      "log_sha256": "f33bcbf68bee6ec04bb61f4d62a8e8ac3175ac0b6d7dda075eb9a5d23140c738"
+    },
+    {
+      "name": "sanitized-growth",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/benchmark_synthesis-sanitized"
+      ],
+      "started_utc": "2026-10-18T15:53:10.508503+00:00",
+      "finished_utc": "2026-10-18T15:53:11.108343+00:00",
+      "returncode": 0,
+      "log": "072-sanitized-growth.log",
+      "log_sha256": "5599f69e6552ea99227c26d3b3a5eab01b054a14990dad06c14af86ea8442fd9"
+    },
+    {
+      "name": "growth-equality",
+      "command": [
+        "cmp",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/synthesis-growth.csv",
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/synthesis-growth.csv"
+      ],
+      "started_utc": "2026-10-18T15:53:11.109474+00:00",
+      "finished_utc": "2026-10-18T15:53:11.110962+00:00",
+      "returncode": 0,
+      "log": "073-growth-equality.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sanitized-qasm",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/build/sanitized/build/validate_qasm-sanitized"
+      ],
+      "started_utc": "2026-10-18T15:53:11.112351+00:00",
+      "finished_utc": "2026-10-18T15:57:25.904663+00:00",
+      "returncode": 0,
+      "log": "074-sanitized-qasm.log",
+      "log_sha256": "9c17f4edf4946f03dfd789fc7bd029c6430df21f0cbeac41a6d8126bdb5cf27b"
+    }
+  ],
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 137 frozen inputs. Repository validation commands run as individually recorded suites, rather than one scripts/verify.sh process. Fuzz cases are split into archived derived-driver ranges; original generator/program/oracle and all 133 case indices, five levels, 256 inputs and seed 20261012 are retained. Counts are explicit aggregates. Includes the coherent CPU-predicate and inactive-arithmetic correction, with the former rejection now checked positively in the 170-check suite. Invalid conditional CPU-memory accesses remain pending. No main promotion, complete C11, hardware or speedup claim. No security configuration changes.",
+  "normal_fresh_core_sha256": {
+    "cket": "422b9d1e90084672f74b61d66f61874b83da077b12c12a06ef40f160c23d4012",
+    "cket_backend": "cdcd41ad690169acc0c48b223419039077064bc12075a10235a925add44edd81",
+    "cket_plugin.so": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "907361a217f5e211c8434a910dcf6d0032c0cf9f9e34f819460ab05fe32fcf61"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "3bd779caa89bf268769d636503108c5bf0467536f856b7cf745dbca4eed422a4",
+    "cket_backend": "d561c8984b449b68490624f701ccf1d8b4629d0ea4459082ef732a65b87047c2",
+    "cket_plugin.so": "c202af8693db96dd1b0cc88d06824f9ed4e56006c54b03b1f7270ae58f8c6492",
+    "cket_runtime.o": "8a47f66f6ec0426a43661ccebe8552c4f56751c1d2265e13266f3720765bd0c2",
+    "libcket_quantum.a": "5148af6f6a2ef2e6fe1749dcbc662c19d9938f78216358edd2a916be558703f4"
+  },
+  "sanitized_status": "passed-in-segments",
+  "exit_code": 0,
+  "finished_utc": "2026-10-18T15:57:25.999985+00:00",
+  "combined_log_sha256": "0862019709b6329cc459b6d2c5b5ee0a0b4779ad1ec3acbb5fb033e7f000d5ef"
+}

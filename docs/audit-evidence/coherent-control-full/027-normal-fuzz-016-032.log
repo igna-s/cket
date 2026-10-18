@@ -1,0 +1,17 @@
+PASS frontend 16: all 256 byte inputs at all 5 optimization levels
+PASS frontend 17: all 256 byte inputs at all 5 optimization levels
+PASS frontend 18: all 256 byte inputs at all 5 optimization levels
+PASS frontend 19: all 256 byte inputs at all 5 optimization levels
+PASS frontend 20: all 256 byte inputs at all 5 optimization levels
+PASS frontend 21: all 256 byte inputs at all 5 optimization levels
+PASS frontend 22: all 256 byte inputs at all 5 optimization levels
+PASS frontend 23: all 256 byte inputs at all 5 optimization levels
+PASS frontend 24: all 256 byte inputs at all 5 optimization levels
+PASS frontend 25: all 256 byte inputs at all 5 optimization levels
+PASS frontend 26: all 256 byte inputs at all 5 optimization levels
+PASS frontend 27: all 256 byte inputs at all 5 optimization levels
+PASS frontend 28: all 256 byte inputs at all 5 optimization levels
+PASS frontend 29: all 256 byte inputs at all 5 optimization levels
+PASS frontend 30: all 256 byte inputs at all 5 optimization levels
+PASS frontend 31: all 256 byte inputs at all 5 optimization levels
+80 segment frontend compilations passed; seed=20261012 (C generator, SplitMix64)

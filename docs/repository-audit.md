@@ -1,12 +1,18 @@
 # Auditoría del repositorio y de los papers
 
-La [integración del 18 de octubre](c11-memory-returns.md) añade retornos locales de memoria,
-distancias comprobadas y una corrección de condiciones CPU dentro de control cuántico. Sus 137
-entradas pasaron reconstrucciones normales/ASan/UBSan y controles específicos; la regresión amplia
-sigue pendiente. Hay
-[siete fallos posteriores reproducidos](audit-evidence/coherent-arm-operands/failure-summary.json)
-en operandos bajo control inactivo y un caso pendiente de dirección CPU inválida. El inventario
-sigue incompleto y la ciberseguridad permanece clásica.
+La [integración de operandos del 18 de octubre](re-audit-2026-10-18-controlled-operands.md) añade
+evaluación diferida de operandos enteros bajo control coherente, conservación del dominio
+seleccionado e identificación de los absolutos estándar. Sus 138 entradas pasaron una campaña
+completa normal/ASan/UBSan, 665 compilaciones de fuzzing y 70 circuitos QuEST por configuración. La
+instalación separada pasó 393 casos nativos, 1270 controles de operandos y 40 ejecuciones de los
+ejemplos exactos del contrato por configuración. Las pruebas de estados completas se registran
+aparte: 8000 de operandos y 1200 de XOR booleano y bucles.
+
+La integración anterior de retornos, distancias y condiciones conserva sus 137 entradas y su
+[campaña amplia completada](audit-evidence/coherent-control-full/summary.json). El ángulo de `phase`
+y las cargas CPU de ramas inactivas siguen siendo bugs conocidos. Las referencias C correctas y los
+140 fallos de la matriz de cargas se conservan; la biblioteca C11 sigue incompleta. La
+ciberseguridad permanece clásica.
 
 La [integración de memoria del 17 de octubre](re-audit-2026-10-17-memory-expressions.md) añade
 `memset` parcial y llamadas descartadas en expresiones con coma y selección coherente. Pasaron las

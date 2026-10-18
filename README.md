@@ -26,6 +26,12 @@ data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
+The [controlled-operand contract](docs/c11-controlled-operands.md) covers supported pure integer
+operands in coherent assignments, XOR, addition, standard integer absolutes and byte fill. Its
+[audit report](docs/re-audit-2026-10-18-controlled-operands.md) records complete normal/sanitizer
+regression and separate installation checks. Inactive CPU loads and deferred `phase` angles still
+have confirmed bugs; these limits and incomplete C11 coverage remain explicit.
+
 ## Install and build
 
 Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The
@@ -552,6 +558,11 @@ Independent validation builds the serial **C** backend of
 `d4f75f724993b4af8e43a796e3c09ce24ae11670`, with SHA-256
 `1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
+
+The controlled-operand suite adds 1270 checks per configuration: 1000 defined native executions, 200
+undefined-domain diagnostics, 60 CPU-effect diagnostics and 10 private-homonym executions. Its 100
+ordinary C references per configuration and independent phase/inverse proofs have separate scopes.
+Diagnostic rejection does not implement the rejected C context.
 
 Validation includes 393 native checks; 36 examples at five optimization levels; a default frontend
 corpus of 29 programs at five levels; 24 growth circuits; and 70 independent QASM cases exported

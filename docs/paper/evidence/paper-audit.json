@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 355,
+  "checks": 362,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -553,6 +553,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-controlled-operands.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/c11-cpu-control.md",
       "passed": true,
       "detail": ""
@@ -684,6 +689,11 @@
     },
     {
       "check": "Fuente local docs/re-audit-2026-10-17-memory-expressions.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-18-controlled-operands.md",
       "passed": true,
       "detail": ""
     },
@@ -1263,6 +1273,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_controlled_operands.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_ctype.c",
       "passed": true,
       "detail": ""
@@ -1748,7 +1763,12 @@
       "detail": ""
     },
     {
-      "check": "Current compiler: integrated inputs match the passing archived source identity",
+      "check": "Current compiler:138 integrated inputs match targeted installation and completed broad sources",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Historical137 broad campaign completed separately from its original targeted integration metadata",
       "passed": true,
       "detail": ""
     },
@@ -1763,7 +1783,7 @@
       "detail": ""
     },
     {
-      "check": "Current audit: seven controlled-body failures remain disclosed despite the condition fix",
+      "check": "Historical137 audit: seven original controlled-body failures retain their source identity",
       "passed": true,
       "detail": ""
     },
@@ -1778,7 +1798,22 @@
       "detail": ""
     },
     {
-      "check": "Candidate operands: two actual broad failures prevent promotion",
+      "check": "Historical v4 operands: two actual broad failures prevented promotion of those sources",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "V5 candidate: positive native and independent inverse scopes preserve the earlier runner failure",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Integrated v5: pure CPU loads still fault despite valid ordinary C inactive arms",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Integrated137 CI: completed repository workflow remains distinct from v5 and larger local fuzzing",
       "passed": true,
       "detail": ""
     }
@@ -1786,8 +1821,8 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 182,
-    "execution_scope": "Integrated137 targeted checks remain separate from candidate138. The controlled-operand candidate passes1270 scoped checks per normal/sanitizer configuration and8000 independent states/inverses, but its fresh broad normal native suite fails391/2. No candidate promotion or broad pass. Historical source identities and paper experiments preserved. Windows import is hash-guarded, not a repeated test execution. Cybersecurity classical and unchanged."
+    "source_files_in_manifest": 185,
+    "execution_scope": "Current138 inputs match the passed76-command broad normal/sanitizer campaign and a separate fresh installation that passed393 native,1270 controlled checks and40 exact contract executions per configuration. Historical137 CI/fuzz and operand failures retain their identities. Windows source application is separately hash-guarded and is not a second broad execution. Deferred phase angles, inactive CPU loads and complete C11 remain pending. Cybersecurity classical and unchanged."
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

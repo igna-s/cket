@@ -1,0 +1,23 @@
+PASS 78 history domains: complete phased states, live old dependencies, typed arithmetic, both table policies and clean derived inverses
+PASS 5 history/proof lifetimes: known basis restoration/reuse, live inverse protection, schema rejection and predicate cache invalidation
+PASS 46 CPU owner contracts: gate-free transfer, saved inverses, optional and deferred disposal, retained outputs and schema rejection
+PASS 260 observation channel contracts: complete phased fibers before/after inverse, unchanged input epochs, clean release, both synthesis policies and rejection before mutation
+PASS 8 constant predicate contracts: known roots/literal definitions, missing canonical domain input, stale epochs, partial controls, phases and rejection before mutation
+PASS 75 C history integrations: combined assignments, CPU snapshots, fixed arrays/pointer aliases, mutable functions and measurement-chain regression at five GCC levels
+PASS 30 C complete states: derived/history cleanup, retained unknown outputs and CPU snapshot inverse at five GCC levels with both synthesis policies
+PASS 110 coherent C complete states: one/two arms, self controls, nesting, CPU snapshots, lazy definedness, functions and successive joins at five GCC levels with both synthesis policies
+PASS 30 coherent word states: signed/unsigned eight-bit outputs, known-basis history restoration and fixed pointer/array aliases at five GCC levels with both synthesis policies
+PASS CPU history: 40 C programs, 90 native paths and 180 complete selected-trace states; five GCC levels and both synthesis policies
+PASS CPU word history: 15 C programs, 30 native paths and 60 complete selected-trace states; known-basis eight-bit words, scalar/array/parameter aliases, five GCC levels and both synthesis policies
+PASS 120 native quantum effect values: prefix/postfix, all assignment forms, comma and fixed aliases at five GCC levels
+PASS 60 quantum effect complete states: old/new values, correlations, relative phase, history and zero private garbage; five GCC levels and both synthesis policies
+PASS 40 quantum effect diagnostics: undefined unsequenced accesses, pending CPU effects and classical-only measurement at five GCC levels
+PASS 120 computed measurement C executions: typed results, once-only effects, casts, arithmetic, aliases, loops, last-use history and unevaluated type contexts at five GCC levels
+PASS 320 compiled observation conditional states: logical/predicate C results, preserved relative phases within fibers, clean temporaries, five GCC levels and both synthesis policies
+PASS 30 observation diagnostics: pending encodings/control/effects, unsequenced accesses and classical-only operands at five GCC levels
+PASS 320 lazy C values: ordinary C references, selected effects, nested short circuit, self conditions and five GCC levels
+PASS 65 lazy C combinations: CPU snapshots, memory aliases, functions, nested control, static loops, inactive arithmetic, typed words and explicit observation
+PASS 160 lazy full states: independent C values, phases, retained roots, zero private garbage, exact channels, five GCC levels and both synthesis policies
+PASS 20 lazy diagnostics: reachable undefined operations, pending loop history and volatile CPU effects; five GCC levels
+PASS 20 pending-contract diagnostics: controlled declarations, runtime iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels
+2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct.

@@ -1,0 +1,4 @@
+PASS 100 complete memory sequence basis-action circuits: both input labels, relative phases, saved result/write inverses and private zeros; verified one-H preparation, both synthesis policies, maximum 26 physical wires
+PASS 240 native memory compositions: comparisons, copies, ctype/division/abs values, comma chains, CPU snapshots and coherent short circuit; five GCC levels, both builtin modes
+PASS 20 memory sequence rejection contracts: unsequenced value-argument access and coherent CPU effects; ordinary C syntax checked, not a definedness claim
+360 memory sequence checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes.

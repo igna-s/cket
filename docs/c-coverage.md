@@ -75,6 +75,12 @@ synthesis and support frozen profiles in unitary modules. Indirect calls, automa
 static locale traces, concurrency and complete pre-GCC source provenance remain P/R; invalid C
 arguments have the standard undefined-domain contract.
 
+The [controlled-operand contract](c11-controlled-operands.md) keeps supported pure CPU integer
+calculations inside selected typed expressions for assignments, XOR, addition, integer absolutes and
+byte fill. Reversible literal/scalar updates keep their in-place path. CPU loads through invalid
+storage or invalid indices in inactive coherent arms still have confirmed bugs; general conditional
+memory access is not implemented by this arithmetic correction.
+
 ## Additional quantum transformations
 
 The [memcmp adapter](c11-memcmp.md) reads checked integer object bytes reversibly, including
@@ -85,9 +91,11 @@ Unknown pointers, dynamic addresses/extents, volatile/atomic CPU accesses, gener
 and indirect quantum ABI remain pending. This extends read-only byte access, without implementing
 general byte writes or libc.
 
-`phase(theta)` accepts finite classical angles, constant or runtime-computed. `fourier` and
-`inverse_fourier` transform an entire register, with or without coherent controls, using quadratic
-synthesis. Neither enumerates the domain.
+`phase(theta)` accepts finite classical angles, constant or runtime-computed. Runtime angle
+expressions can still execute CPU arithmetic from an inactive coherent arm; this is a confirmed
+pending bug, including division by zero that ordinary C would skip. `fourier` and `inverse_fourier`
+transform an entire register, with or without coherent controls, using quadratic synthesis. Neither
+enumerates the domain.
 
 The examples `functions.c`, `vector_function.c`, `dynamic_vector.c`, `fourier.c`, and
 `phase_estimation.c` exercise composition, borrows, CPU-indexed access, and interference algorithms.

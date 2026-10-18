@@ -1,0 +1,402 @@
+[
+  {
+    "example": 0,
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "source_sha256": "a0889ef98380a764c638cd1efeb41782118492e5e25fd19b1be39241d1fc63ac",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "source_sha256": "7996e3470bcf454cf691305239c07111a51fbc6345f50dfdf53a5f965c63803b",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "source_sha256": "139f922c2ae82b24c14daac77e5886675c7a8e07773684a6c2a3fae26895416f",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 3,
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "source_sha256": "1c2304881c8967a1185d728d70511e7f559a6502169b9b22e18f031f6417d2dc",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  }
+]

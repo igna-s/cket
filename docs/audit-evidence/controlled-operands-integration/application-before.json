@@ -1,0 +1,21 @@
+{
+  "scripts/archive-audit.py": "ac995650523736c5de9ac89fb320ec652a7c2b04531921d30a2f9fa064eb4b00",
+  "scripts/build.sh": "50c93f71801b98724f0d1d68f00ac2ee8950337a4dd42d49c7b8c79bb028c061",
+  "scripts/sanitize-all.sh": "01ec6bb994721831e6b6f06c6a473e887fb8e020213870d68689e87104e31758",
+  "scripts/verify.sh": "5a3465c3c699edb0c90914cab38bb00182aa4b1ca8d136bc2a022895cd46e72b",
+  "src/quantum_frontend.inc": "7d8c9828e76ae80c2e3322d2590490bbaada48ffbfa136c5256f09faaf418362",
+  "src/quantum_semantics.inc": "adb2a7fed27186acf33258dce3d029afbd7656932658074a4ef575d2bbeafaf1",
+  "tests/validate_controlled_operands.c": null,
+  "README.md": "4a20169b18b1fbb4e1da7790ec7cefe18a5e4dc8b51215600c62d8507ad9116c",
+  "docs/c-coverage.md": "89cd8361f919035c1e39d568657eade32d03b4f680dca7eb4ebaaebbebd97bab",
+  "docs/c11-memory-returns.md": "1cee4623d7e0e24a8e5cbab7b49d8c6668bc65e2239522e674eea7d496fa6c22",
+  "docs/estado-general-del-proyecto.es.md": "52e822471a921c1d7427ed1a28941410c47e373aca8fb12dfc6de78d85df966b",
+  "docs/repository-audit.md": "9d6f689c92c6da246033cb27894fff5515fe3a77f5f72c17bafbc66beeceaf26",
+  "docs/paper/audit_paper.py": "993a679079a6aa260473051337100dd29d59b3bca8e3d9365c377ac6b9f4ef99",
+  "docs/paper/evidence/paper-audit.json": "0ae8e2af6c9197bbbf98323b769b8c4d87d274de8db0a865a4c6f149074bdc48",
+  "docs/paper/evidence/paper-audit-en.json": "f0367d74468f36575a6ce08fd8d88460ca84cd02d8eb0f161927e39ec3680056",
+  "docs/paper/evidence/sha256-manifest.json": "de823dfe4819a7ee02418840502815f3df412f26ca4da2997b97640d9198aeaf",
+  "docs/audit-evidence/controlled-operands-v5/README.es.md": "aac39042e97efa81d2475e99a8f0781139f2c46f37ccca2a74126e73ef0f01d0",
+  "docs/c11-controlled-operands.md": null,
+  "docs/re-audit-2026-10-18-controlled-operands.md": null
+}

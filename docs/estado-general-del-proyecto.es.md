@@ -18,33 +18,41 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
-**La división anticipada en condiciones anidadas ya tiene una corrección integrada.** Las
-reconstrucciones nuevas normales y con ASan/UBSan pasaron, por configuración, 393 pruebas nativas,
-290 de retornos de memoria, 170 de distancias, 180 ejecuciones de condiciones y 30 diagnósticos. La
-[integración](audit-evidence/coherent-memory-integration/integration-summary.json) conserva las 137
-entradas exactas y distingue esos controles de la regresión amplia, que sigue en ejecución. Los 800
-estados e inversas independientes pertenecen a la evidencia separada de la corrección.
+**Ya hay una corrección integrada de operandos enteros bajo control cuántico.** La
+[integración de 138 entradas](audit-evidence/controlled-operands-integration/integration-summary.json)
+conserva el dominio seleccionado de asignaciones, sumas, XOR, los absolutos enteros estándar y
+`memset`. El XOR booleano y los bucles con operandos literales o capturas escalares puras conservan
+sus actualizaciones reversibles sobre el mismo registro, evitando dependencias y registros extra.
 
-**Siguen existiendo bugs confirmados:** ocho contrastes posteriores reprodujeron siete fallos de
-operandos CPU dentro de ramas cuánticas inactivas: asignación, suma, XOR, `memset`, `abs` y `phase`.
-El [registro](audit-evidence/coherent-arm-operands/failure-summary.json) conserva los programas, sus
-referencias C exitosas y las señales de división por cero de los ejecutables aceptados a O2 con
-builtins. El octavo caso, la condición anidada, sí pasó. También queda pendiente la lectura mediante
-un puntero CPU inválido en una rama inactiva. La corrección tiene un alcance concreto; las
-regresiones anteriores no demuestran ausencia de todos los bugs.
+La [regresión amplia](audit-evidence/controlled-operands-full/README.es.md) terminó correctamente en
+normal y ASan/UBSan: 76 pasos cerrados, 665 compilaciones de fuzzing por configuración y 70
+circuitos independientes con QuEST por configuración, 64 estados y 6 canales. Las reconstrucciones
+separadas de integración pasaron, por configuración, 393 casos nativos, 1270 controles de operandos
+y 40 ejecuciones de los cuatro programas exactos del [contrato](c11-controlled-operands.md). La
+aplicación a Windows comprueba los hashes de las mismas 138 entradas; esa transferencia no equivale
+a ejecutar la regresión completa en Windows.
 
-**Hay una corrección nueva en un candidato separado; no está integrada.** Pasaron 1270
-comprobaciones normales y otras 1270 con ASan/UBSan, además de 8000 comprobaciones independientes de
-estados complejos e inversas. Los
-[resultados específicos](audit-evidence/controlled-operands-maintained/README.es.md) separan 1000
-ejecuciones nativas definidas, 260 diagnósticos y 10 ejecuciones de homónimos por configuración; las
-referencias C se registran aparte. El candidato corrige seis perfiles enteros de su matriz, pero su
-[regresión amplia](audit-evidence/controlled-operands-regression-failure/README.es.md) encontró
-**dos regresiones**: un XOR booleano controlado se rechaza y un bucle estático supera el límite
-nativo de 24 qubits. La primera suite nativa terminó con 391 casos exitosos y dos fallos. Falta
-corregirlos, completar la regresión e integrar el cambio. `phase`, las cargas CPU inválidas y los
-contratos generales de C11 siguen pendientes. Las comprobaciones específicas no sustituyen la
-regresión amplia.
+Las [pruebas independientes de v5](audit-evidence/controlled-operands-v5/README.es.md) conservan
+8000 estados complejos e inversas de operandos, más 1200 estados y 600 ejecuciones nativas de XOR
+booleano y bucles. Se conserva el fallo de coordinación del primer controlador y la continuación
+instrumentada, sin inventar un código de salida exitoso para el proceso original. Las dos
+regresiones de v4 quedan como
+[evidencia histórica](audit-evidence/controlled-operands-regression-failure/README.es.md).
+
+**Siguen existiendo bugs confirmados.** El registro anterior de 137 entradas conserva
+[siete fallos](audit-evidence/coherent-arm-operands/failure-summary.json): seis perfiles enteros
+tienen correcciones y pruebas positivas en la integración nueva; el ángulo de `phase` sigue
+pendiente. La [matriz de cargas CPU](audit-evidence/controlled-operands-v5/pending-cpu-loads.json)
+conserva siete perfiles, cinco niveles de optimización y ambos modos de builtins: 140 ejecutables
+cuánticos aceptados fallan, mientras las 70 referencias C terminan bien. Incluye asignación, XOR,
+suma, `memset`, `phase`, condiciones e índices. La integración actual sigue afectada por esa
+familia.
+
+La corrección anterior de condiciones anidadas tuvo su propia integración de 137 entradas. Su
+[regresión local completa](audit-evidence/coherent-control-full/README.es.md) y su
+[CI remoto](audit-evidence/integrated137-remote-ci/README.es.md) también terminaron bien. Los 145
+casos compilados de fuzzing por configuración del CI son distintos de las 665 compilaciones de la
+campaña local ampliada. Los resultados se conservan con sus fuentes y alcances originales.
 
 ## Qué significa que una operación cuántica esté implementada
 
@@ -143,11 +151,11 @@ del valor e historia para los datos desconocidos sobrescritos. Las llamadas desc
 
 La regresión completa normal y con ASan/UBSan terminó en tramos sobre las mismas **134 fuentes
 congeladas**: incluye **800 comprobaciones de llenado, 360 de expresiones y 70 circuitos QuEST: 64
-estados y 6 canales**. El árbol principal coincide en todos esos hashes y tuvo reconstrucciones
-normales e instrumentadas separadas: pasaron los dos ejemplos exactos de los contratos en cinco
-niveles de optimización y con builtins activados y desactivados, 20 ejecuciones por configuración.
-Las regresiones completas siguen identificadas como ejecuciones del candidato aislado. El
-[informe](re-audit-2026-10-17-memory-expressions.md) conserva esas distinciones y los
+estados y 6 canales**. Su integración original coincidió en todos esos hashes y tuvo
+reconstrucciones normales e instrumentadas separadas: pasaron los dos ejemplos exactos de los
+contratos en cinco niveles de optimización y con builtins activados y desactivados, 20 ejecuciones
+por configuración. Las regresiones completas siguen identificadas como ejecuciones del candidato
+aislado. El [informe](re-audit-2026-10-17-memory-expressions.md) conserva esas distinciones y los
 [contratos de llenado](c11-memset.md) y [expresiones](c11-memory-sequences.md) explican las
 restricciones.
 
@@ -156,14 +164,11 @@ su prefijo y la continuación, que repitió la suite incompleta entera y los con
 las mismas fuentes. No se inventó un código de salida para el proceso original.
 
 Los retornos locales comprobados de `memcpy`, `memmove` y `memset`, las relaciones admitidas entre
-direcciones y las distancias al mismo objeto ya forman parte de la integración de 137 entradas. Los
-[contratos](c11-memory-returns.md) describen los tipos, límites y consumidores admitidos. Las suites
-recurrentes pasaron 290 y 170 comprobaciones por configuración en una reconstrucción nueva separada.
-Los primeros fallos de expectativas antiguas se conservaron en su
-[registro histórico](audit-evidence/memory-returns-regression-failure/failure-summary.json). Las
-campañas anteriores de 136 y 137 entradas siguen separadas por sus fuentes. La regresión amplia de
-la corrección actual continúa pendiente; los consumidores generales de punteros y la ABI general
-siguen incompletos.
+direcciones y las distancias al mismo objeto siguen integrados. Los
+[contratos](c11-memory-returns.md) describen sus límites. Las suites recurrentes pasaron 290 y 170
+comprobaciones por configuración en la campaña completa de las 138 entradas actuales. Los fallos
+anteriores y las campañas de 136 y 137 entradas conservan sus fuentes originales. Los consumidores
+generales de punteros, sus tiempos de vida y la ABI general siguen incompletos.
 
 ## Qué falta implementar para el objetivo grande
 
@@ -191,14 +196,13 @@ Hay pruebas de programas C completos, amplitudes, fases, inversas, canales expl�
 errores esperados y preservación del comportamiento clásico. Las campañas separan lo integrado, lo
 probado en un candidato, lo exportado como circuito y lo simulado numéricamente.
 
-La [integración actual](audit-evidence/coherent-memory-integration/integration-summary.json)
-identifica 137 entradas y pruebas específicas reconstruidas en normal y ASan/UBSan. Su regresión
-amplia sigue pendiente. La
-[campaña anterior de 134 entradas](audit-evidence/memory-expressions/integration-summary.json)
-conserva su regresión completa y sus comprobaciones de integración originales. Las campañas
-anteriores de [capturas de bytes](audit-evidence/byte-snapshots/integration-summary.json) y
-[`strncmp`](audit-evidence/strncmp/integration-summary.json) conservan sus fuentes y resultados
-históricos sin sobrescribirlos.
+La [integración actual](audit-evidence/controlled-operands-integration/integration-summary.json)
+identifica las 138 entradas y sus pruebas separadas de instalación. La
+[campaña completa de esas fuentes](audit-evidence/controlled-operands-full/summary.json) conserva
+sus dos reconstrucciones, cada comando cerrado y todos los tramos de fuzzing. Las campañas de 134 y
+137 entradas permanecen como resultados históricos; no se renombran como pruebas de las fuentes
+nuevas. Los [informes originales de memoria](re-audit-2026-10-17-memory-expressions.md) conservan
+sus propias reconstrucciones y sus interrupciones, con sus alcances declarados.
 
 Los [informes de auditoría de los papers](paper/evidence/paper-audit.json) registran verificaciones
 automáticas por idioma, con 8 páginas, 7 figuras y 10 referencias por versión. Sus manifiestos
@@ -223,11 +227,10 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo paso concreto es corregir las dos regresiones del candidato de operandos controlados,
-completar sus pruebas amplias e integrar el cambio. También quedan `phase`, las cargas CPU
-inválidas, los consumidores generales de punteros devueltos y los contratos de tamaños, layouts y
-efectos. Después continúa el trabajo por las demás familias pendientes. **Este lote ya integrado no
-completa C11 cuántico ni el objetivo general.**
+El próximo paso concreto es corregir los ángulos de `phase` y las cargas CPU que todavía se evalúan
+en ramas cuánticas inactivas. También siguen pendientes los consumidores generales de punteros,
+tamaños, layouts, efectos y las demás familias de C11. **La integración nueva no completa C11
+cuántico ni el objetivo general.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

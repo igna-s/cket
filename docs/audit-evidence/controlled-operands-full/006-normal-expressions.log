@@ -1,0 +1,5 @@
+PASS legacy signed basis: declared expression type, promoted negation and positive result
+PASS 68 joint expression domains: relative phases, C short circuiting, promotions, narrowing, relational/compound guards and clean inverse
+PASS reachable undefined arithmetic rejected; 64-bit truth/zero circuits generated without width-sized scratch (export only)
+PASS expression C integration: function/array/loop/measurement at five GCC levels; 16-bit guarded division and 64-bit logic exported without tables
+97 expression checks passed; generated circuits and complete-state comparisons have separate scopes.

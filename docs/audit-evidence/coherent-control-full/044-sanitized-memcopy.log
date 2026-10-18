@@ -1,0 +1,5 @@
+PASS memcpy/memmove complete phased states and inverse, signed layouts, open/closed controls, builtins and five GCC levels
+PASS overlapping memmove in both directions against C, with retained phase and no ancillas
+PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundaries, checked returned borrows and classical libc preservation
+PASS 16/32/64-bit linear table-free memory synthesis (generation only)
+414 memory-copy checks passed; basis-value transfer is distinct from state cloning and wide generation.

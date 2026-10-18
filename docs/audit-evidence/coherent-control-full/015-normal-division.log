@@ -1,0 +1,7 @@
+PASS 300 power-of-two domains: full relative phases, signed C rounding, narrowing, both controls and clean inverse
+PASS 240 library joint states: variable denominator, both product projections, coherent control, builtins and five GCC levels
+PASS 80 signed numeric executions and 40 ordinary libc executions with once-only argument side effects
+PASS 40 Boolean conversions use C truth rather than truncating the low bit
+PASS 10 private homonyms retain their own C behavior
+PASS 80 wide table-free projections, 40 whole-product resource contracts and 160 definedness/capture diagnostics
+990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes.

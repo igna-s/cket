@@ -1,0 +1,11 @@
+PASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse
+PASS 8-bit variable right shift: no-table circuit generated (117 gates)
+PASS 8-bit variable left shift: no-table circuit generated (117 gates)
+PASS 16-bit variable right shift: no-table circuit generated (294 gates)
+PASS 16-bit variable left shift: no-table circuit generated (294 gates)
+PASS 32-bit variable right shift: physical resource limit diagnosed (37 gates)
+PASS 32-bit variable left shift: physical resource limit diagnosed (37 gates)
+PASS shift definedness: negative/oversized counts, negative left operand and signed overflow rejected in both routes
+PASS shift C integration: functions, array, casts, arithmetic and explicit measurement at five GCC optimization levels
+PASS shift C synthesis: both 16-bit shifts with 20 relevant input bits, no tables, five GCC optimization levels (export only)
+55 shift checks passed; generated wide circuits are distinct from state-validated small domains.

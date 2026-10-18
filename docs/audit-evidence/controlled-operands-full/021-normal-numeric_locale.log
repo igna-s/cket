@@ -1,0 +1,1 @@
+70 numeric locale checks passed; JSON phases and QASM decimals preserve global/thread locales.

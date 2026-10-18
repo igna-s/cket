@@ -1,0 +1,6 @@
+PASS 20 CPU read guards: NUL before an inaccessible page, disabled NULL/protected addresses and one enabled byte; five GCC levels and both builtin modes
+PASS 250 native complete-state byte snapshots: all byte patterns, signed bytes, two-byte NUL/tail cases, coherent guards, actual CPU bindings, phases and saved inverses
+PASS 140 native CPU snapshot programs: six relations over every byte, raw results, helper borrows, callback initialization, word endpoints, zero counts and reversed operands
+PASS 180 CPU byte-boundary rejections: volatile/atomic scalars and members, unchecked pointers, offsets and dynamic storage extents
+PASS 60 CPU snapshot template/export contracts: selected-byte footprint, constant export and zero-count capture avoidance
+650 CPU byte snapshot checks passed; dynamic addresses, volatile/atomic access and complete quantum C11 remain pending.
