@@ -3,6 +3,8 @@
 // at each caller by the ordinary quantum semantic pass.
 tree expand_quantum_program(tree value);
 bool standard_integer_division(tree fn);
+bool standard_memory_compare(tree fn);
+bool standard_memory_set(tree fn);
 std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
 
@@ -13,6 +15,8 @@ struct QuantumReference {
 };
 
 std::map<tree, QuantumReference> quantum_references;
+// Compile-time aliases carry addresses only; they never expose a quantum placeholder to CPU.
+std::map<tree, tree> quantum_pointer_aliases;
 std::set<tree> quantum_division_products;
 bool resolve_quantum_reference(tree value, QuantumReference &reference);
 tree reference_element(tree value);
@@ -178,7 +182,8 @@ bool quantum_return_is_pure(tree value) {
     if (TREE_CODE(value) == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
         return quantum_return_is_pure(TREE_OPERAND(value, 1));
     if (TREE_CODE(value) == CALL_EXPR) {
-        if (!quantum_function(get_callee_fndecl(value)) && standard_ctype(value).empty())
+        if (!quantum_function(get_callee_fndecl(value)) &&
+            !standard_memory_compare(get_callee_fndecl(value)) && standard_ctype(value).empty())
             return false;
         for (int i = 0; i < call_expr_nargs(value); ++i)
             if (!quantum_return_is_pure(CALL_EXPR_ARG(value, i)))
@@ -315,6 +320,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
         return call;
     }
     auto previous_readonly = readonly_quantum_borrows;
+    auto previous_pointer_aliases = quantum_pointer_aliases;
     std::map<tree, tree> bindings;
     std::set<tree> borrowed;
     tree prefix = alloc_stmt_list();
@@ -524,6 +530,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
         error_at(at(call), "|c>: invalid quantum function arguments");
     expanding_functions.erase(name_of(fn));
     readonly_quantum_borrows = previous_readonly;
+    quantum_pointer_aliases = previous_pointer_aliases;
     return result;
 }
 
@@ -688,6 +695,15 @@ bool resolve_quantum_reference(tree value, QuantumReference &reference) {
     auto existing = quantum_references.find(value);
     if (existing != quantum_references.end()) {
         reference = existing->second;
+        return true;
+    }
+    auto alias = quantum_pointer_aliases.find(value);
+    if (alias != quantum_pointer_aliases.end()) {
+        if (!resolve_quantum_reference(alias->second, reference))
+            return false;
+        if (TYPE_READONLY(TREE_TYPE(TREE_TYPE(value))))
+            reference.element_type = build_qualified_type(
+                reference.element_type, TYPE_QUALS(reference.element_type) | TYPE_QUAL_CONST);
         return true;
     }
     if (TREE_CODE(value) == POINTER_PLUS_EXPR) {
@@ -1007,6 +1023,150 @@ tree expand_memory_copy(tree call, bool move) {
     return result;
 }
 
+#include "quantum_memory.inc"
+
+// A standard memory function returns its destination, independently of the
+// quantum data. Emit its writes once, then retain only a checked address alias.
+bool expand_pointer_borrow(tree decl, tree &prefix) {
+    tree type = TREE_TYPE(decl), initial = strip(DECL_INITIAL(decl));
+    if (TREE_CODE(type) != POINTER_TYPE || !initial)
+        return false;
+    tree address = initial;
+    bool memory_call = false, move = false;
+    if (TREE_CODE(initial) == CALL_EXPR && call_expr_nargs(initial) == 3) {
+        tree fn = get_callee_fndecl(initial);
+        memory_call = standard_memory_set(fn) || standard_memory_copy(fn, move);
+        if (memory_call)
+            address = CALL_EXPR_ARG(initial, 0);
+    }
+    QuantumByteRange range;
+    if (!resolve_byte_range(address, range) || !range.quantum)
+        return false;
+    tree pointed = TREE_TYPE(type), actual = range.element_type;
+    bool character = TYPE_MAIN_VARIANT(pointed) == char_type_node ||
+                     TYPE_MAIN_VARIANT(pointed) == signed_char_type_node ||
+                     TYPE_MAIN_VARIANT(pointed) == unsigned_char_type_node;
+    if ((TREE_CODE(pointed) != VOID_TYPE && !character &&
+         TYPE_MAIN_VARIANT(pointed) != TYPE_MAIN_VARIANT(actual)) ||
+        (TYPE_READONLY(actual) && !TYPE_READONLY(pointed))) {
+        error_at(
+            at(decl),
+            "|c>: memory return pointer requires a compatible checked borrow without discarding const");
+        prefix = build_empty_stmt(at(decl));
+        return true;
+    }
+    prefix = memory_call ? expand_quantum_program(initial) : build_empty_stmt(at(decl));
+    if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix)) {
+        // The normal adapter already emitted its storage/count/CPU-boundary diagnostic.
+        return true;
+    }
+    quantum_pointer_aliases[decl] = address;
+    QuantumReference reference;
+    if (resolve_quantum_reference(address, reference)) {
+        if (TYPE_READONLY(pointed))
+            reference.element_type = build_qualified_type(
+                reference.element_type, TYPE_QUALS(reference.element_type) | TYPE_QUAL_CONST);
+        quantum_references[decl] = reference;
+    }
+    DECL_INITIAL(decl) = NULL_TREE;
+    return true;
+}
+
+// GCC POINTER_DIFF_EXPR is a byte difference. The C frontend supplies
+// the separate EXACT_DIV_EXPR for sizeof(*pointer); dividing here as well
+// would silently return the wrong element distance for 16/32/64-bit types.
+tree expand_pointer_difference(tree value) {
+    tree left = strip(TREE_OPERAND(value, 0)), right = strip(TREE_OPERAND(value, 1));
+    if (!left || !right || TREE_CODE(TREE_TYPE(left)) != POINTER_TYPE ||
+        TREE_CODE(TREE_TYPE(right)) != POINTER_TYPE)
+        return NULL_TREE;
+    QuantumByteRange a, b;
+    bool qa = resolve_byte_range(left, a) && a.quantum;
+    bool qb = resolve_byte_range(right, b) && b.quantum;
+    if (!qa && !qb && !has_quantum(left) && !has_quantum(right))
+        return NULL_TREE;
+    auto reject = [value](const char *message) -> tree {
+        error_at(at(value), "%s", message);
+        return build_zero_cst(TREE_TYPE(value));
+    };
+    if (!qa || !qb)
+        return reject("|c>: quantum pointer subtraction requires two statically checked borrows");
+    if (a.elements != b.elements || a.stride != b.stride)
+        return reject("|c>: quantum pointer subtraction requires the same checked storage object");
+    uint64_t magnitude = a.offset >= b.offset ? a.offset - b.offset : b.offset - a.offset;
+    tree type = TREE_TYPE(value);
+    if (!INTEGRAL_TYPE_P(type) || TYPE_UNSIGNED(type))
+        return reject(
+            "|c>: quantum pointer subtraction needs a supported signed pointer-difference type");
+    unsigned precision = TYPE_PRECISION(type);
+    if (!precision || precision > 64)
+        return reject(
+            "|c>: quantum pointer subtraction needs a supported signed pointer-difference type");
+    uint64_t maximum = precision == 64 ? (uint64_t)INT64_MAX : (uint64_t{1} << (precision - 1)) - 1;
+    // Checked storage is small, but retain an explicit representability guard
+    // before converting the unsigned address distance into a signed constant.
+    if (magnitude > maximum)
+        return reject(
+            "|c>: quantum pointer subtraction exceeds its signed difference representation");
+    int64_t bytes = static_cast<int64_t>(magnitude);
+    if (a.offset < b.offset)
+        bytes = -bytes;
+    // This observes addresses only. No quantum register is read or measured.
+    return build_int_cst(type, bytes);
+}
+
+tree expand_pointer_relation(tree value) {
+    tree left = strip(TREE_OPERAND(value, 0)), right = strip(TREE_OPERAND(value, 1));
+    if (!left || !right || TREE_CODE(TREE_TYPE(left)) != POINTER_TYPE ||
+        TREE_CODE(TREE_TYPE(right)) != POINTER_TYPE)
+        return NULL_TREE;
+    QuantumByteRange a, b;
+    bool qa = resolve_byte_range(left, a) && a.quantum;
+    bool qb = resolve_byte_range(right, b) && b.quantum;
+    auto code = TREE_CODE(value);
+    bool equal = code == EQ_EXPR || code == NE_EXPR;
+    if (equal && ((qa && integer_zerop(right)) || (qb && integer_zerop(left))))
+        return build_int_cst(TREE_TYPE(value), code == NE_EXPR);
+    if (!qa || !qb)
+        return NULL_TREE;
+    bool result;
+    if (a.elements == b.elements && a.stride == b.stride) {
+        switch (code) {
+        case EQ_EXPR:
+            result = a.offset == b.offset;
+            break;
+        case NE_EXPR:
+            result = a.offset != b.offset;
+            break;
+        case LT_EXPR:
+            result = a.offset < b.offset;
+            break;
+        case LE_EXPR:
+            result = a.offset <= b.offset;
+            break;
+        case GT_EXPR:
+            result = a.offset > b.offset;
+            break;
+        case GE_EXPR:
+            result = a.offset >= b.offset;
+            break;
+        default:
+            return NULL_TREE;
+        }
+    } else {
+        // Cross-object order and potentially adjacent one-past addresses need
+        // more layout information. Do not invent a host address for either.
+        if (!equal || a.offset >= a.size() || b.offset >= b.size())
+            return NULL_TREE;
+        result = a.elements[(size_t)(a.offset / a.stride)] ==
+                     b.elements[(size_t)(b.offset / b.stride)] &&
+                 a.offset % a.stride == b.offset % b.stride;
+        if (code == NE_EXPR)
+            result = !result;
+    }
+    return build_int_cst(TREE_TYPE(value), result);
+}
+
 tree indexed_access(tree original, const std::vector<tree> &elements, tree index, bool readonly) {
     index = expand_quantum_program(index);
     if (has_quantum(index)) {
@@ -1136,8 +1296,8 @@ tree expand_static_for_block(tree block) {
         if (code == CALL_EXPR) {
             bool move = false;
             tree fn = get_callee_fndecl(value);
-            if (standard_memory_copy(fn, move) || quantum_function(fn) ||
-                !standard_ctype(value).empty()) {
+            if (standard_memory_copy(fn, move) || standard_memory_compare(fn) ||
+                standard_memory_set(fn) || quantum_function(fn) || !standard_ctype(value).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))
@@ -1240,6 +1400,9 @@ tree expand_quantum_program(tree value) {
             if (found != quantum_functions.end() && found->second.owned_result)
                 return instantiate_quantum_call(init, decl);
         }
+        tree pointer_prefix = NULL_TREE;
+        if (expand_pointer_borrow(decl, pointer_prefix))
+            return pointer_prefix;
         if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl)) &&
             TREE_CODE(type) == POINTER_TYPE) {
             QuantumReference reference;
@@ -1292,8 +1455,31 @@ tree expand_quantum_program(tree value) {
             DECL_INITIAL(decl) = expand_quantum_program(DECL_INITIAL(decl));
         return value;
     }
+    if (code == POINTER_DIFF_EXPR) {
+        tree difference = expand_pointer_difference(value);
+        if (difference)
+            return difference;
+    }
+    if (TREE_CODE_CLASS(code) == tcc_comparison) {
+        tree pointer_relation = expand_pointer_relation(value);
+        if (pointer_relation)
+            return pointer_relation;
+        tree expanded = expand_memory_relation(value);
+        if (expanded)
+            return expanded;
+    }
     if (code == CALL_EXPR) {
         tree fn = get_callee_fndecl(value);
+        if (standard_memory_set(fn)) {
+            tree expanded = expand_memory_set(value);
+            if (expanded)
+                return expanded;
+        }
+        if (standard_memory_compare(fn)) {
+            tree expanded = expand_memory_compare(value);
+            if (expanded)
+                return expanded;
+        }
         bool move = false;
         if (standard_memory_copy(fn, move)) {
             tree expanded = expand_memory_copy(value, move);
@@ -1420,7 +1606,8 @@ tree expand_quantum_program(tree value) {
         error_at(
             at(value),
             "|c>: quantum products cannot decay to CPU pointers or be read as a whole; access their elements");
-    if (code == VAR_DECL && quantum_references.count(value))
+    if (code == VAR_DECL &&
+        (quantum_references.count(value) || quantum_pointer_aliases.count(value)))
         error_at(
             at(value),
             "|c>: quantum reference cannot escape to CPU memory or be rebound without a checked borrow");

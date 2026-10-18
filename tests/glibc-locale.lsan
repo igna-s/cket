@@ -1,0 +1,5 @@
+# glibc bug 25770: newlocale leaks its LOCPATH argz allocation.
+# Reproduced on glibc 2.35 by tests/repro_glibc_locale.c without C Ket.
+# Apply only to character-profile validation; project mallocs and locale
+# handle allocations remain subject to LeakSanitizer.
+leak:argz_add_sep

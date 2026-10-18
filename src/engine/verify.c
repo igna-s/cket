@@ -75,12 +75,40 @@ static int truth_valued(const cj_doc *d, int e) {
     return 0;
 }
 
+int qc_verify_ctype_profile(qc_context *c, const cj_doc *d, int e, int mapping) {
+    int profile = cj_get(d, e, "profile");
+    if (profile < 0 || cj_equal(d, profile, "current"))
+        return 1;
+    if (d->tokens[profile].kind != '[' || d->tokens[profile].children > 256)
+        return qc_fail(c, "ctype profile requires at most 256 immutable intervals");
+    unsigned previous = 0, count = 0;
+    for (int row = profile + 1; row < d->tokens[profile].next; row = d->tokens[row].next) {
+        if (d->tokens[row].kind != '[' || d->tokens[row].children != 3)
+            return qc_fail(c, "ctype profile interval requires lower, upper and value");
+        uint64_t values[3];
+        int field = row + 1;
+        for (unsigned i = 0; i < 3; ++i) {
+            if (d->tokens[field].kind < '0' || d->tokens[field].kind > '9' ||
+                !cj_u64(d, field, &values[i]))
+                return qc_fail(c, "ctype profile interval requires unsigned integers");
+            field = d->tokens[field].next;
+        }
+        if (values[0] > values[1] || values[1] > 255 || (count && values[0] <= previous) ||
+            !values[2] || values[2] > (mapping ? 255u : 2147483647u))
+            return qc_fail(c, "ctype profile intervals must be sorted, disjoint and representable");
+        previous = (unsigned)values[1];
+        ++count;
+    }
+    return 1;
+}
+
 static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned depth) {
     if (depth > 128 || d->count > 100000)
         return qc_fail(c, "quantum expression complexity budget exceeded");
     static const char *const leaf[] = {"op", "bits", "signed", "value", NULL};
     static const char *const source[] = {"op", "bits", "signed", "id", "active", "known", NULL};
     static const char *const composite[] = {"op", "bits", "signed", "args", NULL};
+    static const char *const character[] = {"op", "bits", "signed", "args", "profile", NULL};
     if (e < 0 || e >= d->count || d->tokens[e].kind != '{')
         return qc_fail(c, "invalid typed quantum expression");
     int op = cj_get(d, e, "op");
@@ -127,7 +155,29 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
         }
         return 1;
     }
-    if (!fields(c, d, e, composite))
+    int character_op = 0;
+    const char *ctype_names[] = {"ctype_isalnum",
+                                 "ctype_isalpha",
+                                 "ctype_isblank",
+                                 "ctype_iscntrl",
+                                 "ctype_isdigit",
+                                 "ctype_isgraph",
+                                 "ctype_islower",
+                                 "ctype_isprint",
+                                 "ctype_ispunct",
+                                 "ctype_isspace",
+                                 "ctype_isupper",
+                                 "ctype_isxdigit",
+                                 "ctype_tolower",
+                                 "ctype_toupper",
+                                 NULL};
+    for (unsigned i = 0; ctype_names[i]; ++i)
+        if (cj_equal(d, op, ctype_names[i])) {
+            character_op = 1;
+            if (!qc_verify_ctype_profile(c, d, e, i >= 12))
+                return 0;
+        }
+    if (!fields(c, d, e, character_op ? character : composite))
         return 0;
     int arity = 0, matching = 0, comparison = 0, shift = 0;
     int ctype = 0;
@@ -405,7 +455,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         allowed = search;
     else if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
              cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
-             cj_equal(d, op, "ccontrol_else") || cj_equal(d, op, "ctype_require"))
+             cj_equal(d, op, "ccontrol_else") || cj_equal(d, op, "ctype_require") ||
+             cj_equal(d, op, "ctype_capture"))
         allowed = marker;
     else
         return qc_fail(c, "unsupported quantum instruction");

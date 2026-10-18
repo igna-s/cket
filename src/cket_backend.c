@@ -3,7 +3,7 @@
 #include <string.h>
 
 int main(int argc, char **argv) {
-    const char *binding_path = NULL;
+    const char *binding_path = NULL, *ctype_locale = NULL;
     int tables = 1;
     int valid_options = 1;
     for (int i = 3; i < argc; ++i) {
@@ -11,14 +11,17 @@ int main(int argc, char **argv) {
             tables = 0;
         else if (!strcmp(argv[i], "--bindings") && !binding_path && i + 1 < argc)
             binding_path = argv[++i];
+        else if (!strcmp(argv[i], "--ctype-locale") && !ctype_locale && i + 1 < argc)
+            ctype_locale = argv[++i];
         else
             valid_options = 0;
     }
     if (argc < 3 || !valid_options ||
         (strcmp(argv[1], "--validate") && strcmp(argv[1], "--emit-qasm") &&
-         strcmp(argv[1], "--resources") && strcmp(argv[1], "--state"))) {
+         strcmp(argv[1], "--resources") && strcmp(argv[1], "--state") &&
+         strcmp(argv[1], "--specialize-ctype"))) {
         fputs(
-            "usage: cket_backend --validate|--emit-qasm|--resources|--state quantum-ir.json [--no-tables] [--bindings values.json]\n",
+            "usage: cket_backend --validate|--emit-qasm|--resources|--state|--specialize-ctype quantum-ir.json [--no-tables] [--bindings values.json] [--ctype-locale name]\n",
             stderr);
         return 2;
     }
@@ -31,6 +34,12 @@ int main(int argc, char **argv) {
     qc_context *c = qc_create(state, 7);
     if (c && !tables)
         qc_allow_tables(c, 0);
+    if (c && ctype_locale && !qc_ctype_locale(c, ctype_locale)) {
+        fprintf(stderr, "|c> backend: %s\n", qc_error(c));
+        free(text);
+        qc_destroy(c);
+        return 1;
+    }
     if (c && binding_path) {
         char *bindings = qc_read_file(binding_path);
         char *bound = bindings ? qc_bind_document(c, text, bindings) : NULL;
@@ -43,6 +52,20 @@ int main(int argc, char **argv) {
         }
         free(text);
         text = bound;
+    }
+    if (!strcmp(argv[1], "--specialize-ctype")) {
+        char *bound = c ? qc_ctype_specialize_document(c, text) : NULL;
+        if (!bound) {
+            fprintf(stderr, "|c> backend: %s\n", qc_error(c));
+            free(text);
+            qc_destroy(c);
+            return 1;
+        }
+        puts(bound);
+        free(bound);
+        free(text);
+        qc_destroy(c);
+        return ferror(stdout) != 0;
     }
     if (!c || !qc_document(c, text, validate, state)) {
         fprintf(stderr, "|c> backend: %s\n", qc_error(c));

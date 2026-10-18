@@ -71,13 +71,25 @@ int reference_parse(reference_circuit *c, const char *qasm) {
     uint64_t measured = 0;
     if (!take(&p, "OPENQASM") || !take(&p, "3.0") || !take(&p, ";") || !take(&p, "include") ||
         !take(&p, "\"stdgates.inc\"") || !take(&p, ";") || !take(&p, "qubit[") ||
-        !integer(&p, &c->qubits) || !c->qubits || c->qubits > 20 || !take(&p, "]") ||
-        !take(&p, "q") || !take(&p, ";"))
+        !integer(&p, &c->qubits) || !c->qubits || !take(&p, "]") || !take(&p, "q") ||
+        !take(&p, ";"))
         goto invalid;
+    if (c->qubits > REF_MAX_QUBITS) {
+        snprintf(
+            c->error, sizeof c->error, "QASM validation is limited to %u qubits", REF_MAX_QUBITS);
+        return 0;
+    }
     if (take(&p, "bit[")) {
-        if (!integer(&p, &c->bits) || !c->bits || c->bits > 20 || !take(&p, "]") ||
-            !take(&p, "results") || !take(&p, ";"))
+        if (!integer(&p, &c->bits) || !c->bits || !take(&p, "]") || !take(&p, "results") ||
+            !take(&p, ";"))
             goto invalid;
+        if (c->bits > REF_MAX_RESULTS) {
+            snprintf(c->error,
+                     sizeof c->error,
+                     "QASM validation is limited to %u result bits",
+                     REF_MAX_RESULTS);
+            return 0;
+        }
     }
     for (;;) {
         space(&p);
@@ -159,7 +171,7 @@ uint64_t reference_execute(const reference_circuit *c, Qureg q, int measurements
     uint64_t result = 0;
     for (size_t i = 0; i < c->count; ++i) {
         const reference_gate *g = &c->gates[i];
-        int wires[24];
+        int wires[REF_MAX_QUBITS];
         for (unsigned j = 0; j < g->count; ++j)
             wires[j] = (int)g->wires[j];
         if (g->kind == REF_MEASURE) {

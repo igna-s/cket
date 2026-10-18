@@ -1,4 +1,6 @@
+#define _XOPEN_SOURCE 700
 #include "validation.h"
+#include "locale_fixture.h"
 #include "select_cpu_trace.inc"
 #include "qasm_reference.h"
 #include "internal.h"
@@ -14,95 +16,132 @@ typedef struct {
     const char *name, *body;
 } test_case;
 
-static const test_case states[] =
-    {
-        {"entangled arithmetic",
-         "quant uint8_t x=superposition(0,3);quant uint8_t y=x%2;measure(y);measure(x);"},
-        {"relative phase and cleanup",
-         "quant uint8_t x=superposition(0,7);if(x==3)phase(.7);measure(x);"},
-        {"controlled global phase", "quant bool c=superposition(0,1);if(c)phase(.3);measure(c);"},
-        {"open controlled Fourier",
-         "quant bool c=superposition(0,1);quant uint8_t x=1;if(c)phase(.4);else fourier(x);measure(x);measure(c);"},
-        {"Fourier inverse interference",
-         "quant uint8_t x=5;fourier(x);if(x==3)phase(.8);inverse_fourier(x);measure(x);"},
-        {"Grover complete circuit",
-         "quant uint8_t x=superposition(0,15);quant uint8_t y=find_known(x,x%4==1,4);measure(y);"},
-        {"nested open controls",
-         "quant bool a=superposition(0,1),b=superposition(0,1);quant uint8_t x=0;if(a){if(b)x+=1;else x+=2;}else x+=3;measure(x);measure(b);measure(a);"},
-        {"independent controlled module", NULL},
-        {"signed absolute value with relative phase",
-         "quant bool x=superposition(0,1);quant uint8_t y=abs((int)x-1);if(x)phase(.37);measure(y);measure(x);"},
-        {"function, array, static loop and coherent phase",
-         "#include <quantum.h>\nquant bool relation(quant const bool a,quant const bool b){return a^b;}\nint main(void){quant bool bits[2]={superposition(0,1),superposition(0,1)};for(int i=0;i<2;++i)bits[i]^=true;quant bool r=relation(bits[0],bits[1]);if(r)phase(.23);measure(r);measure(bits[1]);measure(bits[0]);return 0;}\n"},
-        {"quantum variable left shift and relative phase",
-         "quant bool x=superposition(0,1),n=superposition(0,1);quant uint8_t y=(unsigned)x<<n;if(n)phase(.29);measure(y);measure(n);measure(x);"},
-        {"signed variable right shift and Boolean conversion",
-         "quant bool x=superposition(0,1),n=superposition(0,1);quant bool y=(3*(int)x-2)>>n;if(n)phase(.41);measure(y);measure(n);measure(x);"},
-        {"conditional expression with guarded division",
-         "quant bool x=superposition(0,1),y=superposition(0,1);quant uint8_t r=x?3/x:y;if(y)phase(.17);measure(r);measure(y);measure(x);"},
-        {"short-circuit logic with guarded division",
-         "quant bool x=superposition(0,1),y=superposition(0,1);quant bool r=(!x||(1/x))&&y;if(x)phase(.53);measure(r);measure(y);measure(x);"},
-        {"conditional signed negation and complement",
-         "quant bool x=superposition(0,1),y=superposition(0,1);quant uint8_t r=x?-((int)x+1):~(int)y;if(y)phase(.31);measure(r);measure(y);measure(x);"},
-        {"controlled affine in-place arithmetic",
-         "quant bool c=superposition(0,1);quant uint8_t x=superposition(0,7);if(x==3)phase(.37);if(c)x=x*3+5;measure(x);measure(c);"},
-        {"in-place rotation and complement",
-         "quant uint8_t x=superposition(0,255);if(x==3)phase(.43);x=(uint8_t)((x<<3)|(x>>5));x=~x;measure(x);"},
-        {"signed affine update after Fourier",
-         "quant bool c=superposition(0,1);quant int8_t x=-7;fourier(x);x=(int)x*-3+7;if(c)x=-((int)x);measure(x);measure(c);"},
-        {"coherent library memcpy with relative phase",
-         "#include <quantum.h>\n#include <string.h>\nvoid copy_word(quant uint8_t *d,quant const uint8_t *s){memcpy((void*)d,(const void*)s,1);}\nint main(void){quant uint8_t a=superposition(0,7),b=37;quant bool c=superposition(0,1);if(a==3)phase(.37);if(c)copy_word(&b,&a);measure(a);measure(b);measure(c);return 0;}\n"},
-        {"library memmove preserves signed object bits",
-         "#include <quantum.h>\n#include <string.h>\nint main(void){quant int8_t a=0;quant uint8_t b=129;fourier(a);if(a==3)phase(.29);memmove((void*)&b,(const void*)&a,1);measure(a);measure(b);return 0;}\n"},
-        {"library memmove exact alias preserves interference",
-         "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t a=7;fourier(a);if(a==3)phase(.43);memmove((void*)&a,(const void*)&a,1);inverse_fourier(a);measure(a);return 0;}\n"},
-        {"library copy survives coherent source uncomputation",
-         "#include <quantum.h>\n#include <string.h>\nint main(void){quant bool a=superposition(0,1);if(a)phase(.31);quant uint8_t source=a+1,destination=0;memcpy((void*)&destination,(const void*)&source,1);measure(destination);measure(a);return 0;}\n"},
-        {"library division product projections with relative phase",
-         "quant bool n=superposition(0,1);if(n)phase(.31);quant uint8_t q=div((int)n+5,2).quot;quant uint8_t r=div((int)n+5,2).rem;measure(q);measure(r);measure(n);"},
-        {"coherent library division with variable denominator", "#include <quantum.h>\n#include <inttypes.h>\nint main(void){quant bool n=superposition(0,1),d=superposition(0,1),c=superposition(0,1);if(d)phase(.47);quant bool q=c?imaxdiv((intmax_t)n,(intmax_t)d+1).quot:false;quant bool r=c?imaxdiv((intmax_t)n,(intmax_t)d+1).rem:false;measure(q);measure(r);measure(n);measure(d);measure(c);return 0;}\n"},
-        {"signed library division rounds toward zero",
-         "quant bool n=superposition(0,1);if(n)phase(.37);quant bool q=ldiv(3*(long)n-1,2).quot;quant int8_t r=ldiv(3*(long)n-1,2).rem;measure(q);measure(r);measure(n);"},
-        {"CPU-bound library division",
-         "quant bool n=superposition(0,1);if(n)phase(.31);int d=2;quant uint8_t q=div((int)n+5,d).quot;quant uint8_t r=div((int)n+5,d).rem;measure(q);measure(r);measure(n);"},
-        {"saved CPU snapshot inverse",
-         "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t y=n+a;++a;if(y==6)phase(.31);measure(n);"},
-        {"derived history cleanup",
-         "quant bool n=superposition(0,1);quant bool x=!n;if(n)phase(.31);x+=1;if(x)phase(.17);measure(x);measure(n);"},
-        {"retained byte history preserves relative phases",
-         "quant uint8_t x=superposition(0,3);if(x&2)phase(.19);x&=1;if(x&1)phase(.31);measure(x);"},
-        {"history CPU snapshot inverse",
-         "quant bool n=superposition(0,1);quant bool x=!n;int d=1;x/=d;++d;if(x)phase(.31);measure(n);return d!=2;"},
-        {"coherent two-arm history join",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){x=false;phase(.23);}else{x=!x;phase(.41);}if(x)phase(.31);measure(x);measure(c);"},
-        {"self-controlled information loss",
-         "quant bool x=superposition(0,1);if(x)phase(.19);if(x)x=false;measure(x);"},
-        {"nested coherent history joins",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){if(x)x=false;else x=true;}if(x)phase(.31);measure(x);measure(c);"},
-        {"coherent CPU predicate snapshot inverse",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);int d=1;if(c<d)x+=1;d=0;if(x)phase(.31);measure(x);measure(c);"},
-        {"CPU two-arm assignment trace",
-         "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag)x=false;else x=true;if(x)phase(.31);measure(x);measure(c);"},
-        {"CPU condition snapshot trace",
-         "int d=1;quant bool n=superposition(0,1),x=!n;if(x)phase(.19);if(d){x+=1;d=0;}else x=false;if(x)phase(.31);measure(x);measure(n);"},
-        {"CPU coherent branch trace",
-         "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag){if(c)x=false;else x=true;}else x=!x;if(x)phase(.31);measure(x);measure(c);"},
-        {"postfix value retains phased history",
-         "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=x++;if(y)phase(.31);measure(y);measure(x);"},
-        {"prefix value and reversible decrement",
-         "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=--x;if(y)phase(.31);measure(y);measure(x);"},
-        {"comma returns the updated quantum value",
-         "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"},
-        {"lazy conditional selected updates and phases",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?x++:x--;if(y)phase(.37);measure(y);measure(x);measure(c);"},
-        {"nested logical AND and OR selected updates",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c&&(x||x++);if(y)phase(.37);measure(y);measure(x);measure(c);"},
-        {"lazy self condition retains its original decision",
-         "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?c++:c--;if(y)phase(.37);measure(y);measure(x);measure(c);"},
-        {"C-locale byte classification preserves relative phases",
-         "#include <quantum.h>\n#include <ctype.h>\nint main(void){quant uint8_t x=superposition(0,255);if(x&1)phase(.31);quant bool a=isalnum(x),s=isspace(x),p=ispunct(x);if(a)phase(.19);if(s)phase(.23);if(p)phase(.37);measure(a);measure(s);measure(p);measure(x);}\n"},
-        {"C-locale conversion in a quantum function with memory borrow",
-         "#include <quantum.h>\n#include <ctype.h>\nstatic quant bool lower(quant const bool *x){return tolower(*x+65)==97;}\nint main(void){quant bool a[1]={superposition(0,1)};if(a[0])phase(.31);quant bool y=lower(&a[0]);if(y)phase(.19);measure(y);measure(a[0]);}\n"}};
+static const test_case
+    states[] =
+        {
+            {"entangled arithmetic",
+             "quant uint8_t x=superposition(0,3);quant uint8_t y=x%2;measure(y);measure(x);"},
+            {"relative phase and cleanup",
+             "quant uint8_t x=superposition(0,7);if(x==3)phase(.7);measure(x);"},
+            {"controlled global phase",
+             "quant bool c=superposition(0,1);if(c)phase(.3);measure(c);"},
+            {"open controlled Fourier",
+             "quant bool c=superposition(0,1);quant uint8_t x=1;if(c)phase(.4);else fourier(x);measure(x);measure(c);"},
+            {"Fourier inverse interference",
+             "quant uint8_t x=5;fourier(x);if(x==3)phase(.8);inverse_fourier(x);measure(x);"},
+            {"Grover complete circuit",
+             "quant uint8_t x=superposition(0,15);quant uint8_t y=find_known(x,x%4==1,4);measure(y);"},
+            {"nested open controls",
+             "quant bool a=superposition(0,1),b=superposition(0,1);quant uint8_t x=0;if(a){if(b)x+=1;else x+=2;}else x+=3;measure(x);measure(b);measure(a);"},
+            {"independent controlled module", NULL},
+            {"signed absolute value with relative phase",
+             "quant bool x=superposition(0,1);quant uint8_t y=abs((int)x-1);if(x)phase(.37);measure(y);measure(x);"},
+            {"function, array, static loop and coherent phase",
+             "#include <quantum.h>\nquant bool relation(quant const bool a,quant const bool b){return a^b;}\nint main(void){quant bool bits[2]={superposition(0,1),superposition(0,1)};for(int i=0;i<2;++i)bits[i]^=true;quant bool r=relation(bits[0],bits[1]);if(r)phase(.23);measure(r);measure(bits[1]);measure(bits[0]);return 0;}\n"},
+            {"quantum variable left shift and relative phase",
+             "quant bool x=superposition(0,1),n=superposition(0,1);quant uint8_t y=(unsigned)x<<n;if(n)phase(.29);measure(y);measure(n);measure(x);"},
+            {"signed variable right shift and Boolean conversion",
+             "quant bool x=superposition(0,1),n=superposition(0,1);quant bool y=(3*(int)x-2)>>n;if(n)phase(.41);measure(y);measure(n);measure(x);"},
+            {"conditional expression with guarded division",
+             "quant bool x=superposition(0,1),y=superposition(0,1);quant uint8_t r=x?3/x:y;if(y)phase(.17);measure(r);measure(y);measure(x);"},
+            {"short-circuit logic with guarded division",
+             "quant bool x=superposition(0,1),y=superposition(0,1);quant bool r=(!x||(1/x))&&y;if(x)phase(.53);measure(r);measure(y);measure(x);"},
+            {"conditional signed negation and complement",
+             "quant bool x=superposition(0,1),y=superposition(0,1);quant uint8_t r=x?-((int)x+1):~(int)y;if(y)phase(.31);measure(r);measure(y);measure(x);"},
+            {"controlled affine in-place arithmetic",
+             "quant bool c=superposition(0,1);quant uint8_t x=superposition(0,7);if(x==3)phase(.37);if(c)x=x*3+5;measure(x);measure(c);"},
+            {"in-place rotation and complement",
+             "quant uint8_t x=superposition(0,255);if(x==3)phase(.43);x=(uint8_t)((x<<3)|(x>>5));x=~x;measure(x);"},
+            {"signed affine update after Fourier",
+             "quant bool c=superposition(0,1);quant int8_t x=-7;fourier(x);x=(int)x*-3+7;if(c)x=-((int)x);measure(x);measure(c);"},
+            {"coherent library memcpy with relative phase",
+             "#include <quantum.h>\n#include <string.h>\nvoid copy_word(quant uint8_t *d,quant const uint8_t *s){memcpy((void*)d,(const void*)s,1);}\nint main(void){quant uint8_t a=superposition(0,7),b=37;quant bool c=superposition(0,1);if(a==3)phase(.37);if(c)copy_word(&b,&a);measure(a);measure(b);measure(c);return 0;}\n"},
+            {"library memmove preserves signed object bits",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant int8_t a=0;quant uint8_t b=129;fourier(a);if(a==3)phase(.29);memmove((void*)&b,(const void*)&a,1);measure(a);measure(b);return 0;}\n"},
+            {"library memmove exact alias preserves interference",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t a=7;fourier(a);if(a==3)phase(.43);memmove((void*)&a,(const void*)&a,1);inverse_fourier(a);measure(a);return 0;}\n"},
+            {"library copy survives coherent source uncomputation",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant bool a=superposition(0,1);if(a)phase(.31);quant uint8_t source=a+1,destination=0;memcpy((void*)&destination,(const void*)&source,1);measure(destination);measure(a);return 0;}\n"},
+            {"library memcmp preserves unsigned byte order and relative phases",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant int8_t a=0;fourier(a);if(a==3)phase(.31);quant bool r=memcmp((const void*)&a,\"\\x80\",1)>=0;if(r)phase(.23);measure(r);measure(a);return 0;}\n"},
+            {"library memcmp compares complete two-byte representations lexicographically", "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint16_t a=superposition(0,65535);const uint16_t b=0xab20;if(a==3)phase(.31);quant bool r=memcmp((const void*)&a,&b,2)<0;if(r)phase(.23);measure(r);measure(a);return 0;}\n"},
+            {"library memcmp byte view uses the selected object byte",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint16_t a=superposition(0,65535);if(a==3)phase(.31);quant bool r=memcmp((const char*)&a+1,\"Q\",1)<0;if(r)phase(.23);measure(r);measure(a);return 0;}\n"},
+            {"library memcmp correlates two quantum inputs without observation",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t a=superposition(0,7),b=superposition(0,7);if(a==3)phase(.31);if(b==7)phase(.17);quant bool r=memcmp((const void*)&a,(const void*)&b,1)<0;if(r)phase(.23);measure(r);measure(a);measure(b);return 0;}\n"},
+            {"library strncmp stops at matching NUL with untouched suffix",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint16_t a=superposition(0,65535);const uint16_t b=0xab00;if(a==3)phase(.31);quant bool r=strncmp((const char*)&a,(const char*)&b,2)<=0;if(r)phase(.17);measure(r);measure(a);return 0;}\n"},
+            {"library strncmp continues after equal nonzero bytes",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint16_t a=superposition(0,65535);const uint16_t b=0xab41;if(a==3)phase(.31);quant bool r=strncmp((const char*)&a,(const char*)&b,2)<=0;if(r)phase(.17);measure(r);measure(a);return 0;}\n"},
+            {"mutable CPU byte memcmp saved inverse",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){unsigned char b=17;b=65;quant uint8_t a=superposition(0,255);if(a==3)phase(.31);quant bool r=memcmp(&a,&b,1)<=0;b=99;if(r)phase(.17);measure(a);return b!=99;}\n"},
+            {"mutable CPU byte strncmp saved inverse",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){unsigned char b=17;b=65;quant uint8_t a=superposition(0,255);if(a==3)phase(.31);quant bool r=strncmp((const char*)&a,(const char*)&b,1)<=0;b=99;if(r)phase(.17);measure(a);return b!=99;}\n"},
+            {"mutable CPU word memcmp saved inverse",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){unsigned char b[2]={17,17};b[0]=65;b[1]=65;quant uint16_t a=superposition(0,65535);if(a==3)phase(.31);quant bool r=memcmp(&a,b,2)<=0;b[0]=99;b[1]=99;if(r)phase(.17);measure(a);return b[0]!=99||b[1]!=99;}\n"},
+            {"mutable CPU word strncmp NUL saved inverse", "#include <quantum.h>\n#include <string.h>\nint main(void){unsigned char b[2]={17,17};b[0]=0;b[1]=65;quant uint16_t a=superposition(0,65535);if(a==3)phase(.31);quant bool r=strncmp((const char*)&a,(const char*)b,2)<=0;b[0]=99;b[1]=99;if(r)phase(.17);measure(a);return b[0]!=99||b[1]!=99;}\n"},
+            {"memset full-byte retained history",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t x=superposition(0,255);if(x&1)phase(0.001);if(x&2)phase(0.002);if(x&4)phase(0.0040000000000000001);if(x&8)phase(0.0080000000000000002);if(x&16)phase(0.016);if(x&32)phase(0.032000000000000001);if(x&64)phase(0.064000000000000001);if(x&128)phase(0.128);memset(&x,17,1);if(x==17)phase(.17);measure(x);return 0;}\n"},
+            {"memset full-byte self alias",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t x=superposition(0,255);if(x&1)phase(0.001);if(x&2)phase(0.002);if(x&4)phase(0.0040000000000000001);if(x&8)phase(0.0080000000000000002);if(x&16)phase(0.016);if(x&32)phase(0.032000000000000001);if(x&64)phase(0.064000000000000001);if(x&128)phase(0.128);memset(&x,x,1);if(x==7)phase(.17);measure(x);return 0;}\n"},
+            {"memset partial word with quantum byte",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint16_t x=0x1234;quant bool b=superposition(0,1);if(b)phase(.31);memset((char*)&x+1,b,1);if(x==0x134)phase(.17);measure(x);measure(b);return 0;}\n"},
+            {"memset lazy sequenced argument",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant bool b=superposition(0,1),c=superposition(0,1);quant uint8_t x=5;if(b)phase(.31);if(c)phase(.19);memset(&x,c?b++:b--,1);if(x==1)phase(.17);measure(x);measure(b);measure(c);return 0;}\n"},
+            {"memset array captures aliased source once",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t a[2]={superposition(0,255),34};if(a[0]&1)phase(0.001);if(a[0]&2)phase(0.002);if(a[0]&4)phase(0.0040000000000000001);if(a[0]&8)phase(0.0080000000000000002);if(a[0]&16)phase(0.016);if(a[0]&32)phase(0.032000000000000001);if(a[0]&64)phase(0.064000000000000001);if(a[0]&128)phase(0.128);memset(a,a[0],2);measure(a[0]);measure(a[1]);return 0;}\n"},
+            {"logical AND sequences quantum memset in its selected arm", "#include <quantum.h>\n#include <string.h>\nint main(void){quant bool b=superposition(0,1);quant uint8_t x=5;if(b)phase(.31);quant bool y=b&&(memset(&x,17,1),x==17);if(y)phase(.17);measure(y);measure(x);measure(b);return 0;}\n"},
+            {"logical OR sequences quantum memset in its selected arm",
+             "#include <quantum.h>\n#include <string.h>\nint main(void){quant bool b=superposition(0,1);quant uint8_t x=5;if(b)phase(.31);quant bool y=b||(memset(&x,17,1),x==17);if(y)phase(.17);measure(y);measure(x);measure(b);return 0;}\n"},
+            {"library division product projections with relative phase",
+             "quant bool n=superposition(0,1);if(n)phase(.31);quant uint8_t q=div((int)n+5,2).quot;quant uint8_t r=div((int)n+5,2).rem;measure(q);measure(r);measure(n);"},
+            {"coherent library division with variable denominator",
+             "#include <quantum.h>\n#include <inttypes.h>\nint main(void){quant bool n=superposition(0,1),d=superposition(0,1),c=superposition(0,1);if(d)phase(.47);quant bool q=c?imaxdiv((intmax_t)n,(intmax_t)d+1).quot:false;quant bool r=c?imaxdiv((intmax_t)n,(intmax_t)d+1).rem:false;measure(q);measure(r);measure(n);measure(d);measure(c);return 0;}\n"},
+            {"signed library division rounds toward zero",
+             "quant bool n=superposition(0,1);if(n)phase(.37);quant bool q=ldiv(3*(long)n-1,2).quot;quant int8_t r=ldiv(3*(long)n-1,2).rem;measure(q);measure(r);measure(n);"},
+            {"CPU-bound library division",
+             "quant bool n=superposition(0,1);if(n)phase(.31);int d=2;quant uint8_t q=div((int)n+5,d).quot;quant uint8_t r=div((int)n+5,d).rem;measure(q);measure(r);measure(n);"},
+            {"saved CPU snapshot inverse",
+             "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t y=n+a;++a;if(y==6)phase(.31);measure(n);"},
+            {"derived history cleanup",
+             "quant bool n=superposition(0,1);quant bool x=!n;if(n)phase(.31);x+=1;if(x)phase(.17);measure(x);measure(n);"},
+            {"retained byte history preserves relative phases",
+             "quant uint8_t x=superposition(0,3);if(x&2)phase(.19);x&=1;if(x&1)phase(.31);measure(x);"},
+            {"history CPU snapshot inverse",
+             "quant bool n=superposition(0,1);quant bool x=!n;int d=1;x/=d;++d;if(x)phase(.31);measure(n);return d!=2;"},
+            {"coherent two-arm history join",
+             "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){x=false;phase(.23);}else{x=!x;phase(.41);}if(x)phase(.31);measure(x);measure(c);"},
+            {"self-controlled information loss",
+             "quant bool x=superposition(0,1);if(x)phase(.19);if(x)x=false;measure(x);"},
+            {"nested coherent history joins",
+             "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(c){if(x)x=false;else x=true;}if(x)phase(.31);measure(x);measure(c);"},
+            {"coherent CPU predicate snapshot inverse",
+             "quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);int d=1;if(c<d)x+=1;d=0;if(x)phase(.31);measure(x);measure(c);"},
+            {"CPU two-arm assignment trace",
+             "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag)x=false;else x=true;if(x)phase(.31);measure(x);measure(c);"},
+            {"CPU condition snapshot trace",
+             "int d=1;quant bool n=superposition(0,1),x=!n;if(x)phase(.19);if(d){x+=1;d=0;}else x=false;if(x)phase(.31);measure(x);measure(n);"},
+            {"CPU coherent branch trace",
+             "volatile int flag=1;quant bool c=superposition(0,1),x=superposition(0,1);if(x)phase(.19);if(flag){if(c)x=false;else x=true;}else x=!x;if(x)phase(.31);measure(x);measure(c);"},
+            {"postfix value retains phased history",
+             "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=x++;if(y)phase(.31);measure(y);measure(x);"},
+            {"prefix value and reversible decrement",
+             "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=--x;if(y)phase(.31);measure(y);measure(x);"},
+            {"comma returns the updated quantum value",
+             "quant bool x=superposition(0,1);if(x)phase(.19);quant bool y=(x++,x);if(y)phase(.31);measure(y);measure(x);"},
+            {"lazy conditional selected updates and phases",
+             "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?x++:x--;if(y)phase(.37);measure(y);measure(x);measure(c);"},
+            {"nested logical AND and OR selected updates",
+             "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c&&(x||x++);if(y)phase(.37);measure(y);measure(x);measure(c);"},
+            {"lazy self condition retains its original decision", "quant bool c=superposition(0,1),x=superposition(0,1);if(c)phase(.19);if(x)phase(.31);quant bool y=c?c++:c--;if(y)phase(.37);measure(y);measure(x);measure(c);"},
+            {"C-locale byte classification preserves relative phases",
+             "#include <quantum.h>\n#include <ctype.h>\nint main(void){quant uint8_t x=superposition(0,255);if(x&1)phase(.31);quant bool a=isalnum(x),s=isspace(x),p=ispunct(x);if(a)phase(.19);if(s)phase(.23);if(p)phase(.37);measure(a);measure(s);measure(p);measure(x);}\n"},
+            {"C-locale conversion in a quantum function with memory borrow",
+             "#include <quantum.h>\n#include <ctype.h>\nstatic quant bool lower(quant const bool *x){return tolower(*x+65)==97;}\nint main(void){quant bool a[1]={superposition(0,1)};if(a[0])phase(.31);quant bool y=lower(&a[0]);if(y)phase(.19);measure(y);measure(a[0]);}\n"},
+            {"Latin-1 classification and nested case conversion",
+             "#include <quantum.h>\n#include <ctype.h>\nint main(void){quant uint8_t x=superposition(0,255);if(x&1)phase(.31);quant bool a=isalpha(x)==1024,b=(((toupper(tolower(x))^32)|8)&32)!=0;if(a)phase(.19);if(b)phase(.23);measure(a);measure(b);measure(x);}\n"},
+            {"Latin-1 EOF and byte-255 coherent distinction",
+             "#include <quantum.h>\n#include <ctype.h>\n#include <stdio.h>\nint main(void){quant bool x=superposition(0,1);if(x)phase(.31);quant bool y=isalpha(x?EOF:255);if(y)phase(.19);measure(y);measure(x);}\n"}};
 static const test_case channels[] = {
     {"logical value observation preserves fiber coherence",
      "quant bool a=superposition(0,1),b=superposition(0,1);if(a)phase(.19);if(b)phase(.37);measure(a||b);fourier(a);fourier(b);measure(a);measure(b);"},
@@ -135,15 +174,33 @@ static void check_importer(void) {
         }
     }
     puts("PASS independent QASM importer: 8 malformed artifacts rejected");
+    reference_circuit c;
+    const char *maximum =
+        "OPENQASM 3.0;include \"stdgates.inc\";qubit[24] q;ctrl(23) @ x "
+        "q[0],q[1],q[2],q[3],q[4],q[5],q[6],q[7],q[8],q[9],q[10],q[11],"
+        "q[12],q[13],q[14],q[15],q[16],q[17],q[18],q[19],q[20],q[21],q[22],q[23];";
+    if (!reference_parse(&c, maximum) || c.qubits != REF_MAX_QUBITS || c.count != 1 ||
+        c.gates[0].count != REF_MAX_QUBITS)
+        validation_fail("QASM importer rejected its maximum declared wire/control budget");
+    reference_destroy(&c);
+    if (reference_parse(&c, "OPENQASM 3.0;include \"stdgates.inc\";qubit[25] q;") ||
+        !strstr(c.error, "24 qubits"))
+        validation_fail("QASM qubit budget must be distinct from malformed syntax");
+    if (reference_parse(&c, "OPENQASM 3.0;include \"stdgates.inc\";qubit[24] q;bit[21] results;") ||
+        !strstr(c.error, "20 result bits"))
+        validation_fail("QASM result budget must be distinct from malformed syntax");
+    puts(
+        "PASS independent QASM budgets: 24 wires/controls accepted; qubit and result limits diagnosed separately from syntax");
 }
 
 static void exported(validation *v,
                      const char *body,
                      char *ir,
                      reference_circuit *c,
-                     unsigned binding_value,
+                     const char *binding_values,
                      const unsigned *cpu_decisions,
-                     size_t cpu_count) {
+                     size_t cpu_count,
+                     const char *locale) {
     char source[4096], qasm[4096], compiler[4096], backend[4096], program[8192];
     validation_path(source, sizeof source, "%s/program.c", v->temp);
     validation_path(ir, 4096, "%s/program.json", v->temp);
@@ -160,15 +217,17 @@ static void exported(validation *v,
         validation_write(source, program);
     }
     char *compile[] = {compiler, source, "--emit-ir", "-o", ir, NULL};
-    char *export[] = {backend, "--emit-qasm", ir, "--no-tables", NULL};
+    char *export[] = {
+        backend, "--emit-qasm", ir, "--no-tables", "--ctype-locale", (char *)locale, NULL};
     if (validation_run(v, compile, NULL, 30)) {
         char *log = validation_read(v->log);
         validation_fail("QASM preparation failed: %s", log);
     }
-    if (binding_value) {
+    if (binding_values) {
         char *template = validation_read(ir);
-        cj_doc d = {0};
-        if (!cj_parse(&d, template))
+        cj_doc d = {0}, values = {0};
+        if (!cj_parse(&d, template) || !cj_parse(&values, binding_values) ||
+            values.tokens[0].kind != '[')
             validation_fail("invalid binding fixture IR");
         char rows[4096] = "[";
         size_t length = 1;
@@ -179,14 +238,15 @@ static void exported(validation *v,
             if (!cj_equal(&d, cj_get(&d, token, "op"), "qbind"))
                 continue;
             int parameters = cj_get(&d, token, "parameters");
-            if (d.tokens[parameters].children != 1)
+            if (parameters < 0 || d.tokens[parameters].kind != '[' ||
+                d.tokens[parameters].children != values.tokens[0].children)
                 validation_fail("unexpected QASM fixture parameter count");
             int written = snprintf(rows + length,
                                    sizeof rows - length,
-                                   "%s{\"instruction\":%u,\"values\":[%u]}",
+                                   "%s{\"instruction\":%u,\"values\":%s}",
                                    count++ ? "," : "",
                                    index,
-                                   binding_value);
+                                   binding_values);
             if (written < 0 || (size_t)written >= sizeof rows - length)
                 validation_fail("QASM binding fixture budget exceeded");
             length += (size_t)written;
@@ -203,6 +263,7 @@ static void exported(validation *v,
         free(bound);
         qc_destroy(context);
         cj_free(&d);
+        cj_free(&values);
         free(template);
     }
     if (cpu_count) {
@@ -237,22 +298,37 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
     unsigned cpu_count = !strcmp(test->name, "CPU two-arm assignment trace") ||
                          !strcmp(test->name, "CPU condition snapshot trace") ||
                          !strcmp(test->name, "CPU coherent branch trace");
-    unsigned binding_value = !strcmp(test->name, "CPU-bound library division")                ? 2
-                             : !strcmp(test->name, "saved CPU snapshot inverse")              ? 5
-                             : !strcmp(test->name, "history CPU snapshot inverse")            ? 1
-                             : !strcmp(test->name, "coherent CPU predicate snapshot inverse") ? 1
-                             : cpu_count                                                      ? 1
-                                                                                              : 0;
+
+    const struct {
+        const char *name, *values;
+    } bindings[] = {
+        {"CPU-bound library division", "[2]"},
+        {"saved CPU snapshot inverse", "[5]"},
+        {"history CPU snapshot inverse", "[1]"},
+        {"coherent CPU predicate snapshot inverse", "[1]"},
+        {"mutable CPU byte memcmp saved inverse", "[65]"},
+        {"mutable CPU byte strncmp saved inverse", "[65]"},
+        {"mutable CPU word memcmp saved inverse", "[65,65]"},
+        {"mutable CPU word strncmp NUL saved inverse", "[0,0]"},
+    };
+
+    const char *binding_values = cpu_count ? "[1]" : NULL;
+    for (unsigned i = 0; i < sizeof bindings / sizeof *bindings; ++i)
+        if (!strcmp(test->name, bindings[i].name))
+            binding_values = bindings[i].values;
     unsigned cpu_decisions[] = {1};
-    exported(v, body, ir, &c, binding_value, cpu_decisions, cpu_count);
+    const char *locale = !strncmp(test->name, "Latin-1", 7) ? "en_US.ISO-8859-1" : "C";
+    exported(v, body, ir, &c, binding_values, cpu_decisions, cpu_count, locale);
     char *text = validation_read(ir);
     cj_doc d = {0};
     qc_context *native = qc_create(1, 7);
     if (!native || !cj_parse(&d, text) || !qc_verify_document(native, &d))
         validation_fail("invalid native reference IR");
     qc_allow_tables(native, 0);
+    if (!qc_ctype_locale(native, locale))
+        validation_fail("cannot specialize QASM reference locale: %s", qc_error(native));
     native->ignore_measurements = 1;
-    unsigned mapping[20], bits = 0;
+    unsigned mapping[REF_MAX_RESULTS], bits = 0;
     int list = cj_get(&d, 0, "instructions");
     for (int t = list + 1; t < d.tokens[list].next; t = d.tokens[t].next) {
         if (cj_equal(&d, cj_get(&d, t, "op"), "qmeasure") ||
@@ -261,7 +337,7 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
             if (!cj_u64(&d, cj_get(&d, t, "id"), &id))
                 validation_fail("invalid measured register");
             qc_register *r = qc_lookup(native, (uint32_t)id);
-            if (!r || r->width > 20 - bits)
+            if (!r || r->width > REF_MAX_RESULTS - bits)
                 validation_fail("measurement mapping exceeds validation budget");
             for (unsigned b = 0; b < r->width; ++b)
                 mapping[bits++] = r->wires[b];
@@ -272,6 +348,18 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
     }
     if (qc_qubits(native) != c.qubits || bits != c.bits)
         validation_fail("QASM register dimensions differ: %s", test->name);
+    unsigned reference_mapping[REF_MAX_RESULTS], seen = 0;
+    for (size_t g = 0; g < c.count; ++g)
+        if (c.gates[g].kind == REF_MEASURE) {
+            unsigned bit = c.gates[g].bit;
+            if (bit >= bits || (seen & (1u << bit)))
+                validation_fail("QASM result mapping repeats or exceeds its declared bits: %s",
+                                test->name);
+            seen |= 1u << bit;
+            reference_mapping[bit] = c.gates[g].wires[0];
+        }
+    if (seen != (1u << bits) - 1)
+        validation_fail("QASM result mapping is incomplete: %s", test->name);
     Qureg q = createQureg((int)c.qubits, env);
     initZeroState(q);
     (void)reference_execute(&c, q, 0);
@@ -295,11 +383,10 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
         if (cabs(a.real + I * a.imag - n * overlap) > 1e-10)
             validation_fail("independent amplitude mismatch: %s basis=%zu", test->name, i);
         size_t expected_bits = 0, actual_bits = 0;
-        for (unsigned b = 0; b < bits; ++b)
+        for (unsigned b = 0; b < bits; ++b) {
             expected_bits |= ((i >> mapping[b]) & 1) << b;
-        for (size_t g = 0; g < c.count; ++g)
-            if (c.gates[g].kind == REF_MEASURE)
-                actual_bits |= ((i >> c.gates[g].wires[0]) & 1) << c.gates[g].bit;
+            actual_bits |= ((i >> reference_mapping[b]) & 1) << b;
+        }
         expected[expected_bits] += creal(n * conj(n));
         actual[actual_bits] += a.real * a.real + a.imag * a.imag;
     }
@@ -321,7 +408,7 @@ static void check_state(validation *v, QuESTEnv env, const test_case *test) {
 static void check_channel(validation *v, QuESTEnv env, const test_case *test) {
     char ir[4096], sampler[4096], counts_path[4096];
     reference_circuit c;
-    exported(v, test->body, ir, &c, 0, NULL, 0);
+    exported(v, test->body, ir, &c, NULL, NULL, 0, "C");
     validation_path(sampler,
                     sizeof sampler,
                     "%s/build/qasm_samples%s",
@@ -386,6 +473,7 @@ int main(int argc, char **argv) {
     check_importer();
     validation v;
     validation_init(&v, argv[0]);
+    validation_locale_fixture(&v, 0);
     QuESTEnv env = createQuESTEnv();
     unsigned long seeds[] = {913};
     seedQuEST(&env, seeds, 1);
@@ -394,6 +482,7 @@ int main(int argc, char **argv) {
     for (unsigned i = 0; i < sizeof channels / sizeof *channels; ++i)
         check_channel(&v, env, &channels[i]);
     destroyQuESTEnv(env);
+    validation_locale_fixture(&v, 1);
     validation_cleanup(&v);
     printf(
         "%zu exported circuits independently validated with QuEST 3.7.0 (C): %zu states, %zu channels; table-free export\n",

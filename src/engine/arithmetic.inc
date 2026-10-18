@@ -103,6 +103,8 @@ static int ar_same(ar_builder *p, int a, int b, unsigned depth) {
     if (aw != bw ||
         cj_bool(p->d, cj_get(p->d, a, "signed")) != cj_bool(p->d, cj_get(p->d, b, "signed")))
         return 0;
+    if (ctype_profile(p->d, ao) && !ctype_same_profile(p->c, p->d, a, b))
+        return 0;
     if (cj_equal(p->d, ao, "reg") || cj_equal(p->d, ao, "const")) {
         const char *field = cj_equal(p->d, ao, "reg") ? "id" : "value";
         uint64_t av, bv;
@@ -452,25 +454,20 @@ static int ar_bound(ar_builder *p, int e, unsigned depth) {
             if (input.lo < EOF || input.hi > UCHAR_MAX)
                 return qc_fail(
                     p->c, "ctype argument must be proven EOF or representable as unsigned char");
+            qc_ctype_data data;
+            if (!ctype_read(p->c, p->d, e, &data))
+                return 0;
             if (input.lo == input.hi) {
-                r->lo = r->hi = ctype_value(ctype, (int)input.lo);
-            } else if (ctype_mapping(ctype)) {
-                r->lo = input.lo;
-                r->hi = input.hi;
-                if (input.lo <= (int)ctype->bounds[0][1] && input.hi >= (int)ctype->bounds[0][0]) {
-                    __int128 lo =
-                        input.lo > (int)ctype->bounds[0][0] ? input.lo : ctype->bounds[0][0];
-                    __int128 hi =
-                        input.hi < (int)ctype->bounds[0][1] ? input.hi : ctype->bounds[0][1];
-                    int delta = ctype == ctype_profiles + 12 ? 32 : -32;
-                    if (lo + delta < r->lo)
-                        r->lo = lo + delta;
-                    if (hi + delta > r->hi)
-                        r->hi = hi + delta;
-                }
+                r->lo = r->hi = ctype_data_value(&data, (int)input.lo);
+            } else if (data.mapping) {
+                r->lo = input.lo < 0 ? -1 : 0;
+                r->hi = 255;
             } else {
                 r->lo = 0;
-                r->hi = ctype_mask(ctype);
+                r->hi = 0;
+                for (unsigned i = 0; i < data.intervals; ++i)
+                    if (data.bounds[i][2] > r->hi)
+                        r->hi = data.bounds[i][2];
             }
             goto facts;
         }
@@ -910,6 +907,39 @@ static int ar_compare(ar_builder *p,
                       int sign,
                       int relation,
                       ar_value *out) {
+    if (ar_literal_value(a) || ar_literal_value(b)) {
+        const ar_value *literal = ar_literal_value(b) ? b : a;
+        const ar_value *value = literal == b ? a : b;
+        ar_bit bits[66];
+        int wanted[66];
+        unsigned count = 0;
+        if (relation == 0 || relation == 1 || relation == 3 || relation == 5) {
+            for (unsigned j = 0; j < width; ++j) {
+                bits[count] = ar_at(value, j);
+                wanted[count++] = ar_at(literal, j).inverted;
+            }
+            if (!ar_condition(p, ar_wire(out->bit[0]), bits, wanted, count))
+                return 0;
+        }
+        if (relation == 1 && !ar_gate(p, ar_wire(out->bit[0]), 0, 0))
+            return 0;
+        if (relation >= 2)
+            for (unsigned step = 0; step < width; ++step) {
+                unsigned j = width - step - 1;
+                count = 0;
+                for (unsigned k = j + 1; k < width; ++k) {
+                    bits[count] = ar_at(value, k);
+                    wanted[count++] = ar_at(literal, k).inverted;
+                }
+                bits[count] = ar_at(a, j);
+                wanted[count++] = (relation >= 4) ^ (sign && j == width - 1);
+                bits[count] = ar_at(b, j);
+                wanted[count++] = (relation < 4) ^ (sign && j == width - 1);
+                if (!ar_condition(p, ar_wire(out->bit[0]), bits, wanted, count))
+                    return 0;
+            }
+        return 1;
+    }
     ar_value diff;
     if (!ar_temp(p, width, &diff))
         return 0;
@@ -1075,13 +1105,17 @@ static int ar_ctype_interval(
         unsigned power = 0;
         while (power < 8 && !(lo & ((1u << (power + 1)) - 1)) && lo + (1u << (power + 1)) - 1 <= hi)
             ++power;
-        ar_bit bits[8];
-        int values[8];
+        ar_bit bits[9];
+        int values[9];
         unsigned count = 0;
         for (unsigned bit = power; bit < 8; ++bit) {
             bits[count] = ar_at(source, bit);
             values[count++] = !!(lo & (1u << bit));
         }
+        // EOF's low byte is 255 too; its sign bit must exclude it from
+        // byte intervals even when the locale classifies character 255.
+        bits[count] = ar_at(source, 31);
+        values[count++] = 0;
         if (!ar_condition(p, target, bits, values, count))
             return 0;
         lo += 1u << power;
@@ -1146,33 +1180,46 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
     }
     const qc_ctype_profile *ctype = ctype_profile(p->d, op);
     if (ctype) {
-        ar_value source, flag;
-        if (!ar_lower(p, nodes[0], 32, &source) || !ar_temp(p, 1, &flag))
+        ar_value source;
+        qc_ctype_data data;
+        if (!ctype_read(p->c, p->d, e, &data) || !ar_lower(p, nodes[0], 32, &source))
             return 0;
-        for (unsigned j = 0; j < ctype->intervals; ++j)
-            if (!ar_ctype_interval(
-                    p, &source, ctype->bounds[j][0], ctype->bounds[j][1], ar_wire(flag.bit[0])))
-                return 0;
         *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
-        if (ctype_mapping(ctype)) {
+        if (data.mapping)
             for (unsigned bit = 0; bit < width; ++bit)
                 out->bit[bit] = ar_at(&source, bit);
-            if (width > 5) {
-                ar_value mapped;
-                if (!ar_temp(p, 1, &mapped))
+        unsigned seen[256], groups = 0;
+        for (unsigned interval = 0; interval < data.intervals; ++interval) {
+            unsigned value = data.bounds[interval][2], previous = 0;
+            for (unsigned group = 0; group < groups; ++group)
+                previous |= seen[group] == value;
+            if (previous)
+                continue;
+            seen[groups++] = value;
+            ar_value flag;
+            if (!ar_temp(p, 1, &flag))
+                return 0;
+            for (unsigned j = interval; j < data.intervals; ++j)
+                if (data.bounds[j][2] == value &&
+                    !ar_ctype_interval(
+                        p, &source, data.bounds[j][0], data.bounds[j][1], ar_wire(flag.bit[0])))
                     return 0;
-                ar_bit bit = ar_at(&source, 5);
-                int one = 1;
-                if (!ar_condition(p, ar_wire(mapped.bit[0]), &bit, &one, 1) ||
-                    !ar_condition(p, ar_wire(mapped.bit[0]), &flag.bit[0], &one, 1))
-                    return 0;
-                out->bit[5] = mapped.bit[0];
-            }
-        } else {
-            unsigned mask = (unsigned)ctype_mask(ctype);
-            for (unsigned bit = 0; bit < width; ++bit)
-                if (mask & (1u << bit))
+            for (unsigned bit = 0; bit < width; ++bit) {
+                if (!(value & (UINT32_C(1) << bit)))
+                    continue;
+                ar_bit before = out->bit[bit];
+                if (!before.wire && !before.inverted)
                     out->bit[bit] = flag.bit[0];
+                else {
+                    ar_value mapped;
+                    int one = 1;
+                    if (!ar_temp(p, 1, &mapped) ||
+                        !ar_condition(p, ar_wire(mapped.bit[0]), &before, &one, 1) ||
+                        !ar_condition(p, ar_wire(mapped.bit[0]), &flag.bit[0], &one, 1))
+                        return 0;
+                    out->bit[bit] = mapped.bit[0];
+                }
+            }
         }
         return 1;
     }
@@ -1277,6 +1324,39 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
             p, &a, &b, cj_equal(p->d, op, "div"), width, range.sign && range.lo < 0, out);
         if (optimized)
             return optimized > 0;
+    }
+    // A fixed shift selects existing wires or sign/zero constants. Definedness
+    // was checked by ar_bound; no barrel-shifter output register is needed.
+    if (shift && ar_literal_value(&b)) {
+        uint64_t distance = 0;
+        for (unsigned j = 0; j < b.width; ++j)
+            distance |= (uint64_t)b.bit[j].inverted << j;
+        int left = cj_equal(p->d, op, "shl");
+        *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
+        for (unsigned j = 0; j < width; ++j)
+            out->bit[j] = left ? (j < distance ? (ar_bit){0, 0} : ar_at(&a, j - (unsigned)distance))
+                               : ar_at(&a, j + (unsigned)distance);
+        return 1;
+    }
+    // Constant masks are bit views even when the other operand is a locale
+    // mapping or another expression not representable by the polynomial path.
+    if ((cj_equal(p->d, op, "band") || cj_equal(p->d, op, "bor") || cj_equal(p->d, op, "bxor")) &&
+        (ar_literal_value(&a) || ar_literal_value(&b))) {
+        const ar_value *literal = ar_literal_value(&b) ? &b : &a;
+        const ar_value *value = literal == &b ? &a : &b;
+        *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
+        for (unsigned bit = 0; bit < width; ++bit) {
+            ar_bit constant = ar_at(literal, bit), input = ar_at(value, bit);
+            if (cj_equal(p->d, op, "band"))
+                out->bit[bit] = constant.inverted ? input : (ar_bit){0, 0};
+            else if (cj_equal(p->d, op, "bor"))
+                out->bit[bit] = constant.inverted ? (ar_bit){0, 1} : input;
+            else {
+                input.inverted ^= constant.inverted;
+                out->bit[bit] = input;
+            }
+        }
+        return 1;
     }
     if (!ar_temp(p, width, out))
         return 0;

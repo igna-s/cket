@@ -97,11 +97,13 @@ static void help(void) {
          "       --run [--seed N]\n"
          "       --emit-ast | --emit-ir | --emit-quantum-ir\n"
          "       --emit-qasm | --resources\n"
+         "       --ctype-locale name (explicit static character profile)\n"
          "       --gcc compiler | --version | --help");
 }
 
 int main(int argc, char **argv) {
     const char *source = NULL, *output = NULL, *gcc = getenv("CC"), *seed = NULL;
+    const char *ctype_locale = NULL;
     int action = 0;
     char *extra[argc + 1];
     int nextra = 0;
@@ -118,13 +120,15 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (!strcmp(arg, "-o") || !strcmp(arg, "--output") || !strcmp(arg, "--gcc") ||
-            !strcmp(arg, "--seed")) {
+            !strcmp(arg, "--seed") || !strcmp(arg, "--ctype-locale")) {
             if (++i == argc)
                 return error("option requires an argument");
             if (!strcmp(arg, "--gcc"))
                 gcc = argv[i];
             else if (!strcmp(arg, "--seed"))
                 seed = argv[i];
+            else if (!strcmp(arg, "--ctype-locale"))
+                ctype_locale = argv[i];
             else
                 output = argv[i];
             continue;
@@ -254,7 +258,8 @@ int main(int argc, char **argv) {
     }
     if (action == 3 || action == 4) {
         context = qc_create(0, 0);
-        if (!context || !qc_document(context, document, 0, 0)) {
+        if (!context || (ctype_locale && !qc_ctype_locale(context, ctype_locale)) ||
+            !qc_document(context, document, 0, 0)) {
             fprintf(stderr, "|c> backend: %s\n", qc_error(context));
             free(document);
             qc_destroy(context);

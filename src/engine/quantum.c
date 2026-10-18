@@ -1,3 +1,4 @@
+#define _XOPEN_SOURCE 700
 #include "internal.h"
 #include <ctype.h>
 #include <errno.h>
@@ -55,6 +56,8 @@ void qc_allow_tables(qc_context *c, int allowed) {
 void qc_destroy(qc_context *c) {
     if (!c)
         return;
+    for (unsigned i = 0; i < 14; ++i)
+        free(c->ctype_snapshots[i]);
     for (size_t i = 0; i < c->nregisters; ++i)
         free(c->registers[i].definition);
     while (c->parsed) {
@@ -533,7 +536,10 @@ static int evaluate(
     if (ctype) {
         if (a < EOF || a > UCHAR_MAX)
             return qc_fail(c, "ctype argument must be EOF or representable as unsigned char");
-        r = ctype_value(ctype, (int)a);
+        qc_ctype_data data;
+        if (!ctype_read(c, d, e, &data))
+            return 0;
+        r = ctype_data_value(&data, (int)a);
     } else if (cj_equal(d, op, "cast"))
         r = a;
     else if (cj_equal(d, op, "add")) {
@@ -660,11 +666,15 @@ static int synthesize_compute(
     for (unsigned j = 0; j < dom.count; ++j)
         if (!dom.sources[j].known)
             relevant += dom.sources[j].active;
-    if (relevant > QC_MAX_INPUT || !c->allow_tables) {
+    int characters = 0;
+    for (int token = expr; token < d->tokens[expr].next; ++token)
+        if (d->tokens[token].kind == '{' && ctype_profile(d, cj_get(d, token, "op")))
+            characters = 1;
+    if (relevant > QC_MAX_INPUT || !c->allow_tables || characters) {
         structured = arithmetic_compute(c, d, expr, target, outer, state);
         if (structured)
             return structured > 0;
-        if (!c->allow_tables)
+        if (!c->allow_tables || characters)
             return qc_fail(c, "expression has no structured synthesis; truth tables are disabled");
     }
     if (!make_domain(c, d, expr, &dom))
@@ -1424,6 +1434,21 @@ int qc_apply_token(qc_context *c,
     }
     if (!qc_verify_instruction(c, d, inst))
         return 0;
+    if (!c->structural) {
+        char *bound = NULL;
+        if (!ctype_bind(c, d, inst, &bound))
+            return 0;
+        if (bound) {
+            cj_doc local = {0};
+            int ok = cj_parse(&local, bound) &&
+                     qc_apply_token(c, &local, 0, has_argument, argument, result);
+            if (!ok && !c->error[0])
+                qc_fail(c, "%s", local.error);
+            cj_free(&local);
+            free(bound);
+            return ok;
+        }
+    }
     if (!collect_disposed(c))
         return 0;
     *result = 0;
@@ -1465,12 +1490,14 @@ int qc_apply_token(qc_context *c,
         !cj_equal(d, op, "qprepare"))
         return qc_fail(c, "integer runtime argument requires addition, XOR or preparation");
     if (cj_equal(d, op, "ctype_require")) {
-        const char *locale = setlocale(LC_CTYPE, NULL);
-        return (locale && (!strcmp(locale, "C") || !strcmp(locale, "POSIX"))) ||
+        return ctype_legacy_require(c);
+    }
+    if (cj_equal(d, op, "ctype_capture"))
+        return c->structural ||
+               (c->ctype_runtime ? ctype_capture(c, NULL) : c->ctype_snapshots[0] != NULL) ||
                qc_fail(
                    c,
-                   "quantum ctype currently requires the C locale; locale snapshots are pending");
-    }
+                   "unresolved runtime ctype locale; specify --ctype-locale for static synthesis");
     if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
         cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
         cj_equal(d, op, "ccontrol_else"))
@@ -1997,6 +2024,8 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
     if (ok && validation)
         for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next) {
             c->structural |= cj_equal(&d, cj_get(&d, t, "op"), "qbind");
+            c->structural |=
+                !c->ctype_snapshots[0] && cj_equal(&d, cj_get(&d, t, "op"), "ctype_capture");
             int instruction =
                 cj_equal(&d, cj_get(&d, t, "op"), "qbind") ? cj_get(&d, t, "instruction") : t;
             c->cpu_versions |= cj_equal(&d, cj_get(&d, instruction, "op"), "qphi");
@@ -2058,6 +2087,16 @@ void qc_resources(const qc_context *c, FILE *f) {
 int qc_qasm(const qc_context *c, FILE *f) {
     if (c->structural)
         return 0;
+    /* QASM numbers use a decimal point independently of the caller's locale.
+     * uselocale affects this thread only; restore it even after stream errors. */
+    locale_t numeric = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    if (!numeric)
+        return 0;
+    locale_t previous = uselocale(numeric);
+    if (!previous) {
+        freelocale(numeric);
+        return 0;
+    }
     fprintf(f, "OPENQASM 3.0;\ninclude \"stdgates.inc\";\n");
     if (c->physical)
         fprintf(f, "qubit[%u] q;\n", c->physical);
@@ -2103,7 +2142,11 @@ int qc_qasm(const qc_context *c, FILE *f) {
                     fprintf(f, "x q[%u];\n", b);
         }
     }
-    return !ferror(f);
+    int ok = !ferror(f);
+    if (!uselocale(previous))
+        ok = 0;
+    freelocale(numeric);
+    return ok;
 }
 
 #include "circuit.inc"

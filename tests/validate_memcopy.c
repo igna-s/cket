@@ -233,7 +233,9 @@ static void contracts(validation *v) {
         "quant uint8_t a=7,b=0;quant uint8_t *p=&b;quant const uint8_t *s=&a;(void)memcpy((void*)p,(const void*)s,1);return measure(*p)!=7||measure(a)!=7;",
         "quant bool a=superposition(0,1);quant uint8_t source=a+1,destination=0;memcpy((void*)&destination,(const void*)&source,1);unsigned r=measure(destination),s=measure(a);return r!=s+1;",
         "#include <quantum.h>\nstatic void memcpy(quant uint8_t *d,quant const uint8_t *s,unsigned n){*d+=n;}\nint main(void){quant uint8_t a=7,b=0;memcpy(&b,&a,1);return measure(b)!=1||measure(a)!=7;}\n",
-        "quant uint8_t a=7,b=0;for(int i=0;i<1;++i)memcpy((void*)&b,(const void*)&a,1);return measure(b)!=7||measure(a)!=7;"};
+        "quant uint8_t a=7,b=0;for(int i=0;i<1;++i)memcpy((void*)&b,(const void*)&a,1);return measure(b)!=7||measure(a)!=7;",
+        "quant uint8_t a=7,b=0;void *p=memcpy((void*)&b,(const void*)&a,1);unsigned result=measure(b),source=measure(a);return result!=7||source!=7||p!=&b;",
+        "quant uint8_t a=7,b=0;quant uint8_t *p=memcpy((void*)&b,(const void*)&a,1);unsigned first=measure(*p),second=measure(b),source=measure(a);return first!=7||second!=first||source!=7||p!=&b;"};
     const char *invalid[] = {
         "quant uint8_t a=7,b=superposition(0,3);memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7,b=superposition(0,1);memmove((void*)&b,(const void*)&a,1);measure(a);measure(b);",
@@ -243,8 +245,6 @@ static void contracts(validation *v) {
         "quant uint16_t a=7,b=0;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7;quant uint16_t b=0;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;memcpy((void*)&b,(const void*)&a,2);measure(a);measure(b);",
-        "quant uint8_t a=7,b=0;void *p=memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);return p!=0;",
-        "quant uint8_t a=7,b=0;quant uint8_t *p=memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);measure(*p);",
         "quant uint8_t a=7;uint8_t b=0;memcpy(&b,(const void*)&a,1);measure(a);",
         "uint8_t a=7;quant uint8_t b=0;memcpy((void*)&b,&a,1);measure(b);",
         "quant bool a=true,b=false;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
@@ -260,8 +260,6 @@ static void contracts(validation *v) {
                                  "partial-element quantum byte copy",
                                  "equal-size integer elements",
                                  "exceeds its checked storage bounds",
-                                 "classical initialization",
-                                 "quantum pointer needs an initialized checked borrow",
                                  "mixed CPU/quantum memory copy",
                                  "mixed CPU/quantum memory copy",
                                  "equal-size integer elements without padding",
@@ -298,7 +296,7 @@ static void contracts(validation *v) {
                 }
             }
     puts(
-        "PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundary, return-pointer diagnostics and classical libc preservation");
+        "PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundaries, checked returned borrows and classical libc preservation");
 }
 
 static void wide(validation *v) {

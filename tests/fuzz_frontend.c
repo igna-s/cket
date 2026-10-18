@@ -48,26 +48,34 @@ static void program(const char *path, const char *expr) {
         validation_fail("cannot write generated C program");
     /* Compare the full expression with its CPU reference. A Boolean result
      * avoids implicit narrowing and does not turn identity cases into moves. */
-    fputs("#include <quantum.h>\n#include <stdlib.h>\nint main(void){int bad=0;\n", f);
-    const unsigned inputs[] = {0, 1, 3, 7, 15, 127, 255};
-    for (unsigned i = 0; i < sizeof inputs / sizeof *inputs; ++i) {
-        unsigned value = inputs[i];
+    fputs("#include <quantum.h>\n#include <stdlib.h>\n\n"
+          "int main(void) {\n    int bad = 0;\n",
+          f);
+    for (unsigned value = 0; value < 256; ++value) {
         char name[32], literal[32];
         validation_path(name, sizeof name, "q%u", value);
         validation_path(literal, sizeof literal, "%u", value);
-        fprintf(f, "quant uint8_t %s=%u;quant bool r%u=(", name, value, value);
+        fprintf(f, "\n    quant uint8_t %s = %u;\n    quant bool r%u = (", name, value, value);
         substitute(f, expr, name);
-        fputs(")==(", f);
+        fputs(") == (", f);
         substitute(f, expr, literal);
-        fprintf(f, ");bad|=!measure(r%u);reset(r%u);reset(%s);\n", value, value, name);
+        fprintf(f,
+                ");\n    bad |= !measure(r%u);\n    reset(r%u);\n    reset(%s);\n",
+                value,
+                value,
+                name);
     }
-    fputs(
-        "quant uint8_t a=1,b=2;int n=1;\na+=++n;a+=measure(b);bad|=n!=2 || measure(a)!=5;reset(a);reset(b);\n"
-        "int inc=255,dec=257,post=255;bad|=((uint8_t)++inc)!=0 || inc!=256;\n"
-        "bad|=((uint8_t)--dec)!=0 || dec!=256;bad|=((int8_t)post++)!=-1 || post!=256;\n"
-        "quant int8_t negative=-128;quant uint8_t magnitude=abs(negative);\n"
-        "bad|=measure(magnitude)!=128 || measure(negative)!=-128;reset(magnitude);reset(negative);\nreturn bad;}\n",
-        f);
+    fputs("\n    quant uint8_t a = 1, b = 2;\n    int n = 1;\n"
+          "    a += ++n;\n    a += measure(b);\n"
+          "    bad |= n != 2 || measure(a) != 5;\n    reset(a);\n    reset(b);\n"
+          "\n    int inc = 255, dec = 257, post = 255;\n"
+          "    bad |= ((uint8_t)++inc) != 0 || inc != 256;\n"
+          "    bad |= ((uint8_t)--dec) != 0 || dec != 256;\n"
+          "    bad |= ((int8_t)post++) != -1 || post != 256;\n"
+          "\n    quant int8_t negative = -128;\n    quant uint8_t magnitude = abs(negative);\n"
+          "    bad |= measure(magnitude) != 128 || measure(negative) != -128;\n"
+          "    reset(magnitude);\n    reset(negative);\n    return bad;\n}\n",
+          f);
     if (ferror(f) || fclose(f))
         validation_fail("cannot finish generated C program");
 }
@@ -145,7 +153,7 @@ int main(int argc, char **argv) {
                                 levels[l]);
             }
         }
-        printf("PASS frontend %" PRIu64 ": all 5 optimization levels\n", i);
+        printf("PASS frontend %" PRIu64 ": all 256 byte inputs at all 5 optimization levels\n", i);
         fflush(stdout);
     }
     printf("%" PRIu64 " generated frontend compilations passed; seed=%" PRIu64

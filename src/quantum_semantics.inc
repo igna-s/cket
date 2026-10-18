@@ -12,6 +12,7 @@ std::map<tree, unsigned> cpu_parameter_ids;
 std::vector<tree> cpu_parameter_values;
 std::set<unsigned> active_cpu_parameters;
 std::set<tree> cpu_library_saves;
+std::set<tree> cpu_byte_saves;
 unsigned coherent_expression_depth = 0;
 unsigned lazy_effect_depth = 0;
 
@@ -36,6 +37,7 @@ std::vector<CpuBranch *> cpu_branches;
 size_t embedded_module_bytes = 0;
 tree apply_fn = NULL_TREE, apply_arg_fn = NULL_TREE;
 tree apply_values_fn = NULL_TREE;
+tree read_byte_fn = NULL_TREE;
 tree apply_phase_fn = NULL_TREE;
 tree apply_index_fn = NULL_TREE;
 tree observe_fn = NULL_TREE;
@@ -204,7 +206,8 @@ void append(tree *list, tree value) {
 }
 
 tree quantum_use(tree *node, int *walk, void *) {
-    if (quantum_indexed_accesses.count(*node) || quantum_memory_copies.count(*node))
+    if (quantum_indexed_accesses.count(*node) || quantum_memory_copies.count(*node) ||
+        quantum_memory_sets.count(*node))
         return *node;
     if (quantum(*node))
         return *node;
@@ -315,6 +318,13 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             continue;
         if (quantum(current)) {
             result.reads.insert(current);
+            continue;
+        }
+        if (quantum_memory_sets.count(current)) {
+            const auto &operation = quantum_memory_sets.at(current);
+            pending.push_back(operation.fill);
+            for (const auto &entry : operation.elements)
+                result.writes.insert(entry.first);
             continue;
         }
         if (DECL_P(current) || TYPE_P(current) || !EXPR_P(current))
@@ -431,15 +441,49 @@ std::string ctype_expression(tree call, const std::string &name, std::set<unsign
         error_at(at(call), "|c>: quantum ctype requires a scheduled expression consumer");
         return "{}";
     }
-    // This is a CPU precondition for new computations. Saved inverses use the
-    // original formula and do not consult a subsequently changed locale.
+    // Capture the effective locale without changing it. Saved inverses retain
+    // the bound profile instead of consulting subsequently changed libc state.
     std::set<unsigned> parameters;
     parameters.swap(active_cpu_parameters);
     append(expression_frames.back()->prefix,
-           emit_operation("{\"op\":\"ctype_require\"}", at(call)));
+           emit_operation("{\"op\":\"ctype_capture\"}", at(call)));
     active_cpu_parameters.swap(parameters);
-    return "{\"op\":" + json("ctype_" + name) + type_json(integer_type_node) + ",\"args\":[" +
+    return "{\"op\":" + json("ctype_" + name) + type_json(integer_type_node) +
+           ",\"profile\":\"current\",\"args\":[" +
            expression(fold_convert(integer_type_node, CALL_EXPR_ARG(call, 0)), deps) + "]}";
+}
+
+// This predicate is used only for an explicitly discarded comma operand.
+// A real return-pointer consumer still needs the checked quantum pointer ABI.
+bool discarded_memory_sequence(tree value) {
+    value = strip(value);
+    if (!value)
+        return false;
+    if (quantum_memory_sets.count(value) || quantum_memory_copies.count(value))
+        return true;
+    return TREE_CODE(value) == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0)) &&
+           discarded_memory_sequence(TREE_OPERAND(value, 1));
+}
+
+tree lower_discarded_memory_sequence(tree value) {
+    value = strip(value);
+    if (TREE_CODE(value) != COMPOUND_EXPR)
+        return lower_node(value);
+    tree list = alloc_stmt_list();
+    append(&list, lower_discarded_memory_sequence(TREE_OPERAND(value, 0)));
+    append(&list, lower_discarded_memory_sequence(TREE_OPERAND(value, 1)));
+    return list;
+}
+
+// Snapshot pure CPU scalar reads once, including the array/field/pointer
+// lvalues already supported by the classical binding ABI. Their ordinary
+// storage must be valid when constructing the circuit; conditional lifetime
+// and invalid-address oracles still require a separate memory-access contract.
+bool pure_cpu_scalar_read(tree value) {
+    value = strip(value);
+    return value && !has_quantum(value) &&
+           (DECL_P(value) || TREE_CODE_CLASS(TREE_CODE(value)) == tcc_reference) &&
+           quantum_pure_expression(value);
 }
 
 std::string expression(tree value, std::set<unsigned> &deps) {
@@ -464,6 +508,10 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         while (TREE_CODE(effect_source) == SAVE_EXPR)
             effect_source = TREE_OPERAND(effect_source, 0);
         bool effect = TREE_SIDE_EFFECTS(effect_source) || TREE_THIS_VOLATILE(effect_source);
+        // A checked byte capture may contain shared SAVE_EXPR guards. They
+        // sequence pure CPU reads; they do not introduce a coherent CPU effect.
+        if (cpu_byte_saves.count(inner))
+            effect = false;
         if (coherent_expression_depth && quantum_pure_expression(value))
             effect = false;
         bool captured = cpu_library_saves.count(inner);
@@ -479,7 +527,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // Pure arithmetic in a coherent arm is lowered lazily on the quantum
         // side. Eager CPU evaluation could otherwise execute inactive UB.
         if (TREE_CODE(inner) != INTEGER_CST &&
-            (!coherent_expression_depth || TREE_CODE(leaf) == VAR_DECL)) {
+            (!coherent_expression_depth || TREE_CODE(leaf) == VAR_DECL ||
+             pure_cpu_scalar_read(leaf) || cpu_byte_saves.count(inner))) {
             if (TYPE_PRECISION(TREE_TYPE(value)) > 64) {
                 error_at(at(value),
                          "|c>: CPU integer expression bindings currently require at most 64 bits");
@@ -487,6 +536,18 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             }
             return cpu_parameter(value);
         }
+    }
+    if (code == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0))) {
+        if (expression_frames.empty() || lazy_effect_depth) {
+            error_at(at(value), "|c>: discarded memory calls require a scheduled ordered consumer");
+            return "{}";
+        }
+        std::set<unsigned> previous_parameters;
+        previous_parameters.swap(active_cpu_parameters);
+        append(expression_frames.back()->prefix,
+               lower_discarded_memory_sequence(TREE_OPERAND(value, 0)));
+        active_cpu_parameters.insert(previous_parameters.begin(), previous_parameters.end());
+        return expression(TREE_OPERAND(value, 1), deps);
     }
     if (code == SAVE_EXPR) {
         auto cached = expression_saves.find(value);
@@ -1662,6 +1723,138 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
+    if (quantum_memory_sets.count(value)) {
+        const auto &operation = quantum_memory_sets.at(value);
+        tree list = alloc_stmt_list();
+        for (const auto &entry : operation.elements) {
+            const auto &target = variables.at(entry.first);
+            if (!target.lowered || target.moved || target.released) {
+                error_at(at(value), "|c>: quantum memset requires available checked storage");
+                return build_zero_cst(TREE_TYPE(value));
+            }
+        }
+        if (!operation.elements.empty() && dynamic_depth > cpu_branches.size()) {
+            error_at(at(value),
+                     "|c>: quantum memset in a CPU loop needs bounded per-iteration history");
+            return build_zero_cst(TREE_TYPE(value));
+        }
+        cleanup(&list);
+        if (operation.elements.empty() && !has_quantum(operation.fill)) {
+            // Even a zero-length C call evaluates its value argument once.
+            append(&list, lower_node(operation.fill));
+        } else {
+            std::set<unsigned> fill_dependencies;
+            std::string byte = evaluate_expression(operation.fill, fill_dependencies, &list);
+            std::set<unsigned> fill_parameters = active_cpu_parameters;
+            if (operation.elements.empty()) {
+                // Evaluate a quantum argument's definedness even for n=0,
+                // then invert its private temporary without an observation.
+                Variable temporary{};
+                temporary.id = next_id++;
+                temporary.width = 8;
+                temporary.name = "__cket_memset_argument_" + std::to_string(temporary.id);
+                temporary.decl = build_decl(at(value),
+                                            VAR_DECL,
+                                            get_identifier(temporary.name.c_str()),
+                                            unsigned_char_type_node);
+                temporary.lowered = temporary.derived = true;
+                temporary.range_max = 255;
+                temporary.dependencies = fill_dependencies;
+                temporary.creation = byte;
+                variables.emplace(temporary.decl, temporary);
+                remaining[temporary.id] = 0;
+                active_cpu_parameters.clear();
+                append(&list,
+                       emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(temporary.id) +
+                                          ",\"width\":8,\"signed\":false,\"ancilla\":true}",
+                                      at(value)));
+                active_cpu_parameters = fill_parameters;
+                append(&list,
+                       emit_operation("{\"op\":\"qcompute\",\"id\":" +
+                                          std::to_string(temporary.id) + ",\"expr\":" + byte + '}',
+                                      at(value)));
+                cleanup(&list);
+            }
+            for (const auto &entry : operation.elements) {
+                auto &target = variables.at(entry.first);
+                consume(target);
+                taint_uniform(target.id);
+                for (unsigned source : fill_dependencies)
+                    taint_uniform(source);
+                for (const auto &control : controls)
+                    taint_uniform(control.first);
+                bool reuse_basis = (target.clean || target.basis_known) && !target.derived &&
+                                   !dependent(target.id) && !fill_dependencies.count(target.id);
+                for (const auto &control : controls)
+                    if (control.first == target.id)
+                        reuse_basis = false;
+                uint64_t full =
+                    target.width == 64 ? UINT64_MAX : ((uint64_t{1} << target.width) - 1);
+                std::string type =
+                    ",\"bits\":" + std::to_string(target.width) + ",\"signed\":false";
+                std::string widened = "{\"op\":\"cast\"" + type + ",\"args\":[" + byte + "]}";
+                std::string pattern;
+                for (unsigned shift = 0; shift < target.width; shift += 8) {
+                    if (!(entry.second & (uint64_t{255} << shift)))
+                        continue;
+                    std::string part =
+                        shift ? "{\"op\":\"shl\"" + type + ",\"args\":[" + widened +
+                                    ",{\"op\":\"const\",\"bits\":32,\"signed\":false,\"value\":" +
+                                    std::to_string(shift) + "}]}"
+                              : widened;
+                    pattern = pattern.empty() ? part
+                                              : "{\"op\":\"bor\"" + type + ",\"args\":[" + pattern +
+                                                    ',' + part + "]}";
+                }
+                std::set<unsigned> dependencies = fill_dependencies;
+                if (entry.second != full) {
+                    std::string previous;
+                    if (reuse_basis)
+                        previous = "{\"op\":\"const\"" + type + ",\"value\":" +
+                                   std::to_string(target.basis_known ? target.lower : 0) + '}';
+                    else {
+                        dependencies.insert(target.id);
+                        previous = "{\"op\":\"cast\"" + type + ",\"args\":[" +
+                                   register_expression(target) + "]}";
+                    }
+                    std::string kept = "{\"op\":\"band\"" + type + ",\"args\":[" + previous +
+                                       ",{\"op\":\"const\"" + type +
+                                       ",\"value\":" + std::to_string(full ^ entry.second) + "}]}";
+                    pattern =
+                        "{\"op\":\"bor\"" + type + ",\"args\":[" + kept + ',' + pattern + "]}";
+                }
+                if (reuse_basis) {
+                    active_cpu_parameters.clear();
+                    if (target.basis_known && target.lower)
+                        append(&list,
+                               emit_operation(
+                                   "{\"op\":\"qxor_inplace\",\"id\":" + std::to_string(target.id) +
+                                       ",\"value\":" + std::to_string(target.lower) +
+                                       control_json() + '}',
+                                   at(value)));
+                    active_cpu_parameters = fill_parameters;
+                    append(&list,
+                           emit_operation("{\"op\":\"qxor_inplace\",\"id\":" +
+                                              std::to_string(target.id) + ",\"expr\":" +
+                                              cast_result(pattern, target) + control_json() + '}',
+                                          at(value)));
+                    target.range_max = full;
+                    target.measured = target.clean = target.basis_known = false;
+                    ++target.epoch;
+                    continue;
+                }
+                active_cpu_parameters = fill_parameters;
+                versioned_assignment(
+                    target, cast_result(pattern, target), dependencies, at(value), &list);
+            }
+        }
+        // A checked C return-pointer ABI is separate pending work; CPU value
+        // consumers reject this quantum marker, as for the copy adapter.
+        tree result = build_zero_cst(TREE_TYPE(value));
+        for (auto it = tsi_last(list); !tsi_end_p(it); tsi_prev(&it))
+            result = build2(COMPOUND_EXPR, TREE_TYPE(value), tsi_stmt(it), result);
+        return result;
+    }
     if (quantum_memory_copies.count(value)) {
         const auto &operation = quantum_memory_copies.at(value);
         tree list = alloc_stmt_list();
@@ -1730,7 +1923,7 @@ tree lower_node(tree value) {
         return result;
     }
     if (CONVERT_EXPR_P(value) && TREE_TYPE(value) == void_type_node &&
-        quantum_memory_copies.count(strip(value)))
+        (quantum_memory_copies.count(strip(value)) || quantum_memory_sets.count(strip(value))))
         return lower_node(strip(value));
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
          code == POSTDECREMENT_EXPR) &&
@@ -1884,12 +2077,21 @@ tree lower_node(tree value) {
             saw_return = true;
         return list;
     }
+    // A pure CPU predicate inside a coherent region is a circuit input.
+    // Lower its typed arithmetic under the existing quantum controls, keeping
+    // inactive division/shift domains lazy instead of executing them on CPU.
+    bool coherent_cpu_condition = code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
+                                  !controls.empty() &&
+                                  quantum_pure_expression(TREE_OPERAND(value, 0));
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
-        has_quantum(TREE_OPERAND(value, 0))) {
+        (has_quantum(TREE_OPERAND(value, 0)) || coherent_cpu_condition)) {
         tree list = alloc_stmt_list();
         std::set<unsigned> deps;
+        bool nested = !controls.empty();
+        coherent_expression_depth += nested;
         std::string predicate = "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[" +
                                 evaluate_expression(TREE_OPERAND(value, 0), deps, &list) + "]}";
+        coherent_expression_depth -= nested;
         predicate = select_controls(predicate,
                                     "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}",
                                     1,

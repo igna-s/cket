@@ -20,6 +20,14 @@ int qc_circuit_apply(qc_context *context,
                      size_t control_count);
 qc_context *qc_create(int simulate, uint64_t seed);
 void qc_allow_tables(qc_context *context, int allowed);
+/* Native execution captures the effective thread locale at ctype_capture.
+ * Static synthesis instead requires an explicitly named immutable locale. */
+void qc_ctype_runtime(qc_context *context);
+int qc_ctype_locale(qc_context *context, const char *name);
+/* Freeze every top-level ctype capture to the explicitly configured profile.
+ * This is a declared static precondition, not reconstruction of a CPU trace.
+ * The caller owns the returned IR text. Numeric CPU bindings are unchanged. */
+char *qc_ctype_specialize_document(qc_context *context, const char *ir);
 void qc_destroy(qc_context *context);
 const char *qc_error(const qc_context *context);
 int qc_apply(qc_context *context, const char *operation, uint64_t *result);

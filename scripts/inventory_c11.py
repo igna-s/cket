@@ -175,11 +175,12 @@ def semantics(header, name, kind, optional):
             ["P", "R", "S"],
             "M2/M7",
             ["tests/validate_ctype.c", "tests/validate_qasm.c"],
-            "Input-preserving C-locale ASCII classification and case conversion on the declared "
+            "Input-preserving immutable byte-locale classification and case conversion on the declared "
             "GCC/glibc 8-bit-byte, 32-bit-int target. Raw classification masks, EOF and argument "
             "definedness are preserved. Direct interval-prefix synthesis has no input truth table; "
-            "saved inverses retain the original profile. General locale snapshots, indirect calls, "
-            "module precondition ABI and full source provenance before GCC folding remain pending. "
+            "saved inverses retain the effective global/thread locale profile. Embedded profiles "
+            "support unitary modules. Indirect calls, automatic per-capture static locale traces, "
+            "concurrency and full source provenance before GCC folding remain pending. "
             "Native simulation and physical/gate budgets are resource bounds. Arguments outside "
             "EOF/unsigned-char have no defined C11 meaning, not an omitted adapter.",
         )
@@ -213,17 +214,101 @@ def semantics(header, name, kind, optional):
             "are validated separately from wide circuit generation. General product ABI, library "
             "composition and wider resource budgets remain open.",
         )
+    if header == "string.h" and name == "strncmp":
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [
+                "tests/validate_strncmp.c",
+                "tests/validate_byte_snapshots.c",
+                "tests/validate_qasm.c",
+            ],
+            "Input-preserving bounded unsigned-character comparison stops at a first difference "
+            "or an equal NUL. Padding-free integer object storage, checked constant byte views, "
+            "overlap and readonly quantum borrows are supported. Known fixed-size CPU objects "
+            "supply immutable constants or once-only current byte snapshots; CPU storage can "
+            "include integer, floating and aggregate object representations. CPU bytes after "
+            "the first classical NUL are not loaded. Saved inverses retain captured values "
+            "after CPU mutation. The result is the exact first differing unsigned-byte difference; "
+            "direct relations against zero use Boolean predicates. All n bytes must fit both "
+            "checked objects even if a particular input terminates earlier. The header alias "
+            "keeps normal calls visible before GCC folding; classical calls retain libc behavior. "
+            "Dynamic extents/addresses, volatile/atomic CPU access, general quantum layouts, indirect quantum "
+            "ABI and complete pre-GCC source provenance remain pending. The 64-byte frontend "
+            "bound is separate from expression, gate, physical-qubit and simulator budgets. "
+            "No implicit measurement or reset is introduced.",
+        )
+    if header == "string.h" and name == "memcmp":
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            ["tests/validate_memcmp.c", "tests/validate_byte_snapshots.c", "tests/validate_qasm.c"],
+            "Input-preserving comparison of padding-free integer object bytes in target byte order; "
+            "constant checked byte views, partial elements and overlap are supported. Known "
+            "fixed-size CPU objects supply immutable constants or once-only current byte snapshots, "
+            "including floating and aggregate CPU representations. Saved inverses retain captured "
+            "values after CPU mutation. This does not implement quantum floating or aggregate layouts. "
+            "The result is the first differing unsigned-byte difference; "
+            "direct comparisons against zero lower to Boolean lexical predicates. Pure classical "
+            "calls retain libc behavior. The header alias preserves normal calls before GCC's "
+            "one-byte builtin folding. Dynamic extents/addresses, volatile/atomic CPU access, general "
+            "quantum layouts and indirect quantum calls remain pending. The frontend bound is 64 compared "
+            "bytes, with separate expression, physical-qubit, simulator and gate resource bounds. "
+            "No implicit measurement or reset is introduced.",
+        )
+    if header == "string.h" and name == "memset":
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [
+                "tests/validate_memset.c",
+                "tests/memset_state.inc",
+                "tests/memset_effects.inc",
+                "tests/validate_memory_returns.c",
+                "tests/memory_return_state.inc",
+                "tests/validate_memory_sequences.c",
+                "tests/memory_sequence_state.inc",
+                "tests/validate_qasm.c",
+            ],
+            "Checked padding-free 8/16/32/64-bit integer storage accepts constant in-bounds byte "
+            "views up to 64 bytes, including partial elements and fixed arrays. The value is "
+            "converted to an unsigned byte and captured once before all destination writes. "
+            "Supported sequenced quantum effects use the existing expression scheduler; "
+            "supported classical arguments are captured outside coherent control. Unknown "
+            "overwritten values retain history; independent known-basis destinations can reuse "
+            "their wires. Coherent conditions preserve inactive values without an implicit "
+            "measurement/reset. Zero length still evaluates the argument and checks reachable "
+            "arithmetic definedness. Destination returns support local typed/void checked borrows, "
+            "constant byte views and supported address relations without exposing CPU placeholders. "
+            "General returned-pointer consumers/indirect ABI, runtime counts, dynamic "
+            "memory, general layouts, volatile/atomic access and CPU-loop history remain pending. "
+            "Dense state/inverse checks, complete labeled controlled paths, native integrations, "
+            "diagnostics, independent exports and wide generation have separate proof scopes. "
+            "Expression, gate, physical-wire and simulator budgets apply separately. "
+            "Ordinary CPU calls retain classical libc behavior; security-specific interfaces "
+            "remain classical and are not adapted by this rule.",
+        )
     if header == "string.h" and name in MEMORY_COPY:
         return (
             "partial",
             ["P", "R", "S"],
             "M4/M7",
-            ["tests/validate_memcopy.c", "tests/validate_qasm.c"],
+            [
+                "tests/validate_memcopy.c",
+                "tests/validate_memory_returns.c",
+                "tests/memory_return_state.inc",
+                "tests/validate_memory_sequences.c",
+                "tests/validate_qasm.c",
+            ],
             "Checked fixed integer storage supports whole-element basis copying into known-basis "
             "destinations, including coherent control and read-before-write memmove overlap; "
             "exact memmove aliases are identity. Source/destination entanglement is not state cloning. "
             "Overwritten history, byte views/padding, dynamic extents, mixed CPU boundaries and "
-            "use of the returned pointer remain pending. Logical synthesis is table-free and linear. "
+            "general returned-pointer consumers remain pending. Local typed/void destination-return "
+            "borrows and supported address relations are implemented. Logical synthesis is table-free and linear. "
             "Exact universal tensor-product cloning of an arbitrary unknown state is the incompatible context, "
             "not copying basis values or the whole library interface.",
         )
@@ -437,7 +522,7 @@ def rebuild(reference):
     TARGET.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
 
 
-def audit():
+def audit(require_complete=False):
     data = json.loads(TARGET.read_text(encoding="utf-8"))
     rows = data["interfaces"]
     headers = {r["header"] for r in rows}
@@ -445,11 +530,13 @@ def audit():
     keys = [(r["header"], r["name"]) for r in rows]
     assert len(keys) == len(set(keys)), "Duplicate interface"
     for r in rows:
-        assert r["quantum"] in {"pending", "partial", "metadata-only"}
+        assert r["quantum"] in {"pending", "partial", "implemented", "metadata-only"}
         assert set(r["restriction_classes"]) <= {"P", "R", "S"}
         assert r["contract"] and r["milestone"]
         assert all((ROOT / p).is_file() for p in r["tests"])
-    assert ABS | MEMORY_COPY <= {r["name"] for r in rows if r["quantum"] == "partial"}
+    assert ABS | MEMORY_COPY | {"memset"} <= {
+        r["name"] for r in rows if r["quantum"] in {"partial", "implemented"}
+    }
     for name in (
         "alignof",
         "__alignof_is_defined",
@@ -473,7 +560,9 @@ def audit():
         json.dumps(
             {
                 "index_status": "valid",
-                "implementation_status": "incomplete",
+                "implementation_status": (
+                    "incomplete" if counts["pending"] or counts["partial"] else "complete-in-index"
+                ),
                 "headers": len(headers),
                 "interfaces": len(rows),
                 "quantum_status": counts,
@@ -481,6 +570,12 @@ def audit():
             sort_keys=True,
         )
     )
+    if require_complete and any(r["quantum"] in {"pending", "partial"} for r in rows):
+        raise SystemExit(
+            "Full quantum C11 library compatibility is not implemented: "
+            f"{counts['pending']} pending and {counts['partial']} partial interfaces. "
+            "Metadata availability and expected rejections do not implement these interfaces."
+        )
 
 
 if __name__ == "__main__":
@@ -488,7 +583,12 @@ if __name__ == "__main__":
     parser.add_argument(
         "--reference", type=Path, help="Regenerate from a local N1570 PDF; requires PyMuPDF"
     )
+    parser.add_argument(
+        "--require-complete",
+        action="store_true",
+        help="Fail unless the index records complete quantum library compatibility.",
+    )
     args = parser.parse_args()
     if args.reference:
         rebuild(args.reference)
-    audit()
+    audit(args.require_complete)

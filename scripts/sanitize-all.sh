@@ -15,7 +15,7 @@ fi
 san_root="${CKET_SAN_ROOT:-$PWD/build/sanitized}"
 mkdir -p "$san_root/build"
 cp cket "$san_root/cket"
-for directory in include examples; do
+for directory in include examples src tests; do
     # Reuse matching links: replacing existing DrvFS links can fail on WSL.
     if [[ ! "$san_root/$directory" -ef "$directory" ]]; then
         ln -sfn "$PWD/$directory" "$san_root/$directory"
@@ -45,10 +45,20 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" tests/validate_expressions.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_expressions"
 "$real_cc" "${flags[@]}" tests/validate_inplace.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_inplace"
 "$real_cc" "${flags[@]}" tests/validate_memcopy.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memcopy"
+"$real_cc" "${flags[@]}" tests/validate_memcmp.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memcmp"
+"$real_cc" "${flags[@]}" tests/validate_strncmp.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_strncmp"
+"$real_cc" "${flags[@]}" tests/validate_memset.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memset"
+"$real_cc" "${flags[@]}" tests/validate_memory_sequences.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memory_sequences"
+"$real_cc" "${flags[@]}" tests/validate_memory_returns.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_memory_returns"
+"$real_cc" "${flags[@]}" tests/validate_pointer_differences.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_pointer_differences"
+"$real_cc" "${flags[@]}" tests/validate_byte_snapshots.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_byte_snapshots"
 "$real_cc" "${flags[@]}" tests/validate_division.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_division"
 "$real_cc" "${flags[@]}" tests/validate_bindings.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_bindings"
 "$real_cc" "${flags[@]}" tests/validate_history.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_history"
 "$real_cc" "${flags[@]}" tests/validate_ctype.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_ctype"
+"$real_cc" "${flags[@]}" tests/validate_profiles.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_profiles"
+"$real_cc" "${flags[@]}" tests/validate_numeric_locale.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_numeric_locale"
+"$real_cc" "${flags[@]}" tests/validate_library.c tests/validation.c -o "$san_root/build/validate_library"
 "$real_cc" -dumpfullversion >"$san_root/build/gcc-version.txt"
 cat >"$san_root/build/gcc-wrapper" <<'WRAPPER'
 #!/usr/bin/env bash
@@ -70,8 +80,20 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_expressions"
 "$san_root/build/validate_inplace"
 "$san_root/build/validate_memcopy"
+"$san_root/build/validate_memcmp"
+"$san_root/build/validate_strncmp"
+"$san_root/build/validate_memset"
+"$san_root/build/validate_memory_sequences"
+"$san_root/build/validate_memory_returns"
+"$san_root/build/validate_pointer_differences"
+"$san_root/build/validate_byte_snapshots"
 "$san_root/build/validate_division"
 "$san_root/build/validate_bindings"
 "$san_root/build/validate_history"
-"$san_root/build/validate_ctype"
+LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-locale.lsan:print_suppressions=0" \
+    "$san_root/build/validate_ctype"
+"$san_root/build/validate_profiles"
+LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-locale.lsan:print_suppressions=0" \
+    "$san_root/build/validate_numeric_locale"
+"$san_root/build/validate_library"
 exec "$san_root/build/test_examples"

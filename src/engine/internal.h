@@ -61,6 +61,8 @@ struct qc_context {
     unsigned symbolic_work;
     int recording;
     unsigned module_depth;
+    int ctype_runtime;
+    char *ctype_snapshots[14];
     qc_parsed_cache *parsed;
     qc_plan_cache *plans;
     qc_module_cache *modules;
@@ -96,4 +98,5 @@ qc_register *qc_lookup(qc_context *c, uint32_t id);
 int qc_verify_expression(qc_context *c, const cj_doc *d, int expression);
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int instruction);
 int qc_verify_document(qc_context *c, const cj_doc *d);
+int qc_verify_ctype_profile(qc_context *c, const cj_doc *d, int expression, int mapping);
 #endif

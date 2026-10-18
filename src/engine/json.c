@@ -1,6 +1,8 @@
+#define _GNU_SOURCE
 #include "json.h"
 #include <ctype.h>
 #include <errno.h>
+#include <locale.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,10 +197,16 @@ double cj_double(const cj_doc *d, int t) {
     char *s = cj_copy(d, t), *end;
     if (!s)
         return NAN;
+    locale_t numeric = newlocale(LC_NUMERIC_MASK, "C", (locale_t)0);
+    if (!numeric) {
+        free(s);
+        return NAN;
+    }
     errno = 0;
-    double v = strtod(s, &end);
+    double v = strtod_l(s, &end, numeric);
     if (errno || end == s || *end)
         v = NAN;
+    freelocale(numeric);
     free(s);
     return v;
 }

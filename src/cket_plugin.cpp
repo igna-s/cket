@@ -64,6 +64,13 @@ struct QuantumMemoryCopy {
 };
 
 std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
+
+struct QuantumMemorySet {
+    tree fill;
+    std::vector<std::pair<tree, uint64_t>> elements; // Destination and selected object-bit mask.
+};
+
+std::map<tree, QuantumMemorySet> quantum_memory_sets;
 std::map<tree, tree> indexed_expansions;
 std::set<tree> readonly_quantum_borrows;
 
@@ -452,7 +459,9 @@ void finish_function(void *event, void *) {
     quantum_products.clear();
     quantum_division_products.clear();
     quantum_references.clear();
+    quantum_pointer_aliases.clear();
     quantum_memory_copies.clear();
+    quantum_memory_sets.clear();
     quantum_indexed_accesses.clear();
     indexed_expansions.clear();
     readonly_quantum_borrows.clear();
@@ -464,11 +473,13 @@ void finish_function(void *event, void *) {
     cpu_parameter_values.clear();
     active_cpu_parameters.clear();
     cpu_library_saves.clear();
+    cpu_byte_saves.clear();
     coherent_expression_depth = 0;
     lazy_effect_depth = 0;
     prepare_fn = measure_fn = NULL_TREE;
     apply_fn = apply_arg_fn = NULL_TREE;
     apply_values_fn = NULL_TREE;
+    read_byte_fn = NULL_TREE;
     apply_phase_fn = NULL_TREE;
     apply_index_fn = NULL_TREE;
     observe_fn = NULL_TREE;

@@ -4,11 +4,13 @@
 #include <stdint.h>
 #include <QuEST.h>
 
+enum { REF_MAX_QUBITS = 24, REF_MAX_RESULTS = 20 };
+
 enum reference_kind { REF_H, REF_X, REF_PHASE, REF_GLOBAL, REF_MEASURE, REF_RESET };
 
 typedef struct {
     enum reference_kind kind;
-    unsigned count, wires[24], bit;
+    unsigned count, wires[REF_MAX_QUBITS], bit;
     double angle;
 } reference_gate;
 

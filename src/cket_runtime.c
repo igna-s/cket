@@ -37,6 +37,7 @@ static void start_engine(void) {
     engine = qc_create(1, seed);
     if (!engine)
         fail();
+    qc_ctype_runtime(engine);
     if (atexit(shutdown_engine)) {
         fputs("|c> runtime: cannot register cleanup\n", stderr);
         exit(EXIT_FAILURE);
@@ -56,6 +57,15 @@ uint64_t __cket_apply_arg(const char *operation, uint64_t argument) {
     if (!qc_apply_arg(engine, operation, argument))
         fail();
     return 0;
+}
+
+/* Keep the conditional load opaque to caller object-size speculation. A false
+ * enable permits an unreadable address; strncmp uses it after a CPU NUL. This
+ * captures a classical byte and never starts or observes the quantum engine. */
+__attribute__((noipa)) unsigned char __cket_read_byte(const void *address, unsigned char enabled) {
+    if (!enabled)
+        return 0;
+    return *(const unsigned char *)address;
 }
 
 unsigned long long __cket_apply_values(const char *operation, unsigned long long count, ...) {
