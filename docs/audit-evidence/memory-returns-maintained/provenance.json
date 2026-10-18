@@ -1,0 +1,32 @@
+{
+  "source_files": 136,
+  "base_source_files": 134,
+  "changed_inputs": [
+    "scripts/archive-audit.py",
+    "scripts/build.sh",
+    "scripts/inventory_c11.py",
+    "scripts/sanitize-all.sh",
+    "scripts/verify.sh",
+    "tests/memory_return_state.inc",
+    "tests/validate_library.c",
+    "tests/validate_memory_returns.c"
+  ],
+  "normal_tool_hashes": {
+    "cket": "422b9d1e90084672f74b61d66f61874b83da077b12c12a06ef40f160c23d4012",
+    "cket_backend": "cdcd41ad690169acc0c48b223419039077064bc12075a10235a925add44edd81",
+    "cket_plugin.so": "3522150e2e3f753ed24ec309e3ff2a507c3e4dc813a74783b174e125d2781914",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "907361a217f5e211c8434a910dcf6d0032c0cf9f9e34f819460ab05fe32fcf61",
+    "gcc-version.txt": "b20e1ce95de64f1c1c82cb20370952326892e0ec8abe6a79e15cfd0184b5cec1"
+  },
+  "sanitizer_tool_hashes": {
+    "cket": "b901ee2c2e6780c2f1123d10b904c8a7ecabead0eeeb41262ad4bf7df6a608bc",
+    "cket_backend": "8ec5b5a881cc4dedbc68591c09b214ddcdd799762614f4620af9da601b521a4e",
+    "cket_plugin.so": "bc40c1229f2b24147ef2088ab7ff0ff9c3b456b331a613932e88fcf79531af96",
+    "cket_runtime.o": "0b848325d984560f2661020147e7fd08cdd64292516c3c42f122b14e4c230d00",
+    "libcket_quantum.a": "7b20cd3c1a4c2161dcd2d7e3ea7e8b5029571d2ee84ae93ab05f8c75c4111d0d",
+    "gcc-version.txt": "b20e1ce95de64f1c1c82cb20370952326892e0ec8abe6a79e15cfd0184b5cec1",
+    "gcc-wrapper": "d31eb29bea956d5fc38f88ed2042fcb9b7e569ba59e0dc280a026f0bea652419"
+  },
+  "scope": "New C validator builds against source-identical previously built normal/instrumented compiler, driver, backend, runtime and engine. Only tests/pipeline/inventory inputs changed; no inherited full test success."
+}

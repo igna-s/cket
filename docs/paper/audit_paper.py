@@ -288,7 +288,23 @@ def main(language):
                 'docs/c11-lazy-values.md',
                 'docs/c11-inplace.md',
                 'docs/c11-memcopy.md',
+                'docs/c11-memcmp.md',
+                'docs/c11-strncmp.md',
+                'docs/c11-byte-snapshots.md',
+                'docs/c11-memset.md',
+                'docs/c11-memory-sequences.md',
+                'docs/re-audit-2026-10-17-memory-expressions.md',
+                'docs/audit-evidence/memory-expressions/integration-summary.json',
+                'docs/re-audit-2026-10-17-byte-snapshots.md',
+                'docs/audit-evidence/byte-snapshots/integration-summary.json',
+                'docs/estado-general-del-proyecto.es.md',
+                'docs/re-audit-2026-10-15-strings.md',
+                'docs/audit-evidence/strncmp/integration-summary.json',
+                'docs/re-audit-2026-10-15-memory.md',
+                'docs/audit-evidence/memcmp/comparison-summary.json',
                 'docs/c11-division.md',
+                'docs/c11-ctype.md',
+                'tests/glibc-locale.lsan',
                 'docs/c11-bindings.md',
                 'docs/c11-history.md',
                 'docs/c11-control.md',
@@ -299,7 +315,11 @@ def main(language):
                 '.editorconfig',
                 'scripts/requirements-format.txt',
                 'docs/repository-audit.md',
+                'docs/re-audit-2026-10-14.md',
                 'docs/audit-evidence/README.md',
+                'docs/audit-evidence/re-audit-baseline.json',
+                'docs/audit-evidence/numeric-locale.json',
+                'docs/audit-evidence/profile-locale-division.json',
                 'cket',
                 *[
                     str(p.relative_to(ROOT))
@@ -534,6 +554,125 @@ def main(language):
         for p in ('reportlab', 'matplotlib', 'pillow', 'pymupdf', 'pypdf', 'pdfplumber')
     }
     write_json(EVIDENCE / 'editorial-toolchain.json', toolchain)
+    current_campaign = json.loads(
+        (ROOT / 'docs/audit-evidence/memory-expressions/results.json').read_text()
+    )
+    counts = current_campaign['counts_per_configuration']
+    current_states = counts['external_qasm_states']
+    current_circuits = current_states + counts['external_qasm_channels']
+    current_readme = (ROOT / 'README.md').read_text()
+    check(
+        'README: current independent circuit and state counts match completed evidence',
+        current_campaign['status'] in ('passed', 'passed-in-segments')
+        and bool(re.search(rf'\b{current_circuits}\s+independent QASM cases\b', current_readme))
+        and bool(
+            re.search(rf'QASM cases check {current_states}\s+complete states\b', current_readme)
+        ),
+    )
+    check(
+        'Coverage: current independent circuit and state counts match completed evidence',
+        bool(
+            re.search(
+                rf'\b{current_circuits}\s+exported QASM\s+circuits:\s+{current_states}\s+state cases\b',
+                (ROOT / 'docs/c-coverage.md').read_text(),
+            )
+        ),
+    )
+    current_inventory = json.loads((ROOT / 'docs/c11-library.json').read_text())['interfaces']
+    overview = (ROOT / 'docs/estado-general-del-proyecto.es.md').read_text()
+    current_totals = {
+        status: sum(row['quantum'] == status for row in current_inventory)
+        for status in ('pending', 'partial', 'metadata-only', 'implemented')
+    }
+    check(
+        'Spanish overview: inventory table matches actual interface classifications',
+        len(current_inventory) == 1224
+        and current_totals['implemented'] == 0
+        and all(
+            re.search(rf'\|\s*{label}\s*\|\s*{current_totals[status]}\s*\|', overview)
+            for label, status in [
+                ('Pendientes', 'pending'),
+                ('Parciales', 'partial'),
+                ('Solo metadatos', 'metadata-only'),
+            ]
+        ),
+    )
+    partial_functions = sum(
+        row['quantum'] == 'partial' and row['kind'] == 'function' for row in current_inventory
+    )
+    partial_types = sum(
+        row['quantum'] == 'partial' and row['kind'] == 'type' for row in current_inventory
+    )
+    check(
+        'Spanish overview: partial function/type counts remain distinct from complete C11',
+        bool(
+            re.search(
+                rf'\b{partial_functions} nombres de funciones con adaptación parcial\b', overview
+            )
+        )
+        and bool(re.search(rf'\b{partial_types} entradas de tipos y alias\b', overview))
+        and 'Todavía no implementa compatibilidad cuántica completa con C11'
+        in re.sub(r'\s+', ' ', overview),
+    )
+    current_integration = json.loads(
+        (
+            ROOT / 'docs/audit-evidence/coherent-memory-integration/integration-summary.json'
+        ).read_text()
+    )
+    check(
+        'Current compiler: integrated inputs match the passing archived source identity',
+        current_integration['root_verification']['status'] == 'passed-targeted'
+        and current_integration['broad_campaign']['status'] == 'pending'
+        and current_integration['source_files'] == len(current_integration['source_sha256']) == 137
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in current_integration['source_sha256'].items()
+        ),
+    )
+    coherent_audit = json.loads(
+        (ROOT / 'docs/audit-evidence/coherent-cpu-conditions/experimental-summary.json').read_text()
+    )
+    reproduced = coherent_audit['main_bug']
+    check(
+        'Current audit: historical inactive-condition bug and later positive integration remain distinct',
+        reproduced['status'] == 'accepted-program-bug-reproduced'
+        and reproduced['source_files'] == 134
+        and reproduced['source_sha256'] != current_integration['source_sha256']
+        and reproduced['ordinary_c_returncode'] == 0
+        and len(reproduced['rows']) == 10
+        and all(
+            row['compile_returncode'] == 0 and row['run_returncode'] == -8
+            for row in reproduced['rows']
+        )
+        and all(
+            row['cpu_condition_native_executions'] == 180
+            for row in current_integration['root_verification']['configurations']
+        )
+        and 'corrección integrada' in re.sub(r'\s+', ' ', overview),
+    )
+    coherent_maintained = json.loads(
+        (
+            ROOT / 'docs/audit-evidence/coherent-cpu-conditions-maintained/maintained-summary.json'
+        ).read_text()
+    )
+    check(
+        'Integrated audit: scoped coherent-control evidence does not imply complete C11 compatibility',
+        coherent_maintained['status'] == 'verified-scoped-maintained'
+        and coherent_maintained['source_files'] == 137
+        and coherent_maintained['source_sha256'] == current_integration['source_sha256']
+        and coherent_audit['variants']['v3']['independent_complex_states'] == 800
+        and coherent_audit['variants']['v3']['native_executions_per_configuration'] == 180,
+    )
+    arm_failures = json.loads(
+        (ROOT / 'docs/audit-evidence/coherent-arm-operands/results.json').read_text()
+    )['rows']
+    check(
+        'Current audit: seven controlled-body failures remain disclosed despite the condition fix',
+        len(arm_failures) == 8
+        and sum(row['corrected137'].get('run_returncode') == -8 for row in arm_failures) == 7
+        and all(row['ordinary_c_returncode'] == 0 for row in arm_failures)
+        and 'siete fallos' in re.sub(r'\s+', ' ', overview),
+    )
     targets = [
         *SOURCES.values(),
         *PDFS.values(),
@@ -544,6 +683,44 @@ def main(language):
         ROOT / 'docs/audit-evidence/verify.log',
         ROOT / 'docs/audit-evidence/results.json',
         ROOT / 'docs/audit-evidence/synthesis-growth.csv',
+        ROOT / 'docs/audit-evidence/broad-source.tar.gz',
+        *sorted(p for p in (ROOT / 'docs/audit-evidence/memcmp').iterdir() if p.is_file()),
+        *sorted(p for p in (ROOT / 'docs/audit-evidence/strncmp').iterdir() if p.is_file()),
+        *sorted(p for p in (ROOT / 'docs/audit-evidence/byte-snapshots').iterdir() if p.is_file()),
+        *sorted(
+            p for p in (ROOT / 'docs/audit-evidence/memory-expressions').iterdir() if p.is_file()
+        ),
+        *sorted(p for p in (ROOT / 'docs/audit-evidence/memset').iterdir() if p.is_file()),
+        *sorted(p for p in (ROOT / 'docs/audit-evidence/memory-returns').iterdir() if p.is_file()),
+        *sorted(
+            path
+            for folder in (
+                'pointer-differences',
+                'pointer-differences-maintained',
+                'coherent-cpu-conditions',
+                'coherent-cpu-conditions-maintained',
+                'coherent-memory-integration',
+                'coherent-arm-operands',
+            )
+            for path in (ROOT / 'docs/audit-evidence' / folder).iterdir()
+            if path.is_file()
+        ),
+        *sorted(
+            p
+            for p in (ROOT / 'docs/audit-evidence/memory-returns-regression-failure').iterdir()
+            if p.is_file()
+        ),
+        *sorted(
+            p
+            for p in (ROOT / 'docs/audit-evidence/memory-returns-source-guard').iterdir()
+            if p.is_file()
+        ),
+        *sorted(
+            p
+            for p in (ROOT / 'docs/audit-evidence/memory-returns-maintained').iterdir()
+            if p.is_file()
+        ),
+        *sorted((ROOT / 'docs/audit-evidence').glob('*-locale-*.log')),
         EVIDENCE / 'synthesis-growth.csv',
         EVIDENCE / 'environment.txt',
         EVIDENCE / 'editorial-toolchain.json',
@@ -596,6 +773,7 @@ def main(language):
         },
         'evidence_scope': 'Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.',
         'visual_review': 'See audit.md: manual review of the latest rendered pages is also required.',
+        'external_availability_scope': 'See docs/re-audit-2026-10-14.md: the historical software URL returned HTTP 404 without authentication. PDF/bibliographic checks do not certify public source availability.',
     }
     report_name = 'paper-audit.json' if language == 'es' else 'paper-audit-en.json'
     write_json(EVIDENCE / report_name, report, ensure_ascii=False)

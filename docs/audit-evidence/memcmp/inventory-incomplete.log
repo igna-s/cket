@@ -1,0 +1,2 @@
+{"headers": 29, "implementation_status": "incomplete", "index_status": "valid", "interfaces": 1224, "quantum_status": {"metadata-only": 368, "partial": 72, "pending": 784}}
+Full quantum C11 library compatibility is not implemented: 784 pending and 72 partial interfaces. Metadata availability and expected rejections do not implement these interfaces.

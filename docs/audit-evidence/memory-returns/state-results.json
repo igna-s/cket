@@ -1,0 +1,106 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "profile": "word-known",
+      "stage": "before",
+      "physical_wires": 32,
+      "amplitudes": 1,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 1.0,
+      "qasm_sha256": "72040968ad846303de70dd119ab99e7cdfc6f6b2393834fc493d3a606f2a0660"
+    },
+    {
+      "profile": "word-known",
+      "stage": "after",
+      "physical_wires": 32,
+      "amplitudes": 1,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 1.0,
+      "qasm_sha256": "bbc6d9bc9821ad455bd9fd2e10a51e979cd868a4867e09d056402be689c414bb"
+    },
+    {
+      "profile": "zero-known",
+      "stage": "before",
+      "physical_wires": 26,
+      "amplitudes": 1,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 1.0,
+      "qasm_sha256": "21e306da6db4f51053f3ba2580e663181bc697a952eb7914cf56c81d5f73d5f6"
+    },
+    {
+      "profile": "zero-known",
+      "stage": "after",
+      "physical_wires": 26,
+      "amplitudes": 1,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 1.0,
+      "qasm_sha256": "e84018cd2c0aa2d7d9244c58a114d5f92ec41d6ae865e77bac787ebd239231ab"
+    },
+    {
+      "profile": "word-coherent",
+      "stage": "before",
+      "physical_wires": 49,
+      "amplitudes": 65536,
+      "complete_labeled_paths": 65536,
+      "maximum_amplitude_error": 6.992893892674703e-18,
+      "norm": 0.9999999999999999,
+      "qasm_sha256": "c35f37d7159982c5bd578291e54cccc392113b51f962b8cfa2a4b27afe00bdbf"
+    },
+    {
+      "profile": "word-coherent",
+      "stage": "after",
+      "physical_wires": 49,
+      "amplitudes": 65536,
+      "complete_labeled_paths": 65536,
+      "maximum_amplitude_error": 6.992893892674703e-18,
+      "norm": 0.9999999999999999,
+      "qasm_sha256": "7ea649317033a40ac457ae6bccf403617e0a7195caccdf5da9461ac6a112cc2b"
+    },
+    {
+      "profile": "zero-coherent",
+      "stage": "before",
+      "physical_wires": 26,
+      "amplitudes": 2,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 1.3877787807814457e-17,
+      "norm": 0.9999999999999998,
+      "qasm_sha256": "fa7f31fcbac99838e733d15627365f2512c7ffbfc673a4837d86e0e79db6f853"
+    },
+    {
+      "profile": "zero-coherent",
+      "stage": "after",
+      "physical_wires": 26,
+      "amplitudes": 2,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 1.3877787807814457e-17,
+      "norm": 0.9999999999999998,
+      "qasm_sha256": "afd426152a8f485afe5d0a09e197a72f4adecfe22cd4fd07dee44c0f1f5f16e0"
+    },
+    {
+      "profile": "pointer-control",
+      "stage": "before",
+      "physical_wires": 10,
+      "amplitudes": 2,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 0.9999999999999998,
+      "qasm_sha256": "afdbd2d7f1f4a3982fd67a03358eb0de9fdb9d695a8c186c75e37232ea574896"
+    },
+    {
+      "profile": "pointer-control",
+      "stage": "after",
+      "physical_wires": 10,
+      "amplitudes": 2,
+      "complete_labeled_paths": null,
+      "maximum_amplitude_error": 0,
+      "norm": 0.9999999999999998,
+      "qasm_sha256": "ff7158f02f644d2d3ab2747ede52a8416cdf0047bdceb47c1d8fe0b6b2f6e7a3"
+    }
+  ],
+  "scope": "O2/builtin/no-tables only. Actual generated prefixes and saved definition inverses, original native-budget failures retained. Independent sparse states plus every 65536 word label after checked 16-H preparation. No unrestricted dense >24-qubit, sanitizer, hardware or general pointer-ABI claim."
+}

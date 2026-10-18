@@ -1,0 +1,20 @@
+{
+  "pid": 16,
+  "linux_start_ticks": 8477,
+  "started_utc": "2026-10-17T22:36:15.550551+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/resume-memory-sequence-tail.py",
+  "source_manifest_sha256": "f4101acfa7f322a9d8897107950347761b003425ca858a2d80529f177575ccc7",
+  "interrupted_prefix_sha256": "a3235133bbd914a3584e323ee4400aa2e8844dd28f5d43f2bfd563782d3136e0",
+  "instrumented_tool_hashes_at_resume": {
+    "validate_library": "a3e2e09665532276d47af539edb85ba9682c94178ad584700a28e9125f477eae",
+    "test_examples": "0134a008a702976f0a86750933a244ff830f1b8410d72c258289b0904e8dbd5a",
+    "cket": "b901ee2c2e6780c2f1123d10b904c8a7ecabead0eeeb41262ad4bf7df6a608bc",
+    "cket_backend": "8ec5b5a881cc4dedbc68591c09b214ddcdd799762614f4620af9da601b521a4e",
+    "cket_plugin.so": "82650cabf1cbf5548913448c8d08f7a3298e77ede5429a1fc0fe5e20d6139057",
+    "cket_runtime.o": "0b848325d984560f2661020147e7fd08cdd64292516c3c42f122b14e4c230d00",
+    "libcket_quantum.a": "7b20cd3c1a4c2161dcd2d7e3ea7e8b5029571d2ee84ae93ab05f8c75c4111d0d",
+    "gcc-wrapper": "d31eb29bea956d5fc38f88ed2042fcb9b7e569ba59e0dc280a026f0bea652419",
+    "gcc-version.txt": "b20e1ce95de64f1c1c82cb20370952326892e0ec8abe6a79e15cfd0184b5cec1"
+  },
+  "scope": "Original fresh normal and sanitizer core builds retained on identical frozen inputs. Original normal suites and sanitizer suites through numeric-locale passed. Resume reruns the entire incomplete library suite, examples and remaining classical/fuzz/growth/QuEST tail. Instrumented tool hashes captured at resume, not before the interrupted build. Original exit status is unknown; successful completion will be explicitly segmented."
+}

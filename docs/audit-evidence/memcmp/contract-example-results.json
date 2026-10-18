@@ -1,0 +1,18 @@
+{
+  "status": "passed",
+  "scope": "Exact documented C example compiled and executed normally and with ASan/UBSan; smoke test, not an independent semantic proof.",
+  "checks": [
+    {
+      "configuration": "normal",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "configuration": "sanitized",
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}

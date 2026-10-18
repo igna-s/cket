@@ -1,0 +1,16 @@
+{
+  "pid": 28,
+  "linux_start_ticks": 2896,
+  "started_utc": "2026-10-17T22:30:28.676562+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/launch-memory-return-full.py",
+  "runner_sha256": "ca68cb0f28fc3fdc4af4663857fa5cd61147b6ba6a729f442a57336661ab3069",
+  "source_manifest_sha256": "b1dacc1e4112b2bf534608c8ccb4cffd8b4ab883faa1a02485c640edd1add818",
+  "delta_from_scoped_campaign": [
+    "scripts/archive-audit.py",
+    "tests/test_composition.inc",
+    "tests/test_native.c",
+    "tests/validate_memcopy.c",
+    "tests/validate_memset.c"
+  ],
+  "scope": "Fresh complete normal and ASan/UBSan compiler/core/tools and all broad suites on the maintained 136-input pointer worktree. Earlier 134/136-input scoped proofs remain distinct. No main promotion; no new cybersecurity behavior."
+}

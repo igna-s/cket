@@ -1,0 +1,14 @@
+[
+  {
+    "configuration": "normal",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "configuration": "sanitized",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

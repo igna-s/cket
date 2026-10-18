@@ -1,0 +1,7 @@
+{
+  "original_exit_code": null,
+  "first_resume_exit_code": null,
+  "successful_resume_exit_code": 0,
+  "execution_mode": "linux-copy-with-resumable-fuzz-driver",
+  "source": "linux-resume-results.json"
+}

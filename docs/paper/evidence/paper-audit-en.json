@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 304,
+  "checks": 352,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -493,6 +493,41 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/audit-evidence/byte-snapshots/integration-summary.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/memcmp/comparison-summary.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/memory-expressions/integration-summary.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/numeric-locale.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/profile-locale-division.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/re-audit-baseline.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/audit-evidence/strncmp/integration-summary.json",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/audit-validation.md",
       "passed": true,
       "detail": ""
@@ -508,12 +543,22 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-byte-snapshots.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/c11-control.md",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Fuente local docs/c11-cpu-control.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-ctype.md",
       "passed": true,
       "detail": ""
     },
@@ -558,7 +603,22 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-memcmp.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/c11-memcopy.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-memory-sequences.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/c11-memset.md",
       "passed": true,
       "detail": ""
     },
@@ -578,7 +638,17 @@
       "detail": ""
     },
     {
+      "check": "Fuente local docs/c11-strncmp.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local docs/circuit-abi.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/estado-general-del-proyecto.es.md",
       "passed": true,
       "detail": ""
     },
@@ -589,6 +659,31 @@
     },
     {
       "check": "Fuente local docs/language.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-14.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-15-memory.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-15-strings.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-17-byte-snapshots.md",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local docs/re-audit-2026-10-17-memory-expressions.md",
       "passed": true,
       "detail": ""
     },
@@ -803,6 +898,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local include/string.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local scripts/archive-audit.py",
       "passed": true,
       "detail": ""
@@ -869,6 +969,11 @@
     },
     {
       "check": "Fuente local scripts/test-format.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/test-locale-sanitizer.sh",
       "passed": true,
       "detail": ""
     },
@@ -978,6 +1083,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/quantum_memory.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/quantum_semantics.inc",
       "passed": true,
       "detail": ""
@@ -988,12 +1098,47 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/byte_snapshot_trace.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/c11_classical.c",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Fuente local tests/fuzz_frontend.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/glibc-locale.lsan",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/locale_fixture.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/memory_return_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/memory_sequence_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/memset_effects.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/memset_state.inc",
       "passed": true,
       "detail": ""
     },
@@ -1009,6 +1154,11 @@
     },
     {
       "check": "Fuente local tests/qasm_samples.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/repro_glibc_locale.c",
       "passed": true,
       "detail": ""
     },
@@ -1108,6 +1258,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_byte_snapshots.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_ctype.c",
       "passed": true,
       "detail": ""
@@ -1138,7 +1293,47 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_library.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_memcmp.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_memcopy.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_memory_returns.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_memory_sequences.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_memset.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_numeric_locale.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_pointer_differences.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_profiles.c",
       "passed": true,
       "detail": ""
     },
@@ -1149,6 +1344,11 @@
     },
     {
       "check": "Fuente local tests/validate_shifts.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_strncmp.c",
       "passed": true,
       "detail": ""
     },
@@ -1208,7 +1408,7 @@
       "detail": ""
     },
     {
-      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_hello.c --run",
+      "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/en/paper_hello.c --run",
       "passed": true,
       "detail": "Código de salida 0"
     },
@@ -1218,7 +1418,7 @@
       "detail": ""
     },
     {
-      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_bell.c --run",
+      "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/en/paper_bell.c --run",
       "passed": true,
       "detail": "Código de salida 0"
     },
@@ -1228,7 +1428,7 @@
       "detail": ""
     },
     {
-      "check": "Ejemplo: /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper_find.c --run",
+      "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/en/paper_find.c --run",
       "passed": true,
       "detail": "Código de salida 0"
     },
@@ -1238,12 +1438,12 @@
       "detail": ""
     },
     {
-      "check": "Ejemplo: --validate /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper-sample.json",
+      "check": "Ejemplo: --validate /tmp/quantum-audit-isolated-20261017/tmp/pdfs/en/paper-sample.json",
       "passed": true,
       "detail": "Código de salida 0"
     },
     {
-      "check": "Ejemplo: --state /mnt/e/Backup/GitHub/Quantum/tmp/pdfs/en/paper-sample.json",
+      "check": "Ejemplo: --state /tmp/quantum-audit-isolated-20261017/tmp/pdfs/en/paper-sample.json",
       "passed": true,
       "detail": "Código de salida 0"
     },
@@ -1526,13 +1726,55 @@
       "check": "Número centrado y único en página 8",
       "passed": true,
       "detail": ""
+    },
+    {
+      "check": "README: current independent circuit and state counts match completed evidence",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Coverage: current independent circuit and state counts match completed evidence",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Spanish overview: inventory table matches actual interface classifications",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Spanish overview: partial function/type counts remain distinct from complete C11",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current compiler: integrated inputs match the passing archived source identity",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current audit: historical inactive-condition bug and later positive integration remain distinct",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Integrated audit: scoped coherent-control evidence does not imply complete C11 compatibility",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current audit: seven controlled-body failures remain disclosed despite the condition fix",
+      "passed": true,
+      "detail": ""
     }
   ],
   "audit_checkout": {
-    "head": "406339cfdd3c42d40422e6f307d40d3fde64ef58",
+    "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 142
+    "source_files_in_manifest": 182,
+    "execution_scope": "Current main has 137 source inputs. Fresh normal and ASan/UBSan builds in a separate source-identical integration copy passed targeted suites and the 180-execution CPU-condition matrix per configuration. Broad regression is still pending. Seven controlled-body operand failures and invalid inactive CPU-memory reads remain disclosed. Historical papers and 134-input bug evidence keep their original identities. Windows source import is separately hash-guarded; it is not a second regression execution. Cybersecurity unchanged."
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
-  "visual_review": "See audit.md: manual review of the latest rendered pages is also required."
+  "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",
+  "external_availability_scope": "See docs/re-audit-2026-10-14.md: the historical software URL returned HTTP 404 without authentication. PDF/bibliographic checks do not certify public source availability."
 }

@@ -1,0 +1,27 @@
+{
+  "status": "passed-in-segments",
+  "label": "sequence",
+  "started_utc": "2026-10-18T01:21:19.038774+00:00",
+  "source_manifest_sha256": "f4101acfa7f322a9d8897107950347761b003425ca858a2d80529f177575ccc7",
+  "source_inputs": 134,
+  "prior_exit_codes": null,
+  "prior_closed_commands": 4,
+  "completed_prefix_sha256": "2d718652b8944f7d898c56970ac2497602aa1525216f441d216ec61f0f27f2d3",
+  "commands": [
+    {
+      "name": "qasm-sanitized",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/memory-sequence-prototype/build/sanitized/build/validate_qasm-sanitized"
+      ],
+      "returncode": 0,
+      "started_utc": "2026-10-18T01:21:19.039531+00:00",
+      "finished_utc": "2026-10-18T01:25:30.413793+00:00",
+      "log": "01-qasm-sanitized.log",
+      "log_sha256": "9c17f4edf4946f03dfd789fc7bd029c6430df21f0cbeac41a6d8126bdb5cf27b"
+    }
+  ],
+  "scope": "Resumption after a confirmed additional WSL restart. Every closed earlier suite/log is retained and hash-checked; no exit status is invented for stopped invocations. Repository source inputs remain frozen. Fuzz resumption uses an archived temporary driver with unchanged generator/program/oracle/compiler-loop bodies, original seed and all five GCC levels/all 256 byte inputs. It skips only durable, already completed case indices. Aggregate fuzz counts are coverage-checked segmented results, not an uninterrupted invocation of the original fuzzer. No security configuration changes. Another confirmed WSL restart interrupted the final QASM suite (134 inputs) and the memset suite (136 inputs). This segment retains all previously closed steps and reruns only unfinished suites. Earlier invocations have no terminal status; their raw logs remain unchanged.",
+  "exit_code": 0,
+  "finished_utc": "2026-10-18T01:25:30.496071+00:00",
+  "combined_log_sha256": "fea135eff2dc7ca07501b972d134f402c8effca0b06fbe5be68986c98b4c94d0"
+}

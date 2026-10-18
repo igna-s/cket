@@ -1,0 +1,22 @@
+{
+  "format": "cket.qir",
+  "version": 1,
+  "frontend": "GCC C",
+  "symbols": [
+    {"name":"a[0]","function":"main","type":{"c_type":"short unsigned int","quantum":true,"bits":16}},
+    {"name":"a[1]","function":"main","type":{"c_type":"short unsigned int","quantum":true,"bits":16}},
+    {"name":"distance","function":"main","type":{"c_type":"long int","quantum":false,"bits":64}},
+    {"name":"first","function":"main","type":{"c_type":"unsigned int","quantum":false,"bits":32}},
+    {"name":"second","function":"main","type":{"c_type":"unsigned int","quantum":false,"bits":32}}
+  ],
+  "instructions": [
+    {"op":"qalloc","id":0,"name":"a[0]","width":16,"signed":false,"ancilla":false},
+    {"op":"qprepare","id":0,"lower":1,"upper":1},
+    {"op":"qalloc","id":1,"name":"a[1]","width":16,"signed":false,"ancilla":false},
+    {"op":"qprepare","id":1,"lower":2,"upper":2},
+    {"op":"qxor_inplace","id":1,"value":2,"controls":[]},
+    {"op":"qxor_inplace","id":1,"expr":{"op":"cast","bits":16,"signed":false,"args":[{"op":"reg","id":0,"bits":16,"signed":false,"active":1,"known":1}]},"controls":[]},
+    {"op":"qmeasure","id":0,"result":"m0","width":16},
+    {"op":"qmeasure","id":1,"result":"m1","width":16}
+  ]
+}

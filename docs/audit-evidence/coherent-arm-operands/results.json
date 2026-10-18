@@ -1,0 +1,160 @@
+{
+  "status": "closed-exploratory-probes",
+  "optimization": "-O2",
+  "builtins": "-fbuiltin",
+  "rows": [
+    {
+      "name": "xor",
+      "source_sha256": "3f58eb8e514096257b515d1e13cb2900192d4dc1608c64581b85c9d7dca2cafd",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "add",
+      "source_sha256": "a1a9bdc11b2a68a049811548807dcc44ab469d5c9b88f00553a9e9604830522b",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "assignment",
+      "source_sha256": "e6e9b14afb6ea70b58b5665268ab7c3e2e8c2155cf5f7a52f3a552821c118911",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "mixed-add",
+      "source_sha256": "52917d5babd823383e68e469b60d8ffcd4488a9efd726d529815dc579ce3b0c6",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "memset",
+      "source_sha256": "eb1223623b9b94a68bd7d5be61bb66c2446d91905f9f47b71521a2e6dbaf894e",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "In file included from /tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c:2:\n/tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c: In function \u2018main\u2019:\n/tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c:4:108: warning: passing argument 1 of \u2018__cket_memset\u2019 discards \u2018volatile\u2019 qualifier from pointer target type [-Wdiscarded-qualifiers]\n    4 | int main(int argc,char **argv){int k=argc>1?argv[1][0]-'0':0;quant bool b=0;quant uint8_t x=5;if(b){memset(&x,10/k,1);}unsigned a=measure(x),v=measure(b);return a!=5||v;}\n      |                                                                                                            ^\n/tmp/quantum-audit-isolated-20261017/include/string.h:14:34: note: expected \u2018void *\u2019 but argument is of type \u2018volatile uint8_t *\u2019 {aka \u2018volatile unsigned char *\u2019}\n   14 | extern void *__cket_memset(void *destination, int value, size_t count) __asm__(\"memset\");\n      |                            ~~~~~~^~~~~~~~~~~\n",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "In file included from /tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c:2:\n/tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c: In function \u2018main\u2019:\n/tmp/quantum-audit-isolated-20261017/build/coherent-arm-operand-probes-v1/memset.c:4:108: warning: passing argument 1 of \u2018__cket_memset\u2019 discards \u2018volatile\u2019 qualifier from pointer target type [-Wdiscarded-qualifiers]\n    4 | int main(int argc,char **argv){int k=argc>1?argv[1][0]-'0':0;quant bool b=0;quant uint8_t x=5;if(b){memset(&x,10/k,1);}unsigned a=measure(x),v=measure(b);return a!=5||v;}\n      |                                                                                                            ^\n/tmp/quantum-audit-isolated-20261017/build/coherent-cpu-maintained/include/string.h:14:34: note: expected \u2018void *\u2019 but argument is of type \u2018volatile uint8_t *\u2019 {aka \u2018volatile unsigned char *\u2019}\n   14 | extern void *__cket_memset(void *destination, int value, size_t count) __asm__(\"memset\");\n      |                            ~~~~~~^~~~~~~~~~~\n",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "abs",
+      "source_sha256": "53bdcc7f9f7f89a3f4f08d4195318944bd184d67f64760f5753da70387509aaa",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "phase",
+      "source_sha256": "63a7dbf98b9cd20ae090d5a0ad8c6dacb71cdd8461932d8c4bd4f01ac38a0eaf",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    },
+    {
+      "name": "condition-control",
+      "source_sha256": "8bb5b9667e68a01208e6bfa4bed92d743dcf04663eda9e686b6e4ee1ddec851d",
+      "ordinary_c_returncode": 0,
+      "main134": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "06233726f57cea5c16fbf6f0f05e8949cf77d5e95c5ce5ea6742ccea512a1584",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      "corrected137": {
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "compiler_sha256": "8db1cba4205649e4583b3425432ac309a0ce052ad27fb9b6877d649de1600a47",
+        "run_returncode": 0,
+        "run_stderr": ""
+      }
+    }
+  ],
+  "scope": "Eight native controlled-body probes on the original main134 and the corrected137 compiler. Ordinary C references are separate. No broad proof, fix, general compatibility or physical execution claim."
+}

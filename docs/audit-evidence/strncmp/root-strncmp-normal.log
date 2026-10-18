@@ -1,0 +1,5 @@
+PASS 56 strncmp complete phased states and saved inverses: bytes, signed object bits, all two-byte patterns, NUL stop, continued tails, two quantum inputs and zero-length one-past views
+PASS 80 native strncmp programs: const helper borrows, NUL termination, continued tails, zero count, unsigned bytes, reversed relation, overlap, raw result and classical libc
+PASS 80 strncmp diagnostics: checked extents/offsets, mutable CPU buffers, dynamic counts, padding and expression budget
+PASS 30 strncmp no-table wide exports: 16/32/64-bit objects; generation evidence
+246 strncmp checks passed; NUL-terminated comparisons remain distinct from complete string/library support.

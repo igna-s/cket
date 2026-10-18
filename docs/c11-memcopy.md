@@ -102,8 +102,9 @@ both library functions, signed layouts, relative phase, an inverse, open/closed 
 settings, builtins enabled/disabled, and all five GCC optimization levels. Overlapping moves in both
 directions are contrasted with ordinary C over their complete joint states, with phase and no
 private qubits. Bounds, const, dirty/inverse-dependent destinations, overlap, padding, CPU
-boundaries and returned-pointer uses have negative cases; classical return pointers and libc
-behavior have positive cases.
+boundaries and unsupported pointer escapes have negative cases; local checked return borrows,
+classical return pointers and libc behavior have positive cases. The separate
+[return/distance contract](c11-memory-returns.md) records its own finite tests.
 
 Nonidentity copying in CPU loops requires a per-iteration basis/history proof and remains **P/R**;
 otherwise repeated XOR could silently differ from repeated C assignment. Proved static expansions

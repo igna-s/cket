@@ -1,0 +1,14 @@
+{
+  "started_utc": "2026-10-16T23:26:44.472405+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/run-byte-snapshot-resume.sh",
+  "cwd": "/mnt/e/Backup/GitHub/Quantum/build/byte-snapshot-prototype",
+  "source_manifest_sha256": "8e91b1edaca5e58dfbae6352e437dcc4577662565806ed3145fc0a5c5901e3ef",
+  "interrupted_prefix_sha256": "53008faf377354e6c2c9e8cc4e60a55abc777f6e8e273b5b73a1d9508e371018",
+  "scope": "Normal prefix completed through strncmp. The interrupted 650-check snapshot suite is restarted, followed by every remaining normal suite and the complete sanitizer pipeline. Original normal binaries are retained from the frozen source build. Fresh sanitizer binaries are built by sanitize-all.sh. This is a segmented campaign, not an uninterrupted verify.sh invocation.",
+  "interruption_evidence": "Old unified-exec handle 74110 missing; a /proc scan found no verification worker. No final completion marker was present. Source endpoints matched 127 main and 129 candidate hashes before resumption.",
+  "toolchain_at_resume": "11.4.0",
+  "system_at_resume": "Linux 6.6.87.2-microsoft-standard-WSL2 x86_64 GNU/Linux",
+  "libc_at_resume": "glibc 2.35",
+  "pid": 18,
+  "linux_start_ticks": 762
+}

@@ -1,0 +1,15 @@
+{
+  "status": "failed-source-guard-preserved",
+  "archived_utc": "2026-10-17T22:42:13.273953+00:00",
+  "source_files_in_snapshot": 136,
+  "source_capsule_available": false,
+  "scope": "Initial source-identity check stopped the worker before verify.sh, compilation or tests. Frozen hashes do not describe the final formatted tree. Only the original hashes/metadata/error are preserved; no exact source capsule or quantum semantic failure is claimed. A later freeze starts after formatting has finished.",
+  "artifact_sha256": {
+    "archive-checker.py": "b2be3d9f57d6b3af2e56a519158ac94c82ebd47755da46b163421233b7af9c70",
+    "exit.json": "cf24c30248ef8b9ad183d2a7eb0ef6a54b84b5f316790c270b40ddb515c8a97a",
+    "frozen-sources.json": "b1dacc1e4112b2bf534608c8ccb4cffd8b4ab883faa1a02485c640edd1add818",
+    "job.json": "cb6f1af2ed8c4981c27fbbef86953890ba40cdee60744ab9fcfc0a5b4be1e9dc",
+    "runner.py": "ca68cb0f28fc3fdc4af4663857fa5cd61147b6ba6a729f442a57336661ab3069",
+    "verify.log": "b04069f9fc7c564a6f6fcf8772f8bd861579814db662b1bc2f18f1623f99c715"
+  }
+}

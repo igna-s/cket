@@ -1,0 +1,287 @@
+Resume: matching frozen 132 inputs; restarting incomplete sanitizer example suite in full.
+PASS example hello             : five GCC levels, runtime contract and exports
+PASS example entanglement      : five GCC levels, runtime contract and exports
+PASS example find              : five GCC levels, runtime contract and exports
+PASS example search            : five GCC levels, runtime contract and exports
+PASS example search_empty      : five GCC levels, runtime contract and exports
+PASS example coherent          : five GCC levels, runtime contract and exports
+PASS example prepare_measure   : five GCC levels, runtime contract and exports
+PASS example fourier           : five GCC levels, runtime contract and exports
+PASS example phase_estimation  : five GCC levels, runtime contract and exports
+PASS example functions         : five GCC levels, runtime contract and exports
+PASS example circuit_module    : five GCC levels, runtime contract and exports
+PASS example products          : five GCC levels, runtime contract and exports
+PASS example vector_function   : five GCC levels, runtime contract and exports
+PASS example dynamic_vector    : five GCC levels, runtime contract and exports
+PASS example hybrid_loop       : five GCC levels, runtime contract and exports
+PASS example types             : five GCC levels, runtime contract and exports
+PASS example for_sum           : five GCC levels, runtime contract and exports
+PASS example while_sum         : five GCC levels, runtime contract and exports
+PASS example do_while_countdown: five GCC levels, runtime contract and exports
+PASS example nested_for_sum    : five GCC levels, runtime contract and exports
+PASS example register_accumulate: five GCC levels, runtime contract and exports
+PASS example fibonacci         : five GCC levels, runtime contract and exports
+PASS example modular_arithmetic: five GCC levels, runtime contract and exports
+PASS example dot_product       : five GCC levels, runtime contract and exports
+PASS example pair_minimum      : five GCC levels, runtime contract and exports
+PASS example pair_maximum      : five GCC levels, runtime contract and exports
+PASS example minimum_scan      : five GCC levels, runtime contract and exports
+PASS example maximum_scan      : five GCC levels, runtime contract and exports
+PASS example minmax_array      : five GCC levels, runtime contract and exports
+PASS example input_sum         : five GCC levels, runtime contract and exports
+PASS example input_minmax      : five GCC levels, runtime contract and exports
+PASS example measurement_histogram: five GCC levels, runtime contract and exports
+PASS example repeat_until_success: five GCC levels, runtime contract and exports
+PASS example find_multiple     : five GCC levels, runtime contract and exports
+PASS example search_constraints: five GCC levels, runtime contract and exports
+PASS example coherent_accumulate: five GCC levels, runtime contract and exports
+
+1452 checks passed across 36 examples, five optimization levels and CLI/input contracts
+Built /tmp/tmp.VdpMAnYt3v/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O0, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.VdpMAnYt3v/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O1, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.VdpMAnYt3v/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O2, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.VdpMAnYt3v/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -O3, ordinary GCC reference and explicit quantum boundary
+Built /tmp/tmp.VdpMAnYt3v/quantum
+Execution backend: linked native C statevector motor
+PASS C11 classical integration: -Os, ordinary GCC reference and explicit quantum boundary
+5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete.
+Built C frontend fuzzing, synthesis growth and independent QuEST QASM validation
+PASS frontend 0: all 256 byte inputs at all 5 optimization levels
+PASS frontend 1: all 256 byte inputs at all 5 optimization levels
+PASS frontend 2: all 256 byte inputs at all 5 optimization levels
+PASS frontend 3: all 256 byte inputs at all 5 optimization levels
+PASS frontend 4: all 256 byte inputs at all 5 optimization levels
+PASS frontend 5: all 256 byte inputs at all 5 optimization levels
+PASS frontend 6: all 256 byte inputs at all 5 optimization levels
+PASS frontend 7: all 256 byte inputs at all 5 optimization levels
+PASS frontend 8: all 256 byte inputs at all 5 optimization levels
+PASS frontend 9: all 256 byte inputs at all 5 optimization levels
+PASS frontend 10: all 256 byte inputs at all 5 optimization levels
+PASS frontend 11: all 256 byte inputs at all 5 optimization levels
+PASS frontend 12: all 256 byte inputs at all 5 optimization levels
+PASS frontend 13: all 256 byte inputs at all 5 optimization levels
+PASS frontend 14: all 256 byte inputs at all 5 optimization levels
+PASS frontend 15: all 256 byte inputs at all 5 optimization levels
+PASS frontend 16: all 256 byte inputs at all 5 optimization levels
+PASS frontend 17: all 256 byte inputs at all 5 optimization levels
+PASS frontend 18: all 256 byte inputs at all 5 optimization levels
+PASS frontend 19: all 256 byte inputs at all 5 optimization levels
+PASS frontend 20: all 256 byte inputs at all 5 optimization levels
+PASS frontend 21: all 256 byte inputs at all 5 optimization levels
+PASS frontend 22: all 256 byte inputs at all 5 optimization levels
+PASS frontend 23: all 256 byte inputs at all 5 optimization levels
+PASS frontend 24: all 256 byte inputs at all 5 optimization levels
+PASS frontend 25: all 256 byte inputs at all 5 optimization levels
+PASS frontend 26: all 256 byte inputs at all 5 optimization levels
+PASS frontend 27: all 256 byte inputs at all 5 optimization levels
+PASS frontend 28: all 256 byte inputs at all 5 optimization levels
+PASS frontend 29: all 256 byte inputs at all 5 optimization levels
+PASS frontend 30: all 256 byte inputs at all 5 optimization levels
+PASS frontend 31: all 256 byte inputs at all 5 optimization levels
+PASS frontend 32: all 256 byte inputs at all 5 optimization levels
+PASS frontend 33: all 256 byte inputs at all 5 optimization levels
+PASS frontend 34: all 256 byte inputs at all 5 optimization levels
+PASS frontend 35: all 256 byte inputs at all 5 optimization levels
+PASS frontend 36: all 256 byte inputs at all 5 optimization levels
+PASS frontend 37: all 256 byte inputs at all 5 optimization levels
+PASS frontend 38: all 256 byte inputs at all 5 optimization levels
+PASS frontend 39: all 256 byte inputs at all 5 optimization levels
+PASS frontend 40: all 256 byte inputs at all 5 optimization levels
+PASS frontend 41: all 256 byte inputs at all 5 optimization levels
+PASS frontend 42: all 256 byte inputs at all 5 optimization levels
+PASS frontend 43: all 256 byte inputs at all 5 optimization levels
+PASS frontend 44: all 256 byte inputs at all 5 optimization levels
+PASS frontend 45: all 256 byte inputs at all 5 optimization levels
+PASS frontend 46: all 256 byte inputs at all 5 optimization levels
+PASS frontend 47: all 256 byte inputs at all 5 optimization levels
+PASS frontend 48: all 256 byte inputs at all 5 optimization levels
+PASS frontend 49: all 256 byte inputs at all 5 optimization levels
+PASS frontend 50: all 256 byte inputs at all 5 optimization levels
+PASS frontend 51: all 256 byte inputs at all 5 optimization levels
+PASS frontend 52: all 256 byte inputs at all 5 optimization levels
+PASS frontend 53: all 256 byte inputs at all 5 optimization levels
+PASS frontend 54: all 256 byte inputs at all 5 optimization levels
+PASS frontend 55: all 256 byte inputs at all 5 optimization levels
+PASS frontend 56: all 256 byte inputs at all 5 optimization levels
+PASS frontend 57: all 256 byte inputs at all 5 optimization levels
+PASS frontend 58: all 256 byte inputs at all 5 optimization levels
+PASS frontend 59: all 256 byte inputs at all 5 optimization levels
+PASS frontend 60: all 256 byte inputs at all 5 optimization levels
+PASS frontend 61: all 256 byte inputs at all 5 optimization levels
+PASS frontend 62: all 256 byte inputs at all 5 optimization levels
+PASS frontend 63: all 256 byte inputs at all 5 optimization levels
+PASS frontend 64: all 256 byte inputs at all 5 optimization levels
+PASS frontend 65: all 256 byte inputs at all 5 optimization levels
+PASS frontend 66: all 256 byte inputs at all 5 optimization levels
+PASS frontend 67: all 256 byte inputs at all 5 optimization levels
+PASS frontend 68: all 256 byte inputs at all 5 optimization levels
+PASS frontend 69: all 256 byte inputs at all 5 optimization levels
+PASS frontend 70: all 256 byte inputs at all 5 optimization levels
+PASS frontend 71: all 256 byte inputs at all 5 optimization levels
+PASS frontend 72: all 256 byte inputs at all 5 optimization levels
+PASS frontend 73: all 256 byte inputs at all 5 optimization levels
+PASS frontend 74: all 256 byte inputs at all 5 optimization levels
+PASS frontend 75: all 256 byte inputs at all 5 optimization levels
+PASS frontend 76: all 256 byte inputs at all 5 optimization levels
+PASS frontend 77: all 256 byte inputs at all 5 optimization levels
+PASS frontend 78: all 256 byte inputs at all 5 optimization levels
+PASS frontend 79: all 256 byte inputs at all 5 optimization levels
+PASS frontend 80: all 256 byte inputs at all 5 optimization levels
+PASS frontend 81: all 256 byte inputs at all 5 optimization levels
+PASS frontend 82: all 256 byte inputs at all 5 optimization levels
+PASS frontend 83: all 256 byte inputs at all 5 optimization levels
+PASS frontend 84: all 256 byte inputs at all 5 optimization levels
+PASS frontend 85: all 256 byte inputs at all 5 optimization levels
+PASS frontend 86: all 256 byte inputs at all 5 optimization levels
+PASS frontend 87: all 256 byte inputs at all 5 optimization levels
+PASS frontend 88: all 256 byte inputs at all 5 optimization levels
+PASS frontend 89: all 256 byte inputs at all 5 optimization levels
+PASS frontend 90: all 256 byte inputs at all 5 optimization levels
+PASS frontend 91: all 256 byte inputs at all 5 optimization levels
+PASS frontend 92: all 256 byte inputs at all 5 optimization levels
+PASS frontend 93: all 256 byte inputs at all 5 optimization levels
+PASS frontend 94: all 256 byte inputs at all 5 optimization levels
+PASS frontend 95: all 256 byte inputs at all 5 optimization levels
+PASS frontend 96: all 256 byte inputs at all 5 optimization levels
+PASS frontend 97: all 256 byte inputs at all 5 optimization levels
+PASS frontend 98: all 256 byte inputs at all 5 optimization levels
+PASS frontend 99: all 256 byte inputs at all 5 optimization levels
+PASS frontend 100: all 256 byte inputs at all 5 optimization levels
+PASS frontend 101: all 256 byte inputs at all 5 optimization levels
+PASS frontend 102: all 256 byte inputs at all 5 optimization levels
+PASS frontend 103: all 256 byte inputs at all 5 optimization levels
+PASS frontend 104: all 256 byte inputs at all 5 optimization levels
+PASS frontend 105: all 256 byte inputs at all 5 optimization levels
+PASS frontend 106: all 256 byte inputs at all 5 optimization levels
+PASS frontend 107: all 256 byte inputs at all 5 optimization levels
+PASS frontend 108: all 256 byte inputs at all 5 optimization levels
+PASS frontend 109: all 256 byte inputs at all 5 optimization levels
+PASS frontend 110: all 256 byte inputs at all 5 optimization levels
+PASS frontend 111: all 256 byte inputs at all 5 optimization levels
+PASS frontend 112: all 256 byte inputs at all 5 optimization levels
+PASS frontend 113: all 256 byte inputs at all 5 optimization levels
+PASS frontend 114: all 256 byte inputs at all 5 optimization levels
+PASS frontend 115: all 256 byte inputs at all 5 optimization levels
+PASS frontend 116: all 256 byte inputs at all 5 optimization levels
+PASS frontend 117: all 256 byte inputs at all 5 optimization levels
+PASS frontend 118: all 256 byte inputs at all 5 optimization levels
+PASS frontend 119: all 256 byte inputs at all 5 optimization levels
+PASS frontend 120: all 256 byte inputs at all 5 optimization levels
+PASS frontend 121: all 256 byte inputs at all 5 optimization levels
+PASS frontend 122: all 256 byte inputs at all 5 optimization levels
+PASS frontend 123: all 256 byte inputs at all 5 optimization levels
+PASS frontend 124: all 256 byte inputs at all 5 optimization levels
+PASS frontend 125: all 256 byte inputs at all 5 optimization levels
+PASS frontend 126: all 256 byte inputs at all 5 optimization levels
+PASS frontend 127: all 256 byte inputs at all 5 optimization levels
+PASS frontend 128: all 256 byte inputs at all 5 optimization levels
+PASS frontend 129: all 256 byte inputs at all 5 optimization levels
+PASS frontend 130: all 256 byte inputs at all 5 optimization levels
+PASS frontend 131: all 256 byte inputs at all 5 optimization levels
+PASS frontend 132: all 256 byte inputs at all 5 optimization levels
+665 generated frontend compilations passed; seed=20261012 (C generator, SplitMix64)
+PASS growth add width=4: gates=40, ancillas=4
+PASS growth add width=8: gates=112, ancillas=8
+PASS growth add width=12: gates=216, ancillas=12
+PASS growth add width=16: gates=352, ancillas=16
+PASS growth sub width=4: gates=40, ancillas=4
+PASS growth sub width=8: gates=112, ancillas=8
+PASS growth sub width=12: gates=216, ancillas=12
+PASS growth sub width=16: gates=352, ancillas=16
+PASS growth mul width=4: gates=52, ancillas=4
+PASS growth mul width=8: gates=264, ancillas=8
+PASS growth mul width=12: gates=764, ancillas=12
+PASS growth mul width=16: gates=1680, ancillas=16
+PASS growth div width=4: gates=316, ancillas=14
+PASS growth div width=8: gates=1432, ancillas=26
+PASS growth div width=12: gates=3732, ancillas=38
+PASS growth div width=16: gates=7600, ancillas=50
+PASS growth mod width=4: gates=324, ancillas=18
+PASS growth mod width=8: gates=1448, ancillas=34
+PASS growth mod width=12: gates=3756, ancillas=50
+PASS growth mod width=16: gates=7632, ancillas=66
+PASS growth lt width=4: gates=49, ancillas=5
+PASS growth lt width=8: gates=97, ancillas=9
+PASS growth lt width=12: gates=145, ancillas=13
+PASS growth lt width=16: gates=193, ancillas=17
+24 circuits compiled without tables; /mnt/e/Backup/GitHub/Quantum/build/memset-prototype/build/sanitized/build/synthesis-growth.csv
+PASS independent QASM importer: 8 malformed artifacts rejected
+PASS independent QASM budgets: 24 wires/controls accepted; qubit and result limits diagnosed separately from syntax
+PASS independent QASM state and probabilities: entangled arithmetic (16 qubits)
+PASS independent QASM state and probabilities: relative phase and cleanup (9 qubits)
+PASS independent QASM state and probabilities: controlled global phase (2 qubits)
+PASS independent QASM state and probabilities: open controlled Fourier (10 qubits)
+PASS independent QASM state and probabilities: Fourier inverse interference (9 qubits)
+PASS independent QASM state and probabilities: Grover complete circuit (9 qubits)
+PASS independent QASM state and probabilities: nested open controls (15 qubits)
+PASS independent QASM state and probabilities: independent controlled module (10 qubits)
+PASS independent QASM state and probabilities: signed absolute value with relative phase (11 qubits)
+PASS independent QASM state and probabilities: function, array, static loop and coherent phase (6 qubits)
+PASS independent QASM state and probabilities: quantum variable left shift and relative phase (14 qubits)
+PASS independent QASM state and probabilities: signed variable right shift and Boolean conversion (13 qubits)
+PASS independent QASM state and probabilities: conditional expression with guarded division (13 qubits)
+PASS independent QASM state and probabilities: short-circuit logic with guarded division (7 qubits)
+PASS independent QASM state and probabilities: conditional signed negation and complement (19 qubits)
+PASS independent QASM state and probabilities: controlled affine in-place arithmetic (10 qubits)
+PASS independent QASM state and probabilities: in-place rotation and complement (9 qubits)
+PASS independent QASM state and probabilities: signed affine update after Fourier (10 qubits)
+PASS independent QASM state and probabilities: coherent library memcpy with relative phase (18 qubits)
+PASS independent QASM state and probabilities: library memmove preserves signed object bits (17 qubits)
+PASS independent QASM state and probabilities: library memmove exact alias preserves interference (9 qubits)
+PASS independent QASM state and probabilities: library copy survives coherent source uncomputation (19 qubits)
+PASS independent QASM state and probabilities: library memcmp preserves unsigned byte order and relative phases (10 qubits)
+PASS independent QASM state and probabilities: library memcmp compares complete two-byte representations lexicographically (22 qubits)
+PASS independent QASM state and probabilities: library memcmp byte view uses the selected object byte (18 qubits)
+PASS independent QASM state and probabilities: library memcmp correlates two quantum inputs without observation (21 qubits)
+PASS independent QASM state and probabilities: library strncmp stops at matching NUL with untouched suffix (21 qubits)
+PASS independent QASM state and probabilities: library strncmp continues after equal nonzero bytes (24 qubits)
+PASS independent QASM state and probabilities: mutable CPU byte memcmp saved inverse (11 qubits)
+PASS independent QASM state and probabilities: mutable CPU byte strncmp saved inverse (11 qubits)
+PASS independent QASM state and probabilities: mutable CPU word memcmp saved inverse (22 qubits)
+PASS independent QASM state and probabilities: mutable CPU word strncmp NUL saved inverse (21 qubits)
+PASS independent QASM state and probabilities: memset full-byte retained history (17 qubits)
+PASS independent QASM state and probabilities: memset full-byte self alias (17 qubits)
+PASS independent QASM state and probabilities: memset partial word with quantum byte (18 qubits)
+PASS independent QASM state and probabilities: memset lazy sequenced argument (16 qubits)
+PASS independent QASM state and probabilities: memset array captures aliased source once (24 qubits)
+PASS independent QASM state and probabilities: library division product projections with relative phase (20 qubits)
+PASS independent QASM state and probabilities: coherent library division with variable denominator (18 qubits)
+PASS independent QASM state and probabilities: signed library division rounds toward zero (17 qubits)
+PASS independent QASM state and probabilities: CPU-bound library division (20 qubits)
+PASS independent QASM state and probabilities: saved CPU snapshot inverse (12 qubits)
+PASS independent QASM state and probabilities: derived history cleanup (7 qubits)
+PASS independent QASM state and probabilities: retained byte history preserves relative phases (17 qubits)
+PASS independent QASM state and probabilities: history CPU snapshot inverse (6 qubits)
+PASS independent QASM state and probabilities: coherent two-arm history join (10 qubits)
+PASS independent QASM state and probabilities: self-controlled information loss (5 qubits)
+PASS independent QASM state and probabilities: nested coherent history joins (9 qubits)
+PASS independent QASM state and probabilities: coherent CPU predicate snapshot inverse (6 qubits)
+PASS independent QASM state and probabilities: CPU two-arm assignment trace (4 qubits)
+PASS independent QASM state and probabilities: CPU condition snapshot trace (7 qubits)
+PASS independent QASM state and probabilities: CPU coherent branch trace (7 qubits)
+PASS independent QASM state and probabilities: postfix value retains phased history (5 qubits)
+PASS independent QASM state and probabilities: prefix value and reversible decrement (3 qubits)
+PASS independent QASM state and probabilities: comma returns the updated quantum value (6 qubits)
+PASS independent QASM state and probabilities: lazy conditional selected updates and phases (12 qubits)
+PASS independent QASM state and probabilities: nested logical AND and OR selected updates (13 qubits)
+PASS independent QASM state and probabilities: lazy self condition retains its original decision (11 qubits)
+PASS independent QASM state and probabilities: C-locale byte classification preserves relative phases (14 qubits)
+PASS independent QASM state and probabilities: C-locale conversion in a quantum function with memory borrow (14 qubits)
+PASS independent QASM state and probabilities: Latin-1 classification and nested case conversion (16 qubits)
+PASS independent QASM state and probabilities: Latin-1 EOF and byte-255 coherent distinction (15 qubits)
+PASS independent QASM channel: logical value observation preserves fiber coherence (7 qubits; 8192 transcripts)
+PASS independent QASM channel: explicit Boolean cast measures a predicate (8 qubits; 8192 transcripts)
+PASS independent QASM channel: postfix observation and updated owner (4 qubits; 8192 transcripts)
+PASS independent QASM channel: intermediate entangled measurement (3 qubits; 8192 transcripts)
+PASS independent QASM channel: reset of an entangled input (3 qubits; 8192 transcripts)
+PASS independent QASM channel: measurement then reuse (2 qubits; 8192 transcripts)
+68 exported circuits independently validated with QuEST 3.7.0 (C): 62 states, 6 channels; table-free export
+All compiler, runtime, example, synthesis and independent QASM checks passed.

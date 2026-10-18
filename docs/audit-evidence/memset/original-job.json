@@ -1,0 +1,10 @@
+{
+  "pid": 29103,
+  "linux_start_ticks": 348253,
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/launch-memset-full.py",
+  "started_utc": "2026-10-17T00:24:39.505490+00:00",
+  "runner_sha256": "cf92a202a2cdb9a69176d1e1035258fdf4638c23e3313339eb151c9051602dc2",
+  "source_manifest_sha256": "96f373c1730ee03695ed688e52ca343711d34c0e002d4e32f415d47cbe8b8ad1",
+  "command": "CC=gcc-11 CXX=g++-11 CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh",
+  "proof_scope": "Fresh complete normal/sanitized isolated campaign. Source identity checked at start and terminal endpoint. Main compiler and the separate byte-snapshot candidate were unchanged at launch."
+}

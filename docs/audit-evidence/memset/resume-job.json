@@ -1,0 +1,10 @@
+{
+  "pid": 731,
+  "linux_start_ticks": 17015,
+  "started_utc": "2026-10-17T14:49:55.461789+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/resume-memset-tail.py",
+  "source_manifest_sha256": "96f373c1730ee03695ed688e52ca343711d34c0e002d4e32f415d47cbe8b8ad1",
+  "interrupted_prefix_sha256": "d164e72df080f33cb27845fbacbbdc78edbfd5243079be69f67a8435ed91fbf5",
+  "scope": "Original complete normal build and fresh sanitizer build retained. Normal suites and all sanitizer suites through library-boundary checks passed before interruption. Resume restarts the incomplete full sanitizer examples, then classical integration, fresh instrumented validation-tool build, frontend fuzzing, synthesis and QuEST. Source identity checked at endpoints; not one uninterrupted invocation.",
+  "interruption": "Original process identity absent, no terminal record and no original sanitizer validators alive. WSL uptime at observation was about 102 seconds. No exit status is invented for the interrupted invocation."
+}

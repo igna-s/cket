@@ -1,0 +1,3 @@
+PASS recurrent pointer differences: normal
+PASS recurrent pointer differences: sanitized
+{"status": "passed-scoped-maintained", "exit_code": 0, "source_files": 137, "scope": "Newly compiled recurrent C validator on 137 frozen inputs with the scoped v3 normal/sanitizer compiler tools reused. Ninety native checks, forty specific diagnostics, forty complete action/inverse circuits and forty-five separate ordinary C references per configuration. The former CPU-scalar coherent-control rejection is now positive and a second phased fixture binds its explicit source-level distance-one precondition. This finite proof is separate from a full broad campaign and does not certify general memory lifetimes or all C11. No main application or cybersecurity change."}

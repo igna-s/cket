@@ -3,6 +3,11 @@
 Manuscritos completos en español e inglés sobre `|c>` / cket 0.4.0 experimental. El estado estudiado
 corresponde al commit `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`.
 
+El enlace de software de la referencia [1], `https://github.com/igna-s/cket`, respondió HTTP 404 sin
+autenticación el 14 de octubre de 2026. La disponibilidad pública de ese enlace no quedó verificada;
+la reproducción local utiliza el historial Git de este checkout. Los manuscritos conservan la
+referencia histórica y esta limitación se registra fuera de sus resultados científicos.
+
 Cada versión tiene **ocho páginas, incluidas figuras y bibliografía**. Su modelo de maquetación es
 [Attention Is All You Need](https://arxiv.org/pdf/1706.03762): papel Letter, una columna de 5,5
 pulgadas, cuerpo serif de 10 puntos, título centrado entre reglas, resumen sangrado, secciones

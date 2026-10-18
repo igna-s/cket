@@ -1,0 +1,2 @@
+{"headers": 29, "implementation_status": "incomplete", "index_status": "valid", "interfaces": 1224, "quantum_status": {"metadata-only": 368, "partial": 73, "pending": 783}}
+Prepared isolated strncmp integration, inventory 783 pending/73 partial, 59 QuEST cases and a 180-minute CI budget; main checkout remains unchanged.

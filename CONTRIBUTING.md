@@ -18,8 +18,9 @@ bash scripts/test.sh
 ```
 
 The driver, backend, runtime, simulator, and test programs are C. The GCC plugin is C++17 because it
-uses GCC's internal API. Shell scripts coordinate builds and commands. Python is not required for
-building, execution, or testing.
+uses GCC's internal API. Shell scripts coordinate builds and commands. The compiler/runtime suite
+needs C/C++ and Bash; optional formatting, inventory, paper and supplementary evidence audits use
+Python.
 
 The plugin needs headers matching the GCC version in use. The README explains `GCC_PLUGIN_INCLUDE`
 and the local dependency alternative.
@@ -48,11 +49,19 @@ bash scripts/sanitize-all.sh
 Build the additional C validation tools once, then run the checks relevant to your change:
 
 ```bash
-sudo apt-get install -y curl ca-certificates
+sudo apt-get install -y curl ca-certificates locales
 bash scripts/build-validation.sh
 build/fuzz_frontend
 build/benchmark_synthesis
 build/validate_qasm
+build/validate_library
+build/validate_profiles
+build/validate_numeric_locale
+build/validate_memcmp
+build/validate_strncmp
+build/validate_byte_snapshots
+build/validate_memset
+build/validate_memory_sequences
 ```
 
 `build-validation.sh` downloads a pinned, checksum-verified QuEST 3.7.0 source archive and builds
@@ -61,10 +70,22 @@ exported QASM; it is not linked into the compiler or application runtime. Its up
 with the downloaded source. The frontend generator accepts `--seed N` and `--cases N` and retains
 failure reproductions in `build/frontend-failure.*`.
 
-All validation programs are C. They exercise five optimization levels, 24 arithmetic growth
-circuits, and independent QASM state/channel comparisons. Scripts store evidence in `build/`; CI
-attaches logs and failure reproductions. The [repository audit](docs/repository-audit.md) records
-the counts and scope of the latest completed campaign.
+Each generated expression is compared with C over all 256 byte inputs at every optimization level.
+The library boundary validator checks unsupported contexts across 210 interfaces with builtins
+enabled and disabled, after an ordinary C syntax check; its expected rejections do not implement
+those interfaces. The profile validator separately tests branch proofs, phase preservation and
+inverses.
+
+The numeric-locale validator checks decimal parsing, controlled/global QASM output and preservation
+of global/thread locales, including output failures. Locale fixtures also need the existing
+`localedef`/locale-source dependencies. The CI time budget accommodates the expanded byte corpus and
+library boundary matrix; individual subprocess deadlines still apply.
+
+The compiler/runtime validation programs built by these scripts are C. They exercise five
+optimization levels, 24 arithmetic growth circuits, and independent QASM state/channel comparisons.
+Scripts store evidence in `build/`; CI attaches logs and failure reproductions. The
+[repository audit](docs/repository-audit.md) records the counts and scope of the latest completed
+campaign.
 
 `test.sh` also runs `build/test_examples`: all 36 examples, expected outputs, static export support
 or rejection, both dynamic array indices, interactive boundary and invalid inputs at five

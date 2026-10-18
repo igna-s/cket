@@ -1,0 +1,6 @@
+{
+  "pid": 29421,
+  "linux_start_ticks": 824754,
+  "started_utc": "2026-10-17T17:04:32.835637+00:00",
+  "scope": "Maintained C suite only, normal and ASan/UBSan. Source-identical previously built compiler/core tools reused; no broad full-regression or main integration claim."
+}

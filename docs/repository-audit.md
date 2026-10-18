@@ -1,5 +1,39 @@
 # Auditoría del repositorio y de los papers
 
+La [integración del 18 de octubre](c11-memory-returns.md) añade retornos locales de memoria,
+distancias comprobadas y una corrección de condiciones CPU dentro de control cuántico. Sus 137
+entradas pasaron reconstrucciones normales/ASan/UBSan y controles específicos; la regresión amplia
+sigue pendiente. Hay
+[siete fallos posteriores reproducidos](audit-evidence/coherent-arm-operands/failure-summary.json)
+en operandos bajo control inactivo y un caso pendiente de dirección CPU inválida. El inventario
+sigue incompleto y la ciberseguridad permanece clásica.
+
+La [integración de memoria del 17 de octubre](re-audit-2026-10-17-memory-expressions.md) añade
+`memset` parcial y llamadas descartadas en expresiones con coma y selección coherente. Pasaron las
+regresiones completas normales y con ASan/UBSan sobre 134 entradas congeladas, y controles separados
+con reconstrucción del árbol principal. El inventario actual conserva 782 entradas pendientes, 74
+parciales y 368 de metadatos. C11 completo sigue pendiente y la ciberseguridad continúa clásica.
+
+La [auditoría de capturas de bytes](re-audit-2026-10-17-byte-snapshots.md) añade bytes actuales de
+objetos CPU conocidos, conserva las capturas para la inversa y corrige una lectura después del NUL.
+Registra la campaña completa normal/ASan/UBSan y las pruebas separadas del árbol principal. La
+ciberseguridad queda clásica y fuera de la adaptación cuántica.
+
+La [ampliación de strings del 15 de octubre](re-audit-2026-10-15-strings.md) incorpora `strncmp` y
+contrasta resultados enteros completos mediante circuitos dispersos y trayectorias de base.
+Distingue las pruebas aisladas, su aplicación por hashes y las comprobaciones del árbol principal.
+Ese estado conservaba 783 entradas pendientes y 73 parciales.
+
+La [revisión del 15 de octubre de 2026](re-audit-2026-10-15-memory.md) incorpora `memcmp` cuántico,
+optimizaciones reversibles de comparaciones/desplazamientos y evidencia normal y con sanitizadores
+separada por sus fuentes exactas. Conserva el fallo inicial del límite de QuEST y las verificaciones
+posteriores; el inventario actual sigue incompleto.
+
+La [revisión del 14 de octubre de 2026](re-audit-2026-10-14.md) documenta un fallo adicional
+reproducido en las pruebas de rango de perfiles `ctype`, sus regresiones, la matriz de fronteras de
+libc y la ampliación del generador a todos los valores de byte. Los recuentos históricos de las
+secciones siguientes conservan el alcance de sus campañas.
+
 Revisión del 13 de octubre de 2026. El objetivo final es una semántica cuántica explícita para todas
 las construcciones e interfaces de C11 del perfil declarado. El compilador actual implementa un
 subconjunto. Esta revisión identifica fallos reproducidos, corrige contratos y contrasta programas

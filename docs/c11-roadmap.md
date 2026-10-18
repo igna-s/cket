@@ -189,9 +189,20 @@ explicit CPU/channel boundary.
 basis destinations, creating correlations for superposed inputs. It includes controlled basis
 translation and read-before-write overlap ordering. Unknown overwritten values still need history,
 and general overlap needs a temporary/version strategy. Byte layouts, dynamic extents and
-returned-pointer uses remain pending. `memset` must likewise preserve unknown overwritten state or
-require explicit destruction. Byte comparison/search/sort needs reversible outputs, permutations and
-comparator effects, not CPU reads of markers.
+unrestricted returned-pointer consumers remain pending.
+[Local checked destination returns and same-object distances](c11-memory-returns.md) have partial
+adapters. The partial [memset adapter](c11-memset.md) now preserves unknown overwritten state as
+history and applies fixed byte ranges with once-only value evaluation.
+[Discarded memory-call sequences](c11-memory-sequences.md) compose checked calls in comma and lazy
+expressions. General pointer results, counts and layouts remain pending. The partial
+[memcmp adapter](c11-memcmp.md) now compares checked integer object bytes without modifying its
+inputs. [CPU snapshots](c11-byte-snapshots.md) now capture selected current bytes of known classical
+storage once and retain them for inverse cleanup. General addresses, search/sort and comparator
+effects still need implementations, rather than CPU reads of markers. The partial
+[strncmp adapter](c11-strncmp.md) adds NUL-stopping bounded character comparison on the same checked
+integer byte views. Its full signed result is computed coherently; CPU suffix loads stop at that
+operand's own NUL. General strings, volatile/atomic captures and dynamic ranges remain open.
+Cybersecurity remains classical and outside the quantum adaptation scope.
 
 Formatted I/O, strings sent to external systems, signals, clocks, locale, environment calls and
 pseudorandom CPU state are classical effects. Quantum values reach them through explicit
@@ -301,7 +312,7 @@ arbitrary floating-point accumulated error. `M=0` exhausts the budget and proves
 claim. Successful candidates are checked classically.
 
 Validation must separately label synthesis/export, native execution, exact small domain/reference
-comparison, and external simulator comparison. Current QuEST coverage is forty-five state cases and
+comparison, and external simulator comparison. The QuEST suite contains sixty-four state cases and
 six sampled channels, not every generated circuit. Extend it to integrated library, memory, history
 and control workloads; state checks alone cannot validate intermediate measurement/reset channels.
 
@@ -326,12 +337,13 @@ their quantum fields. The 399 finite checks and two additional QuEST states prov
 these contracts; general quantum product ABI, coherent CPU effects and full C11 coverage remain
 open.
 
-M2/M7 also include [C-locale character adapters](c11-ctype.md) for all fourteen C11 interfaces. The
-635 finite checks cover every byte, exact classification masks, phased states, mapping bits, scalar
-effects, functions, memory, loops, explicit observation and classical GCC differentials. Two more
-QuEST fixtures contrast exported circuits. General locale snapshots, indirect calls, module
-preconditions, concurrency and source provenance before GCC folding remain P/R; invalid arguments
-retain the C undefined-domain contract (S). This is partial library coverage, not completion of M7.
+M2/M7 also include [immutable character adapters](c11-ctype.md) for all fourteen C11 interfaces. The
+1815 finite checks cover three byte locales, masks, phased states, mapping bits, scalar effects,
+functions, memory, loops, explicit observation, thread locales, saved inverses, unitary modules and
+classical GCC differentials. Four QuEST fixtures contrast exported character circuits. Indirect
+calls, automatic per-capture static locale traces, concurrency and source provenance before GCC
+folding remain P/R; invalid arguments retain the C undefined-domain contract (S). This is partial
+library coverage, not completion of M7.
 
 ## Completion rule
 

@@ -1,0 +1,14 @@
+[
+  {
+    "configuration": "normal",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "In file included from /mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c:2:\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c: In function \u2018main\u2019:\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c:6:31: warning: passing argument 1 of \u2018__cket_memset\u2019 discards \u2018volatile\u2019 qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *pointer = memset(&value, 17, 1);\n      |                               ^\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/include/string.h:14:34: note: expected \u2018void *\u2019 but argument is of type \u2018volatile uint8_t *\u2019 {aka \u2018volatile unsigned char *\u2019}\n   14 | extern void *__cket_memset(void *destination, int value, size_t count) __asm__(\"memset\");\n      |                            ~~~~~~^~~~~~~~~~~\n"
+  },
+  {
+    "configuration": "sanitized",
+    "returncode": 0,
+    "stdout": "",
+    "stderr": "In file included from /mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c:2:\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c: In function \u2018main\u2019:\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/contract-example.c:6:31: warning: passing argument 1 of \u2018__cket_memset\u2019 discards \u2018volatile\u2019 qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *pointer = memset(&value, 17, 1);\n      |                               ^\n/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/sanitized/include/string.h:14:34: note: expected \u2018void *\u2019 but argument is of type \u2018volatile uint8_t *\u2019 {aka \u2018volatile unsigned char *\u2019}\n   14 | extern void *__cket_memset(void *destination, int value, size_t count) __asm__(\"memset\");\n      |                            ~~~~~~^~~~~~~~~~~\n"
+  }
+]

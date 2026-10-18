@@ -1,0 +1,16 @@
+[
+  {
+    "configuration": "ordinary-c",
+    "compile_returncode": 0,
+    "run_returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  },
+  {
+    "configuration": "candidate",
+    "compile_returncode": 0,
+    "run_returncode": 0,
+    "stdout": "",
+    "stderr": ""
+  }
+]

@@ -1,0 +1,10 @@
+PASS integration: fresh-normal-build
+PASS integration: normal-native
+PASS integration: normal-memory-returns
+PASS integration: normal-pointer-differences
+PASS integration coherent matrix: normal 180 native / 30 diagnostics
+PASS integration: fresh-sanitized-build
+PASS integration: sanitized-native
+PASS integration: sanitized-memory-returns
+PASS integration: sanitized-pointer-differences
+PASS integration coherent matrix: sanitized 180 native / 30 diagnostics

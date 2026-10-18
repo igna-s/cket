@@ -1,0 +1,10 @@
+{
+  "status": "postcheck-summary-assertion-corrected",
+  "original_application_returncode": 1,
+  "reason": "Finalizer expected 349 paper checks; both actual passing reports contain 352 because new document links also add checks. All three underlying commands had actual exit zero. Compiler builds and tests were not repeated.",
+  "original_runner_sha256": "2f8467b069b6fd9fc1fa8a543b51e1eff1a7bcbbc5b57892071a285f3cff42dc",
+  "original_paper_reports": {
+    "paper-audit.json": "bd3bcea2a699ad66950b19845528a790e5e92b44126ff186c6633b65a04ebad2",
+    "paper-audit-en.json": "b5b0b6b9c3aa914c810769fc64b825db9d7f1d7c875c64d6909a8aadc5e2036b"
+  }
+}

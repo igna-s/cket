@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/mnt/e/Backup/GitHub/Quantum/build/launch-memory-return-full.py", line 40, in <module>
+    check_sources()
+  File "/mnt/e/Backup/GitHub/Quantum/build/launch-memory-return-full.py", line 34, in check_sources
+    assert len(frozen) == 136 and archiver.source_hashes() == frozen
+AssertionError

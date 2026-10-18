@@ -1,0 +1,5 @@
+PASS 92 memcmp complete phased states and inverses: bytes, signed representation, lexicographic words, byte views, two quantum inputs and raw results
+PASS 110 native memcmp programs: all byte values, six relations, raw result, const borrows, byte offsets, one-past zero length, cast semantics and classical libc
+PASS 70 memcmp rejection contracts: bounds, offsets, dynamic extents, mutable CPU snapshots, padding and expression budget
+PASS 30 memcmp wide no-table circuits: 16/32/64-bit layouts, five GCC levels and both builtin modes; generation evidence
+302 memcmp checks passed; coherent byte comparisons are distinct from general memory/library completeness.

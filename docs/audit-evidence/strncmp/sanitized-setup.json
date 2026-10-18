@@ -1,0 +1,13 @@
+{
+  "scope": "Candidate plugin rebuilt with ASan/UBSan. Engine, driver, runtime and wrapper reused from the active main-tree instrumented build after verifying corresponding src/include hashes and build timestamps; only the two frontend/header files differ among src/include inputs. Integration-mode tests, scripts and CI changes belong to the supplied source snapshot.",
+  "reused_binary_sha256": {
+    "cket": "0d00dfd1e00c14fe7a0c8532a3bae2c20c2cab33268fe91d6c94942cd12ced56",
+    "cket_backend": "c6a336c3a0c878546629725164bda287e9fd04c27939595fd172658792c2137a",
+    "cket_runtime.o": "d4a38fa3a18b09de9a78b80c0c3fe4eedb161a7d437bad2f75b3a7b17c21c8e3",
+    "libcket_quantum.a": "7cf4ec1edaa35c6c890c7c87397575886dadb80900624d0c3f4f77418c06188a",
+    "gcc-wrapper": "d31eb29bea956d5fc38f88ed2042fcb9b7e569ba59e0dc280a026f0bea652419",
+    "gcc-version.txt": "b20e1ce95de64f1c1c82cb20370952326892e0ec8abe6a79e15cfd0184b5cec1"
+  },
+  "new_plugin_sha256": "778babcd84595451cfdf7fdb8d28b1b193a05ee09ff62e77182b444d06ab33ff",
+  "source_manifest": "build/strncmp-integrated-sources.json"
+}

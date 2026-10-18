@@ -1,0 +1,68 @@
+{
+  "exit_code": 0,
+  "error": null,
+  "finished_utc": "2026-10-17T17:09:48.496440+00:00",
+  "commands": [
+    {
+      "name": "normal-build",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Isrc/engine",
+        "-Itests",
+        "-O2",
+        "tests/validate_memory_returns.c",
+        "tests/validation.c",
+        "build/libcket_quantum.a",
+        "-lm",
+        "-o",
+        "build/validate_memory_returns"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "normal",
+      "command": [
+        "/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/validate_memory_returns"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "sanitized-build",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-g",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Isrc/engine",
+        "-Itests",
+        "-O1",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-fno-pie",
+        "-no-pie",
+        "tests/validate_memory_returns.c",
+        "tests/validation.c",
+        "/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/sanitized/build/libcket_quantum.a",
+        "-lm",
+        "-o",
+        "/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/sanitized/build/validate_memory_returns"
+      ],
+      "returncode": 0
+    },
+    {
+      "name": "sanitized",
+      "command": [
+        "/mnt/e/Backup/GitHub/Quantum/build/memory-return-maintained/build/maintained-v2/sanitized/build/validate_memory_returns"
+      ],
+      "returncode": 0
+    }
+  ],
+  "scope": "Maintained pointer C suite only; complete C11 and broad integration remain pending."
+}

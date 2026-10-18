@@ -1,0 +1,602 @@
+[
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:39: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                      ~~~~~~~~~~~~~~~~~^~~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:70: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                                               ~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:39: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                      ~~~~~~~~~~~~~~~~~^~~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:70: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                                               ~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:39: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                      ~~~~~~~~~~~~~~~~~^~~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:70: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                                               ~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:39: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                      ~~~~~~~~~~~~~~~~~^~~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/string.h:4,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:2:\n/usr/include/string.h:43:70: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   43 | extern void *memcpy (void *__restrict __dest, const void *__restrict __src,\n      |                                               ~~~~~~~~~~~~~~~~~~~~~~~^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 0,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c: In function ‘main’:\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:30: warning: passing argument 1 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                              ^~~~~~~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n/tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:6:44: warning: passing argument 2 of ‘memcpy’ discards ‘volatile’ qualifier from pointer target type [-Wdiscarded-qualifiers]\n    6 |     uint8_t *result = memcpy(&destination, &source, 1);\n      |                                            ^~~~~~~\nIn file included from /usr/include/features.h:486,\n                 from /usr/include/x86_64-linux-gnu/bits/libc-header-start.h:33,\n                 from /usr/include/stdint.h:26,\n                 from /usr/lib/gcc/x86_64-linux-gnu/11/include/stdint.h:9,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/project/build/sanitized/include/quantum.h:5,\n                 from /tmp/quantum-audit-isolated-20261017/build/coherent-integration-v1/contract-0.c:1:\n/usr/include/x86_64-linux-gnu/bits/string_fortified.h:26:1: note: expected ‘const void * restrict’ but argument is of type ‘volatile uint8_t *’ {aka ‘volatile unsigned char *’}\n   26 | __NTH (memcpy (void *__restrict __dest, const void *__restrict __src,\n      | ^~~~~\n",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 1,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "normal",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O0",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O1",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O2",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-O3",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fbuiltin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  },
+  {
+    "example": 2,
+    "configuration": "sanitized",
+    "optimization": "-Os",
+    "builtins": "-fno-builtin",
+    "compile_returncode": 0,
+    "compile_stderr": "",
+    "run_returncode": 0,
+    "run_stderr": ""
+  }
+]

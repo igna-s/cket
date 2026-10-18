@@ -4,6 +4,12 @@ The verifier in [src/engine/verify.c](../src/engine/verify.c) checks serialized 
 synthesizing or executing each operation. Both the linked runtime and document validation/export use
 it. GCC remains the sole C parser.
 
+The text reader accepts C `isspace` separators, including vertical tab and form feed. These two
+bytes are an input extension beyond JSON's four whitespace characters; generated IR uses ordinary
+JSON whitespace. This permissiveness is separate from strict operation/type schemas. RFC 8259
+[permits parsers to accept extensions](https://www.rfc-editor.org/rfc/rfc8259.html#section-9), but
+this reader is not advertised as a strict JSON lexical-conformance validator.
+
 ## Schema and types
 
 - Every operation and expression has an explicit set of allowed fields. Unknown and duplicate fields

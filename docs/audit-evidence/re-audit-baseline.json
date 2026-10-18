@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "historical_revision": "1ebb2e308e61bed5632798ded5beecf77b6b9a9c",
+  "source_files_compared_with_git": 60,
+  "native": 354,
+  "example_checks": 426,
+  "frontend_compilations": 145,
+  "synthesis_rows": 24,
+  "independent_qasm": 11,
+  "csv_matches": true
+}

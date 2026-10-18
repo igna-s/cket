@@ -1,0 +1,38 @@
+PASS example hello             : five GCC levels, runtime contract and exports
+PASS example entanglement      : five GCC levels, runtime contract and exports
+PASS example find              : five GCC levels, runtime contract and exports
+PASS example search            : five GCC levels, runtime contract and exports
+PASS example search_empty      : five GCC levels, runtime contract and exports
+PASS example coherent          : five GCC levels, runtime contract and exports
+PASS example prepare_measure   : five GCC levels, runtime contract and exports
+PASS example fourier           : five GCC levels, runtime contract and exports
+PASS example phase_estimation  : five GCC levels, runtime contract and exports
+PASS example functions         : five GCC levels, runtime contract and exports
+PASS example circuit_module    : five GCC levels, runtime contract and exports
+PASS example products          : five GCC levels, runtime contract and exports
+PASS example vector_function   : five GCC levels, runtime contract and exports
+PASS example dynamic_vector    : five GCC levels, runtime contract and exports
+PASS example hybrid_loop       : five GCC levels, runtime contract and exports
+PASS example types             : five GCC levels, runtime contract and exports
+PASS example for_sum           : five GCC levels, runtime contract and exports
+PASS example while_sum         : five GCC levels, runtime contract and exports
+PASS example do_while_countdown: five GCC levels, runtime contract and exports
+PASS example nested_for_sum    : five GCC levels, runtime contract and exports
+PASS example register_accumulate: five GCC levels, runtime contract and exports
+PASS example fibonacci         : five GCC levels, runtime contract and exports
+PASS example modular_arithmetic: five GCC levels, runtime contract and exports
+PASS example dot_product       : five GCC levels, runtime contract and exports
+PASS example pair_minimum      : five GCC levels, runtime contract and exports
+PASS example pair_maximum      : five GCC levels, runtime contract and exports
+PASS example minimum_scan      : five GCC levels, runtime contract and exports
+PASS example maximum_scan      : five GCC levels, runtime contract and exports
+PASS example minmax_array      : five GCC levels, runtime contract and exports
+PASS example input_sum         : five GCC levels, runtime contract and exports
+PASS example input_minmax      : five GCC levels, runtime contract and exports
+PASS example measurement_histogram: five GCC levels, runtime contract and exports
+PASS example repeat_until_success: five GCC levels, runtime contract and exports
+PASS example find_multiple     : five GCC levels, runtime contract and exports
+PASS example search_constraints: five GCC levels, runtime contract and exports
+PASS example coherent_accumulate: five GCC levels, runtime contract and exports
+
+1452 checks passed across 36 examples, five optimization levels and CLI/input contracts

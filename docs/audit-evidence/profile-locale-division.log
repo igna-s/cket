@@ -1,0 +1,3 @@
+before: ACCEPT:
+fixed: REJECT: expression has no structured synthesis; truth tables are disabled
+Actual glibc C/Latin-1 profiles: byte 192 is a letter only in Latin-1; the old prover accepted its reachable division by zero.

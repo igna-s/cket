@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "checks": [
+    {
+      "stage": "before",
+      "returncode": 0,
+      "stdout": "PASS QuEST returned pointer inverse=0: 10 wires, all complex amplitudes/private zeros\n",
+      "stderr": "",
+      "qasm_sha256": "afdbd2d7f1f4a3982fd67a03358eb0de9fdb9d695a8c186c75e37232ea574896"
+    },
+    {
+      "stage": "after",
+      "returncode": 0,
+      "stdout": "PASS QuEST returned pointer inverse=1: 10 wires, all complex amplitudes/private zeros\n",
+      "stderr": "",
+      "qasm_sha256": "ff7158f02f644d2d3ab2747ede52a8416cdf0047bdceb47c1d8fe0b6b2f6e7a3"
+    }
+  ],
+  "scope": "Two actual O2/builtin/no-tables prefix/inverse exports, pinned QuEST3.7.0 and finite ordinary C memory model. All complex amplitudes and private zeros checked. The four wider original/coherent profiles retain their separate sparse/labeled proof; not dense 26/32/49-qubit or hardware execution."
+}

@@ -1,0 +1,17 @@
+{
+  "pid": 8402,
+  "linux_start_ticks": 55642,
+  "started_utc": "2026-10-17T14:56:21.725359+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/launch-memory-sequence-full.py",
+  "runner_sha256": "75a915e7d836a730bb6c5ca2d1bdddb53351be846ceb5db793a87f5b1a569064",
+  "source_manifest_sha256": "f4101acfa7f322a9d8897107950347761b003425ca858a2d80529f177575ccc7",
+  "delta_from_scoped_campaign": [
+    "scripts/archive-audit.py",
+    "scripts/build.sh",
+    "scripts/inventory_c11.py",
+    "scripts/sanitize-all.sh",
+    "scripts/verify.sh",
+    "tests/validate_qasm.c"
+  ],
+  "scope": "Fresh full normal and ASan/UBSan verification in the isolated 134-input checkout. Earlier scoped normal/sanitizer and independent export evidence retained unchanged. Compiler implementation and the 360-check validator are byte-identical to those earlier proofs; six pipeline/reference-test inputs changed. Endpoint source checks, not continuous monitoring."
+}

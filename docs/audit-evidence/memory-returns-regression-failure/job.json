@@ -1,0 +1,9 @@
+{
+  "pid": 9860,
+  "linux_start_ticks": 895671,
+  "started_utc": "2026-10-17T17:16:22.007307+00:00",
+  "runner": "/mnt/e/Backup/GitHub/Quantum/build/launch-memory-return-full.py",
+  "runner_sha256": "e4c51d6b2b6339f60692e8f74ec3d4935d5413633499f05bace01075acb540fd",
+  "source_manifest_sha256": "413fe373581a96860d05db7144e6216274de4722f7ac1337ac14b93eab2462bc",
+  "scope": "Fresh complete normal and ASan/UBSan compiler/core/tools and all broad suites on the maintained 136-input pointer worktree. Earlier 134/136-input scoped proofs remain distinct. No main promotion; no new cybersecurity behavior."
+}

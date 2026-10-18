@@ -1,0 +1,21 @@
+{
+  "status": "passed-scoped-maintained",
+  "returncode": 0,
+  "configuration": "sanitized",
+  "checks": 170,
+  "native_checks": 90,
+  "diagnostic_checks": 40,
+  "action_and_inverse_circuits": 40,
+  "state_comparisons_inside_circuits": 80,
+  "ordinary_c_executions_separate": 45,
+  "reused_tools_sha256": {
+    "cket": "9c02e9a2299779b824fff726c7f487ca4c54f25136dfea86b942f1d95c2ea3a5",
+    "cket_backend": "e0a541064e92ef10a7cf0f6a00caf34787097272f821b0c733ceb39431fe08f9",
+    "cket_runtime.o": "c5d151afb01a9835e9cbbce21c43fe031d9bc62c7eb26e35cba148c7e6f1d67e",
+    "cket_plugin.so": "41043e089a58c5ea9f081e58c2bdcc7d65d4202ee3d15c12ead835a512df5ffa",
+    "libcket_quantum.a": "aceebe025dc8091fc2d2e8107bea82ea96ecfba708da5986ad37ac709c3a66dc",
+    "gcc-version.txt": "b20e1ce95de64f1c1c82cb20370952326892e0ec8abe6a79e15cfd0184b5cec1"
+  },
+  "fresh_validator_sha256": "59f748fa0f6f7f215ad9684846a2591df6a714371f7c062d3dfe425cdec6381d",
+  "log_sha256": "0d35e2262b4f1b30a8c871b662c24dd8072527478e25720e2bc8e53bd53756ab"
+}

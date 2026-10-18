@@ -1,0 +1,8 @@
+{
+  "mode": "successful-linux-copy-continuation",
+  "execution_worktree": "/tmp/quantum-audit-isolated-20261017/build/memory-sequence-prototype",
+  "source_manifest_sha256": "f4101acfa7f322a9d8897107950347761b003425ca858a2d80529f177575ccc7",
+  "results": "linux-isolated-resume-v3/progress.json",
+  "original_and_first_resume_exit_codes": null,
+  "scope": "Resumption after a confirmed additional WSL restart. Every closed earlier suite/log is retained and hash-checked; no exit status is invented for stopped invocations. Repository source inputs remain frozen. Fuzz resumption uses an archived temporary driver with unchanged generator/program/oracle/compiler-loop bodies, original seed and all five GCC levels/all 256 byte inputs. It skips only durable, already completed case indices. Aggregate fuzz counts are coverage-checked segmented results, not an uninterrupted invocation of the original fuzzer. No security configuration changes. Another confirmed WSL restart interrupted the final QASM suite (134 inputs) and the memset suite (136 inputs). This segment retains all previously closed steps and reruns only unfinished suites. Earlier invocations have no terminal status; their raw logs remain unchanged."
+}

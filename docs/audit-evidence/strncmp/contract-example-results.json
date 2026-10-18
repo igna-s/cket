@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "scope": "Exact documented example compiled/executed in both configurations; smoke test, not independent semantic validation.",
+  "source_sha256": "a26d206be361904895165c135330712c1e693907b992c313d48c434269965ec6",
+  "checks": [
+    {
+      "configuration": "normal",
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0
+    },
+    {
+      "configuration": "sanitized",
+      "stdout": "",
+      "stderr": "",
+      "returncode": 0
+    }
+  ]
+}

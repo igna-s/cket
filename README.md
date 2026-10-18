@@ -23,16 +23,20 @@ justified incompatible contexts. Quantum compatibility with the entire C library
 incomplete; ordinary libc support is not evidence that libc functions operate on unmeasured quantum
 data.
 
+A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
+what remains partial or pending, and what the available tests demonstrate.
+
 ## Install and build
 
 Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The
 reference Linux environment is Ubuntu 22.04.
 
-Clone the repository, then install the build dependencies:
+Start in a local checkout, then install the build dependencies. The historical source URL
+`https://github.com/igna-s/cket` returned HTTP 404 without authentication on October 14, 2026;
+public download availability could not be verified. For a new checkout, obtain an accessible source
+URL from the maintainer.
 
 ```bash
-git clone https://github.com/igna-s/cket.git
-cd cket
 sudo apt-get update
 sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils
 export CC=gcc-11
@@ -41,12 +45,14 @@ bash scripts/build.sh
 build/cket --version
 ```
 
-If you already have the repository, start in its root directory and skip cloning. Keep `CC` and
-`CXX` set in the terminal where you compile or test.
+Run these commands in the repository root. Keep `CC` and `CXX` set in the terminal where you compile
+or test.
 
 The driver, runtime, backend, engine, and test programs are **C**. The GCC plugin is **C++17**
-because GCC's internal API requires C++; shell scripts coordinate commands. **Python is not
-required**, including for tests. No QPU or external quantum SDK is needed to run a compiled program.
+because GCC's internal API requires C++; shell scripts coordinate commands. The build, runtime and
+compiler/runtime test suite use C/C++ and Bash. Optional formatting, inventory, paper and
+supplementary evidence audits use Python. No QPU or external quantum SDK is needed to run a compiled
+program.
 
 GCC plugin headers must match the compiler. For a custom installation, set `GCC_PLUGIN_INCLUDE` to
 the directory containing `gcc-plugin.h`. The build also recognizes headers extracted under
@@ -171,11 +177,30 @@ cost; no measurement or reset is inserted to erase it.
 circuits. A saved decision chooses the effects and value even when an arm overwrites its condition;
 checked inverses clean decisions and intermediate history.
 
+`memset` has a [checked quantum byte-fill adapter](docs/c11-memset.md) for fixed integer storage,
+with retained overwrite history and once-only value evaluation. Discarded memory calls can compose
+in [comma and lazy expressions](docs/c11-memory-sequences.md).
+[Local checked destination returns](docs/c11-memory-returns.md), constant pointer distances and pure
+CPU predicates inside coherent branches are supported. General returned-pointer consumers, runtime
+counts, dynamic allocation and general layouts remain pending.
+
 `memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole integer
 elements and constant extents. Known basis destinations use reversible translation and copying;
 `memmove` checks read-before-write overlap. Coherent controls are supported without hidden channels.
-General byte layouts, unknown overwritten values, dynamic extents and returned-pointer uses remain
-pending.
+Local checked return borrows preserve destination identity. General byte layouts, unknown
+overwritten values, dynamic extents and unrestricted returned-pointer consumers remain pending.
+
+`strncmp` has a [bounded coherent character adapter](docs/c11-strncmp.md): it stops at a first
+difference or an equal NUL while preserving input bits and relative phases. Constant checked ranges,
+integer object bytes, immutable constants and
+[current CPU byte snapshots](docs/c11-byte-snapshots.md) are supported. Known CPU storage is
+captured once, with disabled suffix loads after its own NUL. Dynamic counts/addresses and general
+quantum layouts remain pending.
+
+`memcmp` has a [coherent byte-comparison adapter](docs/c11-memcmp.md) for checked integer storage,
+constant byte views, immutable constants and current bytes of known CPU objects. It preserves
+inputs, relative phases and saved inverses, with no implicit measurement/reset. Dynamic ranges,
+volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls remain pending.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
@@ -186,10 +211,11 @@ for pure quantum arguments, captured CPU arguments and fresh quotient/remainder 
 power-of-two division uses table-free bit views and signed rounding corrections. General quantum
 product ABI and wider resource budgets remain open.
 
-The [C-locale character contract](docs/c11-ctype.md) adds partial adapters for all fourteen
-`ctype.h` interfaces. Its 635 checks contrast every byte, masks, phases, inverse cleanup,
-functions/memory/control combinations, explicit observation and native classical behavior. General
-locale snapshots and the full C11/library objective remain open.
+The [immutable character-profile contract](docs/c11-ctype.md) adds partial adapters for all fourteen
+`ctype.h` interfaces. Its 1815 checks cover three byte locales, exact masks, phases, saved cleanup,
+functions/memory/control combinations, thread locales and immutable circuit modules. Static exports
+require an explicit locale or frozen profile artifact. Wide characters, indirect calls, automatic
+locale traces, concurrency and the full C11/library objective remain open.
 
 [CPU integer bindings and classical product preparation](docs/c11-bindings.md) capture values once
 and retain them for cleanup. Changing a CPU variable afterward does not change a saved inverse.
@@ -509,7 +535,7 @@ bash scripts/test.sh
 For the complete reproducible check, including independent QASM validation and sanitizers:
 
 ```bash
-sudo apt-get install -y curl ca-certificates
+sudo apt-get install -y curl ca-certificates locales
 bash scripts/verify.sh
 ```
 
@@ -518,15 +544,18 @@ differentials, measures synthesis growth with tables disabled, validates exporte
 independently, and repeats checks with ASan/UBSan. Logs remain in `build/verify-*.log`. To enlarge
 the frontend campaign, use `CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh`.
 
+Character-profile tests use `localedef` and glibc locale sources to create an isolated Latin-1
+fixture inside the validation workspace, with a private `LOCPATH`.
+
 Independent validation builds the serial **C** backend of
 [QuEST 3.7.0](https://github.com/QuEST-Kit/QuEST/releases/tag/v3.7.0), pinned to commit
 `d4f75f724993b4af8e43a796e3c09ce24ae11670`, with SHA-256
 `1a5939798a70b749dfa57cfaa116ece03a2d36aa59c1b712cb3dc2103ab1cded`. Downloaded sources and their
 license stay under `build/validation-deps/`; the compiler/runtime never link QuEST.
 
-Validation includes 391 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 51 independent QASM cases exported
-without tables. QASM cases check 45 complete states/final probabilities and six
+Validation includes 393 native checks; 36 examples at five optimization levels; a default frontend
+corpus of 29 programs at five levels; 24 growth circuits; and 70 independent QASM cases exported
+without tables. QASM cases check 64 complete states/final probabilities and six
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
@@ -557,6 +586,55 @@ uses an explicit measurement boundary; the test does not certify quantum adapter
 library. The [interface index](docs/c11-library.json) and [roadmap](docs/c11-roadmap.md) record the
 remaining work. The [repository and paper audit](docs/repository-audit.md) records reproduced bugs,
 fixes, campaign scopes and the distinction between historical and current evidence.
+
+`build/validate_library` additionally checks unsupported contexts across 210 libc interfaces: each
+fixture must first compile as ordinary C, then receive a quantum semantic diagnostic at all five
+optimization levels with builtins enabled and disabled (2100 checks). These rejections establish
+boundaries, not implemented adapters. `build/validate_profiles` has 96 branch-proof regressions,
+including distinct immutable character profiles, guarded division, complete phased states and
+inverse cleanup. The frontend generator compares every generated expression with C over all 256 byte
+inputs at each optimization level; basis-value coverage is separate from coherent amplitude
+validation.
+
+`build/validate_memset` adds 800 checked fill tests: dense states and inverses, complete labeled
+paths, sequenced value effects, native programs, rejected boundaries and wide generation.
+`build/validate_memory_sequences` adds 360 checks of discarded memory calls in comma and lazy
+expressions. Both suites run in the normal and sanitizer pipelines. The
+[memory follow-up](docs/re-audit-2026-10-17-memory-expressions.md) records the complete isolated
+134-input campaign, completed in segments, and separate fresh main checks. These remain partial
+memory contracts.
+
+`build/validate_byte_snapshots` adds 650 checks of current CPU bytes, actual captures and saved
+inverses, protected-page/NUL guards, native C, rejected boundaries and template/export contracts.
+The [snapshot follow-up](docs/re-audit-2026-10-17-byte-snapshots.md) records the fresh complete
+normal/ASan/UBSan campaign, exact source identity and separate main-tree smoke checks. Cybersecurity
+operations remain classical and outside this quantum adaptation.
+
+`build/validate_strncmp` adds 246 bounded string checks: complete phased states/inverses, native C,
+diagnostic contracts and separate wide generation. The
+[string follow-up](docs/re-audit-2026-10-15-strings.md) distinguishes the source-identical isolated
+integration from its main-tree checks. Full signed 32-bit comparison results also have separate
+sparse-circuit and labeled-basis evidence beyond the 24-qubit dense simulation limit.
+
+`build/validate_memcmp` checks byte comparisons with complete phased states and inverses, all 256
+byte inputs in native executables, contract rejections and separate 16/32/64-bit no-table
+generation. The [comparison contract](docs/c11-memcmp.md) defines object byte order, aliases, bounds
+and the remaining memory/ABI work.
+
+`build/validate_numeric_locale` adds 70 checks of JSON phase numbers, controlled/global QASM
+decimals, phase interference/inverses and locale restoration after output errors. Global and
+per-thread comma-decimal locales work without changing the caller's numeric conventions. These
+checks were repeated with the native/example, character, profile and QuEST suites in normal and
+ASan/UBSan builds. The [evidence guide](docs/audit-evidence/README.md) distinguishes the broad
+snapshot, the targeted correction and the latest byte-comparison verification segments, preserving
+the exact sources of each. The [follow-up report](docs/re-audit-2026-10-15-memory.md) records the
+normal importer capacity failure, its correction and subsequent normal/ASan/UBSan evidence.
+
+For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
+`--require-complete` mode deliberately fails while any interface remains pending or partial. The
+current index contains 1224 interfaces: 782 pending, 74 partial and 368 metadata facilities. The
+index covers the named C11 profile, including optional facilities; it is not an implementation or a
+test result for each entry.
 
 Independent state comparisons allow one common global phase and use amplitude tolerance `1e-10`.
 These finite checks provide evidence for the accepted subset; they are not a formal proof or
@@ -602,4 +680,4 @@ For implementation details, read the [language contract](docs/language.md),
 
 The project uses the [MIT license](LICENSE). Contributions follow
 [CONTRIBUTING.md](CONTRIBUTING.md); vulnerability reports follow [SECURITY.md](SECURITY.md).
-Repository documentation is in English.
+Repository documentation is primarily in English.

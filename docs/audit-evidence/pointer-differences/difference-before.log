@@ -1,0 +1,7 @@
+/tmp/quantum-audit-isolated-20261017/build/pointer-difference-prototype/build/difference-before.c: In function ‘main’:
+/tmp/quantum-audit-isolated-20261017/build/pointer-difference-prototype/build/difference-before.c:6:15: error: |c>: quantum reference cannot escape to CPU memory or be rebound without a checked borrow
+    6 |     uint16_t *p = memmove(a + 1, a, 2);
+      |               ^
+/tmp/quantum-audit-isolated-20261017/build/pointer-difference-prototype/build/difference-before.c:5:20: error: |c>: quantum products cannot decay to CPU pointers or be read as a whole; access their elements
+    5 |     quant uint16_t a[2] = {1, 2};
+      |                    ^
