@@ -33,6 +33,19 @@ builtins. El octavo caso, la condición anidada, sí pasó. También queda pendi
 un puntero CPU inválido en una rama inactiva. La corrección tiene un alcance concreto; las
 regresiones anteriores no demuestran ausencia de todos los bugs.
 
+**Hay una corrección nueva en un candidato separado; no está integrada.** Pasaron 1270
+comprobaciones normales y otras 1270 con ASan/UBSan, además de 8000 comprobaciones independientes de
+estados complejos e inversas. Los
+[resultados específicos](audit-evidence/controlled-operands-maintained/README.es.md) separan 1000
+ejecuciones nativas definidas, 260 diagnósticos y 10 ejecuciones de homónimos por configuración; las
+referencias C se registran aparte. El candidato corrige seis perfiles enteros de su matriz, pero su
+[regresión amplia](audit-evidence/controlled-operands-regression-failure/README.es.md) encontró
+**dos regresiones**: un XOR booleano controlado se rechaza y un bucle estático supera el límite
+nativo de 24 qubits. La primera suite nativa terminó con 391 casos exitosos y dos fallos. Falta
+corregirlos, completar la regresión e integrar el cambio. `phase`, las cargas CPU inválidas y los
+contratos generales de C11 siguen pendientes. Las comprobaciones específicas no sustituyen la
+regresión amplia.
+
 ## Qué significa que una operación cuántica esté implementada
 
 Agregar `quant` o aceptar una llamada en el compilador no alcanza. Para los casos soportados, el
@@ -210,9 +223,11 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo bloque de memoria es completar y verificar los consumidores de punteros devueltos, además
-de los contratos generales de tamaños, layouts y efectos. Después continúa el trabajo por familias
-pendientes. **Este lote ya integrado no completa C11 cuántico ni el objetivo general.**
+El próximo paso concreto es corregir las dos regresiones del candidato de operandos controlados,
+completar sus pruebas amplias e integrar el cambio. También quedan `phase`, las cargas CPU
+inválidas, los consumidores generales de punteros devueltos y los contratos de tamaños, layouts y
+efectos. Después continúa el trabajo por las demás familias pendientes. **Este lote ya integrado no
+completa C11 cuántico ni el objetivo general.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

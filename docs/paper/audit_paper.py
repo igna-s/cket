@@ -673,6 +673,56 @@ def main(language):
         and all(row['ordinary_c_returncode'] == 0 for row in arm_failures)
         and 'siete fallos' in re.sub(r'\s+', ' ', overview),
     )
+    controlled = json.loads(
+        (ROOT / 'docs/audit-evidence/controlled-operands/experimental-summary.json').read_text()
+    )
+    controlled_v4 = controlled['versions']['v4']
+    controlled_maintained = json.loads(
+        (
+            ROOT / 'docs/audit-evidence/controlled-operands-maintained/maintained-summary.json'
+        ).read_text()
+    )
+    controlled_failure = json.loads(
+        (
+            ROOT / 'docs/audit-evidence/controlled-operands-regression-failure/failure-summary.json'
+        ).read_text()
+    )
+    check(
+        'Candidate operands: finite native and complete-state scopes remain distinct from main',
+        controlled_v4['status'] == 'verified-scoped'
+        and all(
+            row['defined_native_executions'] == 1000 and row['undefined_domain_diagnostics'] == 200
+            for row in controlled_v4['native_configurations']
+        )
+        and sum(row['checks'] for row in controlled_v4['states'].values()) == 8000
+        and controlled_v4['source_sha256'] != current_integration['source_sha256'],
+    )
+    check(
+        'Candidate operands: maintained C suite does not certify full compatibility',
+        controlled_maintained['status'] == 'verified-scoped-maintained'
+        and controlled_maintained['source_files'] == 138
+        and sum(
+            value
+            for key, value in controlled_maintained['checks_per_configuration'].items()
+            if key != 'ordinary_c_executions_separate'
+        )
+        == 1270
+        and all(
+            controlled_maintained['source_sha256'][name] == controlled_v4['source_sha256'][name]
+            for name in ('src/quantum_frontend.inc', 'src/quantum_semantics.inc')
+        ),
+    )
+    check(
+        'Candidate operands: two actual broad failures prevent promotion',
+        controlled_failure['status'] == 'failed-broad-candidate-not-integrated'
+        and controlled_failure['exit_code'] == 1
+        and controlled_failure['source_sha256'] == controlled_maintained['source_sha256']
+        and controlled_failure['native_passed'] == 391
+        and controlled_failure['native_failed'] == 2
+        and [row['returncode'] for row in controlled_failure['commands']] == [0, 1]
+        and 'dos regresiones' in overview
+        and 'no está integrada' in overview,
+    )
     targets = [
         *SOURCES.values(),
         *PDFS.values(),
@@ -701,6 +751,9 @@ def main(language):
                 'coherent-cpu-conditions-maintained',
                 'coherent-memory-integration',
                 'coherent-arm-operands',
+                'controlled-operands',
+                'controlled-operands-maintained',
+                'controlled-operands-regression-failure',
             )
             for path in (ROOT / 'docs/audit-evidence' / folder).iterdir()
             if path.is_file()

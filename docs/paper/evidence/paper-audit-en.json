@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 352,
+  "checks": 355,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1766,13 +1766,28 @@
       "check": "Current audit: seven controlled-body failures remain disclosed despite the condition fix",
       "passed": true,
       "detail": ""
+    },
+    {
+      "check": "Candidate operands: finite native and complete-state scopes remain distinct from main",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Candidate operands: maintained C suite does not certify full compatibility",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Candidate operands: two actual broad failures prevent promotion",
+      "passed": true,
+      "detail": ""
     }
   ],
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
     "source_files_in_manifest": 182,
-    "execution_scope": "Current main has 137 source inputs. Fresh normal and ASan/UBSan builds in a separate source-identical integration copy passed targeted suites and the 180-execution CPU-condition matrix per configuration. Broad regression is still pending. Seven controlled-body operand failures and invalid inactive CPU-memory reads remain disclosed. Historical papers and 134-input bug evidence keep their original identities. Windows source import is separately hash-guarded; it is not a second regression execution. Cybersecurity unchanged."
+    "execution_scope": "Integrated137 targeted checks remain separate from candidate138. The controlled-operand candidate passes1270 scoped checks per normal/sanitizer configuration and8000 independent states/inverses, but its fresh broad normal native suite fails391/2. No candidate promotion or broad pass. Historical source identities and paper experiments preserved. Windows import is hash-guarded, not a repeated test execution. Cybersecurity classical and unchanged."
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

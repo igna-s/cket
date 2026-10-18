@@ -1,0 +1,42 @@
+[
+  {
+    "name": "phase-angle",
+    "ordinary_c_returncode": 0,
+    "compilers": [
+      {
+        "compiler": "integrated137",
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "run_returncode": -8,
+        "run_stderr": ""
+      },
+      {
+        "compiler": "prototype-v4",
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "run_returncode": -8,
+        "run_stderr": ""
+      }
+    ]
+  },
+  {
+    "name": "invalid-cpu-read",
+    "ordinary_c_returncode": 0,
+    "compilers": [
+      {
+        "compiler": "integrated137",
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "run_returncode": -11,
+        "run_stderr": ""
+      },
+      {
+        "compiler": "prototype-v4",
+        "compile_returncode": 0,
+        "compile_stderr": "",
+        "run_returncode": -11,
+        "run_stderr": ""
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "status": "preparation-anchor-ambiguity-preserved",
+  "returncode": 1,
+  "original_runner_sha256": "93436737fad6a186962c7900d509605a65b057ee799251881246af5ab6d25d78",
+  "reason": "The unanchored execution line also matched the output path in the compile command. No compiler/test failure occurred; only preparation had stopped before formatting and freezing."
+}

@@ -1,0 +1,17 @@
+{
+  "status": "failed-broad-campaign",
+  "started_utc": "2026-10-18T15:01:36.644679+00:00",
+  "source_files": 138,
+  "source_manifest_sha256": "3c6ddb5bfe1589091e6769ebb32c3c77b06e9e13ead0a8acbb02cfd9b6f23dec",
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 138 frozen inputs. Repository validation commands run as individually recorded suites, rather than one scripts/verify.sh process. Fuzz cases are split into archived derived-driver ranges; original generator/program/oracle and all 133 case indices, five levels, 256 inputs and seed 20261012 are retained. Counts are explicit aggregates. Adds 1270 controlled-operand checks/configuration after its separate scoped normal/sanitizer/phase evidence. Prior scoped core files exist but both core configurations are rebuilt in this fresh campaign. Phase-angle and inactive invalid CPU reads remain pending. No main promotion, complete C11, hardware or speedup claim. No security configuration changes.",
+  "normal_fresh_core_sha256": {
+    "cket": "422b9d1e90084672f74b61d66f61874b83da077b12c12a06ef40f160c23d4012",
+    "cket_backend": "cdcd41ad690169acc0c48b223419039077064bc12075a10235a925add44edd81",
+    "cket_plugin.so": "7ec40ca3572646e2ec6b0ee0e9cb234a75862562e230924dca05af6e02eb66a6",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "907361a217f5e211c8434a910dcf6d0032c0cf9f9e34f819460ab05fe32fcf61"
+  },
+  "exit_code": 1,
+  "error": "AssertionError({'name': 'normal-native', 'command': ['/tmp/quantum-audit-isolated-20261017/build/coherent-body-maintained/build/cket_tests', '/tmp/quantum-audit-isolated-20261017/build/coherent-body-maintained'], 'started_utc': '2026-10-18T15:02:00.991742+00:00', 'finished_utc': '2026-10-18T15:02:21.926116+00:00', 'returncode': 1, 'log': '002-normal-native.log', 'log_sha256': '1a320b853ea3fe4b7b59e513c33f5122ee2178a9075fba4b2d2540226e5904ac'})",
+  "finished_utc": "2026-10-18T15:02:21.927573+00:00"
+}

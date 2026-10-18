@@ -1,0 +1,8 @@
+2026-10-18T15:01:36.680372+00:00 fresh-normal-build
+2026-10-18T15:02:00.991742+00:00 normal-native
+Traceback (most recent call last):
+  File "/tmp/quantum-audit-isolated-20261017/build/run-controlled-full.py", line 111, in <module>
+    step(configuration + '-' + name, argv, extra, patterns[name])
+  File "/tmp/quantum-audit-isolated-20261017/build/run-controlled-full.py", line 62, in step
+    assert result.returncode == 0, row
+AssertionError: {'name': 'normal-native', 'command': ['/tmp/quantum-audit-isolated-20261017/build/coherent-body-maintained/build/cket_tests', '/tmp/quantum-audit-isolated-20261017/build/coherent-body-maintained'], 'started_utc': '2026-10-18T15:02:00.991742+00:00', 'finished_utc': '2026-10-18T15:02:21.926116+00:00', 'returncode': 1, 'log': '002-normal-native.log', 'log_sha256': '1a320b853ea3fe4b7b59e513c33f5122ee2178a9075fba4b2d2540226e5904ac'}
