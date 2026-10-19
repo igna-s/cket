@@ -1,5 +1,13 @@
 # Auditoría del repositorio y de los papers
 
+La [integración de limpieza de temporales](audit-evidence/known-fill-cleanup-v2/README.es.md) reúne
+146 entradas. Conserva definiciones invertibles para llenados conocidos sin observaciones o
+transformaciones en la función y mantiene la ruta mutable de los casos observados. Pasaron las seis
+suites dirigidas normales y ASan/UBSan, incluidas 940 comprobaciones de llenado por configuración,
+3528 estados independientes de limpieza y 20 ejecuciones exactas tras reconstruir la raíz Linux. La
+campaña completa y el CI de estas entradas siguen pendientes. El experimento separado de llenado
+parcial de 64 bits falló por recursos; su prefijo positivo no se presenta como cierre.
+
 La [integración del 19 de octubre](audit-evidence/strings-integration-v6/README.es.md) reúne 144
 entradas y añade `strlen`/`strcmp` parciales, ángulos diferidos de `phase` y cargas CPU protegidas
 bajo controles probadamente inactivos. Pasaron sus pruebas dirigidas normales y con ASan/UBSan,

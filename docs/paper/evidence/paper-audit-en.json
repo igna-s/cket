@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 381,
+  "checks": 387,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1103,6 +1103,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/quantum_lifetimes.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/quantum_memory.inc",
       "passed": true,
       "detail": ""
@@ -1159,6 +1164,11 @@
     },
     {
       "check": "Fuente local tests/memset_effects.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/memset_lifetimes.inc",
       "passed": true,
       "detail": ""
     },
@@ -1868,22 +1878,22 @@
       "detail": ""
     },
     {
-      "check": "Current144 compiler: exact applied inputs have closed targeted checks; broad regression remains pending",
+      "check": "Historical144 compiler: exact archived inputs have closed targeted checks; larger local regression remains separate",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current144 strings and CPU loads: independent complex states and native load matrices keep separate scopes",
+      "check": "Historical144 strings and CPU loads: independent complex states and native load matrices keep separate scopes",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses",
+      "check": "Historical144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current144 inventory: strlen and strcmp remain partial; complete C11 is not claimed",
+      "check": "Current inventory: strlen and strcmp remain partial; complete C11 is not claimed",
       "passed": true,
       "detail": ""
     },
@@ -1894,6 +1904,26 @@
     },
     {
       "check": "Integrated144 CI: exact committed inputs passed 28 normal/sanitizer suites; expanded local fuzzing remains separate",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current146 compiler: exact applied inputs passed targeted checks and fresh root contracts; full regression pending",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current146 scope proof: full states check actual compiler cleanup; explicit C inverses and unknown retained roots keep their scope",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current146 segmented qualification: previous processes have no fabricated success; only unclosed suites repeat",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current146 signed fill: checked word prefix stays separate from failed64-bit resource experiment",
       "passed": true,
       "detail": ""
     },
@@ -1916,7 +1946,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 191
+    "source_files_in_manifest": 193
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

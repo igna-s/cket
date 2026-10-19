@@ -1,0 +1,30 @@
+{
+  "normal": {
+    "actual_status": "failed-independent-signed-fill-cleanup",
+    "exit_code": 1,
+    "completed_captures_before_failure": 100,
+    "completed_state_checks_before_failure": 300,
+    "ordinary_c_executions_including_failed_case_reference": 51,
+    "validated_prefix_widths": [
+      8,
+      16,
+      32
+    ],
+    "failure": "signed64 low-byte fill reached the128-physical-qubit limit at O0/builtin; the wide proof did not pass",
+    "error": "AssertionError((['/tmp/quantum-audit-isolated-20261017/build/known-fill-cleanup-v2/build/signed-fill-cleanup-normal-v1/signed64-bytes1-O0-builtin'], 1, 'compiled runtime capture: gate IR is limited to 128 physical qubits\\n'))"
+  },
+  "sanitized": {
+    "actual_status": "failed-independent-signed-fill-cleanup",
+    "exit_code": 1,
+    "completed_captures_before_failure": 100,
+    "completed_state_checks_before_failure": 300,
+    "ordinary_c_executions_including_failed_case_reference": 51,
+    "validated_prefix_widths": [
+      8,
+      16,
+      32
+    ],
+    "failure": "signed64 low-byte fill reached the128-physical-qubit limit at O0/builtin; the wide proof did not pass",
+    "error": "AssertionError((['/tmp/quantum-audit-isolated-20261017/build/known-fill-cleanup-v2/build/signed-fill-cleanup-sanitized-v1/signed64-bytes1-O0-builtin'], 1, 'compiled runtime capture: gate IR is limited to 128 physical qubits\\n'))"
+  }
+}

@@ -424,8 +424,11 @@ void finish_function(void *event, void *) {
     controls.clear();
     dynamic_depth = 0;
     cpu_branches.clear();
-    if (has_quantum)
+    observed_quantum_outputs.clear();
+    if (has_quantum) {
         walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
+        observed_quantum_outputs = observed_storage_dependencies(DECL_SAVED_TREE(fn));
+    }
     if (name_of(fn) != "main" && !has_quantum) {
         auto quantum_effect = [](tree *node, int *walk, void *) -> tree {
             std::string effect = intrinsic(*node);
@@ -455,6 +458,7 @@ void finish_function(void *event, void *) {
     // Per-call analysis is discarded; saved function templates are explicitly
     // marked through PLUGIN_GGC_MARKING. The emitted IR contains no GCC trees.
     variables.clear();
+    observed_quantum_outputs.clear();
     quantum_snapshot_updates.clear();
     quantum_products.clear();
     quantum_division_products.clear();

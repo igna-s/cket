@@ -13,6 +13,7 @@ typedef struct {
 
 static const memset_case native_cases[] =
     {
+#include "memset_lifetimes.inc"
         {"classical",
          "#include <string.h>\nint main(void){unsigned char a[7];void *p=memset(a,-1,sizeof a);unsigned e=p!=a;for(unsigned i=0;i<7;++i)e+=a[i]!=255;return e!=0;}\n",
          NULL,

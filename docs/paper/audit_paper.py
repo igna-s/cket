@@ -9,6 +9,7 @@ import json
 import math
 import re
 import subprocess
+import tarfile
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -853,18 +854,22 @@ def main(language):
     string_integration = json.loads(
         (ROOT / 'docs/audit-evidence/strings-integration-v6/integration-summary.json').read_text()
     )
+    with tarfile.open(
+        ROOT / 'docs/audit-evidence/strings-integration-v6/sources.tar.gz'
+    ) as archive:
+        archived144 = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in string_integration['source_sha256']
+        }
     check(
-        'Current144 compiler: exact applied inputs have closed targeted checks; broad regression remains pending',
+        'Historical144 compiler: exact archived inputs have closed targeted checks; larger local regression remains separate',
         string_integration['status'] == 'verified-targeted-applied-broad-pending'
         and string_integration['source_files'] == len(string_integration['source_sha256']) == 144
         and string_integration['targeted_commands_closed_zero'] == 18
         and string_integration['exact_documented_program_executions'] == 40
         and string_integration['broad_campaign_at_archive']['status'] == 'running'
         and string_integration['broad_campaign_at_archive']['planned_commands'] == 80
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in string_integration['source_sha256'].items()
-        )
+        and archived144 == string_integration['source_sha256']
         and [
             name
             for name, digest in string_integration['source_sha256'].items()
@@ -873,7 +878,7 @@ def main(language):
         == ['scripts/archive-audit.py'],
     )
     check(
-        'Current144 strings and CPU loads: independent complex states and native load matrices keep separate scopes',
+        'Historical144 strings and CPU loads: independent complex states and native load matrices keep separate scopes',
         string_integration['checks_per_configuration']
         == {
             'bindings': 519,
@@ -900,7 +905,7 @@ def main(language):
         ),
     )
     check(
-        'Current144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses',
+        'Historical144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses',
         set(string_integration['independent_compiled_cpu_load_states']) == {'normal', 'sanitized'}
         and all(
             row['captures'] == 280
@@ -912,7 +917,7 @@ def main(language):
     )
     current_index = json.loads((ROOT / 'docs/c11-library.json').read_text())
     check(
-        'Current144 inventory: strlen and strcmp remain partial; complete C11 is not claimed',
+        'Current inventory: strlen and strcmp remain partial; complete C11 is not claimed',
         string_integration['inventory']
         == {
             'headers': 29,
@@ -973,6 +978,87 @@ def main(language):
         and integrated144_ci['normal_and_sanitized']['fuzz_seed'] == 20261011
         and all(job['conclusion'] == 'success' for job in integrated144_ci['jobs']),
     )
+    fill_integration = json.loads(
+        (ROOT / 'docs/audit-evidence/known-fill-cleanup-v2/integration-summary.json').read_text()
+    )
+    fill_segments = json.loads(
+        (ROOT / 'docs/audit-evidence/known-fill-cleanup-v2/targeted-segments.json').read_text()
+    )
+    check(
+        'Current146 compiler: exact applied inputs passed targeted checks and fresh root contracts; full regression pending',
+        fill_integration['status'] == 'verified-targeted-segmented-applied-broad-pending'
+        and fill_integration['source_files'] == len(fill_integration['source_sha256']) == 146
+        and fill_integration['previous_integrated_source_sha256'] == archived144
+        and len(fill_integration['changed_sources']) == 6
+        and fill_integration['checks_per_configuration']
+        == {
+            'memset': 940,
+            'native': 393,
+            'controlled_operands': 1270,
+            'history': 2332,
+            'inplace': 271,
+            'memory_sequences': 360,
+        }
+        and fill_integration['root_verification']['fresh_root_build'] == 'passed'
+        and fill_integration['root_verification']['exact_program_executions'] == 20
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in fill_integration['source_sha256'].items()
+        )
+        and all(
+            hashlib.sha256(
+                (ROOT / 'docs/audit-evidence/known-fill-cleanup-v2' / (name + '.c')).read_bytes()
+            ).hexdigest()
+            == digest
+            for name, digest in fill_integration['root_verification'][
+                'exact_program_source_sha256'
+            ].items()
+        ),
+    )
+    check(
+        'Current146 scope proof: full states check actual compiler cleanup; explicit C inverses and unknown retained roots keep their scope',
+        set(fill_integration['independent_compiled_scope_states']) == {'normal', 'sanitized'}
+        and all(
+            row['captures'] == 588
+            and row['ordinary_c_executions'] == 294
+            and row['complete_state_checks'] == 1764
+            and row['maximum_amplitude_error'] < 1e-10
+            for row in fill_integration['independent_compiled_scope_states'].values()
+        ),
+    )
+    check(
+        'Current146 segmented qualification: previous processes have no fabricated success; only unclosed suites repeat',
+        fill_integration['targeted_commands_closed_zero'] == 56
+        and set(fill_segments) == {'normal', 'sanitized'}
+        and all(
+            row['initial']['status'] == 'running'
+            and row['continuation']['status'] == 'passed-in-segments'
+            and row['continuation']['exit_code'] == 0
+            and row['initial']['source_sha256']
+            == row['continuation']['source_sha256']
+            == fill_integration['source_sha256']
+            and row['continuation']['previous_job']['boot_id']
+            != row['continuation']['current_boot_id']
+            and len(row['initial']['commands']) + len(row['continuation']['commands']) == 28
+            and all(
+                command['returncode'] == 0
+                for command in [*row['initial']['commands'], *row['continuation']['commands']]
+            )
+            for row in fill_segments.values()
+        ),
+    )
+    check(
+        'Current146 signed fill: checked word prefix stays separate from failed64-bit resource experiment',
+        set(fill_integration['signed_word_prefix_and_resource_failure']) == {'normal', 'sanitized'}
+        and all(
+            row['exit_code'] == 1
+            and row['completed_captures_before_failure'] == 100
+            and row['completed_state_checks_before_failure'] == 300
+            and row['validated_prefix_widths'] == [8, 16, 32]
+            and 'limited to 128 physical qubits' in row['error']
+            for row in fill_integration['signed_word_prefix_and_resource_failure'].values()
+        ),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -984,6 +1070,7 @@ def main(language):
         ('deferred-phase-v6-broad-failure', phase_broad_failure),
         ('strings-integration-v6', string_integration),
         ('integrated144-remote-ci', integrated144_ci),
+        ('known-fill-cleanup-v2', fill_integration),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1042,6 +1129,7 @@ def main(language):
                 'integrated137-remote-ci',
                 'integrated138-remote-ci',
                 'integrated144-remote-ci',
+                'known-fill-cleanup-v2',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

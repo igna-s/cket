@@ -30,7 +30,7 @@ The [controlled-operand contract](docs/c11-controlled-operands.md) covers suppor
 operands in coherent assignments, XOR, addition, standard integer absolutes and byte fill. Its
 [audit report](docs/re-audit-2026-10-18-controlled-operands.md) records complete normal/sanitizer
 regression and separate installation checks for its historical 138 inputs. The
-[current 144-input integration](docs/audit-evidence/strings-integration-v6/README.es.md) adds
+[previous 144-input integration](docs/audit-evidence/strings-integration-v6/README.es.md) adds
 guarded CPU loads, deferred supported `phase` angles, and partial
 [`strlen`/`strcmp`](docs/c11-strings.md) adapters. Its targeted normal/sanitizer checks and
 independent string states passed. Its
@@ -38,6 +38,12 @@ independent string states passed. Its
 normal/sanitizer suites on the same compiler inputs. The larger local campaign with 665 fuzz
 compilations per configuration remains pending after an interrupted WSL session; its continuation
 preserves the closed prefix. Complete quantum C11 remains open.
+
+The [current 146-input integration](docs/audit-evidence/known-fill-cleanup-v2/README.es.md) fixes
+automatic cleanup of unobserved known-basis `memset` temporaries. Its targeted normal/sanitizer
+suites passed, including 940 fill checks per configuration and 3528 separate complete-state checks
+of compiled scope cleanup. A fresh Linux root build passed 20 exact contract executions. The full
+regression and remote CI for these new inputs remain pending; the earlier CI verifies 144 inputs.
 
 ## Install and build
 

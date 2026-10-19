@@ -26,8 +26,10 @@ or a claim that the first groups are already complete.
    results and cleanup. The declared target's widths and plain-`char` signedness must remain
    explicit.
 1. Close the common consuming contexts: conditions, loops, direct functions, arrays, basic structs,
-   checked pointers, and frequent memory/string operations. Finish the `memset` lifetime correction
-   already in validation before starting another library family. Keep ordinary C behavior intact.
+   checked pointers, and frequent memory/string operations. The `memset` temporary-lifetime
+   correction now has a
+   [146-input targeted integration](audit-evidence/known-fill-cleanup-v2/README.es.md); its full
+   regression remains pending. Keep ordinary C behavior intact.
 1. Implement the next common capabilities, including quantum `float`/`double`, their conversions and
    ordinary arithmetic, dynamic storage and general pointer/function use. Publish precise contracts
    for classical I/O boundaries. Existing CPU floating angles for `phase` do not implement quantum
@@ -378,9 +380,15 @@ per configuration and 640 separate independent compiled-circuit states across no
 The current integration adds supported deferred CPU phase arithmetic and guarded pure CPU loads. Its
 larger local regression remains pending after a WSL interruption, while its
 [remote CI](audit-evidence/integrated144-remote-ci/README.es.md) passed all 28 normal/sanitizer
-suites on the same 144 compiler inputs. The remote145 and local665 fuzz compilations per
-configuration have different seeds and remain separate evidence. These additions do not close the
-string, memory, floating-point or general library milestones.
+suites on the same 144 compiler inputs. Remote fuzzing uses 145 compilations per configuration; the
+expanded local campaign uses 665. Their seeds differ and their evidence remains separate. These
+additions do not close the string, memory, floating-point or general library milestones.
+
+The current 146-input integration adds cleanup for known `memset` temporaries, with six targeted
+normal/sanitizer suites, 3528 independent compiled-scope states and 20 separate root contract
+executions. Its full campaign and remote CI remain pending. A 64-bit partial-fill experiment failed
+at the physical budget; its checked 8/16/32-bit prefix remains separate from that failure. This does
+not close M2/M4 or the lifetime work. The later small-constant-remainder prototype remains separate.
 
 The project goal remains open until the inventory has implemented, validated coverage or a reasoned
 incompatible-context contract for every C11 item of the declared target. Resource limits must have

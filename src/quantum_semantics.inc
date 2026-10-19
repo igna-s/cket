@@ -1246,6 +1246,8 @@ void versioned_assignment(Variable &var,
     ++var.epoch;
 }
 
+#include "quantum_lifetimes.inc"
+
 tree lower_node(tree value);
 
 void invalidate_cpu_ranges() {
@@ -1924,6 +1926,12 @@ tree lower_node(tree value) {
                                        ",\"value\":" + std::to_string(full ^ entry.second) + "}]}";
                     pattern =
                         "{\"op\":\"bor\"" + type + ",\"args\":[" + kept + ',' + pattern + "]}";
+                }
+                if (reuse_basis && !observed_quantum_outputs.count(target.decl)) {
+                    active_cpu_parameters = fill_parameters;
+                    compute_known_storage(
+                        target, cast_result(pattern, target), dependencies, at(value), &list);
+                    continue;
                 }
                 if (reuse_basis) {
                     active_cpu_parameters.clear();

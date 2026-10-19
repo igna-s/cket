@@ -37,7 +37,11 @@ checked zero-length cases. General pointer validation and currently rejected lay
 Writing a fixed byte over an unknown quantum value cannot erase its previous information as a
 unitary operation. The adapter preserves the old owner as history and computes a new current value.
 An independent destination already known to be a basis value can reuse its wires by reversibly
-removing that known value and applying the new pattern.
+removing that known value and applying the new pattern. For known destinations that do not feed an
+observation or transform anywhere in the function, the compiler retains a computed definition and
+automatically inverts it when the temporary becomes unused. Its conservative dependency analysis
+preserves the existing mutable route for observed/transformed values and their sources. More precise
+analysis of observation order and general lifetime contexts remains pending.
 
 Coherent conditions select the writes and the supported quantum argument effects without a hidden
 measurement or reset. Inactive branches retain their original destination values. Condition
@@ -49,6 +53,12 @@ models. They also apply saved definition inverses and reverse the known-basis wr
 inverses, the retained original input and its phases must be restored, the original known
 destination must be restored, and the private wires must be zero. No claim is made that an unknown
 old value can be discarded independently while its information is still needed.
+
+For example, a temporary can now mediate a phase and then be cleaned before interference on its
+source. The exact [cleanup program](audit-evidence/known-fill-cleanup-v2/cleanup-interference.c)
+changes its CPU fill value after the write; the compiler uses the original saved value for cleanup.
+The separate [observation-order program](audit-evidence/known-fill-cleanup-v2/observation-order.c)
+checks that observing the source before the filled destination remains accepted.
 
 ## Example
 
@@ -95,16 +105,28 @@ Cybersecurity and security-specific memory interfaces remain classical and outsi
 
 ## Verification scope
 
-The maintained [validator](../tests/validate_memset.c) passes **800 checks** in each normal and
+The maintained [validator](../tests/validate_memset.c) passes **940 checks** in each normal and
 ASan/UBSan configuration: 140 dense state/inverse cases, 20 complete controlled labeled-action
-circuits, 160 sequenced-effect state/inverse cases, 350 native executions, 70 diagnostic contracts
+circuits, 160 sequenced-effect state/inverse cases, 490 native executions, 70 diagnostic contracts
 and 60 wide generation cases. Source profiles use five GCC optimization levels and both builtin
 modes; state/action checks also use both synthesis policies. These proof categories are distinct.
 
-The [category correction](audit-evidence/memset-counter-correction/summary.json) preserves the two
-closed normal/ASan/UBSan logs from the 144-input campaign. The earlier documentation split of 340
-native executions and 80 diagnostics was incorrect; the total remains 800. Those two closed commands
-do not establish that the complete campaign has finished.
+The [146-input integration](audit-evidence/known-fill-cleanup-v2/README.es.md) adds 14 maintained
+fixtures: 140 native executions per configuration for temporary cleanup, signed/partial words,
+arrays, saved CPU values, checked borrows, CPU arms and existing observation order. Its six targeted
+suites passed in normal and ASan/UBSan, in explicitly recorded segments after a WSL interruption.
+Separately, 3528 complete independent states check actual compiler-emitted scope cleanup.
+XOR/addition/phase effects in that matrix have explicit C inverses; overwritten unknown roots stay
+joint outputs. These checks do not close the full 146-input regression or its remote CI.
+
+A further signed-word experiment checked 600 states over 8/16/32-bit words before failing on the
+64-bit partial-fill resource budget. Its failed terminal records and positive prefix remain
+separate; this is not a passed 64-bit experiment.
+
+The earlier [category correction](audit-evidence/memset-counter-correction/summary.json) preserves
+the two closed normal/ASan/UBSan logs from the 144-input campaign. The earlier documentation split
+of 340 native executions and 80 diagnostics was incorrect; that historical total remains 800. Those
+two closed commands do not establish that the complete campaign has finished.
 
 The complete [134-input campaign](audit-evidence/memory-expressions/results.json) rebuilt its normal
 and instrumented tools in an isolated checkout. All 134 source hashes then matched main. The

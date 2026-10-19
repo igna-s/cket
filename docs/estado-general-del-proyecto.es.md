@@ -18,6 +18,15 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
+**La integración actual reúne 146 entradas y corrige la limpieza de temporales conocidos de
+`memset`.** Pasaron sus seis suites dirigidas normales y con ASan/UBSan: 940 comprobaciones de
+llenado por configuración, con 14 casos fuente nuevos. Otra prueba pasó 3528 estados complejos
+completos, con inversas emitidas por el compilador para los valores derivados y conservación de
+entradas desconocidas. Una reconstrucción normal de la raíz Linux pasó 20 ejecuciones exactas. La
+[evidencia](audit-evidence/known-fill-cleanup-v2/README.es.md) conserva por separado los segmentos
+interrumpidos, sus continuaciones y un límite de recursos de llenado parcial de 64 bits. La
+regresión amplia y el CI de estas 146 entradas siguen pendientes.
+
 **Ya hay una corrección integrada de operandos enteros bajo control cuántico.** La anterior
 [integración de 138 entradas](audit-evidence/controlled-operands-integration/integration-summary.json)
 conserva el dominio seleccionado de asignaciones, sumas, XOR, los absolutos enteros estándar y
@@ -45,8 +54,8 @@ instrumentada, sin inventar un código de salida exitoso para el proceso origina
 regresiones de v4 quedan como
 [evidencia histórica](audit-evidence/controlled-operands-regression-failure/README.es.md).
 
-**La integración actual reúne 144 entradas y añade `strlen`, `strcmp`, ángulos diferidos de `phase`
-y protección de cargas CPU en ramas probadamente inactivas.** La
+**La integración anterior de 144 entradas añade `strlen`, `strcmp`, ángulos diferidos de `phase` y
+protección de cargas CPU en ramas probadamente inactivas.** La
 [evidencia actual](audit-evidence/strings-integration-v6/README.es.md) conserva los resultados
 dirigidos normales y con ASan/UBSan: 460 comprobaciones de cadenas, 519 de bindings y 3380 de
 ángulos por configuración, además de las suites vecinas. El resultado de `strlen` conserva `size_t`;
@@ -66,7 +75,9 @@ controles usa certificados simbólicos, sin medir ni inspeccionar amplitudes; su
 [76 pruebas originales](audit-evidence/guarded-cpu-loads-v3/README.es.md) mantienen su identidad de
 fuentes. Otra prueba actual pasó **1120 estados exportados de cargas CPU** con fases distintas por
 entrada, historia retenida y limpieza por inversa del resultado derivado. La inversa de la propia
-actualización controlada y la limpieza de su historia siguen siendo trabajo separado.
+actualización controlada y la limpieza de su historia no se comprobaban en esa prueba. La nueva
+matriz de 146 entradas añade inversas y limpieza para sus siete perfiles y dominios concretos; no
+demuestra el contrato general de historia ni todos los contextos de vida de C11.
 
 También se conservan los
 [siete fallos históricos de las 137 entradas](audit-evidence/coherent-arm-operands/failure-summary.json).
@@ -214,8 +225,9 @@ operadores y limpieza de temporales; aceptar una declaración no demuestra compa
 
 Después siguen los contextos cotidianos: condiciones, bucles, funciones directas, arrays, structs
 básicos, punteros y funciones frecuentes de memoria y cadenas. La corrección de vida de temporales
-de `memset` ya está en validación. Los siguientes tipos numéricos serán `float` y `double`, junto
-con sus operaciones y conversiones, antes de abordar `long double` y complejos.
+de `memset` ya tiene una integración dirigida; su regresión amplia sigue pendiente. Los siguientes
+tipos numéricos serán `float` y `double`, junto con sus operaciones y conversiones, antes de abordar
+`long double` y complejos.
 
 Las interfaces menos habituales quedan para más adelante, conservando el objetivo completo. La
 ciberseguridad sigue clásica. El [roadmap](c11-roadmap.md#implementation-order) detalla este orden,
@@ -278,11 +290,12 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo paso concreto es cerrar la continuación local e integrar la corrección de limpieza de
-`memset` cuando terminen sus validaciones separadas. Después se cierran `bool`, los enteros
-habituales y sus conversiones y operadores, siguiendo el orden acordado. El diagnóstico de NUL, los
-punteros, los tamaños, layouts y las demás familias conservan sus tareas pendientes. **La
-integración nueva no completa C11 cuántico ni el objetivo general.**
+El próximo paso concreto es verificar la regresión amplia y el CI de las 146 entradas y continuar
+con `bool`, los enteros habituales y sus conversiones y operadores. Un prototipo separado reduce el
+espacio auxiliar de `int % 3`: pasó una matriz de 640 estados y 320 referencias C, pero todavía debe
+incorporar regresiones mantenidas y completar su integración. El diagnóstico de NUL, los punteros,
+tamaños, layouts y las demás familias conservan sus tareas pendientes. **La integración nueva no
+completa C11 cuántico ni el objetivo general.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia
