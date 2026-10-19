@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 380,
+  "checks": 381,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1904,6 +1904,11 @@
     },
     {
       "check": "Current evidence: internal capsule artifacts match their recorded bytes after formatting",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Evidence byte preservation: Git disables text normalization for every hashed capsule artifact",
       "passed": true,
       "detail": ""
     }

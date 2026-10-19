@@ -1095,6 +1095,29 @@ def main(language):
             )
         ],
     ]
+    evidence_paths = sorted(
+        {
+            str(path.relative_to(ROOT))
+            for path in targets
+            if path.is_relative_to(ROOT / 'docs/audit-evidence')
+        }
+    )
+    attributes = subprocess.run(
+        ['git', 'check-attr', '-z', '--stdin', 'text'],
+        cwd=ROOT,
+        input=b'\0'.join(path.encode() for path in evidence_paths) + b'\0',
+        capture_output=True,
+        check=True,
+    ).stdout.split(b'\0')[:-1]
+    check(
+        'Evidence byte preservation: Git disables text normalization for every hashed capsule artifact',
+        len(attributes) == 3 * len(evidence_paths)
+        and all(
+            attributes[index * 3] == path.encode()
+            and attributes[index * 3 + 1 : index * 3 + 3] == [b'text', b'unset']
+            for index, path in enumerate(evidence_paths)
+        ),
+    )
     manifest = {
         str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in targets
     }

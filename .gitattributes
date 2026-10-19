@@ -2,3 +2,5 @@
 *.pdf binary
 *.sh text eol=lf
 cket text eol=lf
+# Historical evidence keeps original whitespace and is verified by byte hashes.
+docs/audit-evidence/** -text -whitespace
