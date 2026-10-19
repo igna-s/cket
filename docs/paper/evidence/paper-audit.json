@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 365,
+  "checks": 368,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1824,6 +1824,21 @@
     },
     {
       "check": "Deferred phase candidate: closed normal/SAN proofs remain distinct from integration and broad regression",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Guarded CPU loads: closed targeted normal/SAN matrices remain distinct from integration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Guarded CPU loads: all scoped artifacts match their recorded hashes and sizes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot",
       "passed": true,
       "detail": ""
     },

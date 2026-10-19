@@ -1,0 +1,10 @@
+PASS 96 bound arithmetic domains: full phases, controls, table policies and saved inverse
+PASS 52 typed binding endpoints including signed minimum and unsigned maximum
+PASS 10 malformed CPU descriptor cases reject before state changes
+PASS 11 whole-document binding/preparation contracts before circuit mutation
+binding C case failed -O0 builtins=0: quant bool n=false;int d=0;quant bool q=n?1/d:false;return measure(q)!=0||measure(n)!=0;
+/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validation-jNjIcl/bindings.c: In function ‘main’:
+/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validation-jNjIcl/bindings.c:4:61: error: |c>: CPU effects in quantum expressions require once-only capture outside coherent control
+    4 | int main(void){quant bool n=false;int d=0;quant bool q=n?1/d:false;return measure(q)!=0||measure(n)!=0;}
+      |                                                             ^
+

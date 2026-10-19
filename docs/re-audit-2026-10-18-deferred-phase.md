@@ -2,8 +2,10 @@
 
 El compilador integrado conserva el fallo de evaluación anticipada de ángulos como
 `if (b) phase(10 / k)` cuando el control está desactivado y `k` vale cero. El candidato v6 contiene
-una corrección y pruebas cerradas sobre **143 entradas congeladas**. Su regresión amplia sigue en
-curso en la fotografía archivada; estos resultados todavía no certifican una integración.
+una corrección y pruebas cerradas sobre **143 entradas congeladas**. Su regresión amplia
+[terminó con un fallo](audit-evidence/deferred-phase-v6-broad-failure/README.es.md); estos
+resultados no certifican una integración. La fotografía inicial conserva su estado histórico «en
+curso».
 
 La [cápsula verificable](audit-evidence/deferred-phase-v6/summary.json) conserva las fuentes,
 controladores, transcripciones, circuitos y antecedentes fallidos. El árbol integrado sigue
@@ -64,7 +66,13 @@ dimensión física; luego intentó leer puertas sin activar su registro. V6 veri
 exige cero en los cables privados y activa el registro de puertas. El código fuente del compilador
 es idéntico entre esas tres versiones; cambiaron las pruebas.
 
-Falta cerrar la regresión amplia y aplicar la integración con sus hashes y pruebas propias. Quedan
+La regresión amplia cerró 56 comandos con éxito y falló en `sanitized-bindings`. La prueba
+preexistente `n ? 1 / d : false`, con `n` falso y `d` cero, fue rechazada como efecto CPU. El
+control de volatilidad se aplicaba antes de reconocer el wrapper de sanitizadores de GCC. La
+corrección posterior está en pruebas; este cierre fallido se conserva junto con sus fuentes y
+registros.
+
+Falta aprobar la regresión amplia corregida y aplicar la integración con sus hashes. Quedan
 pendientes las cargas CPU inválidas bajo controles inactivos, `long double`, llamadas reales
 generales y la compatibilidad completa con C11. No se ha verificado ejecución en hardware cuántico
 ni aceleración frente a CPU. La ciberseguridad permanece clásica y sin cambios.

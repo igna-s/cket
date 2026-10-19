@@ -1,0 +1,25 @@
+{
+  "status": "failed-broad-campaign",
+  "started_utc": "2026-10-18T23:35:29.436567+00:00",
+  "source_files": 143,
+  "source_manifest_sha256": "1a107fda14096fd671f8831cd8ca1a634aa9b697a47a1293e0be70a5287c8d1e",
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 143 frozen phase-v6 inputs, in a separate source-identical project. All repository suites plus 3380 maintained phase checks per configuration; segmented fuzz retains all133 original case indices, five levels,256 byte inputs and seed20261012 (665 compilations/configuration). Phase v2 sanitizer failures and v4/v5 harness failures remain separate. This campaign is not a scripts/verify.sh process and does not inherit earlier passes. No main application, full C11, physical hardware or speedup claim. Invalid CPU loads, long double and arbitrary real library calls remain pending. Cybersecurity remains classical and unchanged.",
+  "normal_fresh_core_sha256": {
+    "cket": "1f813c94ebf2a1f0c669c78d8b871ed9bfa162b2a76c93d86bc62a7a3682d347",
+    "cket_backend": "b02153b6d5e82e68bb5656902c796f1e1141f1b7754cff6df8e497636e1a0b19",
+    "cket_plugin.so": "38ab74313939bcb3c156bffdf321964b4a75b169ec7e53fb495e03ef9ce17303",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "6881ca0e2653582395c09a86a5bf1a5eb3354b364068bfa2da74e90eed67a537"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "89335aeebae3d08475981f12db2802eba5edb23ae9ff5a799b2ff5e71e506d7b",
+    "cket_backend": "caa383d7b69adf4da0155e72c1094c0e2d53fa40a390a3314dc74e77d9e9735f",
+    "cket_plugin.so": "944e24338da635c298fd8300bd3f9fda5be262b581daee108d130c83173cf392",
+    "cket_runtime.o": "824fd26867761290e867beb002cb8daa3d3efaca32e20feaa9346f55bb28ffea",
+    "libcket_quantum.a": "bd502a9470b9836af63177dd7daa4c85504cbd406b8b31ca3551bed6d6ec66ed"
+  },
+  "exit_code": 1,
+  "error": "AssertionError({'name': 'sanitized-bindings', 'command': ['/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_bindings'], 'started_utc': '2026-10-19T01:03:45.675748+00:00', 'finished_utc': '2026-10-19T01:03:47.780233+00:00', 'returncode': 1, 'log': '057-sanitized-bindings.log', 'log_sha256': '2feda1de0262705b3c6215660ac4d8a72b3b60d287e111762131f65911982b26'})",
+  "finished_utc": "2026-10-19T01:03:47.784845+00:00"
+}

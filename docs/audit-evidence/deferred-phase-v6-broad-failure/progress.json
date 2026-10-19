@@ -1,0 +1,743 @@
+{
+  "status": "failed-broad-campaign",
+  "started_utc": "2026-10-18T23:35:29.436567+00:00",
+  "source_files": 143,
+  "source_manifest_sha256": "1a107fda14096fd671f8831cd8ca1a634aa9b697a47a1293e0be70a5287c8d1e",
+  "commands": [
+    {
+      "name": "fresh-normal-build",
+      "command": [
+        "bash",
+        "scripts/build.sh"
+      ],
+      "started_utc": "2026-10-18T23:35:29.544551+00:00",
+      "finished_utc": "2026-10-18T23:35:53.589467+00:00",
+      "returncode": 0,
+      "log": "001-fresh-normal-build.log",
+      "log_sha256": "2fb1a07d126f14a5f747874b960f737cb9698a8fe5a77a7849e7b80dff457aba"
+    },
+    {
+      "name": "normal-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1"
+      ],
+      "started_utc": "2026-10-18T23:35:53.648049+00:00",
+      "finished_utc": "2026-10-18T23:36:12.158199+00:00",
+      "returncode": 0,
+      "log": "002-normal-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    },
+    {
+      "name": "normal-phase",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_phase"
+      ],
+      "started_utc": "2026-10-18T23:36:12.158946+00:00",
+      "finished_utc": "2026-10-18T23:37:15.485784+00:00",
+      "returncode": 0,
+      "log": "003-normal-phase.log",
+      "log_sha256": "e966a2eb2344202b45aab412de560f3a875d467c6237175b10eb45a6989acfdd"
+    },
+    {
+      "name": "normal-controlled_operands",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_controlled_operands"
+      ],
+      "started_utc": "2026-10-18T23:37:15.486443+00:00",
+      "finished_utc": "2026-10-18T23:37:57.826584+00:00",
+      "returncode": 0,
+      "log": "004-normal-controlled_operands.log",
+      "log_sha256": "a66a8f086048f4260c9293fa010ef30b806277314004c4676faa5670d5d12b63"
+    },
+    {
+      "name": "normal-harness",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_harness"
+      ],
+      "started_utc": "2026-10-18T23:37:57.827625+00:00",
+      "finished_utc": "2026-10-18T23:37:59.274618+00:00",
+      "returncode": 0,
+      "log": "005-normal-harness.log",
+      "log_sha256": "e20b96519ca344d568c8a9c774dfec0490eca2201d28c3996572948831350292"
+    },
+    {
+      "name": "normal-shifts",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_shifts"
+      ],
+      "started_utc": "2026-10-18T23:37:59.275238+00:00",
+      "finished_utc": "2026-10-18T23:38:00.602364+00:00",
+      "returncode": 0,
+      "log": "006-normal-shifts.log",
+      "log_sha256": "d580bb1ca7dc0acc8e69488d4e6a2b7cd2509e060a6a5ad9876a486f4ed6b4e0"
+    },
+    {
+      "name": "normal-expressions",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_expressions"
+      ],
+      "started_utc": "2026-10-18T23:38:00.603037+00:00",
+      "finished_utc": "2026-10-18T23:38:02.441078+00:00",
+      "returncode": 0,
+      "log": "007-normal-expressions.log",
+      "log_sha256": "4e2f73c3afcaa367f0891aab27ce89dd51a5cb141c6b35a3dc8ffe8623a66921"
+    },
+    {
+      "name": "normal-inplace",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_inplace"
+      ],
+      "started_utc": "2026-10-18T23:38:02.442577+00:00",
+      "finished_utc": "2026-10-18T23:38:03.686751+00:00",
+      "returncode": 0,
+      "log": "008-normal-inplace.log",
+      "log_sha256": "3390ecb7f97c1b7aa25807bac7140b94a5e955d8262ad7e945436a6eef970634"
+    },
+    {
+      "name": "normal-memcopy",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_memcopy"
+      ],
+      "started_utc": "2026-10-18T23:38:03.687479+00:00",
+      "finished_utc": "2026-10-18T23:38:27.173308+00:00",
+      "returncode": 0,
+      "log": "009-normal-memcopy.log",
+      "log_sha256": "ab937d3983f46029c82f5a9e1715aa3746dba22f5f0ab9470928726917d14953"
+    },
+    {
+      "name": "normal-memcmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_memcmp"
+      ],
+      "started_utc": "2026-10-18T23:38:27.173968+00:00",
+      "finished_utc": "2026-10-18T23:39:30.372613+00:00",
+      "returncode": 0,
+      "log": "010-normal-memcmp.log",
+      "log_sha256": "650afff30905091673fd1190014ba04b4bbca9aa787694cf2cd722099560ba7c"
+    },
+    {
+      "name": "normal-strncmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_strncmp"
+      ],
+      "started_utc": "2026-10-18T23:39:30.373368+00:00",
+      "finished_utc": "2026-10-18T23:40:07.191363+00:00",
+      "returncode": 0,
+      "log": "011-normal-strncmp.log",
+      "log_sha256": "0cbc2cf175a076aab82c284ab2c3df835fbc92c06f3dbc06d72e3fb2873f9500"
+    },
+    {
+      "name": "normal-memset",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_memset"
+      ],
+      "started_utc": "2026-10-18T23:40:07.192810+00:00",
+      "finished_utc": "2026-10-18T23:42:17.839677+00:00",
+      "returncode": 0,
+      "log": "012-normal-memset.log",
+      "log_sha256": "b6bd70275228d2b4dbaab47f143b9284417437788ca2f0bde7de0ec0b62572c9"
+    },
+    {
+      "name": "normal-memory_sequences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_memory_sequences"
+      ],
+      "started_utc": "2026-10-18T23:42:17.840395+00:00",
+      "finished_utc": "2026-10-18T23:42:50.961000+00:00",
+      "returncode": 0,
+      "log": "013-normal-memory_sequences.log",
+      "log_sha256": "26b42f892f2919f2c136e05707e368449409b6718c5a9b650d2ccfbf77bc699f"
+    },
+    {
+      "name": "normal-memory_returns",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_memory_returns"
+      ],
+      "started_utc": "2026-10-18T23:42:50.961783+00:00",
+      "finished_utc": "2026-10-18T23:43:06.778693+00:00",
+      "returncode": 0,
+      "log": "014-normal-memory_returns.log",
+      "log_sha256": "844850014fca7b2c45bae73036a965e088cede8c625f9d072fcd6000ea242f08"
+    },
+    {
+      "name": "normal-pointer_differences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_pointer_differences"
+      ],
+      "started_utc": "2026-10-18T23:43:06.779654+00:00",
+      "finished_utc": "2026-10-18T23:43:16.786713+00:00",
+      "returncode": 0,
+      "log": "015-normal-pointer_differences.log",
+      "log_sha256": "b8e6cc724ea63e906c5066b9319fc2f0d6a942e45d02cd6d45130ff44176e51b"
+    },
+    {
+      "name": "normal-byte_snapshots",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_byte_snapshots"
+      ],
+      "started_utc": "2026-10-18T23:43:16.787445+00:00",
+      "finished_utc": "2026-10-18T23:48:27.941578+00:00",
+      "returncode": 0,
+      "log": "016-normal-byte_snapshots.log",
+      "log_sha256": "f10e9d995a0628201cc87a31e4f727af247eba91a11b8fd9b64d677e67d60a50"
+    },
+    {
+      "name": "normal-division",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_division"
+      ],
+      "started_utc": "2026-10-18T23:48:27.942761+00:00",
+      "finished_utc": "2026-10-18T23:49:02.295780+00:00",
+      "returncode": 0,
+      "log": "017-normal-division.log",
+      "log_sha256": "7cfdcf107236d5c819ed42be18207011d0a73dc5cd0ee853b89c57c2675792d3"
+    },
+    {
+      "name": "normal-bindings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_bindings"
+      ],
+      "started_utc": "2026-10-18T23:49:02.296525+00:00",
+      "finished_utc": "2026-10-18T23:49:15.653435+00:00",
+      "returncode": 0,
+      "log": "018-normal-bindings.log",
+      "log_sha256": "55f5540d3d72ff81a7166fef654fbba580e6136a79b06f4382a231b440ee298f"
+    },
+    {
+      "name": "normal-history",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_history"
+      ],
+      "started_utc": "2026-10-18T23:49:15.654163+00:00",
+      "finished_utc": "2026-10-18T23:51:59.110698+00:00",
+      "returncode": 0,
+      "log": "019-normal-history.log",
+      "log_sha256": "99374c97d7f203277279752efa16204f07535900597c924ac95f956a67b62d44"
+    },
+    {
+      "name": "normal-ctype",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_ctype"
+      ],
+      "started_utc": "2026-10-18T23:51:59.111544+00:00",
+      "finished_utc": "2026-10-18T23:53:10.268893+00:00",
+      "returncode": 0,
+      "log": "020-normal-ctype.log",
+      "log_sha256": "47a3447ff060d5dda9dd0e43e3fb333cc11658f33d45b04b3fca552b8c7d72b2"
+    },
+    {
+      "name": "normal-profiles",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_profiles"
+      ],
+      "started_utc": "2026-10-18T23:53:10.269819+00:00",
+      "finished_utc": "2026-10-18T23:53:10.332372+00:00",
+      "returncode": 0,
+      "log": "021-normal-profiles.log",
+      "log_sha256": "5a7666bbfb1b0459750fbf6c1a9ae0cb32c9c88386ed3ca2f532dea818ef4876"
+    },
+    {
+      "name": "normal-numeric_locale",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_numeric_locale"
+      ],
+      "started_utc": "2026-10-18T23:53:10.333306+00:00",
+      "finished_utc": "2026-10-18T23:53:12.961129+00:00",
+      "returncode": 0,
+      "log": "022-normal-numeric_locale.log",
+      "log_sha256": "648b18f9712b19b771a92b6e5da64438b4dc379a083a8a63bf8c727b66ef7655"
+    },
+    {
+      "name": "normal-library",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_library"
+      ],
+      "started_utc": "2026-10-18T23:53:12.962925+00:00",
+      "finished_utc": "2026-10-18T23:55:28.669957+00:00",
+      "returncode": 0,
+      "log": "023-normal-library.log",
+      "log_sha256": "39b25588789f5e9f699cc97550f211e729b362b489351de8a125a8ec8aa258d6"
+    },
+    {
+      "name": "normal-examples",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/test_examples"
+      ],
+      "started_utc": "2026-10-18T23:55:28.671578+00:00",
+      "finished_utc": "2026-10-18T23:56:20.435725+00:00",
+      "returncode": 0,
+      "log": "024-normal-examples.log",
+      "log_sha256": "a0adfe2a9a3ee98975479b6786108f5c53c71918665497a54b48956de3125499"
+    },
+    {
+      "name": "normal-classical",
+      "command": [
+        "bash",
+        "scripts/test-c11-classical.sh"
+      ],
+      "started_utc": "2026-10-18T23:56:20.437577+00:00",
+      "finished_utc": "2026-10-18T23:56:21.977573+00:00",
+      "returncode": 0,
+      "log": "025-normal-classical.log",
+      "log_sha256": "9c516e7a28665928ebc4e7104d96ff98f223b086ca889d8954071f4d9ec15fa8"
+    },
+    {
+      "name": "normal-validation-build",
+      "command": [
+        "bash",
+        "scripts/build-validation.sh"
+      ],
+      "started_utc": "2026-10-18T23:56:21.978636+00:00",
+      "finished_utc": "2026-10-18T23:56:27.664626+00:00",
+      "returncode": 0,
+      "log": "026-normal-validation-build.log",
+      "log_sha256": "e3d5a54cf590996a0eeb950c53465753d22b5acdcc91642e7ab6f5bf8e54211a"
+    },
+    {
+      "name": "normal-build-resumable-fuzz",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Itests",
+        "-O2",
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/full-campaign-v1/resumable-fuzz-driver.c",
+        "tests/validation.c",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full"
+      ],
+      "started_utc": "2026-10-18T23:56:27.665698+00:00",
+      "finished_utc": "2026-10-18T23:56:27.980201+00:00",
+      "returncode": 0,
+      "log": "027-normal-build-resumable-fuzz.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "normal-fuzz-000-016",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "0",
+        "--limit",
+        "16"
+      ],
+      "started_utc": "2026-10-18T23:56:27.981219+00:00",
+      "finished_utc": "2026-10-18T23:57:47.905345+00:00",
+      "returncode": 0,
+      "log": "028-normal-fuzz-000-016.log",
+      "log_sha256": "bc0b2d08736e2141cf788afd9e2f4cc797237256dba6085f5cc774c871852294"
+    },
+    {
+      "name": "normal-fuzz-016-032",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "16",
+        "--limit",
+        "32"
+      ],
+      "started_utc": "2026-10-18T23:57:47.907504+00:00",
+      "finished_utc": "2026-10-18T23:59:01.144325+00:00",
+      "returncode": 0,
+      "log": "029-normal-fuzz-016-032.log",
+      "log_sha256": "ff1c9776f04f1fa6fd0111fc820d065e4cf1c3403c2a91d1f6686033f03991c4"
+    },
+    {
+      "name": "normal-fuzz-032-048",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "32",
+        "--limit",
+        "48"
+      ],
+      "started_utc": "2026-10-18T23:59:01.146004+00:00",
+      "finished_utc": "2026-10-19T00:00:44.274881+00:00",
+      "returncode": 0,
+      "log": "030-normal-fuzz-032-048.log",
+      "log_sha256": "8e3b3bded3f1c67894cffae8afd190fb3296d8612a850515695728d051517dfb"
+    },
+    {
+      "name": "normal-fuzz-048-064",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "48",
+        "--limit",
+        "64"
+      ],
+      "started_utc": "2026-10-19T00:00:44.277956+00:00",
+      "finished_utc": "2026-10-19T00:02:22.116200+00:00",
+      "returncode": 0,
+      "log": "031-normal-fuzz-048-064.log",
+      "log_sha256": "5bc212447bce53ac4484333a080806416bb5c992f40ec093d154a3af244bb2b9"
+    },
+    {
+      "name": "normal-fuzz-064-080",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "64",
+        "--limit",
+        "80"
+      ],
+      "started_utc": "2026-10-19T00:02:22.117982+00:00",
+      "finished_utc": "2026-10-19T00:03:45.175460+00:00",
+      "returncode": 0,
+      "log": "032-normal-fuzz-064-080.log",
+      "log_sha256": "df5e967f53ed30eb76c7166b2d684827f4b237ca5c4a1e183790cdee900b1fa0"
+    },
+    {
+      "name": "normal-fuzz-080-096",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "80",
+        "--limit",
+        "96"
+      ],
+      "started_utc": "2026-10-19T00:03:45.177292+00:00",
+      "finished_utc": "2026-10-19T00:05:01.450334+00:00",
+      "returncode": 0,
+      "log": "033-normal-fuzz-080-096.log",
+      "log_sha256": "12f75e05d3997a3e7dcd6f9a8631d76d95e0760367661b8621d37bdf0811151a"
+    },
+    {
+      "name": "normal-fuzz-096-112",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "96",
+        "--limit",
+        "112"
+      ],
+      "started_utc": "2026-10-19T00:05:01.452127+00:00",
+      "finished_utc": "2026-10-19T00:06:35.201968+00:00",
+      "returncode": 0,
+      "log": "034-normal-fuzz-096-112.log",
+      "log_sha256": "3c052efa7d4ff1a6805c215ae5993f373e7d5252d8ed809e7ae723cbedc7d5fa"
+    },
+    {
+      "name": "normal-fuzz-112-128",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "112",
+        "--limit",
+        "128"
+      ],
+      "started_utc": "2026-10-19T00:06:35.203918+00:00",
+      "finished_utc": "2026-10-19T00:08:04.394898+00:00",
+      "returncode": 0,
+      "log": "035-normal-fuzz-112-128.log",
+      "log_sha256": "f87fbd1ff5b5a46d8653525959835e11fed9ce1dccc03fe4062714a806a4f75e"
+    },
+    {
+      "name": "normal-fuzz-128-133",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "128",
+        "--limit",
+        "133"
+      ],
+      "started_utc": "2026-10-19T00:08:04.396757+00:00",
+      "finished_utc": "2026-10-19T00:08:31.761664+00:00",
+      "returncode": 0,
+      "log": "036-normal-fuzz-128-133.log",
+      "log_sha256": "f33bcbf68bee6ec04bb61f4d62a8e8ac3175ac0b6d7dda075eb9a5d23140c738"
+    },
+    {
+      "name": "normal-growth",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/benchmark_synthesis"
+      ],
+      "started_utc": "2026-10-19T00:08:31.764756+00:00",
+      "finished_utc": "2026-10-19T00:08:32.024309+00:00",
+      "returncode": 0,
+      "log": "037-normal-growth.log",
+      "log_sha256": "ccea89ceff9ebfcaa39cab69462b2529bac80adb008e3d8f4b6f3b7ddba244fd"
+    },
+    {
+      "name": "normal-qasm",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/validate_qasm"
+      ],
+      "started_utc": "2026-10-19T00:08:32.025956+00:00",
+      "finished_utc": "2026-10-19T00:10:37.830024+00:00",
+      "returncode": 0,
+      "log": "038-normal-qasm.log",
+      "log_sha256": "9c17f4edf4946f03dfd789fc7bd029c6430df21f0cbeac41a6d8126bdb5cf27b"
+    },
+    {
+      "name": "locale-sanitizer-boundary",
+      "command": [
+        "bash",
+        "scripts/test-locale-sanitizer.sh"
+      ],
+      "started_utc": "2026-10-19T00:10:37.832391+00:00",
+      "finished_utc": "2026-10-19T00:10:38.554442+00:00",
+      "returncode": 0,
+      "log": "039-locale-sanitizer-boundary.log",
+      "log_sha256": "3f418c89f34921bd430370f00192dd75fbd74c7ba1652b133abd7415461dd3d4"
+    },
+    {
+      "name": "fresh-sanitizer-build",
+      "command": [
+        "bash",
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/full-campaign-v1/fresh-sanitizer-build-only.sh"
+      ],
+      "started_utc": "2026-10-19T00:10:38.583330+00:00",
+      "finished_utc": "2026-10-19T00:13:07.988287+00:00",
+      "returncode": 0,
+      "log": "040-fresh-sanitizer-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sanitized-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized"
+      ],
+      "started_utc": "2026-10-19T00:13:08.176851+00:00",
+      "finished_utc": "2026-10-19T00:15:11.705689+00:00",
+      "returncode": 0,
+      "log": "041-sanitized-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    },
+    {
+      "name": "sanitized-phase",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_phase"
+      ],
+      "started_utc": "2026-10-19T00:15:11.708019+00:00",
+      "finished_utc": "2026-10-19T00:21:44.657107+00:00",
+      "returncode": 0,
+      "log": "042-sanitized-phase.log",
+      "log_sha256": "e966a2eb2344202b45aab412de560f3a875d467c6237175b10eb45a6989acfdd"
+    },
+    {
+      "name": "sanitized-controlled_operands",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_controlled_operands"
+      ],
+      "started_utc": "2026-10-19T00:21:44.658702+00:00",
+      "finished_utc": "2026-10-19T00:25:33.713154+00:00",
+      "returncode": 0,
+      "log": "043-sanitized-controlled_operands.log",
+      "log_sha256": "a66a8f086048f4260c9293fa010ef30b806277314004c4676faa5670d5d12b63"
+    },
+    {
+      "name": "sanitized-harness",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_harness"
+      ],
+      "started_utc": "2026-10-19T00:25:33.714661+00:00",
+      "finished_utc": "2026-10-19T00:25:35.719824+00:00",
+      "returncode": 0,
+      "log": "044-sanitized-harness.log",
+      "log_sha256": "e20b96519ca344d568c8a9c774dfec0490eca2201d28c3996572948831350292"
+    },
+    {
+      "name": "sanitized-shifts",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_shifts"
+      ],
+      "started_utc": "2026-10-19T00:25:35.721324+00:00",
+      "finished_utc": "2026-10-19T00:25:41.785885+00:00",
+      "returncode": 0,
+      "log": "045-sanitized-shifts.log",
+      "log_sha256": "d580bb1ca7dc0acc8e69488d4e6a2b7cd2509e060a6a5ad9876a486f4ed6b4e0"
+    },
+    {
+      "name": "sanitized-expressions",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_expressions"
+      ],
+      "started_utc": "2026-10-19T00:25:41.787297+00:00",
+      "finished_utc": "2026-10-19T00:25:49.556148+00:00",
+      "returncode": 0,
+      "log": "046-sanitized-expressions.log",
+      "log_sha256": "4e2f73c3afcaa367f0891aab27ce89dd51a5cb141c6b35a3dc8ffe8623a66921"
+    },
+    {
+      "name": "sanitized-inplace",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_inplace"
+      ],
+      "started_utc": "2026-10-19T00:25:49.557832+00:00",
+      "finished_utc": "2026-10-19T00:25:55.628238+00:00",
+      "returncode": 0,
+      "log": "047-sanitized-inplace.log",
+      "log_sha256": "3390ecb7f97c1b7aa25807bac7140b94a5e955d8262ad7e945436a6eef970634"
+    },
+    {
+      "name": "sanitized-memcopy",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_memcopy"
+      ],
+      "started_utc": "2026-10-19T00:25:55.629629+00:00",
+      "finished_utc": "2026-10-19T00:27:43.907440+00:00",
+      "returncode": 0,
+      "log": "048-sanitized-memcopy.log",
+      "log_sha256": "ab937d3983f46029c82f5a9e1715aa3746dba22f5f0ab9470928726917d14953"
+    },
+    {
+      "name": "sanitized-memcmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_memcmp"
+      ],
+      "started_utc": "2026-10-19T00:27:43.911324+00:00",
+      "finished_utc": "2026-10-19T00:32:21.041181+00:00",
+      "returncode": 0,
+      "log": "049-sanitized-memcmp.log",
+      "log_sha256": "650afff30905091673fd1190014ba04b4bbca9aa787694cf2cd722099560ba7c"
+    },
+    {
+      "name": "sanitized-strncmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_strncmp"
+      ],
+      "started_utc": "2026-10-19T00:32:21.043052+00:00",
+      "finished_utc": "2026-10-19T00:35:06.351500+00:00",
+      "returncode": 0,
+      "log": "050-sanitized-strncmp.log",
+      "log_sha256": "0cbc2cf175a076aab82c284ab2c3df835fbc92c06f3dbc06d72e3fb2873f9500"
+    },
+    {
+      "name": "sanitized-memset",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_memset"
+      ],
+      "started_utc": "2026-10-19T00:35:06.354510+00:00",
+      "finished_utc": "2026-10-19T00:42:38.470184+00:00",
+      "returncode": 0,
+      "log": "051-sanitized-memset.log",
+      "log_sha256": "b6bd70275228d2b4dbaab47f143b9284417437788ca2f0bde7de0ec0b62572c9"
+    },
+    {
+      "name": "sanitized-memory_sequences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_memory_sequences"
+      ],
+      "started_utc": "2026-10-19T00:42:38.472534+00:00",
+      "finished_utc": "2026-10-19T00:45:07.645079+00:00",
+      "returncode": 0,
+      "log": "052-sanitized-memory_sequences.log",
+      "log_sha256": "26b42f892f2919f2c136e05707e368449409b6718c5a9b650d2ccfbf77bc699f"
+    },
+    {
+      "name": "sanitized-memory_returns",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_memory_returns"
+      ],
+      "started_utc": "2026-10-19T00:45:07.646394+00:00",
+      "finished_utc": "2026-10-19T00:46:07.386151+00:00",
+      "returncode": 0,
+      "log": "053-sanitized-memory_returns.log",
+      "log_sha256": "844850014fca7b2c45bae73036a965e088cede8c625f9d072fcd6000ea242f08"
+    },
+    {
+      "name": "sanitized-pointer_differences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_pointer_differences"
+      ],
+      "started_utc": "2026-10-19T00:46:07.387322+00:00",
+      "finished_utc": "2026-10-19T00:46:51.481191+00:00",
+      "returncode": 0,
+      "log": "054-sanitized-pointer_differences.log",
+      "log_sha256": "b8e6cc724ea63e906c5066b9319fc2f0d6a942e45d02cd6d45130ff44176e51b"
+    },
+    {
+      "name": "sanitized-byte_snapshots",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_byte_snapshots"
+      ],
+      "started_utc": "2026-10-19T00:46:51.483882+00:00",
+      "finished_utc": "2026-10-19T01:01:34.849235+00:00",
+      "returncode": 0,
+      "log": "055-sanitized-byte_snapshots.log",
+      "log_sha256": "f10e9d995a0628201cc87a31e4f727af247eba91a11b8fd9b64d677e67d60a50"
+    },
+    {
+      "name": "sanitized-division",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_division"
+      ],
+      "started_utc": "2026-10-19T01:01:34.854541+00:00",
+      "finished_utc": "2026-10-19T01:03:45.674351+00:00",
+      "returncode": 0,
+      "log": "056-sanitized-division.log",
+      "log_sha256": "7cfdcf107236d5c819ed42be18207011d0a73dc5cd0ee853b89c57c2675792d3"
+    },
+    {
+      "name": "sanitized-bindings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_bindings"
+      ],
+      "started_utc": "2026-10-19T01:03:45.675748+00:00",
+      "finished_utc": "2026-10-19T01:03:47.780233+00:00",
+      "returncode": 1,
+      "log": "057-sanitized-bindings.log",
+      "log_sha256": "2feda1de0262705b3c6215660ac4d8a72b3b60d287e111762131f65911982b26"
+    }
+  ],
+  "scope": "Fresh broad normal and ASan/UBSan builds on all 143 frozen phase-v6 inputs, in a separate source-identical project. All repository suites plus 3380 maintained phase checks per configuration; segmented fuzz retains all133 original case indices, five levels,256 byte inputs and seed20261012 (665 compilations/configuration). Phase v2 sanitizer failures and v4/v5 harness failures remain separate. This campaign is not a scripts/verify.sh process and does not inherit earlier passes. No main application, full C11, physical hardware or speedup claim. Invalid CPU loads, long double and arbitrary real library calls remain pending. Cybersecurity remains classical and unchanged.",
+  "normal_fresh_core_sha256": {
+    "cket": "1f813c94ebf2a1f0c669c78d8b871ed9bfa162b2a76c93d86bc62a7a3682d347",
+    "cket_backend": "b02153b6d5e82e68bb5656902c796f1e1141f1b7754cff6df8e497636e1a0b19",
+    "cket_plugin.so": "38ab74313939bcb3c156bffdf321964b4a75b169ec7e53fb495e03ef9ce17303",
+    "cket_runtime.o": "2361f51a6a4237f3cd875ef36f8ce95b8c19aefdb5424b7e3cf833ac21f7847c",
+    "libcket_quantum.a": "6881ca0e2653582395c09a86a5bf1a5eb3354b364068bfa2da74e90eed67a537"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "89335aeebae3d08475981f12db2802eba5edb23ae9ff5a799b2ff5e71e506d7b",
+    "cket_backend": "caa383d7b69adf4da0155e72c1094c0e2d53fa40a390a3314dc74e77d9e9735f",
+    "cket_plugin.so": "944e24338da635c298fd8300bd3f9fda5be262b581daee108d130c83173cf392",
+    "cket_runtime.o": "824fd26867761290e867beb002cb8daa3d3efaca32e20feaa9346f55bb28ffea",
+    "libcket_quantum.a": "bd502a9470b9836af63177dd7daa4c85504cbd406b8b31ca3551bed6d6ec66ed"
+  },
+  "exit_code": 1,
+  "error": "AssertionError({'name': 'sanitized-bindings', 'command': ['/tmp/quantum-audit-isolated-20261017/build/phase-maintained-v6/build/full-project-v1/build/sanitized/build/validate_bindings'], 'started_utc': '2026-10-19T01:03:45.675748+00:00', 'finished_utc': '2026-10-19T01:03:47.780233+00:00', 'returncode': 1, 'log': '057-sanitized-bindings.log', 'log_sha256': '2feda1de0262705b3c6215660ac4d8a72b3b60d287e111762131f65911982b26'})",
+  "finished_utc": "2026-10-19T01:03:47.784845+00:00"
+}

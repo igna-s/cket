@@ -765,6 +765,12 @@ def main(language):
     deferred_phase = json.loads(
         (ROOT / 'docs/audit-evidence/deferred-phase-v6/summary.json').read_text()
     )
+    guarded_loads = json.loads(
+        (ROOT / 'docs/audit-evidence/guarded-cpu-loads-v3/summary.json').read_text()
+    )
+    phase_broad_failure = json.loads(
+        (ROOT / 'docs/audit-evidence/deferred-phase-v6-broad-failure/summary.json').read_text()
+    )
     check(
         'V5 candidate: positive native and independent inverse scopes preserve the earlier runner failure',
         operand_v5['status'] == 'verified-scoped-v5-not-integrated'
@@ -821,6 +827,33 @@ def main(language):
         and deferred_phase['history']['v2_original_state_runner_exit'] == 1
         and deferred_phase['broad_campaign_at_archive']['status'] == 'running',
     )
+    check(
+        'Guarded CPU loads: closed targeted normal/SAN matrices remain distinct from integration',
+        guarded_loads['status'] == 'verified-targeted-cpu-loads-not-integrated'
+        and guarded_loads['source_inputs'] == 143
+        and guarded_loads['closed_targeted_commands'] == 12
+        and guarded_loads['source_sha256'] != current_integration['source_sha256']
+        and guarded_loads['per_configuration']
+        == {'native': 393, 'controlled_operands': 1270, 'phase': 3380, 'query': 76}
+        and all(
+            row == {'rows': 140, 'native_executions': 420, 'ordinary_c_executions': 420}
+            for row in guarded_loads['native_matrices'].values()
+        )
+        and set(guarded_loads['native_matrices']) == {'normal', 'sanitized'}
+        and not guarded_loads['security_changes'],
+    )
+    check(
+        'Guarded CPU loads: all scoped artifacts match their recorded hashes and sizes',
+        all(
+            hashlib.sha256(
+                (ROOT / 'docs/audit-evidence/guarded-cpu-loads-v3' / name).read_bytes()
+            ).hexdigest()
+            == expected['sha256']
+            and (ROOT / 'docs/audit-evidence/guarded-cpu-loads-v3' / name).stat().st_size
+            == expected['bytes']
+            for name, expected in guarded_loads['artifacts'].items()
+        ),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -829,6 +862,20 @@ def main(language):
         ('integrated137-remote-ci', integrated_ci),
         ('integrated138-remote-ci', current_ci),
         ('deferred-phase-v6', deferred_phase),
+        ('deferred-phase-v6-broad-failure', phase_broad_failure),
+    )
+    check(
+        'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
+        phase_broad_failure['status'] == 'failed-broad-campaign'
+        and phase_broad_failure['exit_code'] == 1
+        and phase_broad_failure['closed_commands'] == 57
+        and phase_broad_failure['closed_zero_commands'] == 56
+        and phase_broad_failure['failed_command'] == 'sanitized-bindings'
+        and phase_broad_failure['source_sha256'] == deferred_phase['source_sha256']
+        and phase_broad_failure['source_archive_sha256']
+        == hashlib.sha256(
+            (ROOT / 'docs/audit-evidence/deferred-phase-v6/sources.tar.gz').read_bytes()
+        ).hexdigest(),
     )
     check(
         'Current evidence: internal capsule artifacts match their recorded bytes after formatting',
@@ -874,6 +921,8 @@ def main(language):
                 'integrated137-remote-ci',
                 'integrated138-remote-ci',
                 'deferred-phase-v6',
+                'deferred-phase-v6-broad-failure',
+                'guarded-cpu-loads-v3',
                 'coherent-control-full',
                 'controlled-operands-full',
                 'controlled-operands-integration',

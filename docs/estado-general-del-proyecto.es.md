@@ -57,10 +57,25 @@ familia.
 **Hay un candidato aislado para corregir los ángulos de `phase`; todavía no está integrado.** Sus
 143 entradas congeladas pasaron 3380 comprobaciones en normal y otras 3380 con ASan/UBSan. Una
 prueba adicional compara los bits exactos de los ángulos con C ordinario y verifica 1600 estados
-complejos exportados entre ambas configuraciones. La regresión amplia sigue en curso en la
-[fotografía archivada](audit-evidence/deferred-phase-v6/summary.json). El
+complejos exportados entre ambas configuraciones. La regresión amplia
+[terminó con un fallo en bindings con sanitizadores](audit-evidence/deferred-phase-v6-broad-failure/README.es.md):
+56 comandos cerraron correctamente y el siguiente rechazó una rama inactiva válida. La
+[fotografía inicial](audit-evidence/deferred-phase-v6/summary.json) conserva su estado histórico en
+curso; no equivale al cierre de esa campaña. El
 [informe del candidato](re-audit-2026-10-18-deferred-phase.md) distingue estos resultados de los
 fallos de versiones anteriores y de las cargas CPU que siguen pendientes.
+
+**El candidato de cargas CPU también cerró sus pruebas dirigidas en normal y ASan/UBSan.** La
+[cápsula de resultados](audit-evidence/guarded-cpu-loads-v3/README.es.md) conserva 140 filas
+correctas, 420 ejecuciones nativas y 420 referencias C por configuración. Otras 76 comprobaciones
+por configuración verifican que consultar los controles no altere amplitudes, registros, versiones,
+contadores ni el generador aleatorio. Faltan la prueba independiente de estados exportados
+específica de estas lecturas, la regresión amplia y su integración; el fallo sigue presente en el
+árbol principal. Los resultados anteriores de 120/140 y el fallo del capturador quedan conservados.
+
+Se están desarrollando juntas las adaptaciones de `strcmp` y `strlen`. Aún no están integradas ni
+cambian los 27 nombres parciales del inventario. Sus pruebas incluyen estados completos, inversas,
+dominios con NUL, referencias de C y límites de recursos; la campaña agrupada sigue abierta.
 
 La corrección anterior de condiciones anidadas tuvo su propia integración de 137 entradas. Su
 [regresión local completa](audit-evidence/coherent-control-full/README.es.md) y su
