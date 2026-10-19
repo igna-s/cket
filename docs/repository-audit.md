@@ -5,8 +5,11 @@ entradas y añade `strlen`/`strcmp` parciales, ángulos diferidos de `phase` y c
 bajo controles probadamente inactivos. Pasaron sus pruebas dirigidas normales y con ASan/UBSan,
 incluidas 519 comprobaciones de bindings, 460 de cadenas y 3380 de ángulos por configuración. Una
 prueba separada verifica 640 estados complejos completos de cadenas con sus inversas. La regresión
-amplia de estas fuentes y su CI remoto siguen pendientes. El inventario actual tiene 780 entradas
-pendientes, 76 parciales y 368 de metadatos; ninguna se declara completa.
+amplia local sigue pendiente tras una interrupción de WSL, con su prefijo cerrado conservado. El
+[CI remoto de esas 144 entradas](audit-evidence/integrated144-remote-ci/README.es.md) terminó bien:
+28 suites en normal y ASan/UBSan, 145 compilaciones de fuzzing y 70 circuitos QuEST por
+configuración. El inventario actual tiene 780 entradas pendientes, 76 parciales y 368 de metadatos;
+ninguna se declara completa.
 
 La [integración de operandos del 18 de octubre](re-audit-2026-10-18-controlled-operands.md) añade
 evaluación diferida de operandos enteros bajo control coherente, conservación del dominio

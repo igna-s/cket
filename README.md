@@ -33,8 +33,11 @@ regression and separate installation checks for its historical 138 inputs. The
 [current 144-input integration](docs/audit-evidence/strings-integration-v6/README.es.md) adds
 guarded CPU loads, deferred supported `phase` angles, and partial
 [`strlen`/`strcmp`](docs/c11-strings.md) adapters. Its targeted normal/sanitizer checks and
-independent string states passed; its broad regression and current remote CI remain pending.
-Complete quantum C11 remains open.
+independent string states passed. Its
+[remote CI](docs/audit-evidence/integrated144-remote-ci/README.es.md) also passed all 28
+normal/sanitizer suites on the same compiler inputs. The larger local campaign with 665 fuzz
+compilations per configuration remains pending after an interrupted WSL session; its continuation
+preserves the closed prefix. Complete quantum C11 remains open.
 
 ## Install and build
 

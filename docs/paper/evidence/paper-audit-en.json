@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 379,
+  "checks": 380,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1888,7 +1888,12 @@
       "detail": ""
     },
     {
-      "check": "Memset category correction: exact normal/sanitized logs record350 native cases and70 diagnostics, total800",
+      "check": "Memset category correction: exact normal/sanitized logs record 350 native cases and 70 diagnostics, total 800",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Integrated144 CI: exact committed inputs passed 28 normal/sanitizer suites; expanded local fuzzing remains separate",
       "passed": true,
       "detail": ""
     },

@@ -80,7 +80,9 @@ reconocimiento del wrapper por sí solo no lo resolvía. La integración de 144 
 resultados calculados de accesos reales y pasa 519 comprobaciones de bindings por configuración. El
 cierre fallido se conserva junto con sus fuentes y registros.
 
-Falta cerrar la regresión amplia corregida y comprobar el CI de la integración actual. Las cargas
+Falta cerrar la campaña local ampliada corregida. El
+[CI de las 144 entradas](audit-evidence/integrated144-remote-ci/README.es.md) ya pasó las 28 suites
+en normal y ASan/UBSan; su fuzzing y semilla son distintos de los de la campaña local. Las cargas
 CPU tienen protección dirigida, una matriz positiva y 1120 estados independientes actuales con
 limpieza del resultado derivado; las inversas de las actualizaciones y su historia siguen
 pendientes. Siguen pendientes `long double`, llamadas reales generales y la compatibilidad completa

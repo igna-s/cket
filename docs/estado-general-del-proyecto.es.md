@@ -72,8 +72,13 @@ También se conservan los
 [siete fallos históricos de las 137 entradas](audit-evidence/coherent-arm-operands/failure-summary.json).
 Sus fuentes y resultados originales se mantienen separados de las correcciones posteriores.
 
-**La regresión amplia de las 144 entradas y el CI remoto de esta versión siguen pendientes.** Los
-resultados completos anteriores de 138 entradas no certifican la implementación nueva. El
+**El CI remoto de las 144 entradas terminó correctamente; la campaña local ampliada sigue
+pendiente.** La [evidencia del CI](audit-evidence/integrated144-remote-ci/README.es.md) comprueba
+las 28 suites normales y con ASan/UBSan del commit `45f71e7`, con las mismas fuentes del compilador.
+Incluye 145 compilaciones de fuzzing por configuración y semilla 20261011. La campaña local de 665
+compilaciones usa la semilla 20261012; una interrupción de WSL dejó 59 comandos cerrados y se
+continúa en otro segmento, conservando el prefijo y los logs parciales originales. Los resultados
+completos anteriores de 138 entradas no certifican la implementación nueva. El
 [fallo de bindings del candidato de fase](audit-evidence/deferred-phase-v6-broad-failure/README.es.md)
 queda conservado: una conversión booleana heredaba el tipo `volatile` de la marca cuántica y se
 confundía con una lectura CPU con efectos. La corrección distingue los valores calculados de los
@@ -273,10 +278,11 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo paso concreto es cerrar la regresión amplia de la implementación nueva y comprobar su CI,
-completar las inversas de actualizaciones controladas con cargas CPU y mejorar el diagnóstico de
-NUL. Después continúan los consumidores generales de punteros, tamaños, layouts, efectos y las demás
-familias de C11. **La integración nueva no completa C11 cuántico ni el objetivo general.**
+El próximo paso concreto es cerrar la continuación local e integrar la corrección de limpieza de
+`memset` cuando terminen sus validaciones separadas. Después se cierran `bool`, los enteros
+habituales y sus conversiones y operadores, siguiendo el orden acordado. El diagnóstico de NUL, los
+punteros, los tamaños, layouts y las demás familias conservan sus tareas pendientes. **La
+integración nueva no completa C11 cuántico ni el objetivo general.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

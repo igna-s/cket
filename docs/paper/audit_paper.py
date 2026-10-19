@@ -936,7 +936,7 @@ def main(language):
         (ROOT / 'docs/audit-evidence/memset-counter-correction/summary.json').read_text()
     )
     check(
-        'Memset category correction: exact normal/sanitized logs record350 native cases and70 diagnostics, total800',
+        'Memset category correction: exact normal/sanitized logs record 350 native cases and 70 diagnostics, total 800',
         counter_correction['status'] == 'verified-documentation-counter-correction'
         and counter_correction['source_sha256'] == string_integration['source_sha256']
         and counter_correction['checks_per_configuration']['native_executions'] == 350
@@ -956,6 +956,23 @@ def main(language):
         and hashlib.sha256((ROOT / counter_correction['source_archive']).read_bytes()).hexdigest()
         == counter_correction['source_archive_sha256'],
     )
+    integrated144_ci = json.loads(
+        (ROOT / 'docs/audit-evidence/integrated144-remote-ci/summary.json').read_text()
+    )
+    check(
+        'Integrated144 CI: exact committed inputs passed 28 normal/sanitizer suites; expanded local fuzzing remains separate',
+        integrated144_ci['status'] == 'verified-remote-ci-passed'
+        and integrated144_ci['head_sha'] == '45f71e7c6f16b0555d4ca693e2a9ae332d995844'
+        and integrated144_ci['source_files'] == 144
+        and integrated144_ci['source_sha256'] == string_integration['source_sha256']
+        and integrated144_ci['verified_suite_patterns'] == 28
+        and integrated144_ci['normal_and_sanitized']['strings_each'] == 460
+        and integrated144_ci['normal_and_sanitized']['bindings_each'] == 519
+        and integrated144_ci['normal_and_sanitized']['phase_each'] == 3380
+        and integrated144_ci['normal_and_sanitized']['fuzz_compilations_each'] == 145
+        and integrated144_ci['normal_and_sanitized']['fuzz_seed'] == 20261011
+        and all(job['conclusion'] == 'success' for job in integrated144_ci['jobs']),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -966,6 +983,7 @@ def main(language):
         ('deferred-phase-v6', deferred_phase),
         ('deferred-phase-v6-broad-failure', phase_broad_failure),
         ('strings-integration-v6', string_integration),
+        ('integrated144-remote-ci', integrated144_ci),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1023,6 +1041,7 @@ def main(language):
                 'controlled-operands-v5',
                 'integrated137-remote-ci',
                 'integrated138-remote-ci',
+                'integrated144-remote-ci',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

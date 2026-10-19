@@ -66,5 +66,9 @@ The maintained validator covers native programs, explicit rejected domains, comp
 saved inverses and separate wide-generation cases. Independent compiled-circuit proofs additionally
 check complete 64-bit `size_t` and 32-bit `int` results, two quantum inputs and mutable CPU
 snapshots. The [integration evidence](audit-evidence/strings-integration-v6/README.es.md) records
-the closed targeted normal/ASan/UBSan checks and 640 independent complex states. Its broader
-regression and current remote CI remain pending. Cybersecurity remains classical.
+the closed targeted normal/ASan/UBSan checks and 640 independent complex states. Its broader local
+regression remains pending after a WSL interruption. The
+[remote CI](audit-evidence/integrated144-remote-ci/README.es.md) passed all 28 normal/sanitizer
+suites on the same 144 compiler inputs, including 460 string checks per configuration. The smaller
+remote fuzz campaign remains distinct from the expanded local campaign. Cybersecurity remains
+classical.
