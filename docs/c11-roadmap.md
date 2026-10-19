@@ -14,6 +14,32 @@ April 12, 2011. It is a draft reference, not a claim of certification against th
 text. The target profile must identify GCC, ABI, integer representation, floating formats, libc and
 optional C11 facilities.
 
+## Implementation order
+
+The user requested this order on October 19, 2026: complete the commonly used types and operations
+before less frequently used facilities. This is a practical work order, not a measured usage ranking
+or a claim that the first groups are already complete.
+
+1. Close the everyday integer foundation: `_Bool`/`bool`, `char`, signed/unsigned `char`, `short`,
+   `int`, `long`, `long long`, their ordinary aliases, `size_t` and `ptrdiff_t`. Check
+   initialization, promotions, mixed signedness, casts, comparisons, arithmetic, shifts, assignment
+   results and cleanup. The declared target's widths and plain-`char` signedness must remain
+   explicit.
+1. Close the common consuming contexts: conditions, loops, direct functions, arrays, basic structs,
+   checked pointers, and frequent memory/string operations. Finish the `memset` lifetime correction
+   already in validation before starting another library family. Keep ordinary C behavior intact.
+1. Implement the next common capabilities, including quantum `float`/`double`, their conversions and
+   ordinary arithmetic, dynamic storage and general pointer/function use. Publish precise contracts
+   for classical I/O boundaries. Existing CPU floating angles for `phase` do not implement quantum
+   floating registers.
+1. Address less common facilities afterward: `long double`, complex arithmetic, general bitfields
+   and unions, wide-character/locale interfaces, advanced floating environments, atomics and
+   threading. These remain in the complete objective; their lower priority does not close them.
+
+Cybersecurity and security-specific interfaces remain classical under the user's standing scope.
+Each implementation must have evidence for its types, effects and consuming contexts; adding a
+declaration or passing a small fixture cannot mark a whole type or header complete.
+
 ## Status and restriction classes
 
 Every inventory entry needs a classical status, a quantum status, evidence, remaining work and a

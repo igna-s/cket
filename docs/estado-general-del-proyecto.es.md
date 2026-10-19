@@ -201,6 +201,21 @@ comprobaciones por configuración en la campaña completa anterior de 138 entrad
 anteriores y las campañas de 136 y 137 entradas conservan sus fuentes originales. Los consumidores
 generales de punteros, sus tiempos de vida y la ABI general siguen incompletos.
 
+## Orden de implementación acordado
+
+Primero se cierran los tipos habituales: `bool`, `char`, `short`, `int`, `long`, `long long`, sus
+variantes sin signo, aliases, `size_t` y `ptrdiff_t`. Esto incluye conversiones, promociones,
+operadores y limpieza de temporales; aceptar una declaración no demuestra compatibilidad completa.
+
+Después siguen los contextos cotidianos: condiciones, bucles, funciones directas, arrays, structs
+básicos, punteros y funciones frecuentes de memoria y cadenas. La corrección de vida de temporales
+de `memset` ya está en validación. Los siguientes tipos numéricos serán `float` y `double`, junto
+con sus operaciones y conversiones, antes de abordar `long double` y complejos.
+
+Las interfaces menos habituales quedan para más adelante, conservando el objetivo completo. La
+ciberseguridad sigue clásica. El [roadmap](c11-roadmap.md#implementation-order) detalla este orden,
+pedido el 19 de octubre de 2026; no representa una medición estadística de uso.
+
 ## Qué falta implementar para el objetivo grande
 
 | Bloque                                | Trabajo pendiente principal                                                                                                                                                                       |

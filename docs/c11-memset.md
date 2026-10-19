@@ -97,9 +97,14 @@ Cybersecurity and security-specific memory interfaces remain classical and outsi
 
 The maintained [validator](../tests/validate_memset.c) passes **800 checks** in each normal and
 ASan/UBSan configuration: 140 dense state/inverse cases, 20 complete controlled labeled-action
-circuits, 160 sequenced-effect state/inverse cases, 340 native executions, 80 diagnostic contracts
+circuits, 160 sequenced-effect state/inverse cases, 350 native executions, 70 diagnostic contracts
 and 60 wide generation cases. Source profiles use five GCC optimization levels and both builtin
 modes; state/action checks also use both synthesis policies. These proof categories are distinct.
+
+The [category correction](audit-evidence/memset-counter-correction/summary.json) preserves the two
+closed normal/ASan/UBSan logs from the 144-input campaign. The earlier documentation split of 340
+native executions and 80 diagnostics was incorrect; the total remains 800. Those two closed commands
+do not establish that the complete campaign has finished.
 
 The complete [134-input campaign](audit-evidence/memory-expressions/results.json) rebuilt its normal
 and instrumented tools in an isolated checkout. All 134 source hashes then matched main. The

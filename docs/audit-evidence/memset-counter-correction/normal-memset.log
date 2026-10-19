@@ -1,0 +1,7 @@
+PASS 140 dense complete-state memset cases with phases, retained inputs, saved inverses and clean private wires
+PASS 20 controlled memset circuits: all 512 labeled input basis paths, amplitudes, phases and saved inverses; canonical nine-H preparation, both synthesis policies
+PASS 160 complete memset value-effect states: postfix/prefix, decrement, comma, zero length, arrays, coherent/lazy effects, relative phases and saved inverses; live history before inversion, private zeros after
+PASS 350 native memset cases: classical return pointer, byte/word/array writes, partial bytes, coherent conditions, aliases and once-only CPU arguments; five GCC levels and both builtin modes
+PASS 70 memset rejection contracts: read-only storage, bounds, runtime counts, unmeasured CPU writes, reachable zero-length argument UB and coherent CPU effects
+PASS 60 wide memset no-table circuits: signed/unsigned 16/32/64-bit layouts, five GCC levels and both builtin modes; generation evidence
+800 memset checks passed; dense states, labeled paths, native executions, rejections and wide generation have distinct proof scopes.

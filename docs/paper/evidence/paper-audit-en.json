@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 378,
+  "checks": 379,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1884,6 +1884,11 @@
     },
     {
       "check": "Current144 inventory: strlen and strcmp remain partial; complete C11 is not claimed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Memset category correction: exact normal/sanitized logs record350 native cases and70 diagnostics, total800",
       "passed": true,
       "detail": ""
     },

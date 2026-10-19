@@ -932,6 +932,30 @@ def main(language):
             if row['header'] == 'string.h' and row['name'] in {'strlen', 'strcmp'}
         ),
     )
+    counter_correction = json.loads(
+        (ROOT / 'docs/audit-evidence/memset-counter-correction/summary.json').read_text()
+    )
+    check(
+        'Memset category correction: exact normal/sanitized logs record350 native cases and70 diagnostics, total800',
+        counter_correction['status'] == 'verified-documentation-counter-correction'
+        and counter_correction['source_sha256'] == string_integration['source_sha256']
+        and counter_correction['checks_per_configuration']['native_executions'] == 350
+        and counter_correction['checks_per_configuration']['diagnostic_contracts'] == 70
+        and sum(counter_correction['checks_per_configuration'].values())
+        == counter_correction['total_per_configuration']
+        == 800
+        and len(counter_correction['commands']) == 2
+        and all(
+            row['returncode'] == 0
+            and hashlib.sha256(
+                (ROOT / 'docs/audit-evidence/memset-counter-correction' / row['log']).read_bytes()
+            ).hexdigest()
+            == row['log_sha256']
+            for row in counter_correction['commands']
+        )
+        and hashlib.sha256((ROOT / counter_correction['source_archive']).read_bytes()).hexdigest()
+        == counter_correction['source_archive_sha256'],
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1003,6 +1027,7 @@ def main(language):
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',
                 'strings-integration-v6',
+                'memset-counter-correction',
                 'coherent-control-full',
                 'controlled-operands-full',
                 'controlled-operands-integration',
