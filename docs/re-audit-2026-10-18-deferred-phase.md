@@ -1,6 +1,12 @@
-# Ángulos de `phase` bajo control cuántico: candidato sin integrar
+# Ángulos de `phase` bajo control cuántico: candidato histórico de 143 entradas
 
-El compilador integrado conserva el fallo de evaluación anticipada de ángulos como
+**Actualización del 19 de octubre:** la
+[integración de 144 entradas](audit-evidence/strings-integration-v6/README.es.md) incluye la
+corrección y resuelve el rechazo de bindings con sanitizadores. Sus pruebas dirigidas cerraron
+correctamente; su regresión amplia sigue pendiente. Los resultados siguientes conservan el alcance
+histórico del candidato de 143 entradas y su fallo, sin convertirlo en una campaña exitosa.
+
+El compilador integrado de 138 entradas conservaba el fallo de evaluación anticipada de ángulos como
 `if (b) phase(10 / k)` cuando el control está desactivado y `k` vale cero. El candidato v6 contiene
 una corrección y pruebas cerradas sobre **143 entradas congeladas**. Su regresión amplia
 [terminó con un fallo](audit-evidence/deferred-phase-v6-broad-failure/README.es.md); estos
@@ -8,8 +14,8 @@ resultados no certifican una integración. La fotografía inicial conserva su es
 curso».
 
 La [cápsula verificable](audit-evidence/deferred-phase-v6/summary.json) conserva las fuentes,
-controladores, transcripciones, circuitos y antecedentes fallidos. El árbol integrado sigue
-identificado por la
+controladores, transcripciones, circuitos y antecedentes fallidos. La base integrada de ese
+candidato queda identificada por la
 [integración anterior de 138 entradas](audit-evidence/controlled-operands-integration/integration-summary.json).
 
 ## Qué cambia en el candidato
@@ -68,11 +74,15 @@ es idéntico entre esas tres versiones; cambiaron las pruebas.
 
 La regresión amplia cerró 56 comandos con éxito y falló en `sanitized-bindings`. La prueba
 preexistente `n ? 1 / d : false`, con `n` falso y `d` cero, fue rechazada como efecto CPU. El
-control de volatilidad se aplicaba antes de reconocer el wrapper de sanitizadores de GCC. La
-corrección posterior está en pruebas; este cierre fallido se conserva junto con sus fuentes y
-registros.
+resultado de la comparación heredaba un tipo booleano `volatile` usado como marca cuántica. Se
+interpretaba como acceso CPU con efectos antes de recorrer su cálculo puro. Adelantar el
+reconocimiento del wrapper por sí solo no lo resolvía. La integración de 144 entradas distingue
+resultados calculados de accesos reales y pasa 519 comprobaciones de bindings por configuración. El
+cierre fallido se conserva junto con sus fuentes y registros.
 
-Falta aprobar la regresión amplia corregida y aplicar la integración con sus hashes. Quedan
-pendientes las cargas CPU inválidas bajo controles inactivos, `long double`, llamadas reales
-generales y la compatibilidad completa con C11. No se ha verificado ejecución en hardware cuántico
-ni aceleración frente a CPU. La ciberseguridad permanece clásica y sin cambios.
+Falta cerrar la regresión amplia corregida y comprobar el CI de la integración actual. Las cargas
+CPU tienen protección dirigida, una matriz positiva y 1120 estados independientes actuales con
+limpieza del resultado derivado; las inversas de las actualizaciones y su historia siguen
+pendientes. Siguen pendientes `long double`, llamadas reales generales y la compatibilidad completa
+con C11. No se ha verificado ejecución en hardware cuántico ni aceleración frente a CPU. La
+ciberseguridad permanece clásica y sin cambios.

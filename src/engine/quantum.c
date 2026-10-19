@@ -643,6 +643,7 @@ static int controls(
 #include "structured.inc"
 static const cj_doc *parsed_operation(qc_context *c, const char *text, cj_doc *local);
 #include "arithmetic.inc"
+#include "phase.inc"
 
 static int synthesize_compute(
     qc_context *c, const cj_doc *d, int expr, qc_register *target, qc_mask outer, qc_mask state) {
@@ -1536,6 +1537,22 @@ int qc_apply_token(qc_context *c,
             return qc_fail(c, "invalid runtime phase argument kind");
         int angle = cj_get(d, inst, "angle");
         double value = angle < 0 ? PI : cj_double(d, angle);
+        int expr = cj_get(d, inst, "angle_expr");
+        if (expr >= 0) {
+            if (has_argument)
+                return qc_fail(c, "runtime phase argument conflicts with a deferred expression");
+            if (c->structural) {
+                taint_controls(c, mask);
+                return 1;
+            }
+            int inactive;
+            if (!phase_inactive(c, d, inst, &inactive))
+                return 0;
+            if (inactive)
+                return 1;
+            if (!phase_value(c, d, expr, &value, 0))
+                return 0;
+        }
         if (dynamic && !has_argument) {
             if (!c->validation)
                 return qc_fail(
@@ -1954,6 +1971,30 @@ static int operation(qc_context *c, const char *text, int has_arg, uint64_t arg,
     cj_doc local = {0};
     const cj_doc *d = parsed_operation(c, text, &local);
     int ok = d && qc_apply_token(c, d, 0, has_arg, arg, result);
+    cj_free(&local);
+    return ok;
+}
+
+int qc_controls_possible(qc_context *c, const char *text, int *possible) {
+    if (!possible)
+        return qc_fail(c, "control support query requires an output");
+    if (*c->error)
+        return 0;
+    cj_doc local = {0};
+    const cj_doc *d = parsed_operation(c, text, &local);
+    int inactive = 0, ok = d && qc_verify_instruction(c, d, 0);
+    if (ok && (!cj_equal(d, cj_get(d, 0, "op"), "qphase") || cj_get(d, 0, "angle") < 0 ||
+               cj_double(d, cj_get(d, 0, "angle")) != 0 || cj_get(d, 0, "angle_expr") >= 0 ||
+               cj_bool(d, cj_get(d, 0, "dynamic"))))
+        ok = qc_fail(c, "control support query requires a static zero-angle phase envelope");
+    qc_mask mask, pattern;
+    int impossible;
+    if (ok)
+        ok = controls(c, d, 0, &mask, &pattern, &impossible);
+    if (ok)
+        ok = phase_inactive(c, d, 0, &inactive);
+    if (ok)
+        *possible = !inactive;
     cj_free(&local);
     return ok;
 }

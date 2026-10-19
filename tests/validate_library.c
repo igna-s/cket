@@ -173,7 +173,7 @@ static void other_boundaries(validation *v) {
          "classical initialization cannot read a quantum value"},
         {"strlen",
          "quant char a[2]={'a',0};size_t r=strlen(a);(void)r;reset(a[0]);reset(a[1]);",
-         "quantum products cannot decay to CPU pointers"},
+         "classical initialization cannot read a quantum value"},
         {"mbrtoc16",
          "char16_t out;mbstate_t state={0};quant char a[2]={'a',0};size_t r=mbrtoc16(&out,a,1,&state);(void)r;reset(a[0]);reset(a[1]);",
          "quantum products cannot decay to CPU pointers"},

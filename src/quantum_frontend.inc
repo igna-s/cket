@@ -4,6 +4,7 @@
 tree expand_quantum_program(tree value);
 bool standard_integer_division(tree fn);
 bool standard_memory_compare(tree fn);
+bool standard_string_length(tree fn);
 bool standard_memory_set(tree fn);
 std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
@@ -37,16 +38,30 @@ bool gcc_quantum_sanitizer_guard(tree value) {
 bool quantum_pure_expression(tree value) {
     if (!value)
         return true;
+    auto code = TREE_CODE(value);
+    // GCC marks sanitizer wrappers as effectful/volatile. Judge the actual
+    // deferred operand first; genuine volatile reads still fail below.
+    if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
+        return quantum_pure_expression(TREE_OPERAND(value, 1));
+    // These SAVE_EXPR nodes are generated only after checked, nonvolatile
+    // CPU byte reads. Their composed predicates remain pure captures.
+    if (cpu_byte_saves.count(value))
+        return true;
     if (quantum(value) || CONSTANT_CLASS_P(value) || TYPE_P(value))
         return true;
+    // A quantum Boolean conversion can give an arithmetic result a volatile
+    // type. Only storage accesses observe that qualifier. Recurse through
+    // computed results so GCC's pure UBSan wrappers remain recognizable;
+    // genuine volatile declarations and reference reads still fail here.
+    bool storage = DECL_P(value) || TREE_CODE_CLASS(code) == tcc_reference;
+    if (!has_quantum(value) && (TREE_THIS_VOLATILE(value) ||
+                                (storage && TREE_TYPE(value) && TYPE_VOLATILE(TREE_TYPE(value)))))
+        return false;
     if (!has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value)) && !TREE_SIDE_EFFECTS(value) &&
         !TREE_THIS_VOLATILE(value) && !TYPE_VOLATILE(TREE_TYPE(value)))
         return true;
     if (DECL_P(value))
         return TREE_CODE(value) == VAR_DECL && !TREE_THIS_VOLATILE(value);
-    auto code = TREE_CODE(value);
-    if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
-        return quantum_pure_expression(TREE_OPERAND(value, 1));
     if (code == CALL_EXPR && standard_integer_absolute(get_callee_fndecl(value)))
         return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
     if (code == CALL_EXPR && !standard_ctype(value).empty())
@@ -183,9 +198,15 @@ bool quantum_return_is_pure(tree value) {
         return true;
     if (TREE_CODE(value) == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
         return quantum_return_is_pure(TREE_OPERAND(value, 1));
+    // Taking a string literal's immutable object address has no CPU effect.
+    // The checked string adapter resolves its extent at the caller; this does
+    // not permit escaping a quantum object's address to an ordinary C call.
+    if (TREE_CODE(value) == ADDR_EXPR && TREE_CODE(strip(TREE_OPERAND(value, 0))) == STRING_CST)
+        return true;
     if (TREE_CODE(value) == CALL_EXPR) {
         if (!quantum_function(get_callee_fndecl(value)) &&
-            !standard_memory_compare(get_callee_fndecl(value)) && standard_ctype(value).empty())
+            !standard_memory_compare(get_callee_fndecl(value)) &&
+            !standard_string_length(get_callee_fndecl(value)) && standard_ctype(value).empty())
             return false;
         for (int i = 0; i < call_expr_nargs(value); ++i)
             if (!quantum_return_is_pure(CALL_EXPR_ARG(value, i)))
@@ -1299,7 +1320,8 @@ tree expand_static_for_block(tree block) {
             bool move = false;
             tree fn = get_callee_fndecl(value);
             if (standard_memory_copy(fn, move) || standard_memory_compare(fn) ||
-                standard_memory_set(fn) || quantum_function(fn) || !standard_ctype(value).empty()) {
+                standard_string_length(fn) || standard_memory_set(fn) || quantum_function(fn) ||
+                !standard_ctype(value).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))
@@ -1474,6 +1496,11 @@ tree expand_quantum_program(tree value) {
         tree fn = get_callee_fndecl(value);
         if (standard_memory_set(fn)) {
             tree expanded = expand_memory_set(value);
+            if (expanded)
+                return expanded;
+        }
+        if (standard_string_length(fn)) {
+            tree expanded = expand_string_length(value);
             if (expanded)
                 return expanded;
         }

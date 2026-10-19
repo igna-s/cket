@@ -1,0 +1,575 @@
+{
+  "status": "running",
+  "started_utc": "2026-10-19T20:21:41.056876+00:00",
+  "source_files": 144,
+  "source_manifest_sha256": "9443b457d6f1fdafa6cbdacb19f7c2bb8e5c916ca1ea43f4f524d99316c073e5",
+  "commands": [
+    {
+      "name": "fresh-normal-build",
+      "command": [
+        "bash",
+        "scripts/build.sh"
+      ],
+      "started_utc": "2026-10-19T20:21:41.201706+00:00",
+      "finished_utc": "2026-10-19T20:22:20.186369+00:00",
+      "returncode": 0,
+      "log": "001-fresh-normal-build.log",
+      "log_sha256": "2fb1a07d126f14a5f747874b960f737cb9698a8fe5a77a7849e7b80dff457aba"
+    },
+    {
+      "name": "normal-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1"
+      ],
+      "started_utc": "2026-10-19T20:22:20.194349+00:00",
+      "finished_utc": "2026-10-19T20:22:56.819907+00:00",
+      "returncode": 0,
+      "log": "002-normal-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    },
+    {
+      "name": "normal-phase",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_phase"
+      ],
+      "started_utc": "2026-10-19T20:22:56.821272+00:00",
+      "finished_utc": "2026-10-19T20:24:18.583928+00:00",
+      "returncode": 0,
+      "log": "003-normal-phase.log",
+      "log_sha256": "e966a2eb2344202b45aab412de560f3a875d467c6237175b10eb45a6989acfdd"
+    },
+    {
+      "name": "normal-strings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_strings"
+      ],
+      "started_utc": "2026-10-19T20:24:18.584773+00:00",
+      "finished_utc": "2026-10-19T20:25:58.651358+00:00",
+      "returncode": 0,
+      "log": "004-normal-strings.log",
+      "log_sha256": "6401ddd8ce1ba3a2d3071ca39de069160b252202120d51bab2eb08f8828e1f0b"
+    },
+    {
+      "name": "normal-controlled_operands",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_controlled_operands"
+      ],
+      "started_utc": "2026-10-19T20:25:58.652699+00:00",
+      "finished_utc": "2026-10-19T20:27:00.773817+00:00",
+      "returncode": 0,
+      "log": "005-normal-controlled_operands.log",
+      "log_sha256": "a66a8f086048f4260c9293fa010ef30b806277314004c4676faa5670d5d12b63"
+    },
+    {
+      "name": "normal-harness",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_harness"
+      ],
+      "started_utc": "2026-10-19T20:27:00.774985+00:00",
+      "finished_utc": "2026-10-19T20:27:02.143625+00:00",
+      "returncode": 0,
+      "log": "006-normal-harness.log",
+      "log_sha256": "e20b96519ca344d568c8a9c774dfec0490eca2201d28c3996572948831350292"
+    },
+    {
+      "name": "normal-shifts",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_shifts"
+      ],
+      "started_utc": "2026-10-19T20:27:02.144521+00:00",
+      "finished_utc": "2026-10-19T20:27:04.623421+00:00",
+      "returncode": 0,
+      "log": "007-normal-shifts.log",
+      "log_sha256": "d580bb1ca7dc0acc8e69488d4e6a2b7cd2509e060a6a5ad9876a486f4ed6b4e0"
+    },
+    {
+      "name": "normal-expressions",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_expressions"
+      ],
+      "started_utc": "2026-10-19T20:27:04.624606+00:00",
+      "finished_utc": "2026-10-19T20:27:06.388970+00:00",
+      "returncode": 0,
+      "log": "008-normal-expressions.log",
+      "log_sha256": "4e2f73c3afcaa367f0891aab27ce89dd51a5cb141c6b35a3dc8ffe8623a66921"
+    },
+    {
+      "name": "normal-inplace",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_inplace"
+      ],
+      "started_utc": "2026-10-19T20:27:06.389808+00:00",
+      "finished_utc": "2026-10-19T20:27:07.458983+00:00",
+      "returncode": 0,
+      "log": "009-normal-inplace.log",
+      "log_sha256": "3390ecb7f97c1b7aa25807bac7140b94a5e955d8262ad7e945436a6eef970634"
+    },
+    {
+      "name": "normal-memcopy",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_memcopy"
+      ],
+      "started_utc": "2026-10-19T20:27:07.459839+00:00",
+      "finished_utc": "2026-10-19T20:27:41.067866+00:00",
+      "returncode": 0,
+      "log": "010-normal-memcopy.log",
+      "log_sha256": "ab937d3983f46029c82f5a9e1715aa3746dba22f5f0ab9470928726917d14953"
+    },
+    {
+      "name": "normal-memcmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_memcmp"
+      ],
+      "started_utc": "2026-10-19T20:27:41.070124+00:00",
+      "finished_utc": "2026-10-19T20:29:05.067253+00:00",
+      "returncode": 0,
+      "log": "011-normal-memcmp.log",
+      "log_sha256": "650afff30905091673fd1190014ba04b4bbca9aa787694cf2cd722099560ba7c"
+    },
+    {
+      "name": "normal-strncmp",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_strncmp"
+      ],
+      "started_utc": "2026-10-19T20:29:05.069588+00:00",
+      "finished_utc": "2026-10-19T20:29:52.902451+00:00",
+      "returncode": 0,
+      "log": "012-normal-strncmp.log",
+      "log_sha256": "0cbc2cf175a076aab82c284ab2c3df835fbc92c06f3dbc06d72e3fb2873f9500"
+    },
+    {
+      "name": "normal-memset",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_memset"
+      ],
+      "started_utc": "2026-10-19T20:29:52.907285+00:00",
+      "finished_utc": "2026-10-19T20:32:28.519079+00:00",
+      "returncode": 0,
+      "log": "013-normal-memset.log",
+      "log_sha256": "b6bd70275228d2b4dbaab47f143b9284417437788ca2f0bde7de0ec0b62572c9"
+    },
+    {
+      "name": "normal-memory_sequences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_memory_sequences"
+      ],
+      "started_utc": "2026-10-19T20:32:28.521386+00:00",
+      "finished_utc": "2026-10-19T20:33:12.765030+00:00",
+      "returncode": 0,
+      "log": "014-normal-memory_sequences.log",
+      "log_sha256": "26b42f892f2919f2c136e05707e368449409b6718c5a9b650d2ccfbf77bc699f"
+    },
+    {
+      "name": "normal-memory_returns",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_memory_returns"
+      ],
+      "started_utc": "2026-10-19T20:33:12.766036+00:00",
+      "finished_utc": "2026-10-19T20:33:33.980587+00:00",
+      "returncode": 0,
+      "log": "015-normal-memory_returns.log",
+      "log_sha256": "844850014fca7b2c45bae73036a965e088cede8c625f9d072fcd6000ea242f08"
+    },
+    {
+      "name": "normal-pointer_differences",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_pointer_differences"
+      ],
+      "started_utc": "2026-10-19T20:33:33.982700+00:00",
+      "finished_utc": "2026-10-19T20:33:46.547464+00:00",
+      "returncode": 0,
+      "log": "016-normal-pointer_differences.log",
+      "log_sha256": "b8e6cc724ea63e906c5066b9319fc2f0d6a942e45d02cd6d45130ff44176e51b"
+    },
+    {
+      "name": "normal-byte_snapshots",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_byte_snapshots"
+      ],
+      "started_utc": "2026-10-19T20:33:46.549006+00:00",
+      "finished_utc": "2026-10-19T20:42:16.580536+00:00",
+      "returncode": 0,
+      "log": "017-normal-byte_snapshots.log",
+      "log_sha256": "f10e9d995a0628201cc87a31e4f727af247eba91a11b8fd9b64d677e67d60a50"
+    },
+    {
+      "name": "normal-division",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_division"
+      ],
+      "started_utc": "2026-10-19T20:42:16.583473+00:00",
+      "finished_utc": "2026-10-19T20:43:06.672173+00:00",
+      "returncode": 0,
+      "log": "018-normal-division.log",
+      "log_sha256": "7cfdcf107236d5c819ed42be18207011d0a73dc5cd0ee853b89c57c2675792d3"
+    },
+    {
+      "name": "normal-bindings",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_bindings"
+      ],
+      "started_utc": "2026-10-19T20:43:06.673505+00:00",
+      "finished_utc": "2026-10-19T20:43:30.784279+00:00",
+      "returncode": 0,
+      "log": "019-normal-bindings.log",
+      "log_sha256": "adc64ab864638748102961744e77e63afabf0ae6949db8a40894e853a0990f98"
+    },
+    {
+      "name": "normal-history",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_history"
+      ],
+      "started_utc": "2026-10-19T20:43:30.785238+00:00",
+      "finished_utc": "2026-10-19T20:47:14.741779+00:00",
+      "returncode": 0,
+      "log": "020-normal-history.log",
+      "log_sha256": "99374c97d7f203277279752efa16204f07535900597c924ac95f956a67b62d44"
+    },
+    {
+      "name": "normal-ctype",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_ctype"
+      ],
+      "started_utc": "2026-10-19T20:47:14.744763+00:00",
+      "finished_utc": "2026-10-19T20:48:27.629633+00:00",
+      "returncode": 0,
+      "log": "021-normal-ctype.log",
+      "log_sha256": "47a3447ff060d5dda9dd0e43e3fb333cc11658f33d45b04b3fca552b8c7d72b2"
+    },
+    {
+      "name": "normal-profiles",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_profiles"
+      ],
+      "started_utc": "2026-10-19T20:48:27.630964+00:00",
+      "finished_utc": "2026-10-19T20:48:27.718138+00:00",
+      "returncode": 0,
+      "log": "022-normal-profiles.log",
+      "log_sha256": "5a7666bbfb1b0459750fbf6c1a9ae0cb32c9c88386ed3ca2f532dea818ef4876"
+    },
+    {
+      "name": "normal-numeric_locale",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_numeric_locale"
+      ],
+      "started_utc": "2026-10-19T20:48:27.719349+00:00",
+      "finished_utc": "2026-10-19T20:48:31.805142+00:00",
+      "returncode": 0,
+      "log": "023-normal-numeric_locale.log",
+      "log_sha256": "648b18f9712b19b771a92b6e5da64438b4dc379a083a8a63bf8c727b66ef7655"
+    },
+    {
+      "name": "normal-library",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_library"
+      ],
+      "started_utc": "2026-10-19T20:48:31.807448+00:00",
+      "finished_utc": "2026-10-19T20:50:48.700857+00:00",
+      "returncode": 0,
+      "log": "024-normal-library.log",
+      "log_sha256": "39b25588789f5e9f699cc97550f211e729b362b489351de8a125a8ec8aa258d6"
+    },
+    {
+      "name": "normal-examples",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/test_examples"
+      ],
+      "started_utc": "2026-10-19T20:50:48.702006+00:00",
+      "finished_utc": "2026-10-19T20:51:38.629265+00:00",
+      "returncode": 0,
+      "log": "025-normal-examples.log",
+      "log_sha256": "a0adfe2a9a3ee98975479b6786108f5c53c71918665497a54b48956de3125499"
+    },
+    {
+      "name": "normal-classical",
+      "command": [
+        "bash",
+        "scripts/test-c11-classical.sh"
+      ],
+      "started_utc": "2026-10-19T20:51:38.630278+00:00",
+      "finished_utc": "2026-10-19T20:51:39.993092+00:00",
+      "returncode": 0,
+      "log": "026-normal-classical.log",
+      "log_sha256": "7f73ced17c393ca4d21a34b789dc6556a79155f48e4d3c4d00f9624e8e21058d"
+    },
+    {
+      "name": "normal-validation-build",
+      "command": [
+        "bash",
+        "scripts/build-validation.sh"
+      ],
+      "started_utc": "2026-10-19T20:51:39.994529+00:00",
+      "finished_utc": "2026-10-19T20:51:46.455792+00:00",
+      "returncode": 0,
+      "log": "027-normal-validation-build.log",
+      "log_sha256": "e3d5a54cf590996a0eeb950c53465753d22b5acdcc91642e7ab6f5bf8e54211a"
+    },
+    {
+      "name": "normal-build-resumable-fuzz",
+      "command": [
+        "gcc-11",
+        "-std=c11",
+        "-Wall",
+        "-Wextra",
+        "-Werror",
+        "-Itests",
+        "-O2",
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/full-campaign-v1/resumable-fuzz-driver.c",
+        "tests/validation.c",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full"
+      ],
+      "started_utc": "2026-10-19T20:51:46.457029+00:00",
+      "finished_utc": "2026-10-19T20:51:46.815391+00:00",
+      "returncode": 0,
+      "log": "028-normal-build-resumable-fuzz.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "normal-fuzz-000-016",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "0",
+        "--limit",
+        "16"
+      ],
+      "started_utc": "2026-10-19T20:51:46.816506+00:00",
+      "finished_utc": "2026-10-19T20:53:02.051082+00:00",
+      "returncode": 0,
+      "log": "029-normal-fuzz-000-016.log",
+      "log_sha256": "bc0b2d08736e2141cf788afd9e2f4cc797237256dba6085f5cc774c871852294"
+    },
+    {
+      "name": "normal-fuzz-016-032",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "16",
+        "--limit",
+        "32"
+      ],
+      "started_utc": "2026-10-19T20:53:02.052600+00:00",
+      "finished_utc": "2026-10-19T20:54:05.648828+00:00",
+      "returncode": 0,
+      "log": "030-normal-fuzz-016-032.log",
+      "log_sha256": "ff1c9776f04f1fa6fd0111fc820d065e4cf1c3403c2a91d1f6686033f03991c4"
+    },
+    {
+      "name": "normal-fuzz-032-048",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "32",
+        "--limit",
+        "48"
+      ],
+      "started_utc": "2026-10-19T20:54:05.650258+00:00",
+      "finished_utc": "2026-10-19T20:55:11.901135+00:00",
+      "returncode": 0,
+      "log": "031-normal-fuzz-032-048.log",
+      "log_sha256": "8e3b3bded3f1c67894cffae8afd190fb3296d8612a850515695728d051517dfb"
+    },
+    {
+      "name": "normal-fuzz-048-064",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "48",
+        "--limit",
+        "64"
+      ],
+      "started_utc": "2026-10-19T20:55:11.902541+00:00",
+      "finished_utc": "2026-10-19T20:56:17.438292+00:00",
+      "returncode": 0,
+      "log": "032-normal-fuzz-048-064.log",
+      "log_sha256": "5bc212447bce53ac4484333a080806416bb5c992f40ec093d154a3af244bb2b9"
+    },
+    {
+      "name": "normal-fuzz-064-080",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "64",
+        "--limit",
+        "80"
+      ],
+      "started_utc": "2026-10-19T20:56:17.439539+00:00",
+      "finished_utc": "2026-10-19T20:57:18.242513+00:00",
+      "returncode": 0,
+      "log": "033-normal-fuzz-064-080.log",
+      "log_sha256": "df5e967f53ed30eb76c7166b2d684827f4b237ca5c4a1e183790cdee900b1fa0"
+    },
+    {
+      "name": "normal-fuzz-080-096",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "80",
+        "--limit",
+        "96"
+      ],
+      "started_utc": "2026-10-19T20:57:18.244109+00:00",
+      "finished_utc": "2026-10-19T20:58:20.713257+00:00",
+      "returncode": 0,
+      "log": "034-normal-fuzz-080-096.log",
+      "log_sha256": "12f75e05d3997a3e7dcd6f9a8631d76d95e0760367661b8621d37bdf0811151a"
+    },
+    {
+      "name": "normal-fuzz-096-112",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "96",
+        "--limit",
+        "112"
+      ],
+      "started_utc": "2026-10-19T20:58:20.716856+00:00",
+      "finished_utc": "2026-10-19T20:59:23.970992+00:00",
+      "returncode": 0,
+      "log": "035-normal-fuzz-096-112.log",
+      "log_sha256": "3c052efa7d4ff1a6805c215ae5993f373e7d5252d8ed809e7ae723cbedc7d5fa"
+    },
+    {
+      "name": "normal-fuzz-112-128",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "112",
+        "--limit",
+        "128"
+      ],
+      "started_utc": "2026-10-19T20:59:23.972401+00:00",
+      "finished_utc": "2026-10-19T21:00:28.793192+00:00",
+      "returncode": 0,
+      "log": "036-normal-fuzz-112-128.log",
+      "log_sha256": "f87fbd1ff5b5a46d8653525959835e11fed9ce1dccc03fe4062714a806a4f75e"
+    },
+    {
+      "name": "normal-fuzz-128-133",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/fuzz_frontend-resumable-full",
+        "--seed",
+        "20261012",
+        "--cases",
+        "128",
+        "--first",
+        "128",
+        "--limit",
+        "133"
+      ],
+      "started_utc": "2026-10-19T21:00:28.796849+00:00",
+      "finished_utc": "2026-10-19T21:00:47.464304+00:00",
+      "returncode": 0,
+      "log": "037-normal-fuzz-128-133.log",
+      "log_sha256": "f33bcbf68bee6ec04bb61f4d62a8e8ac3175ac0b6d7dda075eb9a5d23140c738"
+    },
+    {
+      "name": "normal-growth",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/benchmark_synthesis"
+      ],
+      "started_utc": "2026-10-19T21:00:47.472169+00:00",
+      "finished_utc": "2026-10-19T21:00:47.734333+00:00",
+      "returncode": 0,
+      "log": "038-normal-growth.log",
+      "log_sha256": "81d49dade0dc45fef92e79675f421a3750a396197c04ddf4574bd504c3956de1"
+    },
+    {
+      "name": "normal-qasm",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/validate_qasm"
+      ],
+      "started_utc": "2026-10-19T21:00:47.735777+00:00",
+      "finished_utc": "2026-10-19T21:02:10.344786+00:00",
+      "returncode": 0,
+      "log": "039-normal-qasm.log",
+      "log_sha256": "9c17f4edf4946f03dfd789fc7bd029c6430df21f0cbeac41a6d8126bdb5cf27b"
+    },
+    {
+      "name": "locale-sanitizer-boundary",
+      "command": [
+        "bash",
+        "scripts/test-locale-sanitizer.sh"
+      ],
+      "started_utc": "2026-10-19T21:02:10.345992+00:00",
+      "finished_utc": "2026-10-19T21:02:10.784214+00:00",
+      "returncode": 0,
+      "log": "040-locale-sanitizer-boundary.log",
+      "log_sha256": "3f418c89f34921bd430370f00192dd75fbd74c7ba1652b133abd7415461dd3d4"
+    },
+    {
+      "name": "fresh-sanitizer-build",
+      "command": [
+        "bash",
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/full-campaign-v1/fresh-sanitizer-build-only.sh"
+      ],
+      "started_utc": "2026-10-19T21:02:10.800597+00:00",
+      "finished_utc": "2026-10-19T21:03:56.334255+00:00",
+      "returncode": 0,
+      "log": "041-fresh-sanitizer-build.log",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "sanitized-native",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/sanitized/build/cket_tests",
+        "/tmp/quantum-audit-isolated-20261017/build/string-integration-v6/build/full-project-v1/build/sanitized"
+      ],
+      "started_utc": "2026-10-19T21:03:56.425881+00:00",
+      "finished_utc": "2026-10-19T21:05:20.728268+00:00",
+      "returncode": 0,
+      "log": "042-sanitized-native.log",
+      "log_sha256": "2b6551ce76d478fe99c565288d3ae4cb3d1f9c31f3d278ecaf0241bae92d00b6"
+    }
+  ],
+  "scope": "Fresh broad normal and ASan/UBSan builds on 144 canonical inputs. All repository suites include 519 bindings, 460 strings and 3380 phase checks per configuration. Fuzz retains 133 original indices, five optimization levels,256 byte inputs and seed20261012:665 compilations/configuration. This segmented campaign is distinct from a scripts/verify.sh process; no inherited broad pass. Earlier phase-v6 and string-v3 SAN bindings failures remain preserved. Source differences from targeted string-v5 are only archival counter metadata. Main integration, independent guarded CPU-load states and complete C11 remain separate. No hardware or speedup claim. Cybersecurity stays classical; no WSL/Windows configuration changes.",
+  "normal_fresh_core_sha256": {
+    "cket": "84b38c951b9190aa365b439427630704104b3fc9b2721e830430b2a2e197d90f",
+    "cket_backend": "35d46f88e950e29886d902cb1a0f1856250155082dec4c4e915b631c9b9e8eaa",
+    "cket_plugin.so": "05d8b620709a34b40ca55f05c915ac57be844677b1e1100dc6eea71a5f4e78a5",
+    "cket_runtime.o": "8fbb08785cf00c1f0437de04d122a8b54cc847394122b14a55fa53c126590a11",
+    "libcket_quantum.a": "37f8637e18a0d1641f9dba968ebecd9f637e52e0bb197dab91d4f9e965bcdf97"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "e281335bf77056868e60ec39a4ce86f47f151c3836bb423c46404eedc237fe71",
+    "cket_backend": "a271e0c4a02558dafe91c61c03ee898d1eba0941674f99905e09ec7ac16ffa54",
+    "cket_plugin.so": "5a7b3703bd640af3cdea3a1166093362d3efadd7a45eb804dd3066379ee00f9a",
+    "cket_runtime.o": "162aca02e22865dd4d9cb344cb8d061b408a35805f522e27b5180e754eaddbca",
+    "libcket_quantum.a": "334d03de5a0a029e76fa2f3f8645dde99b28c8622a3c90cde8b98e7c42938e0e"
+  }
+}

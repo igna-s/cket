@@ -29,8 +29,12 @@ what remains partial or pending, and what the available tests demonstrate.
 The [controlled-operand contract](docs/c11-controlled-operands.md) covers supported pure integer
 operands in coherent assignments, XOR, addition, standard integer absolutes and byte fill. Its
 [audit report](docs/re-audit-2026-10-18-controlled-operands.md) records complete normal/sanitizer
-regression and separate installation checks. Inactive CPU loads and deferred `phase` angles still
-have confirmed bugs; these limits and incomplete C11 coverage remain explicit.
+regression and separate installation checks for its historical 138 inputs. The
+[current 144-input integration](docs/audit-evidence/strings-integration-v6/README.es.md) adds
+guarded CPU loads, deferred supported `phase` angles, and partial
+[`strlen`/`strcmp`](docs/c11-strings.md) adapters. Its targeted normal/sanitizer checks and
+independent string states passed; its broad regression and current remote CI remain pending.
+Complete quantum C11 remains open.
 
 ## Install and build
 
@@ -576,7 +580,7 @@ controls, inverse, policy and C composition. The memory-copy suite adds 414 chec
 extensions, complete states/inverse, overlap, contracts, C composition and wide generation. The
 division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
 coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The binding
-suite adds 399 checks of complete states and saved inverse, typed integer endpoints, malformed
+suite adds 519 checks of complete states and saved inverse, typed integer endpoints, malformed
 inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 2332
 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU snapshot
 cleanup, coherent and CPU scalar joins, old/new expression results, sequencing, Boolean/word states,
@@ -621,6 +625,13 @@ The [snapshot follow-up](docs/re-audit-2026-10-17-byte-snapshots.md) records the
 normal/ASan/UBSan campaign, exact source identity and separate main-tree smoke checks. Cybersecurity
 operations remain classical and outside this quantum adaptation.
 
+`build/validate_strings` adds 460 bounded `strlen`/`strcmp` checks: 150 native executions, 130
+diagnostics, 60 wide exports and 120 complete phased states with saved inverses. A separate compiled
+proof checks 640 complete complex states across normal and ASan/UBSan builds, including full 64-bit
+`size_t` and 32-bit `int` results. See the [contract](docs/c11-strings.md) for bounds and remaining
+string work. `build/validate_phase` adds 3380 checks per configuration for supported deferred
+classical angles; quantum floating registers remain unimplemented.
+
 `build/validate_strncmp` adds 246 bounded string checks: complete phased states/inverses, native C,
 diagnostic contracts and separate wide generation. The
 [string follow-up](docs/re-audit-2026-10-15-strings.md) distinguishes the source-identical isolated
@@ -643,7 +654,7 @@ normal importer capacity failure, its correction and subsequent normal/ASan/UBSa
 
 For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
 `--require-complete` mode deliberately fails while any interface remains pending or partial. The
-current index contains 1224 interfaces: 782 pending, 74 partial and 368 metadata facilities. The
+current index contains 1224 interfaces: 780 pending, 76 partial and 368 metadata facilities. The
 index covers the named C11 profile, including optional facilities; it is not an implementation or a
 test result for each entry.
 

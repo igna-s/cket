@@ -91,11 +91,18 @@ Unknown pointers, dynamic addresses/extents, volatile/atomic CPU accesses, gener
 and indirect quantum ABI remain pending. This extends read-only byte access, without implementing
 general byte writes or libc.
 
-`phase(theta)` accepts finite classical angles, constant or runtime-computed. Runtime angle
-expressions can still execute CPU arithmetic from an inactive coherent arm; this is a confirmed
-pending bug, including division by zero that ordinary C would skip. `fourier` and `inverse_fourier`
-transform an entire register, with or without coherent controls, using quadratic synthesis. Neither
-enumerates the domain.
+The partial [`strlen`/`strcmp` adapters](c11-strings.md) preserve inputs and saved inverses on
+checked integer object-byte views of at most 64 bytes. Dynamic pointers, extents, general layouts
+and complete string-library compatibility remain pending.
+
+`phase(theta)` accepts finite classical angles, constant or runtime-computed. Supported pure
+binary32/binary64 arithmetic is deferred to the selected coherent domain, including typed integer
+subexpressions. Checked pure CPU loads use a symbolic control query to skip proved-inactive arms
+without measurement. General real calls, `long double`, quantum floating registers and complete
+effect contracts remain pending. See the
+[current evidence](audit-evidence/strings-integration-v6/README.es.md). `fourier` and
+`inverse_fourier` transform an entire register, with or without coherent controls, using quadratic
+synthesis. Neither enumerates the domain.
 
 The examples `functions.c`, `vector_function.c`, `dynamic_vector.c`, `fourier.c`, and
 `phase_estimation.c` exercise composition, borrows, CPU-indexed access, and interference algorithms.

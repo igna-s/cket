@@ -44,6 +44,14 @@ static void start_engine(void) {
     }
 }
 
+unsigned long long __cket_controls_possible(const char *envelope) {
+    int possible;
+    start_engine();
+    if (!qc_controls_possible(engine, envelope, &possible))
+        fail();
+    return (unsigned long long)possible;
+}
+
 uint64_t __cket_apply(const char *operation) {
     uint64_t result;
     start_engine();

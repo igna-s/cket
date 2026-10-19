@@ -31,6 +31,10 @@ char *qc_ctype_specialize_document(qc_context *context, const char *ir);
 void qc_destroy(qc_context *context);
 const char *qc_error(const qc_context *context);
 int qc_apply(qc_context *context, const char *operation, uint64_t *result);
+/* Conservative support query for a static zero-angle qphase envelope.
+ * Zero is returned in *possible only from saved symbolic value/epoch facts.
+ * Unknown support returns one; no gate, measurement or reset is emitted. */
+int qc_controls_possible(qc_context *context, const char *envelope, int *possible);
 int qc_apply_arg(qc_context *context, const char *operation, uint64_t argument);
 /* Bind declared CPU integer inputs before synthesizing a quantum operation.
  * The returned operation owns its text and must be freed by the caller. */

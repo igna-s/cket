@@ -21,9 +21,19 @@ bool standard_memory_compare(tree fn) {
     if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
         return false;
     return fndecl_built_in_p(fn, BUILT_IN_MEMCMP) || fndecl_built_in_p(fn, BUILT_IN_STRNCMP) ||
+           fndecl_built_in_p(fn, BUILT_IN_STRCMP) ||
            (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn)) &&
             (name_of(fn) == "memcmp" || name_of(fn) == "__cket_memcmp" ||
-             name_of(fn) == "strncmp" || name_of(fn) == "__cket_strncmp"));
+             name_of(fn) == "strncmp" || name_of(fn) == "__cket_strncmp" ||
+             name_of(fn) == "strcmp" || name_of(fn) == "__cket_strcmp"));
+}
+
+bool standard_string_length(tree fn) {
+    if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
+        return false;
+    return fndecl_built_in_p(fn, BUILT_IN_STRLEN) ||
+           (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn)) &&
+            (name_of(fn) == "strlen" || name_of(fn) == "__cket_strlen"));
 }
 
 bool standard_memory_set(tree fn) {
@@ -276,12 +286,78 @@ tree object_byte(QuantumByteRange &range, uint64_t index, location_t location) {
     return fold_convert(integer_type_node, fold_convert(unsigned_char_type_node, value));
 }
 
-tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
-    if (call_expr_nargs(call) != 3)
+// An unreachable division-by-zero expression encodes a domain failure in the
+// existing typed IR. It is never executed on the CPU. The backend checks this
+// leaf only if the selected string has no NUL inside its checked object view.
+tree missing_string_terminator(tree type, location_t location) {
+    return build2_loc(location, TRUNC_DIV_EXPR, type, build_one_cst(type), build_zero_cst(type));
+}
+
+tree byte_range_terminated(QuantumByteRange &range, location_t location) {
+    tree terminated = boolean_false_node;
+    for (uint64_t i = range.size() - range.offset; i; --i) {
+        tree zero = fold_build2_loc(location,
+                                    EQ_EXPR,
+                                    boolean_type_node,
+                                    object_byte(range, i - 1, location),
+                                    build_zero_cst(integer_type_node));
+        terminated =
+            fold_build2_loc(location, TRUTH_ORIF_EXPR, boolean_type_node, zero, terminated);
+    }
+    if (range.cpu_address) {
+        // The combined predicate is a once-only read of the checked CPU
+        // snapshot, just like its individual byte captures. Keeping its SAVE
+        // identity also preserves the exact predicate for a saved inverse.
+        terminated = save_expr(terminated);
+        cpu_byte_saves.insert(terminated);
+    }
+    return terminated;
+}
+
+tree expand_string_length(tree call) {
+    if (call_expr_nargs(call) != 1)
         return NULL_TREE;
+    QuantumByteRange range;
+    bool resolved = resolve_byte_range(CALL_EXPR_ARG(call, 0), range);
+    if (!range.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)))
+        return NULL_TREE;
+    auto reject = [call](const char *message) -> tree {
+        error_at(at(call), "%s", message);
+        return build_zero_cst(TREE_TYPE(call));
+    };
+    if (!resolved)
+        return reject(range.error
+                          ? range.error
+                          : "|c>: quantum strlen requires checked integer object-byte storage");
+    uint64_t count = range.size() - range.offset;
+    if (!count)
+        return reject("|c>: quantum strlen needs a NUL inside its checked storage bounds");
+    if (count > 64)
+        return reject("|c>: quantum strlen exceeds the 64-byte expression synthesis bound");
+    range.stop_at_zero = true;
+    tree type = TREE_TYPE(call);
+    tree result = missing_string_terminator(type, at(call));
+    for (uint64_t i = count; i; --i) {
+        tree zero = fold_build2_loc(at(call),
+                                    EQ_EXPR,
+                                    boolean_type_node,
+                                    object_byte(range, i - 1, at(call)),
+                                    build_zero_cst(integer_type_node));
+        result =
+            fold_build3_loc(at(call), COND_EXPR, type, zero, build_int_cstu(type, i - 1), result);
+    }
+    return result;
+}
+
+tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
     tree fn = get_callee_fndecl(call);
-    bool stop_at_zero = fn && (fndecl_built_in_p(fn, BUILT_IN_STRNCMP) ||
-                               name_of(fn) == "strncmp" || name_of(fn) == "__cket_strncmp");
+    bool unbounded = fn && (fndecl_built_in_p(fn, BUILT_IN_STRCMP) || name_of(fn) == "strcmp" ||
+                            name_of(fn) == "__cket_strcmp");
+    if (call_expr_nargs(call) != (unbounded ? 2 : 3))
+        return NULL_TREE;
+    bool stop_at_zero =
+        unbounded || (fn && (fndecl_built_in_p(fn, BUILT_IN_STRNCMP) || name_of(fn) == "strncmp" ||
+                             name_of(fn) == "__cket_strncmp"));
     QuantumByteRange left, right;
     bool a = resolve_byte_range(CALL_EXPR_ARG(call, 0), left);
     bool b = resolve_byte_range(CALL_EXPR_ARG(call, 1), right);
@@ -297,16 +373,35 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
             : !b && right.error
                 ? right.error
                 : "|c>: quantum byte comparison requires checked quantum storage or known CPU object storage; general pointers and dynamic layouts remain pending");
-    tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
-    if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
-        return reject(
-            "|c>: quantum byte comparison currently requires a constant byte count; bounded dynamic extents remain pending");
-    uint64_t count = tree_to_uhwi(bytes);
+    uint64_t count;
+    if (unbounded) {
+        uint64_t left_count = left.size() - left.offset, right_count = right.size() - right.offset;
+        if (!left_count || !right_count)
+            return reject("|c>: quantum strcmp needs a NUL inside both checked storage views");
+        if (left_count > 64 || right_count > 64)
+            return reject("|c>: quantum strcmp exceeds the 64-byte expression synthesis bound");
+        count = std::min(left_count, right_count);
+    } else {
+        tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
+        if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
+            return reject(
+                "|c>: quantum byte comparison currently requires a constant byte count; bounded dynamic extents remain pending");
+        count = tree_to_uhwi(bytes);
+    }
     if (count > left.size() - left.offset || count > right.size() - right.offset)
         return reject("|c>: quantum byte comparison exceeds its checked storage bounds");
     if (count > 64)
         return reject(
             "|c>: quantum byte comparison exceeds the 64-byte expression synthesis bound");
+    if (unbounded && left.quantum && right.quantum && left.elements == right.elements &&
+        left.stride == right.stride && left.offset == right.offset) {
+        // Equal views compare equal on every defined string input. This is a
+        // constant identity, so it needs no read, measurement or workspace.
+        // Like ordinary C folding, it makes no diagnostic promise for a call
+        // whose input violates strcmp's string precondition.
+        return build_int_cst(relation == ERROR_MARK ? TREE_TYPE(call) : boolean_type_node,
+                             relation == EQ_EXPR || relation == LE_EXPR || relation == GE_EXPR);
+    }
     left.stop_at_zero = right.stop_at_zero = stop_at_zero;
     // C11 specifies the sign of the first differing unsigned bytes. This target
     // extension returns their exact difference, within [-255,255]. All inputs
@@ -354,6 +449,18 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
             result =
                 fold_build3_loc(at(call), COND_EXPR, result_type, different, difference, result);
         }
+    }
+    if (unbounded) {
+        tree terminated = fold_build2_loc(at(call),
+                                          TRUTH_ANDIF_EXPR,
+                                          boolean_type_node,
+                                          byte_range_terminated(left, at(call)),
+                                          byte_range_terminated(right, at(call)));
+        // Use an int domain leaf before Boolean conversion: bool(1/0) must not
+        // become an operation whose arithmetic type is the one-bit predicate.
+        tree invalid =
+            fold_convert(result_type, missing_string_terminator(integer_type_node, at(call)));
+        result = fold_build3_loc(at(call), COND_EXPR, result_type, terminated, result, invalid);
     }
     return predicate ? result : fold_convert(TREE_TYPE(call), result);
 }

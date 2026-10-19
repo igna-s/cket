@@ -1,5 +1,13 @@
 # Auditoría del repositorio y de los papers
 
+La [integración del 19 de octubre](audit-evidence/strings-integration-v6/README.es.md) reúne 144
+entradas y añade `strlen`/`strcmp` parciales, ángulos diferidos de `phase` y cargas CPU protegidas
+bajo controles probadamente inactivos. Pasaron sus pruebas dirigidas normales y con ASan/UBSan,
+incluidas 519 comprobaciones de bindings, 460 de cadenas y 3380 de ángulos por configuración. Una
+prueba separada verifica 640 estados complejos completos de cadenas con sus inversas. La regresión
+amplia de estas fuentes y su CI remoto siguen pendientes. El inventario actual tiene 780 entradas
+pendientes, 76 parciales y 368 de metadatos; ninguna se declara completa.
+
 La [integración de operandos del 18 de octubre](re-audit-2026-10-18-controlled-operands.md) añade
 evaluación diferida de operandos enteros bajo control coherente, conservación del dominio
 seleccionado e identificación de los absolutos estándar. Sus 138 entradas pasaron una campaña
@@ -9,16 +17,17 @@ ejemplos exactos del contrato por configuración. Las pruebas de estados complet
 aparte: 8000 de operandos y 1200 de XOR booleano y bucles.
 
 La integración anterior de retornos, distancias y condiciones conserva sus 137 entradas y su
-[campaña amplia completada](audit-evidence/coherent-control-full/summary.json). El ángulo de `phase`
-y las cargas CPU de ramas inactivas siguen siendo bugs conocidos. Las referencias C correctas y los
-140 fallos de la matriz de cargas se conservan; la biblioteca C11 sigue incompleta. La
-ciberseguridad permanece clásica.
+[campaña amplia completada](audit-evidence/coherent-control-full/summary.json). Los fallos de
+ángulos de `phase` y cargas CPU de ramas inactivas se conservan con sus referencias C originales. La
+integración actual añade sus correcciones dirigidas, con una matriz positiva propia; la biblioteca
+C11 sigue incompleta. La ciberseguridad permanece clásica.
 
 La [integración de memoria del 17 de octubre](re-audit-2026-10-17-memory-expressions.md) añade
 `memset` parcial y llamadas descartadas en expresiones con coma y selección coherente. Pasaron las
 regresiones completas normales y con ASan/UBSan sobre 134 entradas congeladas, y controles separados
-con reconstrucción del árbol principal. El inventario actual conserva 782 entradas pendientes, 74
-parciales y 368 de metadatos. C11 completo sigue pendiente y la ciberseguridad continúa clásica.
+con reconstrucción del árbol principal. El inventario de ese estado conservaba 782 entradas
+pendientes, 74 parciales y 368 de metadatos. C11 completo sigue pendiente y la ciberseguridad
+continúa clásica.
 
 La [auditoría de capturas de bytes](re-audit-2026-10-17-byte-snapshots.md) añade bytes actuales de
 objetos CPU conocidos, conserva las capturas para la inversa y corrige una lectura después del NUL.

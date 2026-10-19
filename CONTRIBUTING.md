@@ -59,6 +59,9 @@ build/validate_profiles
 build/validate_numeric_locale
 build/validate_memcmp
 build/validate_strncmp
+build/validate_strings
+build/validate_phase
+build/validate_bindings
 build/validate_byte_snapshots
 build/validate_memset
 build/validate_memory_sequences

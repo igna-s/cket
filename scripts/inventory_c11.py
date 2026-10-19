@@ -214,6 +214,28 @@ def semantics(header, name, kind, optional):
             "are validated separately from wide circuit generation. General product ABI, library "
             "composition and wider resource budgets remain open.",
         )
+    if header == "string.h" and name in {"strlen", "strcmp"}:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            ["tests/validate_strings.c", "tests/validate_bindings.c", "tests/validate_library.c"],
+            "Input-preserving strlen/strcmp on checked padding-free integer object-byte views. "
+            "Each full remaining object view must be nonempty and at most 64 bytes. "
+            "strlen returns size_t; strcmp returns the first differing unsigned-byte difference "
+            "and direct comparisons with zero use Boolean predicates. Selected evaluated "
+            "domains need a NUL inside checked storage. Identical strcmp views fold to zero "
+            "on the defined string domain and make no invalid-input diagnostic promise. "
+            "Mutable known CPU objects supply once-only byte and termination snapshots, "
+            "retained by saved inverses. Classical calls and function addresses keep libc ABI; "
+            "the header alias preserves ordinary calls before GCC builtin folding. Quantum "
+            "indirect calls, dynamic extents/addresses, volatile/atomic CPU access, general "
+            "quantum layouts and pre-GCC folding provenance remain pending. The generic "
+            "missing-NUL diagnostic currently names the internal division-by-zero domain guard, "
+            "not a division in the source program. Dedicated string diagnostics remain open. "
+            "Expression, gate, 128-wire representation and 24-wire native simulation budgets "
+            "are separate from the frontend byte bound. No implicit measurement/reset occurs.",
+        )
     if header == "string.h" and name == "strncmp":
         return (
             "partial",
@@ -534,7 +556,7 @@ def audit(require_complete=False):
         assert set(r["restriction_classes"]) <= {"P", "R", "S"}
         assert r["contract"] and r["milestone"]
         assert all((ROOT / p).is_file() for p in r["tests"])
-    assert ABS | MEMORY_COPY | {"memset"} <= {
+    assert ABS | MEMORY_COPY | {"memset", "strlen", "strcmp"} <= {
         r["name"] for r in rows if r["quantum"] in {"partial", "implemented"}
     }
     for name in (

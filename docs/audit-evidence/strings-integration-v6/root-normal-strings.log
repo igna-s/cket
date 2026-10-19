@@ -1,0 +1,5 @@
+PASS 150 native string programs: size_t conversion, NUL, unsigned ordering, aliases, borrows, inactive domains, CPU snapshots and classical libc
+PASS 130 string diagnostics: missing NUL, bounds, pointer provenance, effects, layouts and synthesis limits
+PASS 60 string no-table wide exports: bounded strings in 16/32/64-bit objects; generation evidence
+PASS 120 string complete phased states and saved inverses: strlen, strcmp, unsigned bytes, overlap and selected NUL domains
+460 string family checks passed; bounded strlen/strcmp adapters are distinct from complete C string compatibility.

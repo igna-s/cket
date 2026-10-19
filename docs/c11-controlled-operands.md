@@ -9,10 +9,14 @@ Las actualizaciones reversibles que usan literales o capturas escalares puras co
 actualización sobre el registro existente. Conservar una versión adicional para cada una añadiría
 dependencias innecesarias sobre el control y consumiría más registros en los bucles.
 
-Estos contratos no completan C11. Las cargas CPU mediante punteros inválidos o índices cuya
-evaluación es inválida en una rama inactiva siguen siendo bugs conocidos. La evaluación diferida del
-ángulo de `phase` también sigue pendiente. Los efectos CPU bajo control coherente se rechazan con
-diagnósticos explícitos; ese rechazo no cuenta como implementación de esos programas C.
+La [integración actual](audit-evidence/strings-integration-v6/README.es.md) añade protección de
+cargas CPU bajo controles probadamente inactivos y evaluación diferida de ángulos clásicos
+soportados de `phase`. La consulta usa certificados simbólicos; no mide ni inspecciona amplitudes.
+Si no puede demostrar la inactividad, el control sigue siendo posible y la dirección y evaluación
+del operando CPU deben ser válidas. No se promete reconocer toda inactividad producida por
+interferencia. Las cargas volátiles o atómicas y las llamadas reales generales siguen pendientes.
+Los efectos CPU bajo control coherente se rechazan con diagnósticos explícitos. Estos contratos y
+sus rechazos no completan C11.
 
 ## División en una actualización inactiva
 

@@ -255,6 +255,12 @@ static void document_contracts(void) {
 
 static void programs(validation *v) {
     const char *valid[] = {
+        "quant bool n=false;int d=0;quant bool q=n?1/d==0:false;return measure(q)!=0||measure(n)!=0;",
+        "quant bool n=true;int d=2;quant bool q=n?4/d>1:false;return measure(q)!=1||measure(n)!=1;",
+        "quant bool n=superposition(0,1);int d=2;quant bool q=n?(4/d)==2:false;unsigned qq=measure(q),nn=measure(n);return qq!=nn;",
+        "quant bool n=false;int d=32;quant bool q=n?((1u<<d)!=0):false;return measure(q)!=0||measure(n)!=0;",
+        "quant bool n=true;int d=1;quant bool q=n?(1u<<d)==2:false;return measure(q)!=1||measure(n)!=1;",
+        "quant bool n=false;int d=0;quant bool q=n?(_Bool)(7%d):false;return measure(q)!=0||measure(n)!=0;",
         "quant bool n=superposition(0,1);int d=2;quant uint8_t q=div((int)n+5,d++).quot;unsigned qq=measure(q),nn=measure(n);return qq!=(nn+5)/2||d!=3;",
         "quant bool n=superposition(0,1);long d=2;quant uint8_t q=ldiv((long)n+5,d++).rem;unsigned qq=measure(q),nn=measure(n);return qq!=(nn+5)%2||d!=3;",
         "quant bool n=superposition(0,1);long long d=2;quant uint8_t q=lldiv((long long)n+5,d++).quot;unsigned qq=measure(q),nn=measure(n);return qq!=(nn+5)/2||d!=3;",
@@ -270,13 +276,28 @@ static void programs(validation *v) {
         "#include <quantum.h>\ntypedef struct{uint8_t a,b;} pair;static int calls;static pair make(unsigned n){++calls;return(pair){n,n+1};}\nint main(void){quant pair p=make(7);unsigned a=measure(p.a),b=measure(p.b);return a!=7||b!=8||calls!=1;}\n",
         "#include <quantum.h>\n#include <stdlib.h>\nstatic int calls;static int denominator(int *d){++calls;return (*d)++;}\nint main(void){quant bool n=superposition(0,1);int d=1;unsigned values[2];for(unsigned k=0;k<2;++k){quant uint8_t q=div((int)n+7,denominator(&d)).quot;values[k]=measure(q);}unsigned value=measure(n);if(calls!=2||d!=3)return 1;for(unsigned k=0;k<2;++k)if(values[k]!=(value+7)/(k+1))return 2;return 0;}\n"};
     const char *invalid[] = {
+        "quant bool n=true;int d=32;quant bool q=n?(1u<<d)!=0:false;measure(q);measure(n);",
+        "quant bool n=superposition(0,1);volatile int d=2;quant bool q=n?4/d>1:false;measure(q);measure(n);",
+        "quant bool n=superposition(0,1);volatile bool d=true;quant bool q=n?d:false;measure(q);measure(n);",
+        "quant bool n=superposition(0,1);volatile struct{int a;} p={2};quant bool q=n?p.a>0:false;measure(q);measure(n);",
+        "quant bool n=superposition(0,1);volatile int d=2;volatile int *p=&d;quant bool q=n?*p>0:false;measure(q);measure(n);",
+        "quant bool n=superposition(0,1);int d=1;quant bool q=n?(++d)>0:false;measure(q);measure(n);",
         "quant bool n=superposition(0,1);int d=0;quant bool q=div((int)n,d).quot;measure(q);measure(n);",
         "quant bool n=superposition(0,1);int d=2;quant bool q=n?div((int)n,d++).quot:false;measure(q);measure(n);",
         "quant bool n=superposition(0,1);unsigned a=5;quant uint8_t q=n+a++;measure(q);measure(n);",
         "quant bool n=true;int d=0;quant bool q=n?1/d:false;measure(q);measure(n);",
         "quant bool n=superposition(0,1);int d=2;int q=div((int)n,d).quot;measure(n);return q;"};
-    const char *diagnostics[] = {
-        "zero", "coherent control", "once-only capture", "zero", "classical initialization"};
+    const char *diagnostics[] = {"shift",
+                                 "once-only capture",
+                                 "once-only capture",
+                                 "once-only capture",
+                                 "once-only capture",
+                                 "once-only capture",
+                                 "zero",
+                                 "coherent control",
+                                 "once-only capture",
+                                 "zero",
+                                 "classical initialization"};
     for (unsigned level = 0; level < 5; ++level)
         for (unsigned builtins = 0; builtins < 2; ++builtins) {
             for (unsigned i = 0; i < sizeof valid / sizeof *valid; ++i)
@@ -285,7 +306,7 @@ static void programs(validation *v) {
                 compile_run(v, invalid[i], level, builtins, diagnostics[i]);
         }
     puts(
-        "PASS 190 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer widths, products, callbacks in loops and nested initializer regression");
+        "PASS 310 C cases: CPU capture, old-value cleanup, lazy sanitizer guards, integer widths, products, callbacks in loops and nested initializer regression");
 }
 
 static void documents(validation *v) {

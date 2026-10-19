@@ -1,0 +1,75 @@
+{
+  "status": "failed-finalization",
+  "commands": [
+    {
+      "name": "root-normal-build",
+      "argv": [
+        "bash",
+        "scripts/build.sh"
+      ],
+      "log": "root-normal-build.log",
+      "started_utc": "2026-10-19T21:08:03.081460+00:00",
+      "returncode": 0,
+      "log_sha256": "2fb1a07d126f14a5f747874b960f737cb9698a8fe5a77a7849e7b80dff457aba"
+    },
+    {
+      "name": "root-normal-strings",
+      "argv": [
+        "/tmp/quantum-audit-isolated-20261017/build/validate_strings"
+      ],
+      "log": "root-normal-strings.log",
+      "started_utc": "2026-10-19T21:08:32.557332+00:00",
+      "returncode": 0,
+      "log_sha256": "6401ddd8ce1ba3a2d3071ca39de069160b252202120d51bab2eb08f8828e1f0b"
+    },
+    {
+      "name": "root-normal-bindings",
+      "argv": [
+        "/tmp/quantum-audit-isolated-20261017/build/validate_bindings"
+      ],
+      "log": "root-normal-bindings.log",
+      "started_utc": "2026-10-19T21:09:46.942135+00:00",
+      "returncode": 0,
+      "log_sha256": "adc64ab864638748102961744e77e63afabf0ae6949db8a40894e853a0990f98"
+    },
+    {
+      "name": "inventory-status",
+      "argv": [
+        "python3",
+        "scripts/inventory_c11.py"
+      ],
+      "log": "inventory-status.log",
+      "started_utc": "2026-10-19T21:10:09.208676+00:00",
+      "returncode": 0,
+      "log_sha256": "e2f8cffab493ce1c344aa94dbdd062c4b2f77bb15b58b3e47910be5c7e4f4a72"
+    },
+    {
+      "name": "source-and-document-format",
+      "argv": [
+        "/tmp/quantum-audit-isolated-20261017/.deps/format-venv/bin/python",
+        "scripts/format.py",
+        "--check"
+      ],
+      "log": "source-and-document-format.log",
+      "started_utc": "2026-10-19T21:10:09.323257+00:00",
+      "returncode": 0,
+      "log_sha256": "4802f8811ad067147be8048b6e3f6831260bff7d75cab57e9c6f3efe4521877b"
+    },
+    {
+      "name": "paper-audit",
+      "argv": [
+        "/tmp/quantum-audit-isolated-20261017/.deps/paper-venv/bin/python",
+        "docs/paper/audit_paper.py",
+        "--language",
+        "all"
+      ],
+      "log": "paper-audit.log",
+      "started_utc": "2026-10-19T21:10:17.480903+00:00",
+      "returncode": 1,
+      "log_sha256": "629e68574a906fab819a9dc228a9ea0b2bf0f49a0c8c6b4624f6ef9500b7c940"
+    }
+  ],
+  "exit_code": 1,
+  "error": "AssertionError(('paper-audit', 1))",
+  "finished_utc": "2026-10-19T21:10:21.939127+00:00"
+}

@@ -300,6 +300,8 @@ int qc_verify_document(qc_context *c, const cj_doc *d) {
     return !depth || qc_fail(c, "unterminated CPU control region");
 }
 
+#include "phase_verify.inc"
+
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     if (cj_equal(d, cj_get(d, inst, "op"), "qphi")) {
         static const char *const phi[] = {
@@ -365,7 +367,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         "op", "id", "source", "subtract", "controls", NULL};
     static const char *const xor_update[] = {
         "op", "id", "expr", "value", "dynamic", "controls", NULL};
-    static const char *const phase[] = {"op", "angle", "dynamic", "controls", NULL};
+    static const char *const phase[] = {"op", "angle", "angle_expr", "dynamic", "controls", NULL};
     static const char *const fourier[] = {"op", "id", "inverse", "controls", NULL};
     static const char *const measure[] = {"op", "id", "width", "result", NULL};
     static const char *const simple[] = {"op", "id", NULL};
@@ -472,6 +474,13 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             return qc_fail(c, "ambiguous dynamic/static phase angle");
         if (angle >= 0 && !isfinite(cj_double(d, angle)))
             return qc_fail(c, "invalid finite numeric phase angle");
+        int expr = cj_get(d, inst, "angle_expr");
+        if (expr >= 0) {
+            if (angle >= 0 || cj_bool(d, cj_get(d, inst, "dynamic")))
+                return qc_fail(c, "ambiguous deferred phase angle");
+            if (!phase_expression(c, d, expr, 0))
+                return 0;
+        }
     } else {
         uint64_t id;
         if (!unsigned_field(c, d, inst, "id", &id) || id > UINT32_MAX)

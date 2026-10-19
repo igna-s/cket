@@ -333,8 +333,8 @@ M2/M4/M7 also include [once-only CPU bindings and classical product preparation]
 Concrete circuit definitions retain parameter snapshots for their inverse. Structural template
 validation does not certify numerical definedness or generated circuits. Nested classical
 structure-return initializers now retain evaluations and values instead of silently zero-filling
-their quantum fields. The 399 finite checks and two additional QuEST states provide evidence for
-these contracts; general quantum product ABI, coherent CPU effects and full C11 coverage remain
+their quantum fields. The 519 finite binding checks and two additional QuEST states provide evidence
+for these contracts; general quantum product ABI, coherent CPU effects and full C11 coverage remain
 open.
 
 M2/M7 also include [immutable character adapters](c11-ctype.md) for all fourteen C11 interfaces. The
@@ -346,6 +346,12 @@ folding remain P/R; invalid arguments retain the C undefined-domain contract (S)
 library coverage, not completion of M7.
 
 ## Completion rule
+
+M4/M7 now also include bounded [`strlen` and `strcmp`](c11-strings.md), with 460 maintained checks
+per configuration and 640 separate independent compiled-circuit states across normal and ASan/UBSan.
+The current integration adds supported deferred CPU phase arithmetic and guarded pure CPU loads. Its
+broad regression and current remote CI remain pending. These additions do not close the string,
+memory, floating-point or general library milestones.
 
 The project goal remains open until the inventory has implemented, validated coverage or a reasoned
 incompatible-context contract for every C11 item of the declared target. Resource limits must have

@@ -11,11 +11,13 @@ build/validate_inplace 2>&1 | tee build/verify-inplace.log
 build/validate_memcopy 2>&1 | tee build/verify-memcopy.log
 build/validate_memcmp 2>&1 | tee build/verify-memcmp.log
 build/validate_strncmp 2>&1 | tee build/verify-strncmp.log
+build/validate_strings 2>&1 | tee build/verify-strings.log
 build/validate_memset 2>&1 | tee build/verify-memset.log
 build/validate_memory_sequences 2>&1 | tee build/verify-memory-sequences.log
 build/validate_memory_returns 2>&1 | tee build/verify-memory-returns.log
 build/validate_pointer_differences 2>&1 | tee build/verify-pointer-differences.log
 build/validate_controlled_operands 2>&1 | tee build/verify-controlled-operands.log
+build/validate_phase 2>&1 | tee build/verify-phase.log
 build/validate_byte_snapshots 2>&1 | tee build/verify-byte-snapshots.log
 build/validate_division 2>&1 | tee build/verify-division.log
 build/validate_bindings 2>&1 | tee build/verify-bindings.log

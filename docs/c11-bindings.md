@@ -142,6 +142,11 @@ not coverage of every C11 construction.
 
 ## Evidence
 
+The current suite has 519 checks. Its 120 added C cases distinguish computed Boolean results that
+inherit the internal quantum `volatile` type from genuine volatile CPU reads and increments. Pure
+sanitizer-wrapped division and shifts remain lazy in inactive coherent arms; actual CPU effects
+remain rejected. See the [current integration](audit-evidence/strings-integration-v6/README.es.md).
+
 The binding suite distinguishes complete phased states with saved inverse, typed endpoint
 conversions, rejection before mutation, C executions/diagnostics at five GCC levels with both
 builtin settings, and complete-state comparisons of specialized C documents. Measurements in C

@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 368,
+  "checks": 378,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1063,6 +1063,16 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/engine/phase.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/phase_verify.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/engine/quantum.c",
       "passed": true,
       "detail": ""
@@ -1094,6 +1104,11 @@
     },
     {
       "check": "Fuente local src/quantum_memory.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_phase.inc",
       "passed": true,
       "detail": ""
     },
@@ -1149,6 +1164,11 @@
     },
     {
       "check": "Fuente local tests/memset_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/phase_capture.inc",
       "passed": true,
       "detail": ""
     },
@@ -1343,6 +1363,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_phase.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_pointer_differences.c",
       "passed": true,
       "detail": ""
@@ -1359,6 +1384,11 @@
     },
     {
       "check": "Fuente local tests/validate_shifts.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_strings.c",
       "passed": true,
       "detail": ""
     },
@@ -1763,7 +1793,7 @@
       "detail": ""
     },
     {
-      "check": "Current compiler:138 integrated inputs match targeted installation and completed broad sources",
+      "check": "Historical138 integration matches its targeted installation and completed broad sources",
       "passed": true,
       "detail": ""
     },
@@ -1818,22 +1848,42 @@
       "detail": ""
     },
     {
-      "check": "Integrated138 CI: the completed workflow verifies the exact current source integration",
+      "check": "Historical138 CI: the completed workflow verifies that source integration",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Deferred phase candidate: closed normal/SAN proofs remain distinct from integration and broad regression",
+      "check": "Historical phase143 candidate: closed proofs remain distinct from its failed broad regression",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Guarded CPU loads: closed targeted normal/SAN matrices remain distinct from integration",
+      "check": "Historical guarded CPU loads: closed targeted143 matrices retain their original scope",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Guarded CPU loads: all scoped artifacts match their recorded hashes and sizes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current144 compiler: exact applied inputs have closed targeted checks; broad regression remains pending",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current144 strings and CPU loads: independent complex states and native load matrices keep separate scopes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current144 inventory: strlen and strcmp remain partial; complete C11 is not claimed",
       "passed": true,
       "detail": ""
     },
@@ -1851,7 +1901,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 185
+    "source_files_in_manifest": 191
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

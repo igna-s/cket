@@ -1,6 +1,6 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 18 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 19 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
@@ -18,19 +18,19 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
-**Ya hay una corrección integrada de operandos enteros bajo control cuántico.** La
+**Ya hay una corrección integrada de operandos enteros bajo control cuántico.** La anterior
 [integración de 138 entradas](audit-evidence/controlled-operands-integration/integration-summary.json)
 conserva el dominio seleccionado de asignaciones, sumas, XOR, los absolutos enteros estándar y
 `memset`. El XOR booleano y los bucles con operandos literales o capturas escalares puras conservan
 sus actualizaciones reversibles sobre el mismo registro, evitando dependencias y registros extra.
 
-La [regresión amplia](audit-evidence/controlled-operands-full/README.es.md) terminó correctamente en
-normal y ASan/UBSan: 76 pasos cerrados, 665 compilaciones de fuzzing por configuración y 70
-circuitos independientes con QuEST por configuración, 64 estados y 6 canales. Las reconstrucciones
-separadas de integración pasaron, por configuración, 393 casos nativos, 1270 controles de operandos
-y 40 ejecuciones de los cuatro programas exactos del [contrato](c11-controlled-operands.md). La
-aplicación a Windows comprueba los hashes de las mismas 138 entradas; esa transferencia no equivale
-a ejecutar la regresión completa en Windows.
+La [regresión amplia de esas 138 entradas](audit-evidence/controlled-operands-full/README.es.md)
+terminó correctamente en normal y ASan/UBSan: 76 pasos cerrados, 665 compilaciones de fuzzing por
+configuración y 70 circuitos independientes con QuEST por configuración, 64 estados y 6 canales. Las
+reconstrucciones separadas de integración pasaron, por configuración, 393 casos nativos, 1270
+controles de operandos y 40 ejecuciones de los cuatro programas exactos del
+[contrato](c11-controlled-operands.md). La aplicación a Windows comprueba los hashes de las mismas
+138 entradas; esa transferencia no equivale a ejecutar la regresión completa en Windows.
 
 El [CI remoto de esta integración](audit-evidence/integrated138-remote-ci/README.es.md) también
 terminó correctamente sobre el commit `08b9f3c`: formato y verificación completa normal y con
@@ -45,37 +45,39 @@ instrumentada, sin inventar un código de salida exitoso para el proceso origina
 regresiones de v4 quedan como
 [evidencia histórica](audit-evidence/controlled-operands-regression-failure/README.es.md).
 
-**Siguen existiendo bugs confirmados.** El registro anterior de 137 entradas conserva
-[siete fallos](audit-evidence/coherent-arm-operands/failure-summary.json): seis perfiles enteros
-tienen correcciones y pruebas positivas en la integración nueva; el ángulo de `phase` sigue
-pendiente. La [matriz de cargas CPU](audit-evidence/controlled-operands-v5/pending-cpu-loads.json)
-conserva siete perfiles, cinco niveles de optimización y ambos modos de builtins: 140 ejecutables
-cuánticos aceptados fallan, mientras las 70 referencias C terminan bien. Incluye asignación, XOR,
-suma, `memset`, `phase`, condiciones e índices. La integración actual sigue afectada por esa
-familia.
+**La integración actual reúne 144 entradas y añade `strlen`, `strcmp`, ángulos diferidos de `phase`
+y protección de cargas CPU en ramas probadamente inactivas.** La
+[evidencia actual](audit-evidence/strings-integration-v6/README.es.md) conserva los resultados
+dirigidos normales y con ASan/UBSan: 460 comprobaciones de cadenas, 519 de bindings y 3380 de
+ángulos por configuración, además de las suites vecinas. El resultado de `strlen` conserva `size_t`;
+`strcmp` usa bytes sin signo. Son adaptaciones parciales sobre almacenamiento entero comprobado, con
+límites de tamaño, dominio y recursos.
 
-**Hay un candidato aislado para corregir los ángulos de `phase`; todavía no está integrado.** Sus
-143 entradas congeladas pasaron 3380 comprobaciones en normal y otras 3380 con ASan/UBSan. Una
-prueba adicional compara los bits exactos de los ángulos con C ordinario y verifica 1600 estados
-complejos exportados entre ambas configuraciones. La regresión amplia
-[terminó con un fallo en bindings con sanitizadores](audit-evidence/deferred-phase-v6-broad-failure/README.es.md):
-56 comandos cerraron correctamente y el siguiente rechazó una rama inactiva válida. La
-[fotografía inicial](audit-evidence/deferred-phase-v6/summary.json) conserva su estado histórico en
-curso; no equivale al cierre de esa campaña. El
-[informe del candidato](re-audit-2026-10-18-deferred-phase.md) distingue estos resultados de los
-fallos de versiones anteriores y de las cargas CPU que siguen pendientes.
+Una prueba independiente de programas realmente compilados pasó **640 estados complejos completos**,
+antes y después de sus inversas, entre normal y ASan/UBSan. Incluye resultados de 64 bits de
+`strlen`, resultados de 32 bits de `strcmp`, dos entradas cuánticas y objetos CPU modificados
+después de capturarlos. Sus 320 capturas y 160 ejecuciones de referencias C son distintas de las
+pruebas nativas. Los dos programas exactos del [contrato](c11-strings.md) pasaron 40 ejecuciones.
 
-**El candidato de cargas CPU también cerró sus pruebas dirigidas en normal y ASan/UBSan.** La
-[cápsula de resultados](audit-evidence/guarded-cpu-loads-v3/README.es.md) conserva 140 filas
-correctas, 420 ejecuciones nativas y 420 referencias C por configuración. Otras 76 comprobaciones
-por configuración verifican que consultar los controles no altere amplitudes, registros, versiones,
-contadores ni el generador aleatorio. Faltan la prueba independiente de estados exportados
-específica de estas lecturas, la regresión amplia y su integración; el fallo sigue presente en el
-árbol principal. Los resultados anteriores de 120/140 y el fallo del capturador quedan conservados.
+La nueva matriz de cargas CPU pasó 140 filas, 420 ejecuciones nativas y 420 referencias C por
+configuración. Conserva por separado los
+[fallos históricos](audit-evidence/controlled-operands-v5/pending-cpu-loads.json). La consulta de
+controles usa certificados simbólicos, sin medir ni inspeccionar amplitudes; sus
+[76 pruebas originales](audit-evidence/guarded-cpu-loads-v3/README.es.md) mantienen su identidad de
+fuentes. Otra prueba actual pasó **1120 estados exportados de cargas CPU** con fases distintas por
+entrada, historia retenida y limpieza por inversa del resultado derivado. La inversa de la propia
+actualización controlada y la limpieza de su historia siguen siendo trabajo separado.
 
-Se están desarrollando juntas las adaptaciones de `strcmp` y `strlen`. Aún no están integradas ni
-cambian los 27 nombres parciales del inventario. Sus pruebas incluyen estados completos, inversas,
-dominios con NUL, referencias de C y límites de recursos; la campaña agrupada sigue abierta.
+También se conservan los
+[siete fallos históricos de las 137 entradas](audit-evidence/coherent-arm-operands/failure-summary.json).
+Sus fuentes y resultados originales se mantienen separados de las correcciones posteriores.
+
+**La regresión amplia de las 144 entradas y el CI remoto de esta versión siguen pendientes.** Los
+resultados completos anteriores de 138 entradas no certifican la implementación nueva. El
+[fallo de bindings del candidato de fase](audit-evidence/deferred-phase-v6-broad-failure/README.es.md)
+queda conservado: una conversión booleana heredaba el tipo `volatile` de la marca cuántica y se
+confundía con una lectura CPU con efectos. La corrección distingue los valores calculados de los
+accesos reales; las nuevas pruebas siguen rechazando lecturas `volatile` e incrementos bajo control.
 
 La corrección anterior de condiciones anidadas tuvo su propia integración de 137 entradas. Su
 [regresión local completa](audit-evidence/coherent-control-full/README.es.md) y su
@@ -124,9 +126,9 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | División entera con cociente y resto     | `div`, `ldiv`, `lldiv`, `imaxdiv`.                                                                                                                         | Hay restricciones sobre el dominio, la composición, los productos devueltos y los recursos.                                                                                                                                                |
 | Copia y movimiento de memoria            | `memcpy`, `memmove`.                                                                                                                                       | Hay adaptadores para casos comprobados de almacenamiento entero. Faltan escrituras y layouts generales, memoria dinámica y otros contextos. No producen dos copias independientes de un estado cuántico desconocido.                       |
 | Llenado de memoria                       | `memset`.                                                                                                                                                  | Rangos fijos de almacenamiento entero, valor capturado una vez e historia de sobrescritura. Hay retornos locales comprobados; quedan consumidores generales, tamaños dinámicos y layouts generales.                                        |
-| Comparación de bytes y caracteres        | `memcmp`, `strncmp`.                                                                                                                                       | Admite rangos comprobados, constantes y capturas únicas de bytes actuales de objetos CPU conocidos, conservadas para la inversa. Siguen pendientes las direcciones y tamaños dinámicos, los accesos `volatile`/atómicos y otros contextos. |
+| Comparación de bytes y caracteres        | `memcmp`, `strncmp`, `strcmp`; longitud con `strlen`.                                                                                                      | Admite rangos comprobados, constantes y capturas únicas de bytes actuales de objetos CPU conocidos, conservadas para la inversa. Siguen pendientes las direcciones y tamaños dinámicos, los accesos `volatile`/atómicos y otros contextos. |
 
-Son **27 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Son **29 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -139,13 +141,13 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      782 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       74 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      780 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       76 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 74 parciales incluyen los
-27 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 74 funciones completas.**
+El inventario no registra entradas como completamente implementadas. Las 76 parciales incluyen los
+29 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 76 funciones completas.**
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un
 tipo, una función matemática y un administrador de memoria tiene costos muy diferentes.
@@ -195,7 +197,7 @@ las mismas fuentes. No se inventó un código de salida para el proceso original
 Los retornos locales comprobados de `memcpy`, `memmove` y `memset`, las relaciones admitidas entre
 direcciones y las distancias al mismo objeto siguen integrados. Los
 [contratos](c11-memory-returns.md) describen sus límites. Las suites recurrentes pasaron 290 y 170
-comprobaciones por configuración en la campaña completa de las 138 entradas actuales. Los fallos
+comprobaciones por configuración en la campaña completa anterior de 138 entradas. Los fallos
 anteriores y las campañas de 136 y 137 entradas conservan sus fuentes originales. Los consumidores
 generales de punteros, sus tiempos de vida y la ABI general siguen incompletos.
 
@@ -225,13 +227,13 @@ Hay pruebas de programas C completos, amplitudes, fases, inversas, canales expl�
 errores esperados y preservación del comportamiento clásico. Las campañas separan lo integrado, lo
 probado en un candidato, lo exportado como circuito y lo simulado numéricamente.
 
-La [integración actual](audit-evidence/controlled-operands-integration/integration-summary.json)
-identifica las 138 entradas y sus pruebas separadas de instalación. La
-[campaña completa de esas fuentes](audit-evidence/controlled-operands-full/summary.json) conserva
-sus dos reconstrucciones, cada comando cerrado y todos los tramos de fuzzing. Las campañas de 134 y
-137 entradas permanecen como resultados históricos; no se renombran como pruebas de las fuentes
-nuevas. Los [informes originales de memoria](re-audit-2026-10-17-memory-expressions.md) conservan
-sus propias reconstrucciones y sus interrupciones, con sus alcances declarados.
+La [integración actual](audit-evidence/strings-integration-v6/integration-summary.json) identifica
+144 entradas, sus pruebas dirigidas cerradas y la regresión amplia todavía pendiente. La
+[campaña completa anterior](audit-evidence/controlled-operands-full/summary.json) conserva sus 138
+fuentes, dos reconstrucciones, cada comando cerrado y todos los tramos de fuzzing. Las campañas de
+134 y 137 entradas también permanecen como resultados históricos. No se renombran como pruebas de
+las fuentes nuevas. Los [informes originales de memoria](re-audit-2026-10-17-memory-expressions.md)
+conservan sus propias reconstrucciones y sus interrupciones, con sus alcances declarados.
 
 Los [informes de auditoría de los papers](paper/evidence/paper-audit.json) registran verificaciones
 automáticas por idioma, con 8 páginas, 7 figuras y 10 referencias por versión. Sus manifiestos
@@ -256,10 +258,10 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo paso concreto es corregir los ángulos de `phase` y las cargas CPU que todavía se evalúan
-en ramas cuánticas inactivas. También siguen pendientes los consumidores generales de punteros,
-tamaños, layouts, efectos y las demás familias de C11. **La integración nueva no completa C11
-cuántico ni el objetivo general.**
+El próximo paso concreto es cerrar la regresión amplia de la implementación nueva y comprobar su CI,
+completar las inversas de actualizaciones controladas con cargas CPU y mejorar el diagnóstico de
+NUL. Después continúan los consumidores generales de punteros, tamaños, layouts, efectos y las demás
+familias de C11. **La integración nueva no completa C11 cuántico ni el objetivo general.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

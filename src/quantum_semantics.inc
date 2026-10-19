@@ -115,6 +115,44 @@ std::string control_json() {
     return result + ']';
 }
 
+// A pure CPU load must not touch its address when the existing quantum
+// controls are provably inactive. The runtime query uses only saved value
+// and epoch certificates. Unknown support stays possible, without observing
+// amplitudes or measuring a control.
+tree guarded_cpu_binding(tree value, location_t loc, bool lower = true) {
+    auto memory = [](tree *node, int *walk, void *) -> tree {
+        if (DECL_P(*node) || TYPE_P(*node)) {
+            *walk = 0;
+            return NULL_TREE;
+        }
+        if (cpu_byte_saves.count(*node))
+            return *node;
+        if (TREE_CODE_CLASS(TREE_CODE(*node)) == tcc_reference)
+            return *node;
+        return NULL_TREE;
+    };
+    tree probe = value;
+    bool load = walk_tree_without_duplicates(&probe, memory, nullptr);
+    if (controls.empty() || !load || has_quantum(value) || !quantum_pure_expression(value))
+        return lower ? lower_node(value) : value;
+    std::string envelope = "{\"op\":\"qphase\",\"angle\":0" + control_json() + '}';
+    tree query = build_fn_decl("__cket_controls_possible",
+                               build_function_type_list(long_long_unsigned_type_node,
+                                                        build_pointer_type(char_type_node),
+                                                        NULL_TREE));
+    TREE_PUBLIC(query) = DECL_EXTERNAL(query) = DECL_ARTIFICIAL(query) = 1;
+    tree enabled = build_call_expr_loc(
+        loc, query, 1, build_string_literal(envelope.size() + 1, envelope.c_str()));
+    // Leave GCC's own CPU address/UBSan tree inside the selected C arm.
+    // The false arm substitutes a value used only by an inactive operation.
+    return build3_loc(loc,
+                      COND_EXPR,
+                      TREE_TYPE(value),
+                      fold_convert(boolean_type_node, enabled),
+                      value,
+                      build_zero_cst(TREE_TYPE(value)));
+}
+
 tree emit_operation(std::string operation, location_t loc, tree argument = NULL_TREE) {
     if (!active_cpu_parameters.empty()) {
         std::set<unsigned> parameters;
@@ -133,7 +171,8 @@ tree emit_operation(std::string operation, location_t loc, tree argument = NULL_
                            ",\"bits\":" + std::to_string(TYPE_PRECISION(TREE_TYPE(value))) +
                            ",\"signed\":" + (TYPE_UNSIGNED(TREE_TYPE(value)) ? "false" : "true") +
                            '}';
-            values.push_back(fold_convert(long_long_unsigned_type_node, lower_node(value)));
+            values.push_back(
+                fold_convert(long_long_unsigned_type_node, guarded_cpu_binding(value, loc)));
         }
         operation = "{\"op\":\"qbind\",\"instruction\":" + operation +
                     ",\"parameters\":" + descriptors + "]}";
@@ -165,8 +204,12 @@ tree emit_operation(std::string operation, location_t loc, tree argument = NULL_
         TREE_PUBLIC(fn) = DECL_EXTERNAL(fn) = DECL_ARTIFICIAL(fn) = 1;
     }
     tree text = build_string_literal(operation.size() + 1, operation.c_str());
-    return argument ? build_call_expr_loc(
-                          loc, fn, 2, text, fold_convert(long_long_unsigned_type_node, argument))
+    return argument ? build_call_expr_loc(loc,
+                                          fn,
+                                          2,
+                                          text,
+                                          fold_convert(long_long_unsigned_type_node,
+                                                       guarded_cpu_binding(argument, loc, false)))
                     : build_call_expr_loc(loc, fn, 1, text);
 }
 
@@ -554,7 +597,10 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // sequence pure CPU reads; they do not introduce a coherent CPU effect.
         if (cpu_byte_saves.count(inner))
             effect = false;
-        if (coherent && quantum_pure_expression(value))
+        // SAVE_EXPR can propagate GCC's side-effect flag through a condition
+        // built from checked byte snapshots. Apply the semantic purity test
+        // outside coherent arms too; arbitrary CPU calls/effects still fail.
+        if (quantum_pure_expression(value))
             effect = false;
         bool captured = cpu_library_saves.count(inner);
         if (effect && (!captured || !controls.empty() || coherent)) {
@@ -843,6 +889,8 @@ std::string evaluate_expression(tree value, std::set<unsigned> &deps, tree *pref
     expression_frames.pop_back();
     return result;
 }
+
+#include "quantum_phase.inc"
 
 std::string inverse_operation(unsigned id, const std::string &expression) {
     return "{\"op\":\"quncompute\",\"id\":" + std::to_string(id) +
@@ -2627,7 +2675,9 @@ tree lower_node(tree value) {
         }
         if (kind == "phase") {
             tree angle = CALL_EXPR_ARG(value, 0);
-            if (has_quantum(angle) || (!controls.empty() && TREE_SIDE_EFFECTS(angle))) {
+            bool pure_angle = quantum_pure_expression(angle);
+            if (has_quantum(angle) ||
+                (!controls.empty() && TREE_SIDE_EFFECTS(angle) && !pure_angle)) {
                 error_at(
                     at(value),
                     "|c>: phase angle must be classical and cannot perform CPU effects under coherent control");
@@ -2646,6 +2696,19 @@ tree lower_node(tree value) {
                 return emit_operation("{\"op\":\"qphase\",\"angle\":" + std::string(number) +
                                           control_json() + '}',
                                       at(value));
+            }
+            if (!controls.empty() && pure_angle) {
+                tree list = alloc_stmt_list();
+                std::set<unsigned> previous_parameters = active_cpu_parameters;
+                std::string deferred;
+                if (phase_angle_expression(angle, deferred, &list)) {
+                    append(&list,
+                           emit_operation("{\"op\":\"qphase\",\"angle_expr\":" + deferred +
+                                              control_json() + '}',
+                                          at(value)));
+                    return list;
+                }
+                active_cpu_parameters = previous_parameters;
             }
             std::string operation = "{\"op\":\"qphase\",\"dynamic\":true" + control_json() + '}';
             instructions.push_back(operation);

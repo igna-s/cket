@@ -14177,14 +14177,18 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
-      "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "tests": [
+        "tests/validate_strings.c",
+        "tests/validate_bindings.c",
+        "tests/validate_library.c"
+      ],
+      "contract": "Input-preserving strlen/strcmp on checked padding-free integer object-byte views. Each full remaining object view must be nonempty and at most 64 bytes. strlen returns size_t; strcmp returns the first differing unsigned-byte difference and direct comparisons with zero use Boolean predicates. Selected evaluated domains need a NUL inside checked storage. Identical strcmp views fold to zero on the defined string domain and make no invalid-input diagnostic promise. Mutable known CPU objects supply once-only byte and termination snapshots, retained by saved inverses. Classical calls and function addresses keep libc ABI; the header alias preserves ordinary calls before GCC builtin folding. Quantum indirect calls, dynamic extents/addresses, volatile/atomic CPU access, general quantum layouts and pre-GCC folding provenance remain pending. The generic missing-NUL diagnostic currently names the internal division-by-zero domain guard, not a division in the source program. Dedicated string diagnostics remain open. Expression, gate, 128-wire representation and 24-wire native simulation budgets are separate from the frontend byte bound. No implicit measurement/reset occurs."
     },
     {
       "header": "string.h",
@@ -14414,14 +14418,18 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
-      "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "tests": [
+        "tests/validate_strings.c",
+        "tests/validate_bindings.c",
+        "tests/validate_library.c"
+      ],
+      "contract": "Input-preserving strlen/strcmp on checked padding-free integer object-byte views. Each full remaining object view must be nonempty and at most 64 bytes. strlen returns size_t; strcmp returns the first differing unsigned-byte difference and direct comparisons with zero use Boolean predicates. Selected evaluated domains need a NUL inside checked storage. Identical strcmp views fold to zero on the defined string domain and make no invalid-input diagnostic promise. Mutable known CPU objects supply once-only byte and termination snapshots, retained by saved inverses. Classical calls and function addresses keep libc ABI; the header alias preserves ordinary calls before GCC builtin folding. Quantum indirect calls, dynamic extents/addresses, volatile/atomic CPU access, general quantum layouts and pre-GCC folding provenance remain pending. The generic missing-NUL diagnostic currently names the internal division-by-zero domain guard, not a division in the source program. Dedicated string diagnostics remain open. Expression, gate, 128-wire representation and 24-wire native simulation budgets are separate from the frontend byte bound. No implicit measurement/reset occurs."
     },
     {
       "header": "string.h",

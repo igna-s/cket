@@ -1,14 +1,26 @@
 # Evidence for the tested C11 subset
 
-The current [memory-expression integration](memory-expressions/integration-summary.json) adds
+The current [144-input integration](strings-integration-v6/README.es.md) adds partial
+`strlen`/`strcmp`, supported deferred phase angles and guarded CPU loads. Its targeted normal and
+ASan/UBSan checks passed, including 519 binding checks and 460 string checks per configuration.
+Independent compiled string circuits passed 640 complete complex states with saved inverses. Its
+80-command broad campaign and current remote CI remain pending. The current inventory has 780
+pending, 76 partial and 368 metadata entries. Cybersecurity stays classical.
+
+The preceding 138-input [full campaign](controlled-operands-full/summary.json) and
+[remote CI](integrated138-remote-ci/summary.json) passed on their exact historical inputs. Their
+results do not certify the new 144-input source state. Earlier sections retain their original source
+maps, outcomes and finite scopes.
+
+The historical [memory-expression integration](memory-expressions/integration-summary.json) adds
 checked `memset` writes and discarded memory-call composition. Its complete fresh normal and
 ASan/UBSan [isolated campaign](memory-expressions/results.json) identifies 134 inputs, 800 fill
 checks, 360 expression checks and 70 independent QuEST circuits per configuration: 64 states and six
-sampled channels. All 134 input hashes match main. Separate fresh main normal/instrumented builds
-each passed both exact contract programs at five GCC levels and both builtin modes, for 20
-executions per configuration; those targeted runs are not a repeated full main regression. The
-[follow-up](../re-audit-2026-10-17-memory-expressions.md) describes the corrections, finite proof
-categories and pending pointer/count/layout work.
+sampled channels. All 134 input hashes matched its original main-tree installation. Separate fresh
+main normal/instrumented builds each passed both exact contract programs at five GCC levels and both
+builtin modes, for 20 executions per configuration; those targeted runs are not a repeated full main
+regression. The [follow-up](../re-audit-2026-10-17-memory-expressions.md) describes the corrections,
+finite proof categories and pending pointer/count/layout work.
 
 That campaign completed in segments after the original WSL process stopped during the sanitizer
 library suite. The original prefix and resumed whole library suite and remaining tail have separate
@@ -17,8 +29,8 @@ completion.
 
 The [preceding memset experiment](memset/integration-summary.json) preserves its separate 132-input
 segmented broad campaign. Earlier scoped proofs and their original failures remain archived. Current
-C11 coverage is 782 pending, 74 partial and 368 metadata entries; cybersecurity remains classical.
-Counts in the older sections below describe their original campaigns.
+C11 coverage at that point was 782 pending, 74 partial and 368 metadata entries; cybersecurity
+remained classical. Counts in the older sections below describe their original campaigns.
 
 ## Preceding byte-snapshot source state
 

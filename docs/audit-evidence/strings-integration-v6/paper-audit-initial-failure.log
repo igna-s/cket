@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/tmp/quantum-audit-isolated-20261017/docs/paper/audit_paper.py", line 1096, in <module>
+    main(language)
+  File "/tmp/quantum-audit-isolated-20261017/docs/paper/audit_paper.py", line 696, in main
+    check(
+  File "/tmp/quantum-audit-isolated-20261017/docs/paper/audit_paper.py", line 41, in check
+    raise AssertionError(f"{name}: {detail}")
+AssertionError: Historical137 audit: seven original controlled-body failures retain their source identity: 

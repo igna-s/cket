@@ -633,17 +633,13 @@ def main(language):
         (ROOT / 'docs/audit-evidence/coherent-control-full/summary.json').read_text()
     )
     check(
-        'Current compiler:138 integrated inputs match targeted installation and completed broad sources',
+        'Historical138 integration matches its targeted installation and completed broad sources',
         current_integration['root_verification']['status'] == 'passed-targeted'
         and current_integration['source_files'] == len(current_integration['source_sha256']) == 138
         and current_integration['source_sha256'] == current_full['source_sha256']
         and current_full['status'] == 'verified-broad-campaign'
         and current_full['exit_code'] == 0
         and current_full['closed_commands'] == 76
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in current_integration['source_sha256'].items()
-        )
         and all(
             row['native_checks'] == 393
             and row['controlled_operand_checks'] == 1270
@@ -803,7 +799,7 @@ def main(language):
         and integrated_ci['normal_and_sanitized']['fuzz_seed'] == 20261011,
     )
     check(
-        'Integrated138 CI: the completed workflow verifies the exact current source integration',
+        'Historical138 CI: the completed workflow verifies that source integration',
         current_ci['status'] == 'verified-remote-ci-passed'
         and current_ci['source_files'] == 138
         and current_ci['source_sha256'] == current_integration['source_sha256']
@@ -814,7 +810,7 @@ def main(language):
         and all(job['conclusion'] == 'success' for job in current_ci['jobs']),
     )
     check(
-        'Deferred phase candidate: closed normal/SAN proofs remain distinct from integration and broad regression',
+        'Historical phase143 candidate: closed proofs remain distinct from its failed broad regression',
         deferred_phase['status'] == 'verified-scoped-phase-not-integrated'
         and deferred_phase['source_files'] == 143
         and deferred_phase['integrated_base_source_sha256'] == current_integration['source_sha256']
@@ -828,7 +824,7 @@ def main(language):
         and deferred_phase['broad_campaign_at_archive']['status'] == 'running',
     )
     check(
-        'Guarded CPU loads: closed targeted normal/SAN matrices remain distinct from integration',
+        'Historical guarded CPU loads: closed targeted143 matrices retain their original scope',
         guarded_loads['status'] == 'verified-targeted-cpu-loads-not-integrated'
         and guarded_loads['source_inputs'] == 143
         and guarded_loads['closed_targeted_commands'] == 12
@@ -854,6 +850,88 @@ def main(language):
             for name, expected in guarded_loads['artifacts'].items()
         ),
     )
+    string_integration = json.loads(
+        (ROOT / 'docs/audit-evidence/strings-integration-v6/integration-summary.json').read_text()
+    )
+    check(
+        'Current144 compiler: exact applied inputs have closed targeted checks; broad regression remains pending',
+        string_integration['status'] == 'verified-targeted-applied-broad-pending'
+        and string_integration['source_files'] == len(string_integration['source_sha256']) == 144
+        and string_integration['targeted_commands_closed_zero'] == 18
+        and string_integration['exact_documented_program_executions'] == 40
+        and string_integration['broad_campaign_at_archive']['status'] == 'running'
+        and string_integration['broad_campaign_at_archive']['planned_commands'] == 80
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in string_integration['source_sha256'].items()
+        )
+        and [
+            name
+            for name, digest in string_integration['source_sha256'].items()
+            if digest != string_integration['tested_source_sha256'][name]
+        ]
+        == ['scripts/archive-audit.py'],
+    )
+    check(
+        'Current144 strings and CPU loads: independent complex states and native load matrices keep separate scopes',
+        string_integration['checks_per_configuration']
+        == {
+            'bindings': 519,
+            'strings': 460,
+            'native': 393,
+            'controlled_operands': 1270,
+            'memcmp': 302,
+            'strncmp': 246,
+            'library': 2100,
+            'phase': 3380,
+        }
+        and set(string_integration['independent_compiled_string_states']) == {'normal', 'sanitized'}
+        and all(
+            row['captures'] == 160
+            and row['ordinary_c_executions'] == 80
+            and row['complete_state_checks'] == 320
+            and row['maximum_amplitude_error'] < 1e-10
+            for row in string_integration['independent_compiled_string_states'].values()
+        )
+        and set(string_integration['current_cpu_load_matrix']) == {'normal', 'sanitized'}
+        and all(
+            row == {'rows': 140, 'native_executions': 420, 'ordinary_c_executions': 420}
+            for row in string_integration['current_cpu_load_matrix'].values()
+        ),
+    )
+    check(
+        'Current144 CPU loads: distinct source phases validate complete states and derived-result inverses separately from update inverses',
+        set(string_integration['independent_compiled_cpu_load_states']) == {'normal', 'sanitized'}
+        and all(
+            row['captures'] == 280
+            and row['ordinary_c_executions'] == 140
+            and row['complete_state_checks'] == 560
+            and row['maximum_amplitude_error'] < 1e-10
+            for row in string_integration['independent_compiled_cpu_load_states'].values()
+        ),
+    )
+    current_index = json.loads((ROOT / 'docs/c11-library.json').read_text())
+    check(
+        'Current144 inventory: strlen and strcmp remain partial; complete C11 is not claimed',
+        string_integration['inventory']
+        == {
+            'headers': 29,
+            'entries': 1224,
+            'pending': 780,
+            'partial': 76,
+            'metadata_only': 368,
+            'partial_function_names': 29,
+            'complete': 0,
+        }
+        and len(current_index['interfaces']) == 1224
+        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 780
+        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 76
+        and all(
+            row['quantum'] == 'partial'
+            for row in current_index['interfaces']
+            if row['header'] == 'string.h' and row['name'] in {'strlen', 'strcmp'}
+        ),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -863,6 +941,7 @@ def main(language):
         ('integrated138-remote-ci', current_ci),
         ('deferred-phase-v6', deferred_phase),
         ('deferred-phase-v6-broad-failure', phase_broad_failure),
+        ('strings-integration-v6', string_integration),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -923,6 +1002,7 @@ def main(language):
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',
+                'strings-integration-v6',
                 'coherent-control-full',
                 'controlled-operands-full',
                 'controlled-operands-integration',

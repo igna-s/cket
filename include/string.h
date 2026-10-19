@@ -19,6 +19,14 @@ extern int __cket_strncmp(const char *left, const char *right, size_t count) __a
 #undef strncmp
 #define strncmp(left, right, count) __cket_strncmp((left), (right), (count))
 
+extern int __cket_strcmp(const char *left, const char *right) __asm__("strcmp");
+#undef strcmp
+#define strcmp(left, right) __cket_strcmp((left), (right))
+
+extern size_t __cket_strlen(const char *string) __asm__("strlen");
+#undef strlen
+#define strlen(string) __cket_strlen((string))
+
 #undef memcmp
 #define memcmp(left, right, count) __cket_memcmp((left), (right), (count))
 #endif
