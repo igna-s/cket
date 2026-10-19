@@ -762,6 +762,9 @@ def main(language):
     current_ci = json.loads(
         (ROOT / 'docs/audit-evidence/integrated138-remote-ci/summary.json').read_text()
     )
+    deferred_phase = json.loads(
+        (ROOT / 'docs/audit-evidence/deferred-phase-v6/summary.json').read_text()
+    )
     check(
         'V5 candidate: positive native and independent inverse scopes preserve the earlier runner failure',
         operand_v5['status'] == 'verified-scoped-v5-not-integrated'
@@ -804,6 +807,20 @@ def main(language):
         and current_ci['normal_and_sanitized']['fuzz_seed'] == 20261011
         and all(job['conclusion'] == 'success' for job in current_ci['jobs']),
     )
+    check(
+        'Deferred phase candidate: closed normal/SAN proofs remain distinct from integration and broad regression',
+        deferred_phase['status'] == 'verified-scoped-phase-not-integrated'
+        and deferred_phase['source_files'] == 143
+        and deferred_phase['integrated_base_source_sha256'] == current_integration['source_sha256']
+        and deferred_phase['checks_per_configuration']['total'] == 3380
+        and sum(
+            row['complete_state_checks'] for row in deferred_phase['independent_states'].values()
+        )
+        == 1600
+        and deferred_phase['history']['v2_sanitized_failed'] == 170
+        and deferred_phase['history']['v2_original_state_runner_exit'] == 1
+        and deferred_phase['broad_campaign_at_archive']['status'] == 'running',
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -811,6 +828,7 @@ def main(language):
         ('controlled-operands-v5', operand_v5),
         ('integrated137-remote-ci', integrated_ci),
         ('integrated138-remote-ci', current_ci),
+        ('deferred-phase-v6', deferred_phase),
     )
     check(
         'Current evidence: internal capsule artifacts match their recorded bytes after formatting',
@@ -855,6 +873,7 @@ def main(language):
                 'controlled-operands-v5',
                 'integrated137-remote-ci',
                 'integrated138-remote-ci',
+                'deferred-phase-v6',
                 'coherent-control-full',
                 'controlled-operands-full',
                 'controlled-operands-integration',
@@ -878,6 +897,7 @@ def main(language):
             if p.is_file()
         ),
         *sorted((ROOT / 'docs/audit-evidence').glob('*-locale-*.log')),
+        ROOT / 'docs/re-audit-2026-10-18-deferred-phase.md',
         EVIDENCE / 'synthesis-growth.csv',
         EVIDENCE / 'environment.txt',
         EVIDENCE / 'editorial-toolchain.json',

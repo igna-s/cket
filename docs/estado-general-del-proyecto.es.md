@@ -54,6 +54,14 @@ cuánticos aceptados fallan, mientras las 70 referencias C terminan bien. Incluy
 suma, `memset`, `phase`, condiciones e índices. La integración actual sigue afectada por esa
 familia.
 
+**Hay un candidato aislado para corregir los ángulos de `phase`; todavía no está integrado.** Sus
+143 entradas congeladas pasaron 3380 comprobaciones en normal y otras 3380 con ASan/UBSan. Una
+prueba adicional compara los bits exactos de los ángulos con C ordinario y verifica 1600 estados
+complejos exportados entre ambas configuraciones. La regresión amplia sigue en curso en la
+[fotografía archivada](audit-evidence/deferred-phase-v6/summary.json). El
+[informe del candidato](re-audit-2026-10-18-deferred-phase.md) distingue estos resultados de los
+fallos de versiones anteriores y de las cargas CPU que siguen pendientes.
+
 La corrección anterior de condiciones anidadas tuvo su propia integración de 137 entradas. Su
 [regresión local completa](audit-evidence/coherent-control-full/README.es.md) y su
 [CI remoto](audit-evidence/integrated137-remote-ci/README.es.md) también terminaron bien. Los 145

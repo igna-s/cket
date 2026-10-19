@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 364,
+  "checks": 365,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1819,6 +1819,11 @@
     },
     {
       "check": "Integrated138 CI: the completed workflow verifies the exact current source integration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Deferred phase candidate: closed normal/SAN proofs remain distinct from integration and broad regression",
       "passed": true,
       "detail": ""
     },
