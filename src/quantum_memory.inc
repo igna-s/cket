@@ -8,6 +8,7 @@ struct QuantumByteRange {
     bool quantum = false;
     const char *error = nullptr;
     tree cpu_address = NULL_TREE;
+    tree cpu_object = NULL_TREE;
     uint64_t cpu_size = 0;
     std::map<uint64_t, tree> cpu_bytes;
     bool stop_at_zero = false;
@@ -149,6 +150,7 @@ bool constant_byte_range(tree storage, uint64_t index, QuantumByteRange &range) 
         range.elements.push_back(fold_convert(type, element));
     }
     range.offset = index * range.stride;
+    range.cpu_object = storage;
     return true;
 }
 
@@ -255,6 +257,7 @@ bool resolve_byte_range(tree value, QuantumByteRange &range) {
     // No typed scalar load, padding interpretation or quantum load is used.
     range.cpu_address =
         fold_convert(build_pointer_type(unsigned_char_type_node), build_fold_addr_expr(storage));
+    range.cpu_object = storage;
     range.cpu_size = extent;
     range.offset = offset;
     return true;

@@ -1578,14 +1578,10 @@ def main(language):
             for name in ('build.log', 'block06.log')
         }
     check(
-        'String168 implementation: exact current/archive sources; seven interfaces remain partial with full qualification deferred',
+        'Historical string168 implementation: exact archived sources; seven interfaces remain partial with full qualification deferred',
         strings_summary['status'] == 'built-and-examples-executed-full-qualification-deferred'
         and strings_summary['source_files'] == len(strings_sources) == 168
         and strings_sources == strings_summary['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
-            for name, sha in strings_sources.items()
-        )
         and set(strings_summary['new_partial_interfaces'])
         == {'strspn', 'strcspn', 'memchr', 'strchr', 'strrchr', 'strpbrk', 'strstr'}
         and all(value == 'deferred' for value in strings_summary['qualification'].values()),
@@ -1599,6 +1595,45 @@ def main(language):
         == 2
         and strings_summary['build']['log_sha256'] == strings_logs['build.log']
         and strings_summary['delivery']['log_sha256'] == strings_logs['block06.log'],
+    )
+    positions_folder = ROOT / 'docs/audit-evidence/search-positions-v2'
+    positions = json.loads((positions_folder / 'summary.json').read_text())
+    with tarfile.open(positions_folder / 'evidence.tar.gz') as archive:
+        positions_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in positions['source_sha256']
+        }
+        positions_exit = json.load(archive.extractfile('records/exit.json'))
+        positions_logs = {
+            row['log']: hashlib.sha256(
+                archive.extractfile('records/' + row['log']).read()
+            ).hexdigest()
+            for row in positions_exit['commands']
+        }
+        positions_failed_exit = json.load(archive.extractfile('failed/v1/exit.json'))
+    check(
+        'Search170 positions: exact current/archive sources, first/last consumers and deferred complete qualification',
+        positions['status'] == 'built-and-examples-executed-full-qualification-deferred'
+        and positions['source_files'] == len(positions_sources) == 170
+        and positions_sources == positions['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
+            for name, sha in positions_sources.items()
+        )
+        and all(value == 'deferred' for value in positions['qualification'].values())
+        and positions['new_partial_interfaces'] == [],
+    )
+    check(
+        'Search170 delivery: normal compiler and three examples close zero; failed compilation stays distinct',
+        positions_exit['status'] == positions['status']
+        and all(row['exit_code'] == 0 for row in positions_exit['commands'])
+        and positions['log_sha256'] == positions_logs
+        and positions['delivery']['native_executions']
+        == positions['delivery']['qasm_exports']
+        == positions['delivery']['resource_reports']
+        == 3
+        and positions_failed_exit['status'] == 'failed'
+        and positions_failed_exit['commands'][-1]['exit_code'] == 1,
     )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
@@ -1619,6 +1654,7 @@ def main(language):
         ('shift-mux-v1', shift_summary),
         ('shift-truth-v3', truth_summary),
         ('string-library-v1', strings_summary),
+        ('search-positions-v2', positions),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1685,6 +1721,7 @@ def main(language):
                 'shift-mux-v1',
                 'shift-truth-v3',
                 'string-library-v1',
+                'search-positions-v2',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

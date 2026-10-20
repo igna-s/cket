@@ -1486,12 +1486,18 @@ tree expand_quantum_program(tree value) {
         return value;
     }
     if (code == POINTER_DIFF_EXPR) {
+        tree search = expand_search_pointer_difference(value);
+        if (search)
+            return search;
         tree difference = expand_pointer_difference(value);
         if (difference)
             return difference;
     }
     if (TREE_CODE_CLASS(code) == tcc_comparison) {
         tree search = expand_string_search_relation(value);
+        if (search)
+            return search;
+        search = expand_search_pointer_comparison(value);
         if (search)
             return search;
         tree pointer_relation = expand_pointer_relation(value);
@@ -1516,7 +1522,7 @@ tree expand_quantum_program(tree value) {
             if (quantum_input) {
                 error_at(
                     at(value),
-                    "|c>: quantum search currently supports direct == NULL or != NULL predicates; returned pointer consumers remain pending");
+                    "|c>: quantum search requires a direct null/address comparison or same-object subtraction; other returned pointer consumers remain pending");
                 return build_zero_cst(TREE_TYPE(value));
             }
         }

@@ -1,6 +1,10 @@
 # Evidence for the tested C11 subset
 
-The new [string library advance](string-library-v1/README.es.md) adds seven partial interfaces:
+The new [search-position advance](search-positions-v2/README.es.md) adds first/last positions,
+same-object differences and address comparisons. Its three runnable examples remain separate from
+deferred full qualification; the earlier failed compilation is preserved.
+
+The previous [string library advance](string-library-v1/README.es.md) adds seven partial interfaces:
 prefix lengths and direct null search predicates. The compiler and two examples build and execute;
 full coherent/inverse, sanitizer and GCC-context qualification is explicitly deferred. Historical
 campaigns below do not qualify this new implementation.

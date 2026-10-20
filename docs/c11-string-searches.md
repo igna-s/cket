@@ -1,15 +1,16 @@
 # String spans and search predicates
 
-This delivery adds `strspn` and `strcspn` prefix-length expressions and direct null comparisons of
-`memchr`, `strchr`, `strrchr`, `strpbrk` and `strstr`. It is partial implementation. Full coherent
-state, inverse, sanitizer and compiler-context qualification is deferred until the implementation
-block closes. Earlier audit campaigns do not validate these new sources.
+This delivery adds `strspn` and `strcspn` prefix lengths and direct consumers of `memchr`, `strchr`,
+`strrchr`, `strpbrk` and `strstr`: null/address comparisons and same-object pointer differences. It
+is partial implementation. Full coherent state, inverse, sanitizer and compiler-context
+qualification is deferred until the implementation block closes. Earlier audit campaigns do not
+validate these new sources.
 
 The C reference is
 [WG14 N1570, §7.24.5](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf). `strspn` counts
 an initial segment in a character set; `strcspn` counts one outside the set. The search predicates
 answer whether a character, set member or substring occurs. A null comparison of `strrchr` has the
-same existence result as `strchr`; selecting the last address remains pending.
+same existence result as `strchr`; position consumers distinguish the first and last occurrences.
 
 ```c
 quant unsigned char text[2] = {superposition(0, 255), 0};
@@ -37,10 +38,23 @@ Character expressions must be pure; sequence CPU increments, calls or volatile r
 `strpbrk` ignores the terminating NUL and bytes following it. An empty `strstr` needle succeeds,
 including in an empty haystack; a match cannot continue through the haystack terminator.
 
-Only a direct `== NULL` or `!= NULL` consumes a quantum search result in this block, with either
-operand order. A Boolean conversion or condition is supported when GCC represents it in that form.
-Saving the pointer, subtracting it, comparing it to an object address or dereferencing it is
-pending. Such calls are not allowed to inspect a host placeholder as though it were quantum data.
+A direct `== NULL` or `!= NULL` consumes an existence predicate, with either operand order. A
+Boolean conversion or condition is supported when GCC represents it in that form. Direct comparisons
+against checked addresses within the same source object use the selected position. Equality returns
+false for a missing match; inequality returns true. Relational ordering requires a successful
+search. Cross-object search-address comparisons remain pending.
+
+Direct subtraction against a checked address in the same object produces its signed byte distance,
+with either operand order; GCC retains the element-size division for typed pointer subtraction. For
+example, `quant int8_t last = strrchr(text, 'a') - text;` computes the last occurrence's offset when
+`text` contains an `a`. Subtracting or ordering a null pointer is undefined C; a domain guard keeps
+a failed search from becoming a fabricated valid offset. The existing backend decides whether an
+evaluated expression has a provably defined domain, so general guarded compositions still need
+qualification. CPU object identity is checked independently of contents: two arrays containing the
+same bytes do not become the same pointer provenance.
+
+Saving a search pointer, adding an offset before consumption, dereferencing it or passing it to
+another function remains pending. Such calls cannot inspect a host placeholder as quantum data.
 
 Known CPU objects supply once-only byte captures. String loads stop at their own CPU terminator;
 saved inverses retain the captured values after subsequent CPU mutation. Volatile and atomic objects
@@ -52,8 +66,9 @@ Ordinary CPU calls and standard function addresses keep libc ABI. Function-like 
 preserve calls for the quantum frontend before GCC folds them into host byte operations; private
 user functions with matching names are not recognized as library adapters.
 
-The examples are [`string_spans.c`](../examples/blocks/06/string_spans.c) and
-[`string_search.c`](../examples/blocks/06/string_search.c). Build with GCC 11, then run:
+The examples are [`string_spans.c`](../examples/blocks/06/string_spans.c),
+[`string_search.c`](../examples/blocks/06/string_search.c) and
+[`search_positions.c`](../examples/blocks/06/search_positions.c). Build with GCC 11, then run:
 
 ```bash
 CC=gcc-11 CXX=g++-11 bash scripts/build.sh

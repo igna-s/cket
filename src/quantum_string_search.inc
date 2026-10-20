@@ -1,32 +1,34 @@
-// A null comparison asks only whether a search succeeds. Lower that result
-// directly to a Boolean circuit; no host or quantum pointer is materialized.
-tree expand_string_search_relation(tree value) {
-    enum tree_code relation = TREE_CODE(value);
-    if (relation != EQ_EXPR && relation != NE_EXPR)
-        return NULL_TREE;
-    tree call = strip(TREE_OPERAND(value, 0)), zero = strip(TREE_OPERAND(value, 1));
-    if (call && integer_zerop(call))
-        std::swap(call, zero);
-    if (!call || TREE_CODE(call) != CALL_EXPR || !zero || !integer_zerop(zero))
-        return NULL_TREE;
+// Search consumers use an existence flag and a relative byte position. These
+// are pure expressions; neither a host address nor a quantum pointer escapes.
+struct QuantumStringSearch {
+    QuantumByteRange source;
+    tree found = boolean_false_node;
+    tree position = build_zero_cst(size_type_node);
+    tree defined = boolean_true_node;
+};
+
+bool expand_string_search(tree call, QuantumStringSearch &search, bool position) {
+    if (!call || TREE_CODE(call) != CALL_EXPR)
+        return false;
     std::string operation = standard_string_search(get_callee_fndecl(call));
     if (operation.empty())
-        return NULL_TREE;
+        return false;
     bool memory = operation == "memchr";
     bool set_search = operation == "strpbrk", substring = operation == "strstr";
     if (call_expr_nargs(call) != (memory ? 3 : 2))
-        return NULL_TREE;
+        return false;
 
-    QuantumByteRange string, pattern;
+    QuantumByteRange &string = search.source;
+    QuantumByteRange pattern;
     bool resolved = resolve_byte_range(CALL_EXPR_ARG(call, 0), string);
     bool resolved_pattern =
         !(set_search || substring) || resolve_byte_range(CALL_EXPR_ARG(call, 1), pattern);
     if (!string.quantum && !pattern.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
         !has_quantum(CALL_EXPR_ARG(call, 1)))
-        return NULL_TREE;
-    auto reject = [value](const char *message) -> tree {
-        error_at(at(value), "%s", message);
-        return build_zero_cst(TREE_TYPE(value));
+        return false;
+    auto reject = [call](const char *message) {
+        error_at(at(call), "%s", message);
+        return true;
     };
     if (!resolved || !resolved_pattern)
         return reject(
@@ -97,32 +99,78 @@ tree expand_string_search_relation(tree value) {
             match = byte_range_member(pattern, byte, location);
         else
             match = fold_build2_loc(location, EQ_EXPR, boolean_type_node, byte, character);
-        if (memory)
-            found = either(match, found);
-        else if (set_search || substring)
-            found = both(nonzero(byte), either(match, found));
-        else
-            found = either(match, both(nonzero(byte), found));
+        tree continuation = memory ? found : both(nonzero(byte), found);
+        if (set_search || substring)
+            match = both(nonzero(byte), match);
+        if (position) {
+            // Reverse scanning makes first/last selection explicit. A NUL
+            // prevents a later match from contributing, including for strrchr.
+            bool last = operation == "strrchr";
+            search.position =
+                fold_build3_loc(location,
+                                COND_EXPR,
+                                size_type_node,
+                                last ? continuation : match,
+                                last ? search.position : build_int_cstu(size_type_node, i - 1),
+                                last ? build_int_cstu(size_type_node, i - 1) : search.position);
+        }
+        found = either(match, continuation);
     }
     if (substring) {
         tree first = object_byte(pattern, 0, location);
         tree empty = fold_build1_loc(location, TRUTH_NOT_EXPR, boolean_type_node, nonzero(first));
         found = either(empty, found);
+        if (position)
+            search.position = fold_build3_loc(location,
+                                              COND_EXPR,
+                                              size_type_node,
+                                              empty,
+                                              build_zero_cst(size_type_node),
+                                              search.position);
     }
     if (!memory) {
-        tree terminated = byte_range_terminated(string, location);
+        search.defined = byte_range_terminated(string, location);
         if (set_search || substring)
-            terminated = both(terminated, byte_range_terminated(pattern, location));
-        found =
-            fold_build3_loc(location,
-                            COND_EXPR,
-                            boolean_type_node,
-                            terminated,
-                            found,
-                            fold_convert(boolean_type_node,
-                                         missing_string_terminator(integer_type_node, location)));
+            search.defined = both(search.defined, byte_range_terminated(pattern, location));
     }
+    search.found = found;
+    return true;
+}
+
+tree string_search_domain(const QuantumStringSearch &search,
+                          tree expression,
+                          location_t location,
+                          bool require_match = false) {
+    tree defined = search.defined;
+    if (require_match)
+        defined =
+            fold_build2_loc(location, TRUTH_ANDIF_EXPR, boolean_type_node, defined, search.found);
+    tree type = TREE_TYPE(expression);
+    return fold_build3_loc(
+        location,
+        COND_EXPR,
+        type,
+        defined,
+        expression,
+        fold_convert(type, missing_string_terminator(integer_type_node, location)));
+}
+
+tree expand_string_search_relation(tree value) {
+    enum tree_code relation = TREE_CODE(value);
+    if (relation != EQ_EXPR && relation != NE_EXPR)
+        return NULL_TREE;
+    tree call = strip(TREE_OPERAND(value, 0)), zero = strip(TREE_OPERAND(value, 1));
+    if (call && integer_zerop(call))
+        std::swap(call, zero);
+    if (!zero || !integer_zerop(zero))
+        return NULL_TREE;
+    QuantumStringSearch search;
+    if (!expand_string_search(call, search, false))
+        return NULL_TREE;
+    tree found = string_search_domain(search, search.found, at(value));
     if (relation == EQ_EXPR)
-        found = fold_build1_loc(location, TRUTH_NOT_EXPR, boolean_type_node, found);
+        found = fold_build1_loc(at(value), TRUTH_NOT_EXPR, boolean_type_node, found);
     return fold_convert(TREE_TYPE(value), found);
 }
+
+#include "quantum_search_positions.inc"

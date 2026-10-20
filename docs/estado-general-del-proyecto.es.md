@@ -11,7 +11,9 @@ cuenta bloques de ese plan; no representa cobertura de C11 ni esfuerzo restante.
 
 **Nuevo avance del bloque 06:** se implementan `strspn` y `strcspn` sobre vistas comprobadas, y
 predicados directos `== NULL` / `!= NULL` para `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`.
-Los [ejemplos y el contrato](c11-string-searches.md) describen el alcance. No hay todavía un puntero
+También se añaden posiciones mediante resta de punteros y comparaciones con direcciones comprobadas
+del mismo objeto; `strrchr` selecciona la última coincidencia. Los
+[ejemplos y el contrato](c11-string-searches.md) describen el alcance. No hay todavía un puntero
 cuántico general devuelto por estas búsquedas. Por indicación del usuario, las matrices exhaustivas
 de estados, inversas y sanitizadores de este avance quedan para el cierre del bloque; las campañas
 anteriores no se presentan como validación de este código nuevo.
@@ -215,7 +217,7 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Llenado de memoria                       | `memset`.                                                                                                                                                  | Rangos fijos de almacenamiento entero, valor capturado una vez e historia de sobrescritura. Hay retornos locales comprobados; quedan consumidores generales, tamaños dinámicos y layouts generales.                                        |
 | Comparación de bytes y caracteres        | `memcmp`, `strncmp`, `strcmp`; longitud con `strlen`.                                                                                                      | Admite rangos comprobados, constantes y capturas únicas de bytes actuales de objetos CPU conocidos, conservadas para la inversa. Siguen pendientes las direcciones y tamaños dinámicos, los accesos `volatile`/atómicos y otros contextos. |
 | Prefijos de cadenas                      | `strspn`, `strcspn`.                                                                                                                                       | Vistas de 1–64 bytes con NUL dentro del rango. La calificación exhaustiva del nuevo avance queda pendiente.                                                                                                                                |
-| Predicados de búsqueda                   | `memchr`, `strchr`, `strrchr`, `strpbrk`, `strstr`.                                                                                                        | Comparaciones directas con NULL; guardar o consumir el puntero resultante sigue pendiente. Calificación exhaustiva aplazada.                                                                                                               |
+| Predicados de búsqueda                   | `memchr`, `strchr`, `strrchr`, `strpbrk`, `strstr`.                                                                                                        | Comparaciones con NULL y direcciones del mismo objeto, además de restas de posiciones. Guardar o desreferenciar el puntero sigue pendiente; calificación exhaustiva aplazada.                                                              |
 
 Son **36 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.

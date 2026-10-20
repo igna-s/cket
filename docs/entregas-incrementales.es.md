@@ -79,10 +79,11 @@ Permite usar la nueva capacidad mientras se sigue trabajando en el alcance compl
 
 ## Avance del bloque 06: cadenas
 
-`bash scripts/run-block.sh 06` reúne `string_spans` y `string_search`: longitudes con `strspn` y
-`strcspn`, y comprobaciones de existencia con `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`.
-Los datos permanecen cuánticos hasta las mediciones explícitas de los ejemplos. Se usa el motor
-disperso y se generan los ejecutables, circuitos e informes de recursos.
+`bash scripts/run-block.sh 06` reúne `string_spans`, `string_search` y `search_positions`:
+longitudes con `strspn` y `strcspn`, y comprobaciones de existencia con `memchr`, `strchr`,
+`strrchr`, `strpbrk` y `strstr`. Se añaden diferencias de posiciones y comparaciones con direcciones
+del mismo objeto. Los datos permanecen cuánticos hasta las mediciones explícitas de los ejemplos. Se
+usa el motor disperso y se generan los ejecutables, circuitos e informes de recursos.
 
 El [contrato](c11-string-searches.md) limita las vistas y los consumidores de punteros. La matriz
 completa de estados, inversas y sanitizadores queda aplazada al cierre del bloque para priorizar

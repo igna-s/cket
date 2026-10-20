@@ -238,16 +238,18 @@ def semantics(header, name, kind, optional):
             ["P", "R"],
             "M4/M7",
             [],
-            "Direct == NULL / != NULL search predicates lower to input-preserving Boolean "
-            "expressions without materializing or measuring a returned pointer. Checked "
+            "Direct null and same-object address comparisons, plus same-object pointer "
+            "subtractions, lower to input-preserving Boolean/integer expressions without "
+            "materializing or measuring a returned pointer. Checked "
             "padding-free integer object-byte views and known nonvolatile CPU snapshots "
             "are supported within the 64-byte synthesis bound. memchr requires a constant "
             "checked count and converts the pure character argument to unsigned char; "
             "strchr/strrchr convert to target char and include the terminating NUL. "
             "String views require an in-view NUL; strpbrk excludes it and an empty strstr "
-            "needle succeeds. Returned-pointer storage, offsets, dereference and general "
+            "needle succeeds. Relative byte positions distinguish first and last occurrence; "
+            "NULL subtraction and ordering have no defined C meaning and use a domain guard. "
+            "Returned-pointer storage, pointer arithmetic before consumption, dereference and general "
             "pointer consumers, indirect quantum ABI and dynamic extents remain pending. "
-            "strchr/strrchr share existence semantics only, not pointer selection semantics. "
             "Delivery examples do not certify the deferred coherent/inverse, sanitizer "
             "or complete GCC context qualification. Resource budgets apply.",
         )

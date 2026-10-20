@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 428,
+  "checks": 432,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -728,6 +728,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/blocks/06/search_positions.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/blocks/06/string_search.c",
       "passed": true,
       "detail": ""
@@ -1179,6 +1184,11 @@
     },
     {
       "check": "Fuente local src/quantum_phase.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_search_positions.inc",
       "passed": true,
       "detail": ""
     },
@@ -2123,12 +2133,22 @@
       "detail": ""
     },
     {
-      "check": "String168 implementation: exact current/archive sources; seven interfaces remain partial with full qualification deferred",
+      "check": "Historical string168 implementation: exact archived sources; seven interfaces remain partial with full qualification deferred",
       "passed": true,
       "detail": ""
     },
     {
       "check": "String168 delivery: normal build and two native examples are separate from deferred exhaustive tests",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Search170 positions: exact current/archive sources, first/last consumers and deferred complete qualification",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Search170 delivery: normal compiler and three examples close zero; failed compilation stays distinct",
       "passed": true,
       "detail": ""
     },
@@ -2151,7 +2171,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 215
+    "source_files_in_manifest": 217
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",
