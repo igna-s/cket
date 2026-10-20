@@ -36,14 +36,23 @@ guarded CPU loads, deferred supported `phase` angles, and partial
 independent string states passed. Its
 [remote CI](docs/audit-evidence/integrated144-remote-ci/README.es.md) also passed all 28
 normal/sanitizer suites on the same compiler inputs. The larger local campaign with 665 fuzz
-compilations per configuration remains pending after an interrupted WSL session; its continuation
-preserves the closed prefix. Complete quantum C11 remains open.
+compilations per configuration also
+[completed in two segments](docs/audit-evidence/common-remainder-v2/README.es.md): 80 closed
+commands, with the interrupted prefix and continuation preserved. That historical result does not
+certify later compiler inputs. Complete quantum C11 remains open.
 
-The [current 146-input integration](docs/audit-evidence/known-fill-cleanup-v2/README.es.md) fixes
+The [previous 146-input integration](docs/audit-evidence/known-fill-cleanup-v2/README.es.md) fixes
 automatic cleanup of unobserved known-basis `memset` temporaries. Its targeted normal/sanitizer
 suites passed, including 940 fill checks per configuration and 3528 separate complete-state checks
 of compiled scope cleanup. A fresh Linux root build passed 20 exact contract executions. The full
 regression and remote CI for these new inputs remain pending; the earlier CI verifies 144 inputs.
+
+The [current 148-input integration](docs/audit-evidence/common-remainder-v2/README.es.md) reduces
+workspace for integer `%` with constant divisor magnitude 2 through 16. Its fresh normal/sanitizer
+regressions pass 907 expression, 990 division, 393 native and 271 in-place checks each. Separate
+compiled-circuit proofs check 1968 complete states, with source identities and validation limits
+recorded explicitly. Full regression and remote CI for these inputs remain pending. General 64-bit
+conditional preparation, wide results and the remaining C11 features still need work.
 
 ## Install and build
 

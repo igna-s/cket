@@ -1,5 +1,14 @@
 # Auditoría del repositorio y de los papers
 
+La [integración actual de resto entero](audit-evidence/common-remainder-v2/README.es.md) reúne 148
+entradas y añade un núcleo reversible para `%` por constantes de magnitud 2 a 16, conservando el
+camino previo de potencias de dos. Pasaron reconstrucciones normales y ASan/UBSan: 907 expresiones,
+990 divisiones, 393 nativos y 271 actualizaciones por configuración. Incluye 810 regresiones nuevas
+de acción sobre bases y 1968 estados complejos completos de programas compilados, con identidad de
+fuentes y alcance separados. Se conserva el límite anterior de preparación condicional de 64 bits;
+la matriz posterior usa vistas para preparar sus etiquetas. La regresión completa de las 148
+entradas sigue pendiente y no se declara terminado ningún tipo de C11.
+
 La [integración de limpieza de temporales](audit-evidence/known-fill-cleanup-v2/README.es.md) reúne
 146 entradas. Conserva definiciones invertibles para llenados conocidos sin observaciones o
 transformaciones en la función y mantiene la ruta mutable de los casos observados. Pasaron las seis
@@ -13,7 +22,10 @@ entradas y añade `strlen`/`strcmp` parciales, ángulos diferidos de `phase` y c
 bajo controles probadamente inactivos. Pasaron sus pruebas dirigidas normales y con ASan/UBSan,
 incluidas 519 comprobaciones de bindings, 460 de cadenas y 3380 de ángulos por configuración. Una
 prueba separada verifica 640 estados complejos completos de cadenas con sus inversas. La regresión
-amplia local sigue pendiente tras una interrupción de WSL, con su prefijo cerrado conservado. El
+amplia local de esas 144 entradas también cerró correctamente en dos segmentos: 80 comandos y 665
+compilaciones de fuzzing por configuración. Su cierre está archivado en la
+[evidencia posterior](audit-evidence/common-remainder-v2/README.es.md), conservando el prefijo
+interrumpido y su continuación; no verifica las entradas posteriores. El
 [CI remoto de esas 144 entradas](audit-evidence/integrated144-remote-ci/README.es.md) terminó bien:
 28 suites en normal y ASan/UBSan, 145 compilaciones de fuzzing y 70 circuitos QuEST por
 configuración. El inventario actual tiene 780 entradas pendientes, 76 parciales y 368 de metadatos;

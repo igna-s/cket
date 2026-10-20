@@ -1083,6 +1083,8 @@ static int ar_power_division(ar_builder *p,
     return 1;
 }
 
+#include "small_remainder.inc"
+
 static int
 ar_lower_arm(ar_builder *p, int e, unsigned arm, int value, unsigned requested, ar_value *out) {
     ar_branch *branch = p->branches;
@@ -1324,6 +1326,11 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
             p, &a, &b, cj_equal(p->d, op, "div"), width, range.sign && range.lo < 0, out);
         if (optimized)
             return optimized > 0;
+        if (cj_equal(p->d, op, "mod")) {
+            optimized = ar_small_remainder(p, &a, &b, width, range.sign && range.lo < 0, out);
+            if (optimized)
+                return optimized > 0;
+        }
     }
     // A fixed shift selects existing wires or sign/zero constants. Definedness
     // was checked by ar_bound; no barrel-shifter output register is needed.

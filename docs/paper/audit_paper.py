@@ -984,8 +984,13 @@ def main(language):
     fill_segments = json.loads(
         (ROOT / 'docs/audit-evidence/known-fill-cleanup-v2/targeted-segments.json').read_text()
     )
+    with tarfile.open(ROOT / 'docs/audit-evidence/known-fill-cleanup-v2/sources.tar.gz') as archive:
+        archived146 = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in fill_integration['source_sha256']
+        }
     check(
-        'Current146 compiler: exact applied inputs passed targeted checks and fresh root contracts; full regression pending',
+        'Historical146 compiler: exact archived inputs passed targeted checks and fresh root contracts; full regression stays separate',
         fill_integration['status'] == 'verified-targeted-segmented-applied-broad-pending'
         and fill_integration['source_files'] == len(fill_integration['source_sha256']) == 146
         and fill_integration['previous_integrated_source_sha256'] == archived144
@@ -1001,10 +1006,7 @@ def main(language):
         }
         and fill_integration['root_verification']['fresh_root_build'] == 'passed'
         and fill_integration['root_verification']['exact_program_executions'] == 20
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in fill_integration['source_sha256'].items()
-        )
+        and archived146 == fill_integration['source_sha256']
         and all(
             hashlib.sha256(
                 (ROOT / 'docs/audit-evidence/known-fill-cleanup-v2' / (name + '.c')).read_bytes()
@@ -1016,7 +1018,7 @@ def main(language):
         ),
     )
     check(
-        'Current146 scope proof: full states check actual compiler cleanup; explicit C inverses and unknown retained roots keep their scope',
+        'Historical146 scope proof: full states check actual compiler cleanup; explicit C inverses and unknown retained roots keep their scope',
         set(fill_integration['independent_compiled_scope_states']) == {'normal', 'sanitized'}
         and all(
             row['captures'] == 588
@@ -1027,7 +1029,7 @@ def main(language):
         ),
     )
     check(
-        'Current146 segmented qualification: previous processes have no fabricated success; only unclosed suites repeat',
+        'Historical146 segmented qualification: previous processes have no fabricated success; only unclosed suites repeat',
         fill_integration['targeted_commands_closed_zero'] == 56
         and set(fill_segments) == {'normal', 'sanitized'}
         and all(
@@ -1048,7 +1050,7 @@ def main(language):
         ),
     )
     check(
-        'Current146 signed fill: checked word prefix stays separate from failed64-bit resource experiment',
+        'Historical146 signed fill: checked word prefix stays separate from failed64-bit resource experiment',
         set(fill_integration['signed_word_prefix_and_resource_failure']) == {'normal', 'sanitized'}
         and all(
             row['exit_code'] == 1
@@ -1057,6 +1059,137 @@ def main(language):
             and row['validated_prefix_widths'] == [8, 16, 32]
             and 'limited to 128 physical qubits' in row['error']
             for row in fill_integration['signed_word_prefix_and_resource_failure'].values()
+        ),
+    )
+    remainder = json.loads(
+        (ROOT / 'docs/audit-evidence/common-remainder-v2/integration-summary.json').read_text()
+    )
+    with tarfile.open(ROOT / 'docs/audit-evidence/common-remainder-v2/sources.tar.gz') as archive:
+        archived148 = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in remainder['source_sha256']
+        }
+    with tarfile.open(
+        ROOT / 'docs/audit-evidence/common-remainder-v2/proof147-sources.tar.gz'
+    ) as archive:
+        archived147 = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in remainder['proof147_source_sha256']
+        }
+    check(
+        'Current148 remainder: exact source bytes and fresh normal/sanitizer targeted regressions; broad verification pending',
+        remainder['status'] == 'verified-targeted-applied-broad-pending'
+        and remainder['source_files'] == len(archived148) == 148
+        and archived148 == remainder['source_sha256']
+        and archived146 == remainder['previous_integrated_source_sha256']
+        and len(remainder['changed_sources_from146']) == 5
+        and remainder['checks_per_configuration']
+        == {'expressions': 907, 'division': 990, 'native': 393, 'inplace': 271}
+        and remainder['new_finite_basis_action_checks_per_configuration'] == 810
+        and remainder['targeted_commands_closed_zero'] == 10
+        and remainder['broad_regression'] == remainder['remote_ci'] == 'pending'
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in archived148.items()
+        ),
+    )
+    check(
+        'Current148 remainder: byte-state proof keeps its147 identity; every production input is byte-identical',
+        len(archived147) == 147
+        and archived147 == remainder['proof147_source_sha256']
+        and len(remainder['changed_sources_from_proof147']) == 3
+        and set(remainder['production_sources_identical_to_proof147'])
+        == {name for name in archived148 if name.startswith(('src/', 'include/')) or name == 'cket'}
+        and all(
+            archived147[name] == archived148[name]
+            for name in remainder['production_sources_identical_to_proof147']
+        )
+        and set(remainder['independent_compiled_byte_states_on_production_identical147'])
+        == {'normal', 'sanitized'}
+        and all(
+            row['captures'] == 240
+            and row['ordinary_c_executions'] == 120
+            and row['complete_state_checks'] == 720
+            and row['maximum_amplitude_error'] < 1e-10
+            for row in remainder[
+                'independent_compiled_byte_states_on_production_identical147'
+            ].values()
+        ),
+    )
+    check(
+        'Current148 remainder: wide edges, mutable CPU-divisor snapshots, phases and actual scope inverses',
+        set(remainder['independent_compiled_edge_states_on148']) == {'normal', 'sanitized'}
+        and all(
+            row['captures'] == 88
+            and row['ordinary_c_executions'] == 44
+            and row['complete_state_checks'] == 264
+            and row['maximum_amplitude_error'] < 1e-10
+            for row in remainder['independent_compiled_edge_states_on148'].values()
+        )
+        and remainder['common_type_profiles']
+        == {
+            'baseline_captures': 632,
+            'baseline_resource_limits': 4,
+            'current_captures': 640,
+            'ordinary_c_executions': 320,
+            'status': 'finite-profiles-passed-not-type-completeness',
+        },
+    )
+    check(
+        'Current148 remainder: full-width conditional64 preparation failure is preserved separately from later wire-view proofs',
+        set(remainder['conditional64_resource_failure']) == {'normal', 'sanitized'}
+        and all(
+            row['exit_code'] == 1
+            and row['completed_captures_before_failure'] == 24
+            and row['completed_state_checks_before_failure'] == 72
+            and 'limited to 128 physical qubits' in row['error']
+            for row in remainder['conditional64_resource_failure'].values()
+        ),
+    )
+    historical144 = remainder['historical144_completed_broad']
+    with tarfile.open(
+        ROOT / 'docs/audit-evidence/common-remainder-v2/historical144-broad.tar.gz'
+    ) as archive:
+        historical144_progress = json.load(archive.extractfile('continuation/progress.json'))
+        historical144_sources = json.load(archive.extractfile('sources.json'))
+        historical144_fuzz = {
+            configuration: json.load(
+                archive.extractfile('continuation/' + configuration + '-fuzz-coverage.json')
+            )
+            for configuration in ('normal', 'sanitized')
+        }
+        historical144_logs_match = all(
+            row['returncode'] == 0
+            and hashlib.sha256(archive.extractfile('continuation/' + row['log']).read()).hexdigest()
+            == row['log_sha256']
+            for row in historical144_progress['commands']
+        )
+        historical144_original_unclosed = 'original/exit.json' not in archive.getnames()
+    check(
+        'Historical144 broad completion:80 real zero commands,59 reused plus21 continued;665 fuzz compilations each; current148 remains separate',
+        historical144['status'] == historical144_progress['status'] == 'passed-in-segments'
+        and historical144['exit_code'] == historical144_progress['exit_code'] == 0
+        and historical144['source_sha256'] == historical144_sources == archived144
+        and historical144['closed_commands'] == len(historical144_progress['commands']) == 80
+        and historical144['reused_original_closed_commands'] == 59
+        and historical144['new_continuation_closed_commands'] == 21
+        and sum(
+            row.get('reused_closed_command_from_previous_segment', False)
+            for row in historical144_progress['commands']
+        )
+        == 59
+        and historical144_original_unclosed
+        and historical144_logs_match
+        and historical144_progress['continuation']['previous_boot_id']
+        != historical144_progress['continuation']['current_boot_id']
+        and all(
+            row['status'] == 'passed-in-segments'
+            and row['compilations'] == 665
+            and row['seed'] == 20261012
+            and row['case_indices'] == list(range(133))
+            and row['optimization_levels'] == 5
+            and row['byte_inputs_per_compilation'] == 256
+            for row in historical144_fuzz.values()
         ),
     )
     current_capsules = (
@@ -1071,6 +1204,7 @@ def main(language):
         ('strings-integration-v6', string_integration),
         ('integrated144-remote-ci', integrated144_ci),
         ('known-fill-cleanup-v2', fill_integration),
+        ('common-remainder-v2', remainder),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1130,6 +1264,7 @@ def main(language):
                 'integrated138-remote-ci',
                 'integrated144-remote-ci',
                 'known-fill-cleanup-v2',
+                'common-remainder-v2',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

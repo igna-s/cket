@@ -18,7 +18,22 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
-**La integración actual reúne 146 entradas y corrige la limpieza de temporales conocidos de
+**La integración actual reúne 148 entradas y mejora el resto entero `%` con divisores de magnitud 2
+a 16.** El caso `int % 3` que antes excedía los recursos pasa ahora la matriz finita de tipos
+comunes: 640 capturas frente a 632 y cuatro límites anteriores. Se añadieron 810 regresiones de
+acción sobre bases por configuración, con todos los bytes y límites elegidos de 32/64 bits,
+promociones, bool, controles, fases e inversa. Pasaron reconstrucciones normales y con ASan/UBSan:
+907 comprobaciones de expresiones, 990 de división, 393 nativas y 271 de actualizaciones cada una.
+
+Otras pruebas de circuitos realmente compilados pasaron **1968 estados complejos completos** entre
+ambas configuraciones, con referencias C, divisores CPU modificados después de capturarlos y
+limpieza por inversas. La [evidencia](audit-evidence/common-remainder-v2/README.es.md) distingue la
+prueba anterior de 147 entradas, con fuentes de producción idénticas, de la matriz actual de 148.
+Conserva un fallo separado: preparar una selección directa entre los extremos firmados de 64 bits
+supera los 128 qubits antes del resto. La prueba posterior usa otra preparación dentro del límite;
+no elimina ese pendiente. La regresión amplia y el CI de estas 148 entradas siguen pendientes.
+
+**La integración anterior reúne 146 entradas y corrige la limpieza de temporales conocidos de
 `memset`.** Pasaron sus seis suites dirigidas normales y con ASan/UBSan: 940 comprobaciones de
 llenado por configuración, con 14 casos fuente nuevos. Otra prueba pasó 3528 estados complejos
 completos, con inversas emitidas por el compilador para los valores derivados y conservación de
@@ -83,13 +98,15 @@ También se conservan los
 [siete fallos históricos de las 137 entradas](audit-evidence/coherent-arm-operands/failure-summary.json).
 Sus fuentes y resultados originales se mantienen separados de las correcciones posteriores.
 
-**El CI remoto de las 144 entradas terminó correctamente; la campaña local ampliada sigue
-pendiente.** La [evidencia del CI](audit-evidence/integrated144-remote-ci/README.es.md) comprueba
-las 28 suites normales y con ASan/UBSan del commit `45f71e7`, con las mismas fuentes del compilador.
-Incluye 145 compilaciones de fuzzing por configuración y semilla 20261011. La campaña local de 665
-compilaciones usa la semilla 20261012; una interrupción de WSL dejó 59 comandos cerrados y se
-continúa en otro segmento, conservando el prefijo y los logs parciales originales. Los resultados
-completos anteriores de 138 entradas no certifican la implementación nueva. El
+**El CI remoto y la campaña local ampliada de las 144 entradas terminaron correctamente.** La
+[evidencia del CI](audit-evidence/integrated144-remote-ci/README.es.md) comprueba las 28 suites
+normales y con ASan/UBSan del commit `45f71e7`, con las mismas fuentes del compilador. Incluye 145
+compilaciones de fuzzing por configuración y semilla 20261011. La campaña local de 665 compilaciones
+por configuración usa la semilla 20261012; terminó en dos segmentos, con 80 comandos correctos: 59
+del prefijo cerrado y 21 de la continuación. El
+[cierre histórico](audit-evidence/common-remainder-v2/README.es.md) conserva los logs y el proceso
+interrumpido sin inventarle una salida exitosa. Estos resultados de 144 entradas no certifican las
+revisiones posteriores de 146 o 148. El
 [fallo de bindings del candidato de fase](audit-evidence/deferred-phase-v6-broad-failure/README.es.md)
 queda conservado: una conversión booleana heredaba el tipo `volatile` de la marca cuántica y se
 confundía con una lectura CPU con efectos. La corrección distingue los valores calculados de los

@@ -481,12 +481,15 @@ static void frontend(validation *v) {
         "PASS expression C integration: function/array/loop/measurement at five GCC levels; 16-bit guarded division and 64-bit logic exported without tables");
 }
 
+#include "small_remainder_state.inc"
+
 int main(int argc, char **argv) {
     if (argc != 1)
         validation_fail("usage: validate_expressions");
     legacy_signed();
     joint_states();
     rejection_and_exports();
+    small_remainder_states();
     validation v;
     validation_init(&v, argv[0]);
     frontend(&v);

@@ -1,0 +1,33 @@
+{
+  "status": "passed-in-segments",
+  "started_utc": "2026-10-19T23:04:46.159781+00:00",
+  "source_files": 144,
+  "source_manifest_sha256": "9443b457d6f1fdafa6cbdacb19f7c2bb8e5c916ca1ea43f4f524d99316c073e5",
+  "scope": "Fresh broad normal and ASan/UBSan builds on 144 canonical inputs. All repository suites include 519 bindings, 460 strings and 3380 phase checks per configuration. Fuzz retains 133 original indices, five optimization levels,256 byte inputs and seed20261012:665 compilations/configuration. This segmented campaign is distinct from a scripts/verify.sh process; no inherited broad pass. Earlier phase-v6 and string-v3 SAN bindings failures remain preserved. Source differences from targeted string-v5 are only archival counter metadata. Main integration, independent guarded CPU-load states and complete C11 remain separate. No hardware or speedup claim. Cybersecurity stays classical; no WSL/Windows configuration changes.",
+  "continuation": {
+    "previous_status": "interrupted-no-terminal-status",
+    "previous_closed_commands": 59,
+    "previous_boot_id": "05ac31f2-765e-42eb-aaca-4392b50d84ab",
+    "current_boot_id": "42326583-e979-4be4-853a-c01ef4b7036a",
+    "tool_reuse": "Existing normal/SAN core hashes match the interrupted fresh-build segment; only unclosed commands execute again."
+  },
+  "normal_fresh_core_sha256": {
+    "cket": "84b38c951b9190aa365b439427630704104b3fc9b2721e830430b2a2e197d90f",
+    "cket_backend": "35d46f88e950e29886d902cb1a0f1856250155082dec4c4e915b631c9b9e8eaa",
+    "cket_plugin.so": "05d8b620709a34b40ca55f05c915ac57be844677b1e1100dc6eea71a5f4e78a5",
+    "cket_runtime.o": "8fbb08785cf00c1f0437de04d122a8b54cc847394122b14a55fa53c126590a11",
+    "libcket_quantum.a": "37f8637e18a0d1641f9dba968ebecd9f637e52e0bb197dab91d4f9e965bcdf97"
+  },
+  "normal_status": "passed-in-segments",
+  "sanitized_fresh_core_sha256": {
+    "cket": "e281335bf77056868e60ec39a4ce86f47f151c3836bb423c46404eedc237fe71",
+    "cket_backend": "a271e0c4a02558dafe91c61c03ee898d1eba0941674f99905e09ec7ac16ffa54",
+    "cket_plugin.so": "5a7b3703bd640af3cdea3a1166093362d3efadd7a45eb804dd3066379ee00f9a",
+    "cket_runtime.o": "162aca02e22865dd4d9cb344cb8d061b408a35805f522e27b5180e754eaddbca",
+    "libcket_quantum.a": "334d03de5a0a029e76fa2f3f8645dde99b28c8622a3c90cde8b98e7c42938e0e"
+  },
+  "sanitized_status": "passed-in-segments",
+  "exit_code": 0,
+  "finished_utc": "2026-10-19T23:58:01.782181+00:00",
+  "combined_log_sha256": "1abd561c61928881c18a4a74bd655b08bbd18dfe54531cf5b4f5d948eecc9902"
+}

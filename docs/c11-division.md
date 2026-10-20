@@ -76,6 +76,39 @@ into modular division. Range proofs are conservative: stronger correlated proofs
 programs remain **P**. These pure integer interfaces have no inherent incompatibility with
 reversible computation.
 
+## Remainder by a small constant
+
+The `%` operator now has a reversible path for a constant divisor of magnitude 2 through 16; the
+existing power-of-two path is tried first. A captured CPU divisor can use this path when its saved
+value is in that range. This does not add a small-constant quotient implementation.
+
+For width `w`, accumulate the raw dividend bits with weights `2^j mod d` in a residue register of at
+most four bits. Each update permutes `0..d-1` and fixes unused encodings. Controlled X gates
+implement these permutations through Gray-path transpositions. The construction enumerates the small
+residue encodings, rather than the dividend domain. It preserves the dividend and records the gates
+so the existing inverse clears all arithmetic work.
+
+For a negative signed dividend, subtract `2^w mod d` from the raw residue modulo `d`. A nonzero
+adjusted residue becomes `adjusted - d`; zero stays zero. This gives C's remainder sign and handles
+the minimum signed value without a full-width absolute-value register. A negative divisor does not
+change that remainder. Definedness checks still precede synthesis; division by zero and signed
+minimum divided by minus one retain their diagnostics. Output narrowing and conversion to bool occur
+after the full typed operation.
+
+The [148-input evidence](audit-evidence/common-remainder-v2/README.es.md) includes 810 maintained
+finite basis-action regressions per configuration, exhaustive byte inputs, selected signed/unsigned
+32/64-bit boundaries, and coherent controls. Normal and ASan/UBSan builds pass 907 expression
+checks, 990 division checks, 393 native checks and 271 in-place checks each. These counts combine
+different validation scopes; the wide basis walks are not dense wide-state simulations.
+
+Separate compiled-circuit proofs check 1968 complete complex states across both configurations: 1440
+byte-domain states on production-identical 147-input sources and 528 current boundary states. They
+compare ordinary C references, relative phases, actual compiler scope inverses, mutable CPU divisor
+snapshots and zero private wires. The earlier 64-bit conditional-preparation failure is preserved:
+selecting directly between `INT64_MIN` and `INT64_MAX` exceeds 128 qubits before `%`. Later boundary
+proofs use shift/complement views to prepare their stated two-label domains. They do not close that
+general preparation limit or establish all C11 integer contexts.
+
 ## Resources and open cases
 
 On the tested GCC 11.4.0 LP64 Linux target, `div_t` contains two 32-bit fields; `ldiv_t`, `lldiv_t`
