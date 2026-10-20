@@ -1,6 +1,15 @@
 # Auditoría del repositorio y de los papers
 
-La [integración actual de resto entero](audit-evidence/common-remainder-v2/README.es.md) reúne 148
+La [integración actual de selecciones](audit-evidence/selection-views-v5/README.es.md) reúne 151
+entradas. Evita temporales de palabra completa cuando las columnas pueden usar constantes, controles
+o pares de expresiones compartidos. Pasa el caso directo de extremos firmados de 64 bits que fallaba
+antes. Las suites dirigidas normales y ASan/UBSan cierran 1195 expresiones, 55 desplazamientos, 990
+divisiones, 393 nativos y 271 actualizaciones por configuración. Las pruebas independientes pasan
+768 estados complejos completos, con identidades de fuentes, procedencia de núcleos y fallos de
+tests anteriores conservados. La campaña amplia nueva está separada y todavía no se presenta como
+éxito; C11 sigue incompleto.
+
+La [integración anterior de resto entero](audit-evidence/common-remainder-v2/README.es.md) reúne 148
 entradas y añade un núcleo reversible para `%` por constantes de magnitud 2 a 16, conservando el
 camino previo de potencias de dos. Pasaron reconstrucciones normales y ASan/UBSan: 907 expresiones,
 990 divisiones, 393 nativos y 271 actualizaciones por configuración. Incluye 810 regresiones nuevas

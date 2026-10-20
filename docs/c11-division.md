@@ -107,7 +107,10 @@ compare ordinary C references, relative phases, actual compiler scope inverses, 
 snapshots and zero private wires. The earlier 64-bit conditional-preparation failure is preserved:
 selecting directly between `INT64_MIN` and `INT64_MAX` exceeds 128 qubits before `%`. Later boundary
 proofs use shift/complement views to prepare their stated two-label domains. They do not close that
-general preparation limit or establish all C11 integer contexts.
+general preparation limit or establish all C11 integer contexts. The later
+[selection-view implementation](c11-selections.md) checks that same direct boundary selection; its
+failed attempt remains part of the historical evidence. General wide-expression resource limits
+still apply.
 
 ## Resources and open cases
 

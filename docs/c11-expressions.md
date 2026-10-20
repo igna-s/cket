@@ -47,7 +47,8 @@ Exceeding a budget is an explicit resource restriction (**R**).
 
 ## Finite validation
 
-`tests/validate_expressions.c` runs **97 checks** in each configuration:
+`tests/validate_expressions.c` runs **1195 checks** in each configuration. Its original 97 checks
+remain:
 
 - Two regressions for legacy signed basis metadata, across the two synthesis configurations. A
   prepared signed eight-bit value with bit pattern 249 must be analyzed as -7 when the expression
@@ -66,6 +67,11 @@ Exceeding a budget is an explicit resource restriction (**R**).
 - Ten table-free frontend exports at those optimization levels: guarded 16-bit division and a
   combined 64-bit truth/complement predicate. Circuit generation does not establish correctness
   across those entire large domains.
+
+The [small-constant remainder matrix](c11-division.md#remainder-by-a-small-constant) adds 810 finite
+basis-action checks. The [selection-view matrix](c11-selections.md) adds 288 more. These distinguish
+full byte labels and selected wide boundaries from dense wide-state simulations; their compiled
+complete-state evidence is archived separately with exact source identities.
 
 The separate QASM campaign adds three small complete-state comparisons with QuEST: guarded
 conditional division, short-circuit division and conditional signed negation/complement, each with

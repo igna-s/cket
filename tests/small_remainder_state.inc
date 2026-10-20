@@ -1,37 +1,6 @@
 /* Finite basis-action checks for wide registers. The source preparation is
  * excluded from this interpreter; these are not dense 32/64-bit simulations.
  * Exhaustive byte inputs and selected wide boundaries use host C as oracle. */
-static qc_mask remainder_basis(const qc_register *r, uint64_t value) {
-    qc_mask result = 0;
-    for (unsigned bit = 0; bit < r->width; ++bit)
-        if ((value >> bit) & 1)
-            result |= QC_WIRE(r->wires[bit]);
-    return result;
-}
-
-static void
-remainder_walk(const qc_context *c, size_t begin, size_t end, qc_mask *basis, double *angle) {
-    for (size_t i = begin; i < end; ++i) {
-        const qc_gate *g = &c->gates[i];
-        if (g->kind != QC_X && g->kind != QC_PHASE)
-            validation_fail("remainder arithmetic introduced a nonpermutation gate");
-        if ((*basis & g->mask) != g->pattern)
-            continue;
-        if (g->kind == QC_X)
-            *basis ^= QC_WIRE(g->target);
-        else
-            *angle += g->angle;
-    }
-}
-
-static int64_t remainder_signed(uint64_t raw, unsigned width) {
-    uint64_t sign = UINT64_C(1) << (width - 1);
-    if (!(raw & sign))
-        return (int64_t)raw;
-    /* Form the negative value without an out-of-range unsigned-to-signed cast. */
-    return -1 - (int64_t)((~raw) & (width == 64 ? UINT64_MAX : (sign << 1) - 1));
-}
-
 static void
 small_remainder_case(unsigned width, int sign, int divisor, unsigned projection, unsigned tables) {
     qc_context *c = qc_create(0, 7);
@@ -124,16 +93,16 @@ small_remainder_case(unsigned width, int sign, int divisor, unsigned projection,
                        : i < sizeof edges / sizeof edges[0] ? edges[i]
                                                             : random & mask;
         int64_t value = signed_operation
-                            ? (sign ? remainder_signed(raw, width) : (int64_t)raw) % divisor
+                            ? (sign ? expression_signed(raw, width) : (int64_t)raw) % divisor
                             : (int64_t)(raw % (unsigned)divisor);
         uint64_t projected =
             result_width == 1 ? value != 0 : (uint64_t)value & ((UINT64_C(1) << result_width) - 1);
         for (unsigned active = 0; active < 2; ++active) {
-            qc_mask original = remainder_basis(source, raw) | remainder_basis(control, active);
+            qc_mask original = expression_basis(source, raw) | expression_basis(control, active);
             qc_mask basis = original;
             double angle = 0;
-            remainder_walk(c, begin, forward, &basis, &angle);
-            qc_mask expected = original | remainder_basis(result, active ? projected : 0);
+            expression_walk(c, begin, forward, &basis, &angle);
+            qc_mask expected = original | expression_basis(result, active ? projected : 0);
             if (basis != expected || fabs(angle) > 1e-10)
                 validation_fail("remainder forward width=%u sign=%d d=%d projection=%u raw=%" PRIu64
                                 " active=%u tables=%u",
@@ -144,7 +113,7 @@ small_remainder_case(unsigned width, int sign, int divisor, unsigned projection,
                                 raw,
                                 active,
                                 tables);
-            remainder_walk(c, forward, c->ngates, &basis, &angle);
+            expression_walk(c, forward, c->ngates, &basis, &angle);
             if (basis != original || fabs(angle - (active && (projected & 1) ? .37 : 0)) > 1e-10)
                 validation_fail("remainder inverse left garbage or lost a relative phase");
         }

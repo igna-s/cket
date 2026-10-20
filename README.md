@@ -47,12 +47,20 @@ suites passed, including 940 fill checks per configuration and 3528 separate com
 of compiled scope cleanup. A fresh Linux root build passed 20 exact contract executions. The full
 regression and remote CI for these new inputs remain pending; the earlier CI verifies 144 inputs.
 
-The [current 148-input integration](docs/audit-evidence/common-remainder-v2/README.es.md) reduces
+The [previous 148-input integration](docs/audit-evidence/common-remainder-v2/README.es.md) reduces
 workspace for integer `%` with constant divisor magnitude 2 through 16. Its fresh normal/sanitizer
 regressions pass 907 expression, 990 division, 393 native and 271 in-place checks each. Separate
 compiled-circuit proofs check 1968 complete states, with source identities and validation limits
 recorded explicitly. Full regression and remote CI for these inputs remain pending. General 64-bit
 conditional preparation, wide results and the remaining C11 features still need work.
+
+The [current 151-input integration](docs/audit-evidence/selection-views-v5/README.es.md) reduces
+private workspace for [integer conditional expressions](docs/c11-selections.md). Direct selection
+between signed 64-bit limits now fits. Separate compiled-program proofs pass 768 complete states
+with phases and compiler scope cleanup. Normal/sanitizer targeted runs pass 1195 expression, 55
+shift, 990 division, 393 native and 271 in-place checks each; tool reuse and earlier test failures
+are identified explicitly. A separate fresh broad regression is in progress. General wide
+expressions and complete C11 remain open.
 
 ## Install and build
 
@@ -592,20 +600,21 @@ without tables. QASM cases check 64 complete states/final probabilities and six
 intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
 value, variable shifts and combined function/array/control programs. The separate shift suite checks
 55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
-expression suite adds 97 checks, with complete small-state comparisons distinguished from wide
-exports. The in-place suite adds 271 checks of affine maps, bit permutations, Boolean normalization,
-controls, inverse, policy and C composition. The memory-copy suite adds 414 checks of known-basis
-extensions, complete states/inverse, overlap, contracts, C composition and wide generation. The
-division suite adds 990 checks of products/projections, signed rounding, Boolean conversion,
-coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The binding
-suite adds 519 checks of complete states and saved inverse, typed integer endpoints, malformed
-inputs, CPU/classical-product evaluation and C document specialization. The history suite adds 2332
-checks of retained states, inverse lifetimes, combined assignments, C composition, CPU snapshot
-cleanup, coherent and CPU scalar joins, old/new expression results, sequencing, Boolean/word states,
-deferred ownership cleanup and explicit pending-contract diagnostics. The native suite also exhausts
-selected eight-bit expressions, 3720 adder basis pairs and 65,536-input predicates, checks 126
-Fourier bases against the DFT, and exercises 1024 generated typed expressions plus 4096 IR
-mutations.
+expression suite has 1195 checks: the original 97, 810 finite remainder checks and 288 finite
+selection domains. Complete-state comparisons, finite basis actions and wide exports retain their
+separate scopes. The in-place suite adds 271 checks of affine maps, bit permutations, Boolean
+normalization, controls, inverse, policy and C composition. The memory-copy suite adds 414 checks of
+known-basis extensions, complete states/inverse, overlap, contracts, C composition and wide
+generation. The division suite adds 990 checks of products/projections, signed rounding, Boolean
+conversion, coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The
+binding suite adds 519 checks of complete states and saved inverse, typed integer endpoints,
+malformed inputs, CPU/classical-product evaluation and C document specialization. The history suite
+adds 2332 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU
+snapshot cleanup, coherent and CPU scalar joins, old/new expression results, sequencing,
+Boolean/word states, deferred ownership cleanup and explicit pending-contract diagnostics. The
+native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
+predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
+plus 4096 IR mutations.
 
 The shared [validation runner](docs/audit-validation.md) has 18 fault-injection checks. Signals,
 timeouts, setup failures, captured sanitizer reports and compiler internal errors cannot satisfy an

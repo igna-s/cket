@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 394,
+  "checks": 401,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -1083,6 +1083,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/engine/select_views.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/engine/simulator.c",
       "passed": true,
       "detail": ""
@@ -1139,6 +1144,11 @@
     },
     {
       "check": "Fuente local tests/c11_classical.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/expression_basis.inc",
       "passed": true,
       "detail": ""
     },
@@ -1209,6 +1219,11 @@
     },
     {
       "check": "Fuente local tests/select_cpu_trace.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/selection_state.inc",
       "passed": true,
       "detail": ""
     },
@@ -1938,27 +1953,47 @@
       "detail": ""
     },
     {
-      "check": "Current148 remainder: exact source bytes and fresh normal/sanitizer targeted regressions; broad verification pending",
+      "check": "Historical148 remainder: exact archived bytes and fresh normal/sanitizer targeted regressions; broad verification separate",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current148 remainder: byte-state proof keeps its147 identity; every production input is byte-identical",
+      "check": "Historical148 remainder: byte-state proof keeps its147 identity; every production input is byte-identical",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current148 remainder: wide edges, mutable CPU-divisor snapshots, phases and actual scope inverses",
+      "check": "Historical148 remainder: wide edges, mutable CPU-divisor snapshots, phases and actual scope inverses",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current148 remainder: full-width conditional64 preparation failure is preserved separately from later wire-view proofs",
+      "check": "Historical148 remainder: full-width conditional64 preparation failure is preserved separately from later wire-view proofs",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Historical144 broad completion:80 real zero commands,59 reused plus21 continued;665 fuzz compilations each; current148 remains separate",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current151 selection: exact applied source bytes,1195 expression checks and five targeted suites per configuration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Current151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass",
       "passed": true,
       "detail": ""
     },
@@ -1981,7 +2016,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 195
+    "source_files_in_manifest": 198
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

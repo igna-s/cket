@@ -18,8 +18,24 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
-**La integración actual reúne 148 entradas y mejora el resto entero `%` con divisores de magnitud 2
-a 16.** El caso `int % 3` que antes excedía los recursos pasa ahora la matriz finita de tipos
+**La integración actual reúne 151 entradas y reduce los auxiliares de las selecciones enteras
+`condición ? sí : no`.** Ya pasa la selección directa entre `INT64_MIN` e `INT64_MAX` que antes
+superaba los recursos. Se añadieron 288 dominios finitos de regresión con todos los bytes, controles
+de ambas polaridades, resultados de 8/32/64 bits, fases e inversas. Las suites dirigidas pasan por
+configuración normal y ASan/UBSan: 1195 expresiones, 55 desplazamientos, 990 divisiones, 393 nativas
+y 271 actualizaciones.
+
+Otra prueba pasó **768 estados complejos completos** de programas compilados, incluidos resultados
+completos de 64 bits, selecciones anidadas y divisores CPU modificados después de capturarlos. El
+máximo observado en esas matrices es 102 qubits. La
+[evidencia](audit-evidence/selection-views-v5/README.es.md) distingue las fuentes de las pruebas,
+idénticas en producción, del ajuste posterior del presupuesto del test. Conserva los errores de
+codificación y presupuesto de los primeros tests, y la procedencia de los núcleos reutilizados y
+verificados. La campaña amplia actual reconstruye ambas configuraciones por separado; aún no se
+declara aprobada. Siguen pendientes expresiones generales, división común y el resto de C11.
+
+**La integración anterior reúne 148 entradas y mejora el resto entero `%` con divisores de magnitud
+2 a 16.** El caso `int % 3` que antes excedía los recursos pasa ahora la matriz finita de tipos
 comunes: 640 capturas frente a 632 y cuatro límites anteriores. Se añadieron 810 regresiones de
 acción sobre bases por configuración, con todos los bytes y límites elegidos de 32/64 bits,
 promociones, bool, controles, fases e inversa. Pasaron reconstrucciones normales y con ASan/UBSan:

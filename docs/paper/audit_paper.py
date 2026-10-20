@@ -1077,7 +1077,7 @@ def main(language):
             for name in remainder['proof147_source_sha256']
         }
     check(
-        'Current148 remainder: exact source bytes and fresh normal/sanitizer targeted regressions; broad verification pending',
+        'Historical148 remainder: exact archived bytes and fresh normal/sanitizer targeted regressions; broad verification separate',
         remainder['status'] == 'verified-targeted-applied-broad-pending'
         and remainder['source_files'] == len(archived148) == 148
         and archived148 == remainder['source_sha256']
@@ -1087,14 +1087,10 @@ def main(language):
         == {'expressions': 907, 'division': 990, 'native': 393, 'inplace': 271}
         and remainder['new_finite_basis_action_checks_per_configuration'] == 810
         and remainder['targeted_commands_closed_zero'] == 10
-        and remainder['broad_regression'] == remainder['remote_ci'] == 'pending'
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in archived148.items()
-        ),
+        and remainder['broad_regression'] == remainder['remote_ci'] == 'pending',
     )
     check(
-        'Current148 remainder: byte-state proof keeps its147 identity; every production input is byte-identical',
+        'Historical148 remainder: byte-state proof keeps its147 identity; every production input is byte-identical',
         len(archived147) == 147
         and archived147 == remainder['proof147_source_sha256']
         and len(remainder['changed_sources_from_proof147']) == 3
@@ -1117,7 +1113,7 @@ def main(language):
         ),
     )
     check(
-        'Current148 remainder: wide edges, mutable CPU-divisor snapshots, phases and actual scope inverses',
+        'Historical148 remainder: wide edges, mutable CPU-divisor snapshots, phases and actual scope inverses',
         set(remainder['independent_compiled_edge_states_on148']) == {'normal', 'sanitized'}
         and all(
             row['captures'] == 88
@@ -1136,7 +1132,7 @@ def main(language):
         },
     )
     check(
-        'Current148 remainder: full-width conditional64 preparation failure is preserved separately from later wire-view proofs',
+        'Historical148 remainder: full-width conditional64 preparation failure is preserved separately from later wire-view proofs',
         set(remainder['conditional64_resource_failure']) == {'normal', 'sanitized'}
         and all(
             row['exit_code'] == 1
@@ -1192,6 +1188,109 @@ def main(language):
             for row in historical144_fuzz.values()
         ),
     )
+    selection = json.loads(
+        (ROOT / 'docs/audit-evidence/selection-views-v5/integration-summary.json').read_text()
+    )
+    with tarfile.open(ROOT / 'docs/audit-evidence/selection-views-v5/sources.tar.gz') as archive:
+        archived151 = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in selection['source_sha256']
+        }
+    with tarfile.open(
+        ROOT / 'docs/audit-evidence/selection-views-v5/proof-sources.tar.gz'
+    ) as archive:
+        selection_proof_sources = {
+            name: hashlib.sha256(archive.extractfile(name).read()).hexdigest()
+            for name in selection['proof_source_sha256']
+        }
+    selection_qualification = json.loads(
+        (ROOT / 'docs/audit-evidence/selection-views-v5/qualification.json').read_text()
+    )
+    selection_inherited_builds = json.loads(
+        (ROOT / 'docs/audit-evidence/selection-views-v5/inherited-fresh-builds.json').read_text()
+    )
+    check(
+        'Current151 selection: exact applied source bytes,1195 expression checks and five targeted suites per configuration',
+        selection['status'] == 'verified-targeted-production-identical-proofs-broad-pending'
+        and selection['source_files'] == len(archived151) == 151
+        and archived151 == selection['source_sha256']
+        and archived148 == selection['previous_integrated_source_sha256']
+        and len(selection['changed_sources_from148']) == 7
+        and selection['checks_per_configuration']
+        == {'expressions': 1195, 'shifts': 55, 'division': 990, 'native': 393, 'inplace': 271}
+        and selection['new_finite_selection_domains_per_configuration'] == 288
+        and selection['targeted_commands_closed_zero'] == 12
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in archived151.items()
+        ),
+    )
+    check(
+        'Current151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status',
+        set(selection_qualification) == set(selection_inherited_builds) == {'normal', 'sanitized'}
+        and all(
+            row['status'] == 'passed-targeted-selection-regression'
+            and row['exit_code'] == 0
+            and row['source_sha256'] == archived151
+            and len(row['commands']) == 6
+            and row['commands'][0]['name'] == 'rebuild-expression-validator'
+            and all(command['returncode'] == 0 for command in row['commands'])
+            and row['tool_reuse']['production_inputs_byte_identical'] is True
+            and row['core_sha256'] == selection_inherited_builds[configuration]['core_sha256']
+            and selection_inherited_builds[configuration]['status']
+            == 'failed-targeted-selection-regression'
+            and selection_inherited_builds[configuration]['exit_code'] == 1
+            and selection_inherited_builds[configuration]['commands'][0]['name'] == 'fresh-build'
+            and selection_inherited_builds[configuration]['commands'][0]['returncode'] == 0
+            for configuration, row in selection_qualification.items()
+        ),
+    )
+    check(
+        'Current151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed',
+        len(selection_proof_sources) == 151
+        and selection_proof_sources == selection['proof_source_sha256']
+        and selection['changed_sources_from_proof'] == ['tests/selection_state.inc']
+        and [name for name in archived151 if archived151[name] != selection_proof_sources[name]]
+        == ['tests/selection_state.inc']
+        and set(selection['production_sources_identical_to_proof'])
+        == {name for name in archived151 if name.startswith(('src/', 'include/')) or name == 'cket'}
+        and all(
+            archived151[name] == selection_proof_sources[name]
+            for name in selection['production_sources_identical_to_proof']
+        )
+        and set(selection['independent_compiled_states']) == {'normal', 'sanitized'}
+        and all(
+            set(rows) == {'extremes', 'shared_columns'}
+            and all(
+                row['captures'] == 64
+                and row['ordinary_c_executions'] == 32
+                and row['complete_state_checks'] == 192
+                and row['maximum_amplitude_error'] < 1e-10
+                for row in rows.values()
+            )
+            for rows in selection['independent_compiled_states'].values()
+        )
+        and max(
+            row['maximum_physical_wires']
+            for rows in selection['independent_compiled_states'].values()
+            for row in rows.values()
+        )
+        == 102,
+    )
+    check(
+        'Current151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass',
+        set(selection['earlier_test_attempts']) == {'v2', 'v3', 'v4'}
+        and all(
+            set(rows) == {'normal', 'sanitized'}
+            and all(
+                row['status'] == 'failed-targeted-selection-regression' and row['exit_code'] == 1
+                for row in rows.values()
+            )
+            for rows in selection['earlier_test_attempts'].values()
+        )
+        and selection['broad_campaign_status_at_archive'] == 'running'
+        and selection['broad_regression'] == selection['remote_ci'] == 'pending',
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1205,6 +1304,7 @@ def main(language):
         ('integrated144-remote-ci', integrated144_ci),
         ('known-fill-cleanup-v2', fill_integration),
         ('common-remainder-v2', remainder),
+        ('selection-views-v5', selection),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1265,6 +1365,7 @@ def main(language):
                 'integrated144-remote-ci',
                 'known-fill-cleanup-v2',
                 'common-remainder-v2',
+                'selection-views-v5',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

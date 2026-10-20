@@ -27,8 +27,10 @@ or a claim that the first groups are already complete.
    explicit. The
    [small-constant remainder implementation](c11-division.md#remainder-by-a-small-constant) now
    avoids the previous `int % 3` workspace failure and has finite boundary/control/inverse evidence.
-   This closes that arithmetic case, not the whole integer foundation; common division, general
-   64-bit preparation and the remaining consuming contexts still require work.
+   This closes that arithmetic case, not the whole integer foundation. The
+   [selection-view implementation](c11-selections.md) also removes the full-word temporary that
+   blocked direct selection between signed 64-bit limits. Common division, general wide expressions
+   and the remaining consuming contexts still require work.
 1. Close the common consuming contexts: conditions, loops, direct functions, arrays, basic structs,
    checked pointers, and frequent memory/string operations. The `memset` temporary-lifetime
    correction now has a
@@ -272,10 +274,10 @@ history, all assignments and the rest of M2 remain open.
 
 M2 also includes [pure integer expression synthesis](c11-expressions.md): negation, complement,
 logical short circuiting and conditional selection with branch-local definedness and clean private
-inversion. Its 97 checks distinguish complete small-state comparisons, C integrations and wide
-circuit generation. Three additional QuEST states exercise guarded division and conditional unary
-operations. These finite gates do not close sequenced effects, history, all types or general control
-flow.
+inversion. Its original 97 checks distinguish complete small-state comparisons, C integrations and
+wide circuit generation. Three additional QuEST states exercise guarded division and conditional
+unary operations. These finite gates do not close sequenced effects, history, all types or general
+control flow.
 
 M2 now also includes [in-place bit/affine certificates](c11-inplace.md), with zero private qubits,
 proper Boolean truth conversion and an enforced table policy. Its 271 finite checks cover complete
@@ -381,18 +383,23 @@ library coverage, not completion of M7.
 
 M4/M7 now also include bounded [`strlen` and `strcmp`](c11-strings.md), with 460 maintained checks
 per configuration and 640 separate independent compiled-circuit states across normal and ASan/UBSan.
-The current integration adds supported deferred CPU phase arithmetic and guarded pure CPU loads. Its
-larger local regression remains pending after a WSL interruption, while its
+The historical 144-input integration adds supported deferred CPU phase arithmetic and guarded pure
+CPU loads. Its larger local regression completed in two segments, with 80 commands and 665 fuzz
+compilations per configuration, as preserved in the
+[later completion archive](audit-evidence/common-remainder-v2/README.es.md). Its
 [remote CI](audit-evidence/integrated144-remote-ci/README.es.md) passed all 28 normal/sanitizer
 suites on the same 144 compiler inputs. Remote fuzzing uses 145 compilations per configuration; the
 expanded local campaign uses 665. Their seeds differ and their evidence remains separate. These
 additions do not close the string, memory, floating-point or general library milestones.
 
-The current 146-input integration adds cleanup for known `memset` temporaries, with six targeted
+The historical 146-input integration adds cleanup for known `memset` temporaries, with six targeted
 normal/sanitizer suites, 3528 independent compiled-scope states and 20 separate root contract
 executions. Its full campaign and remote CI remain pending. A 64-bit partial-fill experiment failed
 at the physical budget; its checked 8/16/32-bit prefix remains separate from that failure. This does
-not close M2/M4 or the lifetime work. The later small-constant-remainder prototype remains separate.
+not close M2/M4 or the lifetime work. The later 148-input integration implements small-constant
+remainder, and the current 151-input integration adds selection views. Its 1195 expression checks
+include the original 97, 810 remainder and 288 selection domains. The new broad151 campaign remains
+separate; no earlier broad result certifies those changed inputs.
 
 The project goal remains open until the inventory has implemented, validated coverage or a reasoned
 incompatible-context contract for every C11 item of the declared target. Resource limits must have

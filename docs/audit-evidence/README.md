@@ -1,11 +1,21 @@
 # Evidence for the tested C11 subset
 
-The current [144-input integration](strings-integration-v6/README.es.md) adds partial
+The current [151-input integration](selection-views-v5/README.es.md) adds internal selection views,
+288 maintained finite domains and 768 independent compiled complete-state checks. Direct selection
+between signed64-bit limits now fits the existing gate representation. Targeted normal/sanitizer
+checks pass with explicitly verified tool reuse; the fresh broad151 campaign remains in progress.
+The [previous148 integration](common-remainder-v2/README.es.md) adds small-constant remainder, and
+the [previous146 integration](known-fill-cleanup-v2/README.es.md) adds known-fill scope cleanup.
+
+The historical [144-input integration](strings-integration-v6/README.es.md) adds partial
 `strlen`/`strcmp`, supported deferred phase angles and guarded CPU loads. Its targeted normal and
 ASan/UBSan checks passed, including 519 binding checks and 460 string checks per configuration.
 Independent compiled string circuits passed 640 complete complex states with saved inverses. Its
-80-command broad campaign and current remote CI remain pending. The current inventory has 780
-pending, 76 partial and 368 metadata entries. Cybersecurity stays classical.
+80-command broad campaign later completed in two segments, archived with the
+[148-input evidence](common-remainder-v2/README.es.md); its
+[remote CI](integrated144-remote-ci/README.es.md) also passed. These results do not certify the
+later inputs. The current inventory has 780 pending, 76 partial and 368 metadata entries.
+Cybersecurity stays classical.
 
 The preceding 138-input [full campaign](controlled-operands-full/summary.json) and
 [remote CI](integrated138-remote-ci/summary.json) passed on their exact historical inputs. Their

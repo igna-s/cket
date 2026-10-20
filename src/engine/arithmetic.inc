@@ -1084,6 +1084,7 @@ static int ar_power_division(ar_builder *p,
 }
 
 #include "small_remainder.inc"
+#include "select_views.inc"
 
 static int
 ar_lower_arm(ar_builder *p, int e, unsigned arm, int value, unsigned requested, ar_value *out) {
@@ -1255,26 +1256,16 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         ar_value first;
         if (known < 0 && (!ar_lower(p, nodes[0], 64, &first) || !ar_truth(p, &first, &condition)))
             return 0;
-        if (!ar_temp(p, width, out))
-            return 0;
-        out->sign = range.sign && range.lo < 0;
         if (select) {
             ar_value yes, no;
             if (!ar_lower_arm(p, e, 1, nodes[1], width, &yes) ||
                 !ar_lower_arm(p, e, 0, nodes[2], width, &no))
                 return 0;
-            for (unsigned j = 0; j < width; ++j) {
-                ar_bit bits[2] = {condition, ar_at(&yes, j)};
-                int wanted[2] = {1, 1};
-                if (!ar_condition(p, ar_wire(out->bit[j]), bits, wanted, 2))
-                    return 0;
-                bits[1] = ar_at(&no, j);
-                wanted[0] = 0;
-                if (!ar_condition(p, ar_wire(out->bit[j]), bits, wanted, 2))
-                    return 0;
-            }
-            return 1;
+            return ar_select_view(p, &yes, &no, condition, width, range.sign && range.lo < 0, out);
         }
+        if (!ar_temp(p, width, out))
+            return 0;
+        out->sign = range.sign && range.lo < 0;
         ar_value right;
         ar_bit truth;
         if (!ar_lower_arm(p, e, (unsigned)!is_or, nodes[1], 64, &right) ||

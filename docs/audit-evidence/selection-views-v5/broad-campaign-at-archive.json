@@ -1,0 +1,8 @@
+{
+  "status": "running",
+  "started_utc": "2026-10-20T00:43:58.699667+00:00",
+  "source_files": 151,
+  "source_manifest_sha256": "daa5596968d34ccc7f6431516a6db1da078a74ed23f86f92866a9287e29b8555",
+  "commands": [],
+  "scope": "Fresh broad normal and ASan/UBSan builds on151 frozen selection-view inputs,1195 expression checks, including288 new finite selection domains, and940 fill checks per configuration. All repository suites include 519 bindings, 460 strings and 3380 phase checks per configuration. Fuzz retains 133 original indices, five optimization levels,256 byte inputs and seed20261012:665 compilations/configuration. This segmented campaign is distinct from a scripts/verify.sh process; no inherited broad pass. Earlier failures of source148 conditional64 preparation and invalid test-oracle/budget attempts are preserved separately. No result is inherited from historical144 or149. Main integration, independent guarded CPU-load states and complete C11 remain separate. No hardware or speedup claim. Cybersecurity stays classical; no WSL/Windows configuration changes."
+}
