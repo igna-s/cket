@@ -1825,11 +1825,52 @@ tree lower_node(tree value) {
                 tree decl = DECL_EXPR_DECL(step);
                 DECL_CHAIN(decl) = locals;
                 locals = decl;
+                // These compiler-private captures start in |0> on every
+                // branch. Allocate them unconditionally; only their value
+                // computation belongs under the coherent controls.
+                tree initial = strip(DECL_INITIAL(decl));
+                if (!quantum(decl) || !initial || !integer_zerop(initial)) {
+                    error_at(at(value), "|c>: private string captures require fresh zero storage");
+                    return build_zero_cst(TREE_TYPE(value));
+                }
+                auto saved_controls = std::move(controls);
+                controls.clear();
+                append(&list, lower_node(step));
+                controls = std::move(saved_controls);
+            } else {
+                auto &capture = variables.at(strip(TREE_OPERAND(step, 0)));
+                if (!capture.lowered || !capture.clean || capture.derived ||
+                    dependent(capture.id)) {
+                    error_at(at(value),
+                             "|c>: private string capture requires independent clean storage");
+                    return build_zero_cst(TREE_TYPE(value));
+                }
+                consume(capture);
+                unsigned previous_depth = coherent_expression_depth;
+                ++coherent_expression_depth;
+                std::set<unsigned> dependencies;
+                std::string captured = cast_result(
+                    evaluate_expression(TREE_OPERAND(step, 1), dependencies, &list), capture);
+                coherent_expression_depth = previous_depth;
+                captured =
+                    select_controls(captured,
+                                    "{\"op\":\"const\",\"bits\":" + std::to_string(capture.width) +
+                                        ",\"signed\":false,\"value\":0}",
+                                    capture.width,
+                                    false,
+                                    dependencies);
+                capture.creation = captured;
+                capture.dependencies = dependencies;
+                capture.derived = true;
+                capture.measured = capture.clean = capture.basis_known = capture.pristine_uniform =
+                    false;
+                capture.range_max =
+                    capture.width == 64 ? UINT64_MAX : (uint64_t{1} << capture.width) - 1;
+                append(&list,
+                       emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(capture.id) +
+                                          ",\"expr\":" + captured + '}',
+                                      at(value)));
             }
-            unsigned previous_depth = coherent_expression_depth;
-            ++coherent_expression_depth;
-            append(&list, lower_node(step));
-            coherent_expression_depth = previous_depth;
             cleanup(&list);
         }
         for (tree update : operation.updates) {

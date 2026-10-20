@@ -13,7 +13,7 @@ destination="build/blocks/$block"
 mkdir -p "$destination"
 export CKET_SEED="${CKET_SEED:-7}"
 if [[ "$block" == 06 ]]; then
-    names=(string_spans string_search search_positions saved_search string_copy string_concat)
+    names=(string_spans string_search search_positions saved_search string_copy string_concat controlled_concat)
     source_directory=examples/blocks/06
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 02 ]]; then

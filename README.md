@@ -270,9 +270,9 @@ volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls
 The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
 expressions, direct null/address predicates and same-object differences for `memchr`, `strchr`,
 `strrchr`, `strpbrk` and `strstr`. Local immutable search pointers support aliases, character
-dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the six delivery
-examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context qualification
-remain pending.
+dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the seven
+delivery examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context
+qualification remain pending.
 
 Checked [`strcpy` and `strncpy`](docs/c11-string-copy.md) now copy strings into quantum integer
 storage using retained overwrite history. The block 06 example covers a superposed source, unchanged
@@ -283,6 +283,11 @@ Checked concatenation with [`strcat` and `strncat`](docs/c11-string-concat.md) s
 original lengths before retained-history updates. The block 06 example covers a superposed
 destination length and bounded append from a nonterminated source. Full coherent/inverse and
 compiler-context qualification remains deferred.
+
+The controlled concatenation example adds strcat/strncat inside a quantum Boolean branch and a
+phase/Fourier sequence with expected output 1. Compiler-private zero captures are allocated
+independently of the branch; general user allocation and dynamic-loop lifetimes retain their
+restrictions. Complete state/inverse qualification remains deferred.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent

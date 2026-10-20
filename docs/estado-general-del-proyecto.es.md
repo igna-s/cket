@@ -57,6 +57,11 @@ originales se capturan antes de escribir y las actualizaciones conservan histori
 ejemplo nuevo combina longitud de destino en superposición y append acotado desde una fuente sin
 NUL. La calificación completa sigue aplazada.
 
+`strcat` y `strncat` también admiten ahora llamadas bajo un `if` cuántico mediante auxiliares
+privados en cero. El ejemplo `controlled_concat` conserva los bytes del destino en la rama inactiva
+e incluye una secuencia de fase y Fourier con resultado esperado `1`. Los contextos generales de
+historia y las matrices completas de estados siguen pendientes de calificación.
+
 ## La respuesta corta
 
 El proyecto **ya compila y ejecuta programas con un subconjunto de operaciones cuánticas sobre

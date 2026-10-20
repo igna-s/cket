@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The new [concatenation advance](string-concat-v1/README.es.md) adds partial strcat/strncat with
+The new [controlled concatenation advance](controlled-concat-v2/README.es.md) adds coherent Boolean
+control and a phase/Fourier example to the existing string adapters. Seven examples execute and
+export; complete state/inverse and compiler-context qualification remains deferred. The first
+attempt's actual export rejection and source snapshot are preserved.
+
+The previous [concatenation advance](string-concat-v1/README.es.md) adds partial strcat/strncat with
 snapshotted original lengths and retained-history updates. Six runnable examples remain separate
 from deferred complete coherent/inverse and compiler-context qualification.
 
@@ -58,7 +63,7 @@ Independent compiled string circuits passed 640 complete complex states with sav
 80-command broad campaign later completed in two segments, archived with the
 [148-input evidence](common-remainder-v2/README.es.md); its
 [remote CI](integrated144-remote-ci/README.es.md) also passed. These results do not certify the
-later inputs. The current inventory has 773 pending, 83 partial and 368 metadata entries.
+later inputs. The current inventory has 769 pending, 87 partial and 368 metadata entries.
 Cybersecurity stays classical.
 
 The preceding 138-input [full campaign](controlled-operands-full/summary.json) and

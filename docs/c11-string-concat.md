@@ -43,9 +43,15 @@ saved search-pointer destinations, general pointer ABI and further composition/l
 also remain pending. The local returned-destination borrow and discarded-call sequence contracts
 follow [checked string copy](c11-string-copy.md).
 
-The private length captures currently use the existing allocation/lifetime rules: calls inside a
-coherently controlled branch or a dynamic CPU loop can still be rejected. Extending those private
-lifetimes is pending; support for a superposed string length does not establish those contexts.
+Coherently controlled calls now reserve their compiler-private zero captures independently of the
+condition. Each captured length is computed only on the active branch and is zero on the inactive
+branch. Subsequent writes select the preceding destination byte values when inactive, using the
+documented retained-history mapping. No measurement chooses the branch.
+
+This exception applies to compiler-private zero storage. User quantum allocations inside coherent
+branches retain their existing restrictions. Dynamic CPU loops and further classical branch/merge
+lifetimes for these captures remain pending, as does complete state/inverse qualification of mixed
+contexts.
 
 The byte bound is separate from gate, expression, history and simulator budgets. Concatenation can
 use more workspace than a copy because it preserves two lengths and previous destination values.
@@ -56,3 +62,8 @@ quantum state. Physical QPU execution and acceleration over CPU are not claimed.
 destination length, preserved tail bytes, a return alias, and bounded append from a nonterminated
 source. Run `CC=gcc-11 bash scripts/run-block.sh 06` after building with GCC 11. Its finite native
 observations and exports do not replace the deferred complete state and inverse qualification.
+
+[`controlled_concat.c`](../examples/blocks/06/controlled_concat.c) adds a call under a quantum
+Boolean and a phase-interference example. A controlled `strncat` into temporary storage marks the
+phase of a Boolean before Fourier; the expected measured value is `1`. Finite native observations
+check that example, rather than certifying arbitrary quantum overwrite histories or all controls.
