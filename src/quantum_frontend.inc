@@ -5,6 +5,8 @@ tree expand_quantum_program(tree value);
 bool standard_integer_division(tree fn);
 bool standard_memory_compare(tree fn);
 bool standard_string_length(tree fn);
+bool standard_string_span(tree fn);
+std::string standard_string_search(tree fn);
 bool standard_memory_set(tree fn);
 std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
@@ -206,7 +208,10 @@ bool quantum_return_is_pure(tree value) {
     if (TREE_CODE(value) == CALL_EXPR) {
         if (!quantum_function(get_callee_fndecl(value)) &&
             !standard_memory_compare(get_callee_fndecl(value)) &&
-            !standard_string_length(get_callee_fndecl(value)) && standard_ctype(value).empty())
+            !standard_string_length(get_callee_fndecl(value)) &&
+            !standard_string_span(get_callee_fndecl(value)) &&
+            standard_string_search(get_callee_fndecl(value)).empty() &&
+            standard_ctype(value).empty())
             return false;
         for (int i = 0; i < call_expr_nargs(value); ++i)
             if (!quantum_return_is_pure(CALL_EXPR_ARG(value, i)))
@@ -1320,8 +1325,9 @@ tree expand_static_for_block(tree block) {
             bool move = false;
             tree fn = get_callee_fndecl(value);
             if (standard_memory_copy(fn, move) || standard_memory_compare(fn) ||
-                standard_string_length(fn) || standard_memory_set(fn) || quantum_function(fn) ||
-                !standard_ctype(value).empty()) {
+                standard_string_length(fn) || standard_string_span(fn) ||
+                !standard_string_search(fn).empty() || standard_memory_set(fn) ||
+                quantum_function(fn) || !standard_ctype(value).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))
@@ -1485,6 +1491,9 @@ tree expand_quantum_program(tree value) {
             return difference;
     }
     if (TREE_CODE_CLASS(code) == tcc_comparison) {
+        tree search = expand_string_search_relation(value);
+        if (search)
+            return search;
         tree pointer_relation = expand_pointer_relation(value);
         if (pointer_relation)
             return pointer_relation;
@@ -1494,8 +1503,30 @@ tree expand_quantum_program(tree value) {
     }
     if (code == CALL_EXPR) {
         tree fn = get_callee_fndecl(value);
+        if (!standard_string_search(fn).empty()) {
+            QuantumByteRange string, pattern;
+            bool quantum_input =
+                resolve_byte_range(CALL_EXPR_ARG(value, 0), string) && string.quantum;
+            std::string operation = standard_string_search(fn);
+            if (operation == "strpbrk" || operation == "strstr")
+                quantum_input |=
+                    resolve_byte_range(CALL_EXPR_ARG(value, 1), pattern) && pattern.quantum;
+            quantum_input |=
+                has_quantum(CALL_EXPR_ARG(value, 0)) || has_quantum(CALL_EXPR_ARG(value, 1));
+            if (quantum_input) {
+                error_at(
+                    at(value),
+                    "|c>: quantum search currently supports direct == NULL or != NULL predicates; returned pointer consumers remain pending");
+                return build_zero_cst(TREE_TYPE(value));
+            }
+        }
         if (standard_memory_set(fn)) {
             tree expanded = expand_memory_set(value);
+            if (expanded)
+                return expanded;
+        }
+        if (standard_string_span(fn)) {
+            tree expanded = expand_string_span(value);
             if (expanded)
                 return expanded;
         }

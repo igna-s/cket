@@ -77,6 +77,17 @@ preguntar si es cero. Se corrigió además una negación lógica incorrecta de l
 Este avance mantiene el bloque 02 abierto: faltan combinaciones y contextos enteros generales.
 Permite usar la nueva capacidad mientras se sigue trabajando en el alcance completo.
 
+## Avance del bloque 06: cadenas
+
+`bash scripts/run-block.sh 06` reúne `string_spans` y `string_search`: longitudes con `strspn` y
+`strcspn`, y comprobaciones de existencia con `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`.
+Los datos permanecen cuánticos hasta las mediciones explícitas de los ejemplos. Se usa el motor
+disperso y se generan los ejecutables, circuitos e informes de recursos.
+
+El [contrato](c11-string-searches.md) limita las vistas y los consumidores de punteros. La matriz
+completa de estados, inversas y sanitizadores queda aplazada al cierre del bloque para priorizar
+implementación. El bloque 06 sigue abierto y no cuenta como otra entrega completa.
+
 ## Orden de las siguientes entregas
 
 | Bloque | Entrega utilizable que se debe cerrar                                                            | Estado                                           |

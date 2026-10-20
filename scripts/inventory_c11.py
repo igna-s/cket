@@ -53,6 +53,8 @@ INTEGER_TYPES = {
     "uintptr_t",
 }
 ABS = {"abs", "labs", "llabs", "imaxabs"}
+STRING_SPANS = {"strspn", "strcspn"}
+STRING_SEARCHES = {"memchr", "strchr", "strrchr", "strpbrk", "strstr"}
 MEMORY_COPY = {"memcpy", "memmove"}
 DIVISION = {"div", "ldiv", "lldiv", "imaxdiv"}
 DIVISION_PRODUCTS = {"div_t", "ldiv_t", "lldiv_t", "imaxdiv_t"}
@@ -213,6 +215,41 @@ def semantics(header, name, kind, optional):
             "exceed the current 128-qubit representation. Small complete phased states and inverse "
             "are validated separately from wide circuit generation. General product ABI, library "
             "composition and wider resource budgets remain open.",
+        )
+    if header == "string.h" and name in STRING_SPANS:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [],
+            "Input-preserving strspn/strcspn expression adapters return size_t prefix lengths "
+            "on nonempty checked padding-free integer byte views, each at most 64 bytes. "
+            "Both arguments require an in-view NUL; set bytes after NUL do not contribute. "
+            "Known nonvolatile CPU objects use once-only byte/termination captures retained "
+            "for inverses. Classical calls and function addresses keep libc ABI. "
+            "Dynamic extents/addresses, general layouts and indirect quantum calls remain "
+            "pending. Simulator/gate budgets apply. The delivery example is separate from "
+            "the deferred full state, inverse, sanitizer and GCC context qualification; "
+            "implementation status does not certify those pending tests.",
+        )
+    if header == "string.h" and name in STRING_SEARCHES:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [],
+            "Direct == NULL / != NULL search predicates lower to input-preserving Boolean "
+            "expressions without materializing or measuring a returned pointer. Checked "
+            "padding-free integer object-byte views and known nonvolatile CPU snapshots "
+            "are supported within the 64-byte synthesis bound. memchr requires a constant "
+            "checked count and converts the pure character argument to unsigned char; "
+            "strchr/strrchr convert to target char and include the terminating NUL. "
+            "String views require an in-view NUL; strpbrk excludes it and an empty strstr "
+            "needle succeeds. Returned-pointer storage, offsets, dereference and general "
+            "pointer consumers, indirect quantum ABI and dynamic extents remain pending. "
+            "strchr/strrchr share existence semantics only, not pointer selection semantics. "
+            "Delivery examples do not certify the deferred coherent/inverse, sanitizer "
+            "or complete GCC context qualification. Resource budgets apply.",
         )
     if header == "string.h" and name in {"strlen", "strcmp"}:
         return (
@@ -556,7 +593,7 @@ def audit(require_complete=False):
         assert set(r["restriction_classes"]) <= {"P", "R", "S"}
         assert r["contract"] and r["milestone"]
         assert all((ROOT / p).is_file() for p in r["tests"])
-    assert ABS | MEMORY_COPY | {"memset", "strlen", "strcmp"} <= {
+    assert ABS | MEMORY_COPY | STRING_SPANS | STRING_SEARCHES | {"memset", "strlen", "strcmp"} <= {
         r["name"] for r in rows if r["quantum"] in {"partial", "implemented"}
     }
     for name in (

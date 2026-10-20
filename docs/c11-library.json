@@ -14249,14 +14249,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Direct == NULL / != NULL search predicates lower to input-preserving Boolean expressions without materializing or measuring a returned pointer. Checked padding-free integer object-byte views and known nonvolatile CPU snapshots are supported within the 64-byte synthesis bound. memchr requires a constant checked count and converts the pure character argument to unsigned char; strchr/strrchr convert to target char and include the terminating NUL. String views require an in-view NUL; strpbrk excludes it and an empty strstr needle succeeds. Returned-pointer storage, offsets, dereference and general pointer consumers, indirect quantum ABI and dynamic extents remain pending. strchr/strrchr share existence semantics only, not pointer selection semantics. Delivery examples do not certify the deferred coherent/inverse, sanitizer or complete GCC context qualification. Resource budgets apply."
     },
     {
       "header": "string.h",
@@ -14265,14 +14265,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Direct == NULL / != NULL search predicates lower to input-preserving Boolean expressions without materializing or measuring a returned pointer. Checked padding-free integer object-byte views and known nonvolatile CPU snapshots are supported within the 64-byte synthesis bound. memchr requires a constant checked count and converts the pure character argument to unsigned char; strchr/strrchr convert to target char and include the terminating NUL. String views require an in-view NUL; strpbrk excludes it and an empty strstr needle succeeds. Returned-pointer storage, offsets, dereference and general pointer consumers, indirect quantum ABI and dynamic extents remain pending. strchr/strrchr share existence semantics only, not pointer selection semantics. Delivery examples do not certify the deferred coherent/inverse, sanitizer or complete GCC context qualification. Resource budgets apply."
     },
     {
       "header": "string.h",
@@ -14281,14 +14281,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Input-preserving strspn/strcspn expression adapters return size_t prefix lengths on nonempty checked padding-free integer byte views, each at most 64 bytes. Both arguments require an in-view NUL; set bytes after NUL do not contribute. Known nonvolatile CPU objects use once-only byte/termination captures retained for inverses. Classical calls and function addresses keep libc ABI. Dynamic extents/addresses, general layouts and indirect quantum calls remain pending. Simulator/gate budgets apply. The delivery example is separate from the deferred full state, inverse, sanitizer and GCC context qualification; implementation status does not certify those pending tests."
     },
     {
       "header": "string.h",
@@ -14297,14 +14297,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Direct == NULL / != NULL search predicates lower to input-preserving Boolean expressions without materializing or measuring a returned pointer. Checked padding-free integer object-byte views and known nonvolatile CPU snapshots are supported within the 64-byte synthesis bound. memchr requires a constant checked count and converts the pure character argument to unsigned char; strchr/strrchr convert to target char and include the terminating NUL. String views require an in-view NUL; strpbrk excludes it and an empty strstr needle succeeds. Returned-pointer storage, offsets, dereference and general pointer consumers, indirect quantum ABI and dynamic extents remain pending. strchr/strrchr share existence semantics only, not pointer selection semantics. Delivery examples do not certify the deferred coherent/inverse, sanitizer or complete GCC context qualification. Resource budgets apply."
     },
     {
       "header": "string.h",
@@ -14313,14 +14313,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Direct == NULL / != NULL search predicates lower to input-preserving Boolean expressions without materializing or measuring a returned pointer. Checked padding-free integer object-byte views and known nonvolatile CPU snapshots are supported within the 64-byte synthesis bound. memchr requires a constant checked count and converts the pure character argument to unsigned char; strchr/strrchr convert to target char and include the terminating NUL. String views require an in-view NUL; strpbrk excludes it and an empty strstr needle succeeds. Returned-pointer storage, offsets, dereference and general pointer consumers, indirect quantum ABI and dynamic extents remain pending. strchr/strrchr share existence semantics only, not pointer selection semantics. Delivery examples do not certify the deferred coherent/inverse, sanitizer or complete GCC context qualification. Resource budgets apply."
     },
     {
       "header": "string.h",
@@ -14329,14 +14329,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Input-preserving strspn/strcspn expression adapters return size_t prefix lengths on nonempty checked padding-free integer byte views, each at most 64 bytes. Both arguments require an in-view NUL; set bytes after NUL do not contribute. Known nonvolatile CPU objects use once-only byte/termination captures retained for inverses. Classical calls and function addresses keep libc ABI. Dynamic extents/addresses, general layouts and indirect quantum calls remain pending. Simulator/gate budgets apply. The delivery example is separate from the deferred full state, inverse, sanitizer and GCC context qualification; implementation status does not certify those pending tests."
     },
     {
       "header": "string.h",
@@ -14345,14 +14345,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Direct == NULL / != NULL search predicates lower to input-preserving Boolean expressions without materializing or measuring a returned pointer. Checked padding-free integer object-byte views and known nonvolatile CPU snapshots are supported within the 64-byte synthesis bound. memchr requires a constant checked count and converts the pure character argument to unsigned char; strchr/strrchr convert to target char and include the terminating NUL. String views require an in-view NUL; strpbrk excludes it and an empty strstr needle succeeds. Returned-pointer storage, offsets, dereference and general pointer consumers, indirect quantum ABI and dynamic extents remain pending. strchr/strrchr share existence semantics only, not pointer selection semantics. Delivery examples do not certify the deferred coherent/inverse, sanitizer or complete GCC context qualification. Resource budgets apply."
     },
     {
       "header": "string.h",

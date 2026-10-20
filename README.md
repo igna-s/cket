@@ -267,6 +267,11 @@ constant byte views, immutable constants and current bytes of known CPU objects.
 inputs, relative phases and saved inverses, with no implicit measurement/reset. Dynamic ranges,
 volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls remain pending.
 
+The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
+expressions and direct null predicates for `memchr`, `strchr`, `strrchr`, `strpbrk` and `strstr`.
+Run `CC=gcc-11 bash scripts/run-block.sh 06` for the two delivery examples. Returned quantum
+pointers and full state/inverse, sanitizer and GCC-context qualification remain pending.
+
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
 predicates can be uncomputed automatically after their last use.
@@ -715,7 +720,7 @@ normal importer capacity failure, its correction and subsequent normal/ASan/UBSa
 
 For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
 `--require-complete` mode deliberately fails while any interface remains pending or partial. The
-current index contains 1224 interfaces: 780 pending, 76 partial and 368 metadata facilities. The
+current index contains 1224 interfaces: 773 pending, 83 partial and 368 metadata facilities. The
 index covers the named C11 profile, including optional facilities; it is not an implementation or a
 test result for each entry.
 

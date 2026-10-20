@@ -917,7 +917,7 @@ def main(language):
     )
     current_index = json.loads((ROOT / 'docs/c11-library.json').read_text())
     check(
-        'Current inventory: strlen and strcmp remain partial; complete C11 is not claimed',
+        'Historical144 inventory remains unchanged; current string adapters remain partial without claiming complete C11',
         string_integration['inventory']
         == {
             'headers': 29,
@@ -929,12 +929,24 @@ def main(language):
             'complete': 0,
         }
         and len(current_index['interfaces']) == 1224
-        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 780
-        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 76
+        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 773
+        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 83
         and all(
             row['quantum'] == 'partial'
             for row in current_index['interfaces']
-            if row['header'] == 'string.h' and row['name'] in {'strlen', 'strcmp'}
+            if row['header'] == 'string.h'
+            and row['name']
+            in {
+                'strlen',
+                'strcmp',
+                'strspn',
+                'strcspn',
+                'memchr',
+                'strchr',
+                'strrchr',
+                'strpbrk',
+                'strstr',
+            }
         ),
     )
     counter_correction = json.loads(
@@ -1495,14 +1507,10 @@ def main(language):
             for command in record['commands']
         )
     check(
-        'Truth164: exact current/archive sources,203 shift checks,3505 expressions,393 native cases and990 divisions per configuration',
+        'Historical truth164: exact archived sources,203 shift checks,3505 expressions,393 native cases and990 divisions per configuration',
         truth_summary['status'] == 'passed-targeted-truth-cast-and-logical-not-correction'
         and truth_summary['source_files'] == len(truth_sources) == 164
         and truth_sources == truth_summary['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in truth_sources.items()
-        )
         and truth_summary['checks_per_configuration']
         == {'shifts': 203, 'expressions': 3505, 'native': 393, 'division': 990}
         and truth_summary['new_complete_sparse_domains_per_configuration'] == 132
@@ -1558,6 +1566,40 @@ def main(language):
             for mode, row in truth_native['configurations'].items()
         ),
     )
+    strings_folder = ROOT / 'docs/audit-evidence/string-library-v1'
+    strings_summary = json.loads((strings_folder / 'summary.json').read_text())
+    with tarfile.open(strings_folder / 'evidence.tar.gz') as archive:
+        strings_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in strings_summary['source_sha256']
+        }
+        strings_logs = {
+            name: hashlib.sha256(archive.extractfile('records/' + name).read()).hexdigest()
+            for name in ('build.log', 'block06.log')
+        }
+    check(
+        'String168 implementation: exact current/archive sources; seven interfaces remain partial with full qualification deferred',
+        strings_summary['status'] == 'built-and-examples-executed-full-qualification-deferred'
+        and strings_summary['source_files'] == len(strings_sources) == 168
+        and strings_sources == strings_summary['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
+            for name, sha in strings_sources.items()
+        )
+        and set(strings_summary['new_partial_interfaces'])
+        == {'strspn', 'strcspn', 'memchr', 'strchr', 'strrchr', 'strpbrk', 'strstr'}
+        and all(value == 'deferred' for value in strings_summary['qualification'].values()),
+    )
+    check(
+        'String168 delivery: normal build and two native examples are separate from deferred exhaustive tests',
+        strings_summary['build']['exit_code'] == strings_summary['delivery']['exit_code'] == 0
+        and strings_summary['delivery']['native_executions']
+        == strings_summary['delivery']['qasm_exports']
+        == strings_summary['delivery']['resource_reports']
+        == 2
+        and strings_summary['build']['log_sha256'] == strings_logs['build.log']
+        and strings_summary['delivery']['log_sha256'] == strings_logs['block06.log'],
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1576,6 +1618,7 @@ def main(language):
         ('sparse-simulation-v1', sparse_summary),
         ('shift-mux-v1', shift_summary),
         ('shift-truth-v3', truth_summary),
+        ('string-library-v1', strings_summary),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1641,6 +1684,7 @@ def main(language):
                 'sparse-simulation-v1',
                 'shift-mux-v1',
                 'shift-truth-v3',
+                'string-library-v1',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

@@ -44,6 +44,39 @@ bool standard_memory_set(tree fn) {
             (name_of(fn) == "memset" || name_of(fn) == "__cket_memset"));
 }
 
+bool standard_string_span(tree fn) {
+    if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
+        return false;
+    return fndecl_built_in_p(fn, BUILT_IN_STRSPN) || fndecl_built_in_p(fn, BUILT_IN_STRCSPN) ||
+           (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn)) &&
+            (name_of(fn) == "strspn" || name_of(fn) == "__cket_strspn" ||
+             name_of(fn) == "strcspn" || name_of(fn) == "__cket_strcspn"));
+}
+
+std::string standard_string_search(tree fn) {
+    if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
+        return "";
+    if (fndecl_built_in_p(fn, BUILT_IN_MEMCHR))
+        return "memchr";
+    if (fndecl_built_in_p(fn, BUILT_IN_STRCHR))
+        return "strchr";
+    if (fndecl_built_in_p(fn, BUILT_IN_STRRCHR))
+        return "strrchr";
+    if (fndecl_built_in_p(fn, BUILT_IN_STRPBRK))
+        return "strpbrk";
+    if (fndecl_built_in_p(fn, BUILT_IN_STRSTR))
+        return "strstr";
+    if (!DECL_EXTERNAL(fn) || !TREE_PUBLIC(fn) || !in_system_header_at(DECL_SOURCE_LOCATION(fn)))
+        return "";
+    std::string name = name_of(fn);
+    if (name.compare(0, 7, "__cket_") == 0)
+        name.erase(0, 7);
+    return name == "memchr" || name == "strchr" || name == "strrchr" || name == "strpbrk" ||
+                   name == "strstr"
+               ? name
+               : "";
+}
+
 bool byte_range_layout(QuantumByteRange &range) {
     tree type = range.element_type, size = TYPE_SIZE_UNIT(type);
     if (BITS_PER_UNIT != 8 || !INTEGRAL_TYPE_P(type) || !size || !tree_fits_uhwi_p(size) ||
@@ -348,6 +381,9 @@ tree expand_string_length(tree call) {
     }
     return result;
 }
+
+#include "quantum_string_span.inc"
+#include "quantum_string_search.inc"
 
 tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
     tree fn = get_callee_fndecl(call);

@@ -9,6 +9,13 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 un comando para compilarlos y ejecutarlos, circuitos OpenQASM e informes de recursos. “10%, 20%…”
 cuenta bloques de ese plan; no representa cobertura de C11 ni esfuerzo restante.
 
+**Nuevo avance del bloque 06:** se implementan `strspn` y `strcspn` sobre vistas comprobadas, y
+predicados directos `== NULL` / `!= NULL` para `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`.
+Los [ejemplos y el contrato](c11-string-searches.md) describen el alcance. No hay todavía un puntero
+cuántico general devuelto por estas búsquedas. Por indicación del usuario, las matrices exhaustivas
+de estados, inversas y sanitizadores de este avance quedan para el cierre del bloque; las campañas
+anteriores no se presentan como validación de este código nuevo.
+
 **Avance del bloque 02:** el [motor disperso](simulacion-dispersa.es.md) permite ejecutar circuitos
 de hasta 128 qubits con soporte ocupado acotado. Los nuevos ejemplos usan realmente `int` de 32 bits
 y `size_t` de 64 bits en el runtime C y miden explícitamente al final; no solo exportan circuitos.
@@ -207,8 +214,10 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Copia y movimiento de memoria            | `memcpy`, `memmove`.                                                                                                                                       | Hay adaptadores para casos comprobados de almacenamiento entero. Faltan escrituras y layouts generales, memoria dinámica y otros contextos. No producen dos copias independientes de un estado cuántico desconocido.                       |
 | Llenado de memoria                       | `memset`.                                                                                                                                                  | Rangos fijos de almacenamiento entero, valor capturado una vez e historia de sobrescritura. Hay retornos locales comprobados; quedan consumidores generales, tamaños dinámicos y layouts generales.                                        |
 | Comparación de bytes y caracteres        | `memcmp`, `strncmp`, `strcmp`; longitud con `strlen`.                                                                                                      | Admite rangos comprobados, constantes y capturas únicas de bytes actuales de objetos CPU conocidos, conservadas para la inversa. Siguen pendientes las direcciones y tamaños dinámicos, los accesos `volatile`/atómicos y otros contextos. |
+| Prefijos de cadenas                      | `strspn`, `strcspn`.                                                                                                                                       | Vistas de 1–64 bytes con NUL dentro del rango. La calificación exhaustiva del nuevo avance queda pendiente.                                                                                                                                |
+| Predicados de búsqueda                   | `memchr`, `strchr`, `strrchr`, `strpbrk`, `strstr`.                                                                                                        | Comparaciones directas con NULL; guardar o consumir el puntero resultante sigue pendiente. Calificación exhaustiva aplazada.                                                                                                               |
 
-Son **29 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Son **36 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -221,13 +230,14 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      780 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       76 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      773 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       83 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 76 parciales incluyen los
-29 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 76 funciones completas.**
+El inventario no registra entradas como completamente implementadas. Las 83 parciales incluyen los
+36 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 83 funciones completas.** El estado parcial registra código disponible; no
+certifica las pruebas aplazadas del nuevo bloque de cadenas.
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un
 tipo, una función matemática y un administrador de memoria tiene costos muy diferentes.

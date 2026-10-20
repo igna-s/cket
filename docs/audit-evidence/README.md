@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The current [shift truth/cast advance](shift-truth-v3/README.es.md) removes three previous resource
+The new [string library advance](string-library-v1/README.es.md) adds seven partial interfaces:
+prefix lengths and direct null search predicates. The compiler and two examples build and execute;
+full coherent/inverse, sanitizer and GCC-context qualification is explicitly deferred. Historical
+campaigns below do not qualify this new implementation.
+
+The previous [shift truth/cast advance](shift-truth-v3/README.es.md) removes three previous resource
 failures and corrects a numeric logical-negation error in the arithmetic fallback. The fourth block
 02 example executes with 85 wires. Targeted checks retain source identity, earlier failed attempts
 and the exact wrong-state reproduction; complete C11 remains open.
@@ -35,7 +40,7 @@ Independent compiled string circuits passed 640 complete complex states with sav
 80-command broad campaign later completed in two segments, archived with the
 [148-input evidence](common-remainder-v2/README.es.md); its
 [remote CI](integrated144-remote-ci/README.es.md) also passed. These results do not certify the
-later inputs. The current inventory has 780 pending, 76 partial and 368 metadata entries.
+later inputs. The current inventory has 773 pending, 83 partial and 368 metadata entries.
 Cybersecurity stays classical.
 
 The preceding 138-input [full campaign](controlled-operands-full/summary.json) and
@@ -123,7 +128,7 @@ word endpoints each, all six relations, two references and both builtin modes at
 assumptions that were corrected. None of those failed runs is counted as passing verification. The
 [string contract](../c11-strncmp.md) states the supported cases and remaining bounds.
 
-The current index has 783 pending interfaces, 73 partial interfaces and 368 metadata facilities.
+That historical index had 783 pending interfaces, 73 partial interfaces and 368 metadata facilities.
 Full quantum C11/library support, general layouts and dynamic memory, mutable CPU snapshots,
 indirect quantum ABI and full pre-GCC source provenance remain open. These finite checks do not
 prove absence of bugs or physical QPU execution. The CI budget is now 180 minutes; no hosted CI run
