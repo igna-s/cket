@@ -79,6 +79,12 @@ up to 128 physical wires and bounded occupied support. `bash scripts/run-block.s
 `int32` quotient and a `size_t64` example that exceed the default dense limit. This is a usable
 advance within block 02; the complete integer/C11 objective remains open.
 
+The [variable-shift implementation](docs/c11-shifts.md) now selects source positions without
+retaining one full temporary word per count bit. Full 32-bit shifts that previously exceeded the
+wire budget now generate circuits; the block 02
+[variable_shift program](examples/blocks/02/variable_shift.c) executes in sparse mode with 105
+wires.
+
 ## Install and build
 
 Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The

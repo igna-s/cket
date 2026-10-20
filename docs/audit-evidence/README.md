@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The current [sparse execution advance](sparse-simulation-v1/README.es.md) makes low-support int32
+The current [shift multiplexer](shift-mux-v1/README.es.md) removes the former full-word stage
+workspace, enabling complete32-bit variable-shift circuits and a105-wire native example. Targeted
+normal/sanitizer runs check71 shift domains/contracts,3505 expressions and393 native cases on161
+inputs, with complete finite phased sparse states and actual previous failure preserved.
+
+The previous [sparse execution advance](sparse-simulation-v1/README.es.md) makes low-support int32
 and LP64-size_t64 examples executable in the native C runtime. Targeted normal/sanitizer runs pass
 88 new checks,393 native tests and1509 example checks on159 frozen inputs. A separate reproduction
 confirms and fixes the old dense small-probability cutoff. Full C11 remains open.

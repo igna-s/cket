@@ -24,39 +24,54 @@ bits before that conversion; signed extension likewise uses the original sign.
 
 ## Circuit and resources
 
-Each active count bit controls a stage selecting the unchanged value or a shift by a power of two. A
-variable stage writes fresh wires and retains its predecessor. Constant count bits select wire views
-without an additional stage register. The compiler copies the final basis value to the requested
-destination, reverses the recorded plan and releases clean private registers. The shift
-implementation emits X-family reversible gates, with no implicit measurement or reset. Source-level
-measurement/reset in integration programs is explicit and has its usual channel semantics.
+Variable shifts now use a reversible bit multiplexer. For each representable shift position below
+the declared promoted operand width, controlled X gates XOR the selected source bits into a private
+result. There are at most 64 positions; the construction enumerates positions, not all input word
+values. Unrepresentable positions in a compressed count view are skipped, preventing low-bit
+aliases. Fixed counts retain the existing wire-view path.
 
-For active working width `w` and `k` nonconstant count bits, this construction uses O(`w*k`) logical
-gates and O(`w*k`) retained private workspace. It does not enumerate all input bit patterns. Right
-shift may need the source's full active width even if the output is narrow; left shift can discard
-high bits only in the copied result while preserving its original input.
+For promoted width `w` and requested output width `r`, the new path uses O(`w*r`) logical
+multi-controlled X gates and an `r`-bit private result, in addition to workspace already needed to
+lower its operands. The compiler copies this result to the destination, reverses the plan and
+releases clean private storage. It no longer allocates a full word per variable count bit. Hardware
+decomposition/connectivity costs of multi-controlled gates are separate from these logical counts.
 
-The physical wire mask currently represents 128 qubits; full state simulation is limited to 24.
-Complete 8- and 16-bit variable-shift circuits are generated without tables. The current
-stage-retaining construction for complete 32-bit inputs exceeds the physical budget and diagnoses
-exhaustion. This is R for the current implementation, not a proof that wider shifts are physically
-impossible. Better workspace scheduling and wider backends remain P/R.
+The inputs and relative phases are preserved. Right shift still reads the original high bits and
+sign before narrowing. The implementation introduces no measurement/reset. Invalid inactive counts
+have a total XOR extension; this does not permit reachable undefined C shifts.
+
+The gate representation remains limited to 128 physical qubits. Default dense simulation is limited
+to 24; [sparse execution](simulacion-dispersa.es.md) supports wider bounded-support states. Complete
+8/16/32-bit variable-shift circuits now generate without tables. Two public 64-bit words plus a
+separate counter already exceed 128 wires, independently of this workspace improvement; narrow
+results and general future resource expansion retain their separate contracts.
 
 ## Evidence and limits
 
-`build/validate_shifts` runs 55 checks:
+`build/validate_shifts` runs 71 checks:
 
 - Twenty complete joint-state comparisons across ten small domains, with finite synthesis
   enabled/disabled, nontrivial relative phase, unsigned modular truncation, signed extension, 64-bit
   promoted types, narrowing, input-correlated counters, open coherent control and a clean inverse.
-- Six wide synthesis/resource checks: both shifts at 8/16/32 bits. The 8/16 cases generate circuits;
-  the 32-bit cases diagnose the resource limit.
+- Six wide synthesis checks: both shifts at 8/16/32 bits now generate circuits without tables; their
+  pure-register cases fit at most `3*w + count_bits` physical wires.
+- Sixteen additional complete sparse joint-state domains across both synthesis policies: all 256
+  byte labels and eight shift amounts; selected 256-label 32/64-bit source domains with every
+  applicable 32/64-bit shift amount; full 32-bit and narrow 64-bit results, signed right extension,
+  coherent controls, source/result phases, source preservation and a clean inverse. Their finite
+  source domains are explicit in `tests/shift_state.inc`; they do not cover every wide input value.
 - Fourteen definedness checks in both routes: negative/out-of-width counters, signed negative left
   operands, signed overflow and superpositions containing invalid arithmetic.
 - Five executions combining a typed function, a fixed array, a static loop, conversions, arithmetic,
   explicit measurement/reset and C comparison.
 - Ten frontend exports of both shifts on 20 relevant input bits across `-O0`, `-O1`, `-O2`, `-O3`,
   `-Os`, with backend truth tables disabled.
+
+The [current targeted evidence](audit-evidence/shift-mux-v1/README.es.md) separates source
+identities, normal/sanitizer builds and the actual previous compiler rejection. The
+[variable_shift example](../examples/blocks/02/variable_shift.c) now compiles and executes with 105
+physical wires in sparse mode; the same source exceeds the physical budget on the previous 159-input
+compiler. Run it through `bash scripts/run-block.sh 02` after building.
 
 Two additional QASM cases compare small generated states independently with QuEST: an unsigned
 variable left shift with relative phase and a signed variable right shift followed by Boolean

@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 413,
+  "checks": 417,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -708,6 +708,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/blocks/02/variable_shift.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/blocks/02/wide_integers.c",
       "passed": true,
       "detail": ""
@@ -1254,6 +1259,11 @@
     },
     {
       "check": "Fuente local tests/selection_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/shift_state.inc",
       "passed": true,
       "detail": ""
     },
@@ -2048,12 +2058,22 @@
       "detail": ""
     },
     {
-      "check": "Sparse159: exact current/archive sources,88 targeted checks,393 native tests and1509 example checks per configuration",
+      "check": "Historical sparse159: exact archived sources,88 targeted checks,393 native tests and1509 example checks per configuration",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Sparse159: reused unchanged sanitizer plugin and the actual earlier rare-Born failure retain their identities",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Shift161: exact current/archive sources,71 shift checks,3505 expressions and393 native tests per configuration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Shift161: unchanged sanitizer plugin provenance and the real previous compile/resource failure remain explicit",
       "passed": true,
       "detail": ""
     },
@@ -2076,7 +2096,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 206
+    "source_files_in_manifest": 208
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

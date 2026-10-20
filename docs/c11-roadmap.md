@@ -36,7 +36,9 @@ or a claim that the first groups are already complete.
    blocked direct selection between signed 64-bit limits. The
    [sparse runtime](simulacion-dispersa.es.md) now permits actual native execution of wide registers
    with bounded occupied support. General division, general wide expressions and the remaining
-   consuming contexts still require work.
+   consuming contexts still require work. [Variable shifts](c11-shifts.md) now avoid full stage
+   registers, allowing full 32-bit circuits and selected wide native executions within the existing
+   physical representation.
 1. Close the common consuming contexts: conditions, loops, direct functions, arrays, basic structs,
    checked pointers, and frequent memory/string operations. The `memset` temporary-lifetime
    correction now has a

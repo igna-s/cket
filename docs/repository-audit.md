@@ -1,5 +1,11 @@
 # Auditoría del repositorio y de los papers
 
+El [selector reversible de desplazamientos](c11-shifts.md) ya genera los circuitos completos de 32
+bits que antes agotaban los recursos. El mismo ejemplo C falla por qubits en la revisión previa y
+ahora ejecuta en modo disperso con 105 qubits. La
+[evidencia dirigida](audit-evidence/shift-mux-v1/README.es.md) separa esa mejora de la cobertura
+completa pendiente de C11 y de las campañas históricas.
+
 El [avance disperso del bloque 02](simulacion-dispersa.es.md) permite ejecutar los ejemplos anchos
 de enteros con soporte acotado, con picos de circuito de 99 y 84 qubits. La
 [evidencia de 159 entradas](audit-evidence/sparse-simulation-v1/README.es.md) registra las

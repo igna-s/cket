@@ -984,46 +984,37 @@ static int ar_compare(ar_builder *p,
     return release(p->c, scratch);
 }
 
-/* Controlled barrel shift: O(w log w) logical gates and retained workspace.
- * Each stage computes into fresh wires; its predecessor remains available
- * for the recorded inverse. Selecting a basis value creates correlation,
- * preserving the source amplitudes rather than cloning an arbitrary state. */
-static int
-ar_shift(ar_builder *p, const ar_value *source, const ar_value *count, int left, ar_value *out) {
-    unsigned width = left ? out->width : source->width;
-    ar_value current = {.width = width, .sign = !left && source->sign};
-    for (unsigned j = 0; j < width; ++j)
-        current.bit[j] = ar_at(source, j);
-    for (unsigned stage = 0; stage < count->width; ++stage) {
-        unsigned distance = 1u << stage;
-        ar_bit choice = count->bit[stage];
-        if (!choice.wire && !choice.inverted)
-            continue;
-        ar_value shifted = {.width = width, .sign = current.sign};
-        for (unsigned j = 0; j < width; ++j)
-            shifted.bit[j] = left ? (j < distance ? (ar_bit){0, 0} : ar_at(&current, j - distance))
-                                  : ar_at(&current, j + distance);
-        if (!choice.wire) {
-            current = shifted;
-            continue;
-        }
-        ar_value next;
-        if (!ar_temp(p, width, &next))
-            return 0;
-        next.sign = current.sign;
-        for (unsigned j = 0; j < width; ++j) {
-            ar_bit bits[2] = {current.bit[j], choice};
-            int wanted[2] = {1, 0};
-            if (!ar_condition(p, ar_wire(next.bit[j]), bits, wanted, 2))
-                return 0;
-            bits[0] = shifted.bit[j];
-            wanted[1] = 1;
-            if (!ar_condition(p, ar_wire(next.bit[j]), bits, wanted, 2))
+/* A controlled bit multiplexer enumerates at most 64 shift positions, not
+ * dividend values. No full-width predecessor registers are needed. Typed
+ * definedness is checked before lowering; unreachable invalid counts retain
+ * a unitary XOR extension. The declared promoted width bounds the positions,
+ * even when the active source view or requested output is narrower. */
+static int ar_shift(ar_builder *p,
+                    const ar_value *source,
+                    const ar_value *count,
+                    unsigned promoted_width,
+                    int left,
+                    ar_value *out) {
+    unsigned positions = promoted_width;
+    if (count->width < 6 && positions > (1u << count->width))
+        positions = 1u << count->width;
+    ar_bit bits[65];
+    int wanted[65];
+    for (unsigned j = 0; j < count->width; ++j)
+        bits[j] = count->bit[j];
+    for (unsigned distance = 0; distance < positions; ++distance) {
+        for (unsigned j = 0; j < count->width; ++j)
+            wanted[j] = !!((uint64_t)distance & (UINT64_C(1) << j));
+        for (unsigned j = 0; j < out->width; ++j) {
+            if (left && j < distance)
+                continue;
+            bits[count->width] = ar_at(source, left ? j - distance : j + distance);
+            wanted[count->width] = 1;
+            if (!ar_condition(p, ar_wire(out->bit[j]), bits, wanted, count->width + 1))
                 return 0;
         }
-        current = next;
     }
-    return ar_copy(p, out, &current);
+    return 1;
 }
 
 static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out);
@@ -1364,7 +1355,7 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         return 0;
     out->sign = range.sign && range.lo < 0;
     if (shift)
-        return ar_shift(p, &a, &b, cj_equal(p->d, op, "shl"), out);
+        return ar_shift(p, &a, &b, p->ranges[nodes[0]].width, cj_equal(p->d, op, "shl"), out);
     if (absolute)
         return ar_copy(p, out, &a) &&
                ar_negate_if(p, out, a.sign ? a.bit[a.width - 1] : (ar_bit){0, 0});

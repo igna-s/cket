@@ -12,6 +12,8 @@ static void apply(qc_context *c, const char *operation) {
         validation_fail("shift operation failed: %s", qc_error(c));
 }
 
+#include "shift_state.inc"
+
 static void joint_states(void) {
     /* Every basis pair, relative phase, control branch and private wire is
      * compared, followed by an inverse restoring the original superposition. */
@@ -165,16 +167,14 @@ static void exports_and_rejections(void) {
                 width,
                 count_bits);
             int ok = qc_apply(c, operation, NULL);
-            if (width < 32 && !ok)
+            if (!ok)
                 validation_fail("wide no-table shift: %s", qc_error(c));
-            if (width == 32 && (ok || !strstr(qc_error(c), "qubit")))
-                validation_fail("expected explicit physical budget failure: %s", qc_error(c));
-            if (width < 32 && (!c->ngates || qc_qubits(c) > 128))
+            if (!c->ngates || qc_qubits(c) > 3 * width + count_bits)
                 validation_fail("no shift circuit generated");
             printf("PASS %u-bit variable %s: %s (%zu gates)\n",
                    width,
                    left ? "left shift" : "right shift",
-                   width < 32 ? "no-table circuit generated" : "physical resource limit diagnosed",
+                   "no-table circuit generated",
                    c->ngates);
             qc_destroy(c);
             ++checks;
@@ -305,6 +305,7 @@ int main(int argc, char **argv) {
     if (argc != 1)
         validation_fail("usage: validate_shifts");
     joint_states();
+    wide_sparse_states();
     exports_and_rejections();
     validation v;
     validation_init(&v, argv[0]);

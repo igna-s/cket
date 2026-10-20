@@ -1383,14 +1383,10 @@ def main(language):
             for command in record['commands']
         )
     check(
-        'Sparse159: exact current/archive sources,88 targeted checks,393 native tests and1509 example checks per configuration',
+        'Historical sparse159: exact archived sources,88 targeted checks,393 native tests and1509 example checks per configuration',
         sparse_summary['status'] == 'passed-targeted-sparse-and-native-wide-examples'
         and sparse_summary['source_files'] == len(sparse_sources) == 159
         and sparse_sources == sparse_summary['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in sparse_sources.items()
-        )
         and sparse_summary['checks_per_configuration']
         == {'sparse': 88, 'native': 393, 'examples': 1509}
         and sparse_summary['wide_examples_peak_qubits'] == {'wide_integers': 99, 'wide_size': 84}
@@ -1422,6 +1418,66 @@ def main(language):
         and rare_born['records']['current159']['library_sha256']
         == sparse_records['normal']['core_sha256']['libcket_quantum.a'],
     )
+    shift_folder = ROOT / 'docs/audit-evidence/shift-mux-v1'
+    shift_summary = json.loads((shift_folder / 'summary.json').read_text())
+    with tarfile.open(shift_folder / 'evidence.tar.gz') as archive:
+        shift_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in shift_summary['source_sha256']
+        }
+        shift_records = {
+            mode: json.load(archive.extractfile('records/' + mode + '/exit.json'))
+            for mode in ('normal', 'sanitized')
+        }
+        shift_logs_match = all(
+            hashlib.sha256(
+                archive.extractfile('records/' + mode + '/' + command['log']).read()
+            ).hexdigest()
+            == command['log_sha256']
+            for mode, record in shift_records.items()
+            for command in record['commands']
+        )
+    check(
+        'Shift161: exact current/archive sources,71 shift checks,3505 expressions and393 native tests per configuration',
+        shift_summary['status'] == 'passed-targeted-shift-multiplexer'
+        and shift_summary['source_files'] == len(shift_sources) == 161
+        and shift_sources == shift_summary['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in shift_sources.items()
+        )
+        and shift_summary['checks_per_configuration']
+        == {'shifts': 71, 'expressions': 3505, 'native': 393}
+        and shift_summary['new_complete_sparse_domains_per_configuration'] == 16
+        and shift_summary['variable_shift_peak_qubits'] == 105
+        and all(
+            record['status'] == 'passed-shift-mux-targeted'
+            and record['exit_code'] == 0
+            and record['source_sha256'] == shift_sources
+            and all(row['returncode'] == 0 for row in record['commands'])
+            for record in shift_records.values()
+        )
+        and shift_logs_match,
+    )
+    check(
+        'Shift161: unchanged sanitizer plugin provenance and the real previous compile/resource failure remain explicit',
+        shift_records['normal']['commands'][0]['name'] == 'fresh-build'
+        and shift_records['sanitized']['plugin_reuse'] == shift_summary['plugin_reuse']
+        and shift_summary['plugin_reuse']['binary_sha256']
+        == sparse_records['sanitized']['core_sha256']['cket_plugin.so']
+        and all(
+            shift_sources[n] == sha
+            for n, sha in shift_summary['plugin_reuse']['plugin_inputs_sha256'].items()
+        )
+        and shift_summary['previous_failure']['status']
+        == 'confirmed-previous-32bit-shift-resource-limit'
+        and shift_summary['previous_failure']['source_sha256']
+        == shift_sources['examples/blocks/02/variable_shift.c']
+        and shift_summary['previous_failure']['commands'][-1]['name'] == 'compile'
+        and shift_summary['previous_failure']['commands'][-1]['returncode'] == 1
+        and shift_summary['previous_failure']['previous_core_sha256']['libcket_quantum.a']
+        == sparse_records['normal']['core_sha256']['libcket_quantum.a'],
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1438,6 +1494,7 @@ def main(language):
         ('selection-views-v5', selection),
         ('common-division-v3', division_delivery),
         ('sparse-simulation-v1', sparse_summary),
+        ('shift-mux-v1', shift_summary),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1501,6 +1558,7 @@ def main(language):
                 'selection-views-v5',
                 'common-division-v3',
                 'sparse-simulation-v1',
+                'shift-mux-v1',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

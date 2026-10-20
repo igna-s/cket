@@ -15,6 +15,12 @@ y `size_t` de 64 bits en el runtime C y miden explícitamente al final; no solo 
 Se corrige además un corte fijo de probabilidades pequeñas en el motor denso. El bloque 02 y la
 compatibilidad completa con C11 siguen abiertos.
 
+El nuevo [selector de desplazamientos](c11-shifts.md) elimina los registros completos por etapa:
+ahora generan circuito los desplazamientos variables de 32 bits que antes agotaban los recursos.
+`variable_shift` ya ejecuta con 105 qubits en el modo disperso; el mismo programa falla por recursos
+en la revisión anterior. Las pruebas dirigidas incluyen fases e inversas, conservando los límites de
+las fuentes y dominios comprobados.
+
 **Nuevo código integrado:** división reversible por constantes de magnitud 2 a 16 y consumo directo
 del cociente como booleano, negación y comparación con cero. El ejemplo
 [`quantum_buckets.c`](../examples/quantum_buckets.c) calcula grupos sobre una superposición de bytes

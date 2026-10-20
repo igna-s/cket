@@ -12,9 +12,10 @@ CC=gcc-11 CXX=g++-11 bash scripts/build.sh
 bash scripts/run-block.sh 02
 CKET_SIMULATOR=sparse build/blocks/02/wide_integers
 CKET_SIMULATOR=sparse build/blocks/02/wide_size
+CKET_SIMULATOR=sparse build/blocks/02/variable_shift
 ```
 
-El runner deja dos ejecutables, sus circuitos OpenQASM y sus informes de recursos en
+El runner deja tres ejecutables, sus circuitos OpenQASM y sus informes de recursos en
 `build/blocks/02/`. La variable se debe conservar al ejecutar después un binario individual.
 
 | Programa        | Operación cuántica                                                            | Salidas válidas en el perfil Linux LP64                                                         |
@@ -22,9 +23,14 @@ El runner deja dos ejecutables, sus circuitos OpenQASM y sus informes de recurso
 | `wide_integers` | Selección coherente de un `int` de 32 bits y división por tres en otro `int`. | `control=0 value=10 quotient=3` o `control=1 value=-7 quotient=-2`                              |
 | `wide_size`     | Selección de extremos `size_t` de 64 bits y conversión del cociente a byte.   | `control=0 count=9223372036854775808 tail=170` o `control=1 count=18446744073709551615 tail=85` |
 
-Los programas miden explícitamente al final y comprueban esas correlaciones. Sus informes estáticos
-registran picos de 99 y 84 qubits respectivamente; ejecutarlos no requiere un vector denso de `2^99`
-o `2^84` amplitudes.
+El nuevo `variable_shift` calcula `value >> count` con un `uint32_t` y un contador en superposición
+de 0 a 31. Su resultado medido debe coincidir con la referencia C aplicada a los operandos medidos.
+El [selector de posiciones](c11-shifts.md) evita el límite anterior de auxiliares y su circuito usa
+105 qubits.
+
+Los dos programas anteriores miden explícitamente al final y comprueban las correlaciones de la
+tabla. Sus informes estáticos registran picos de 99 y 84 qubits respectivamente; ejecutarlos no
+requiere un vector denso de `2^99` o `2^84` amplitudes.
 
 ## Qué hace el motor
 
