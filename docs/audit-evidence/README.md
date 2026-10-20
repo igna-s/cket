@@ -1,6 +1,12 @@
 # Evidence for the tested C11 subset
 
-The current [151-input integration](selection-views-v5/README.es.md) adds internal selection views,
+The current [usable block 01](common-division-v3/README.es.md) adds small-constant quotient
+synthesis, direct Boolean consumers and a runnable superposition/bucket example. Its fresh Linux
+delivery runs eight programs and exports, with 1509 example checks. Separate normal/sanitizer
+qualifications pass 3505 expression checks per configuration, including 2310 new finite gate-action
+domains. These targeted results do not certify complete C11 or a new broad campaign.
+
+The previous [151-input integration](selection-views-v5/README.es.md) adds internal selection views,
 288 maintained finite domains and 768 independent compiled complete-state checks. Direct selection
 between signed64-bit limits now fits the existing gate representation. Targeted normal/sanitizer
 checks pass with explicitly verified tool reuse; the fresh broad151 campaign remains in progress.

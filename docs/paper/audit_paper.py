@@ -1210,7 +1210,7 @@ def main(language):
         (ROOT / 'docs/audit-evidence/selection-views-v5/inherited-fresh-builds.json').read_text()
     )
     check(
-        'Current151 selection: exact applied source bytes,1195 expression checks and five targeted suites per configuration',
+        'Historical151 selection: exact archived source bytes,1195 expression checks and five targeted suites per configuration',
         selection['status'] == 'verified-targeted-production-identical-proofs-broad-pending'
         and selection['source_files'] == len(archived151) == 151
         and archived151 == selection['source_sha256']
@@ -1219,14 +1219,10 @@ def main(language):
         and selection['checks_per_configuration']
         == {'expressions': 1195, 'shifts': 55, 'division': 990, 'native': 393, 'inplace': 271}
         and selection['new_finite_selection_domains_per_configuration'] == 288
-        and selection['targeted_commands_closed_zero'] == 12
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in archived151.items()
-        ),
+        and selection['targeted_commands_closed_zero'] == 12,
     )
     check(
-        'Current151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status',
+        'Historical151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status',
         set(selection_qualification) == set(selection_inherited_builds) == {'normal', 'sanitized'}
         and all(
             row['status'] == 'passed-targeted-selection-regression'
@@ -1246,7 +1242,7 @@ def main(language):
         ),
     )
     check(
-        'Current151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed',
+        'Historical151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed',
         len(selection_proof_sources) == 151
         and selection_proof_sources == selection['proof_source_sha256']
         and selection['changed_sources_from_proof'] == ['tests/selection_state.inc']
@@ -1278,7 +1274,7 @@ def main(language):
         == 102,
     )
     check(
-        'Current151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass',
+        'Historical151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass',
         set(selection['earlier_test_attempts']) == {'v2', 'v3', 'v4'}
         and all(
             set(rows) == {'normal', 'sanitized'}
@@ -1290,6 +1286,86 @@ def main(language):
         )
         and selection['broad_campaign_status_at_archive'] == 'running'
         and selection['broad_regression'] == selection['remote_ci'] == 'pending',
+    )
+    division_folder = ROOT / 'docs/audit-evidence/common-division-v3'
+    division_delivery = json.loads((division_folder / 'integration-summary.json').read_text())
+    division_qualification = json.loads((division_folder / 'qualification.json').read_text())
+    delivery_record = json.loads((division_folder / 'delivery.json').read_text())
+    with tarfile.open(division_folder / 'evidence.tar.gz') as archive:
+        division_sources = {
+            name: hashlib.sha256(archive.extractfile('delivery-sources/' + name).read()).hexdigest()
+            for name in division_delivery['source_sha256']
+        }
+        division_qualified_sources = {
+            name: hashlib.sha256(
+                archive.extractfile('qualification-sources/' + name).read()
+            ).hexdigest()
+            for name in division_delivery['qualified_source_sha256']
+        }
+        division_logs_match = all(
+            hashlib.sha256(
+                archive.extractfile('records/' + label + '/' + command['log']).read()
+            ).hexdigest()
+            == command['log_sha256']
+            for label, record in {**division_qualification, 'delivery': delivery_record}.items()
+            for command in record['commands']
+        )
+    check(
+        'Delivery155: exact current/archive source identity, fresh Linux build, eight runnable exports and1509 example checks',
+        division_delivery['status'] == 'passed-usable-delivery-and-targeted-division'
+        and division_delivery['source_files'] == len(division_sources) == 155
+        and division_sources
+        == division_delivery['source_sha256']
+        == delivery_record['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in division_sources.items()
+        )
+        and delivery_record['status'] == 'passed-delivery-one'
+        and delivery_record['exit_code'] == 0
+        and [row['name'] for row in delivery_record['commands']]
+        == ['fresh-build', 'block01', 'examples']
+        and all(row['returncode'] == 0 for row in delivery_record['commands'])
+        and division_delivery['delivery']['native_programs'] == 8
+        and division_delivery['delivery']['qasm_exports'] == 8
+        and division_delivery['delivery']['example_checks'] == 1509
+        and division_delivery['delivery']['examples'] == 37
+        and division_logs_match,
+    )
+    check(
+        'Division153:2310 new finite domains and3505 expression checks per configuration; reused cores retain152-input provenance',
+        len(division_qualified_sources) == 153
+        and division_qualified_sources == division_delivery['qualified_source_sha256']
+        and len(division_delivery['fresh_core_source_sha256']) == 152
+        and division_delivery['new_finite_quotient_domains_per_configuration'] == 2310
+        and division_delivery['checks_per_configuration']
+        == {'expressions': 3505, 'shifts': 55, 'division': 990, 'native': 393, 'inplace': 271}
+        and all(
+            division_qualified_sources[name]
+            == division_sources[name]
+            == division_delivery['fresh_core_source_sha256'][name]
+            for name in division_delivery['production_sources_identical']
+        )
+        and all(
+            division_qualification['qualification-' + configuration]['status']
+            == 'passed-targeted-common-division'
+            and division_qualification['qualification-' + configuration]['source_sha256']
+            == division_qualified_sources
+            and len(division_qualification['qualification-' + configuration]['commands']) == 6
+            and all(
+                row['returncode'] == 0
+                for row in division_qualification['qualification-' + configuration]['commands']
+            )
+            and division_qualification['qualification-' + configuration]['core_sha256']
+            == division_qualification['fresh-cores-' + configuration]['core_sha256']
+            and division_qualification['fresh-cores-' + configuration]['source_sha256']
+            == division_delivery['fresh_core_source_sha256']
+            and division_qualification['fresh-cores-' + configuration]['commands'][0]['name']
+            == 'fresh-build'
+            and division_qualification['fresh-cores-' + configuration]['commands'][0]['returncode']
+            == 0
+            for configuration in ('normal', 'sanitized')
+        ),
     )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
@@ -1305,6 +1381,7 @@ def main(language):
         ('known-fill-cleanup-v2', fill_integration),
         ('common-remainder-v2', remainder),
         ('selection-views-v5', selection),
+        ('common-division-v3', division_delivery),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1366,6 +1443,7 @@ def main(language):
                 'known-fill-cleanup-v2',
                 'common-remainder-v2',
                 'selection-views-v5',
+                'common-division-v3',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

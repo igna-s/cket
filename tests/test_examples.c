@@ -46,7 +46,8 @@ static const example examples[] = {
     {"repeat_until_success", NULL, 0, 1},
     {"find_multiple", NULL, 1, 1},
     {"search_constraints", NULL, 0, 1},
-    {"coherent_accumulate", NULL, 1, 1}};
+    {"coherent_accumulate", NULL, 1, 1},
+    {"quantum_buckets", NULL, 1, 1}};
 
 typedef struct {
     const char *name, *input, *output;
@@ -133,6 +134,8 @@ static void check_output(validation *v, const example *e, const char *output) {
     else if (!strcmp(e->name, "coherent_accumulate"))
         ok = sscanf(text, "flag=%u total=%u %c", &a, &b, &tail) == 2 && a <= 1 &&
              b == (a ? 15u : 30u);
+    else if (!strcmp(e->name, "quantum_buckets"))
+        ok = sscanf(text, "value=%u bucket=%u %c", &a, &b, &tail) == 2 && a <= 15 && b == a / 3;
     if (!ok)
         fprintf(stderr, "Unexpected stdout: %s\n", text);
     free(text);

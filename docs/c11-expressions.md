@@ -47,7 +47,7 @@ Exceeding a budget is an explicit resource restriction (**R**).
 
 ## Finite validation
 
-`tests/validate_expressions.c` runs **1195 checks** in each configuration. Its original 97 checks
+`tests/validate_expressions.c` runs **3505 checks** in each configuration. Its original 97 checks
 remain:
 
 - Two regressions for legacy signed basis metadata, across the two synthesis configurations. A
@@ -72,6 +72,10 @@ The [small-constant remainder matrix](c11-division.md#remainder-by-a-small-const
 basis-action checks. The [selection-view matrix](c11-selections.md) adds 288 more. These distinguish
 full byte labels and selected wide boundaries from dense wide-state simulations; their compiled
 complete-state evidence is archived separately with exact source identities.
+
+The [small-constant quotient matrix](c11-division.md#quotient-by-a-small-constant) adds 2310 finite
+gate-action domains, including six Boolean consuming forms. It checks all bytes and selected wide
+labels, phases and inverses; it does not add a dense wide-state or physical-QPU claim.
 
 The separate QASM campaign adds three small complete-state comparisons with QuEST: guarded
 conditional division, short-circuit division and conditional signed negation/complement, each with

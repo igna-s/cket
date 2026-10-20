@@ -4,6 +4,10 @@ The final objective is a quantum semantics for **every C11 construction and stan
 interface**. The current integer subset is an intermediate implementation. Passing its tests does
 not complete that objective.
 
+Implementation now ships as [usable incremental deliveries](entregas-incrementales.es.md), starting
+with a small integer/Boolean package. Delivery counts do not measure C11 coverage; the feature
+contracts and inventory below retain their independent status.
+
 Coverage means an implemented transformation with tested preconditions, or a diagnostic for a
 specifically justified incompatible context. A missing implementation cannot be closed as a physical
 impossibility. A documented proposal cannot be counted as an implementation.
@@ -397,9 +401,9 @@ normal/sanitizer suites, 3528 independent compiled-scope states and 20 separate 
 executions. Its full campaign and remote CI remain pending. A 64-bit partial-fill experiment failed
 at the physical budget; its checked 8/16/32-bit prefix remains separate from that failure. This does
 not close M2/M4 or the lifetime work. The later 148-input integration implements small-constant
-remainder, and the current 151-input integration adds selection views. Its 1195 expression checks
-include the original 97, 810 remainder and 288 selection domains. The new broad151 campaign remains
-separate; no earlier broad result certifies those changed inputs.
+remainder, and the historical 151-input integration adds selection views. Its 1195 expression checks
+include the original 97, 810 remainder and 288 selection domains. The separate broad151 campaign
+remains separate; no earlier broad result certifies those changed inputs.
 
 The project goal remains open until the inventory has implemented, validated coverage or a reasoned
 incompatible-context contract for every C11 item of the declared target. Resource limits must have

@@ -1084,6 +1084,7 @@ static int ar_power_division(ar_builder *p,
 }
 
 #include "small_remainder.inc"
+#include "small_division.inc"
 #include "select_views.inc"
 
 static int
@@ -1181,6 +1182,9 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
             out->bit[j] = ar_at(&source, j);
         return 1;
     }
+    int quotient_truth = ar_small_division_truth(p, e, out);
+    if (quotient_truth)
+        return quotient_truth > 0;
     const qc_ctype_profile *ctype = ctype_profile(p->d, op);
     if (ctype) {
         ar_value source;
@@ -1317,11 +1321,11 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
             p, &a, &b, cj_equal(p->d, op, "div"), width, range.sign && range.lo < 0, out);
         if (optimized)
             return optimized > 0;
-        if (cj_equal(p->d, op, "mod")) {
-            optimized = ar_small_remainder(p, &a, &b, width, range.sign && range.lo < 0, out);
-            if (optimized)
-                return optimized > 0;
-        }
+        optimized = cj_equal(p->d, op, "mod")
+                        ? ar_small_remainder(p, &a, &b, width, range.sign && range.lo < 0, out)
+                        : ar_small_division(p, &a, &b, width, range.sign && range.lo < 0, out);
+        if (optimized)
+            return optimized > 0;
     }
     // A fixed shift selects existing wires or sign/zero constants. Definedness
     // was checked by ar_bound; no barrel-shifter output register is needed.

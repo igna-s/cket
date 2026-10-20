@@ -26,6 +26,11 @@ data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
+Start with [usable delivery 01](docs/entregas-incrementales.es.md): after building, run
+`bash scripts/run-block.sh 01` to compile eight small examples and produce native executables,
+OpenQASM circuits and resource reports. Deliveries track a defined incremental plan, not a claimed
+percentage of complete C11 support.
+
 The [controlled-operand contract](docs/c11-controlled-operands.md) covers supported pure integer
 operands in coherent assignments, XOR, addition, standard integer absolutes and byte fill. Its
 [audit report](docs/re-audit-2026-10-18-controlled-operands.md) records complete normal/sanitizer
@@ -54,13 +59,20 @@ compiled-circuit proofs check 1968 complete states, with source identities and v
 recorded explicitly. Full regression and remote CI for these inputs remain pending. General 64-bit
 conditional preparation, wide results and the remaining C11 features still need work.
 
-The [current 151-input integration](docs/audit-evidence/selection-views-v5/README.es.md) reduces
+The [previous 151-input integration](docs/audit-evidence/selection-views-v5/README.es.md) reduces
 private workspace for [integer conditional expressions](docs/c11-selections.md). Direct selection
 between signed 64-bit limits now fits. Separate compiled-program proofs pass 768 complete states
 with phases and compiler scope cleanup. Normal/sanitizer targeted runs pass 1195 expression, 55
 shift, 990 division, 393 native and 271 in-place checks each; tool reuse and earlier test failures
 are identified explicitly. A separate fresh broad regression is in progress. General wide
 expressions and complete C11 remain open.
+
+The current
+[small-constant quotient implementation](docs/c11-division.md#quotient-by-a-small-constant) adds
+reversible `/` for divisor magnitude 2 through 16 and direct Boolean consumers. Its maintained
+finite regressions check 2310 additional domains; the runnable
+[quantum buckets example](examples/quantum_buckets.c) computes correlated groups from a byte
+superposition before explicit measurement. General division and complete C11 remain partial.
 
 ## Install and build
 

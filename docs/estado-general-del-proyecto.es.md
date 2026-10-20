@@ -1,8 +1,21 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 19 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 20 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
+
+**La entrega ahora avanza por bloques utilizables.** El
+[bloque 01 y el plan de diez entregas](entregas-incrementales.es.md) reúnen ocho programas pequeños,
+un comando para compilarlos y ejecutarlos, circuitos OpenQASM e informes de recursos. “10%, 20%…”
+cuenta bloques de ese plan; no representa cobertura de C11 ni esfuerzo restante.
+
+**Nuevo código integrado:** división reversible por constantes de magnitud 2 a 16 y consumo directo
+del cociente como booleano, negación y comparación con cero. El ejemplo
+[`quantum_buckets.c`](../examples/quantum_buckets.c) calcula grupos sobre una superposición de bytes
+antes de medir. Las pruebas dirigidas normales y ASan/UBSan pasan 3505 comprobaciones de
+expresiones, con 2310 dominios nuevos. La [descripción técnica](c11-division.md) distingue las
+fuentes, los núcleos reutilizados y el alcance de esas pruebas. La campaña amplia anterior no
+certifica automáticamente este nuevo código.
 
 ## La respuesta corta
 
@@ -18,7 +31,7 @@ El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cu�
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
 fuera de la adaptación cuántica**, de acuerdo con tu indicación.
 
-**La integración actual reúne 151 entradas y reduce los auxiliares de las selecciones enteras
+**La integración anterior reúne 151 entradas y reduce los auxiliares de las selecciones enteras
 `condición ? sí : no`.** Ya pasa la selección directa entre `INT64_MIN` e `INT64_MAX` que antes
 superaba los recursos. Se añadieron 288 dominios finitos de regresión con todos los bytes, controles
 de ambas polaridades, resultados de 8/32/64 bits, fases e inversas. Las suites dirigidas pasan por

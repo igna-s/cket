@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 401,
+  "checks": 407,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -853,6 +853,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/quantum_buckets.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/read_input.h",
       "passed": true,
       "detail": ""
@@ -949,6 +954,11 @@
     },
     {
       "check": "Fuente local scripts/requirements-format.txt",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/run-block.sh",
       "passed": true,
       "detail": ""
     },
@@ -1093,6 +1103,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/engine/small_division.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/engine/small_remainder.inc",
       "passed": true,
       "detail": ""
@@ -1224,6 +1239,11 @@
     },
     {
       "check": "Fuente local tests/selection_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/small_division_state.inc",
       "passed": true,
       "detail": ""
     },
@@ -1978,22 +1998,32 @@
       "detail": ""
     },
     {
-      "check": "Current151 selection: exact applied source bytes,1195 expression checks and five targeted suites per configuration",
+      "check": "Historical151 selection: exact archived source bytes,1195 expression checks and five targeted suites per configuration",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status",
+      "check": "Historical151 selection: verified reused cores keep their fresh-build provenance and earlier failed test status",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed",
+      "check": "Historical151 selection:768 full compiled states keep a production-identical proof snapshot; only the test budget changed",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Current151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass",
+      "check": "Historical151 selection: incorrect oracle/budget attempts remain failed; broad-campaign snapshot is not a pass",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Delivery155: exact current/archive source identity, fresh Linux build, eight runnable exports and1509 example checks",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Division153:2310 new finite domains and3505 expression checks per configuration; reused cores retain152-input provenance",
       "passed": true,
       "detail": ""
     },
@@ -2016,7 +2046,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 198
+    "source_files_in_manifest": 202
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

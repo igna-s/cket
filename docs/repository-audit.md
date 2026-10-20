@@ -1,6 +1,12 @@
 # Auditoría del repositorio y de los papers
 
-La [integración actual de selecciones](audit-evidence/selection-views-v5/README.es.md) reúne 151
+La [entrega incremental 01](entregas-incrementales.es.md) incorpora división reversible por
+constantes pequeñas, consumidores booleanos y un ejemplo de agrupación coherente de bytes. Se
+priorizan código utilizable y verificaciones dirigidas; las campañas amplias conservan su estado y
+fuentes propios. El contrato de [división](c11-division.md) describe el alcance de los 2310 nuevos
+dominios finitos.
+
+La [integración anterior de selecciones](audit-evidence/selection-views-v5/README.es.md) reúne 151
 entradas. Evita temporales de palabra completa cuando las columnas pueden usar constantes, controles
 o pares de expresiones compartidos. Pasa el caso directo de extremos firmados de 64 bits que fallaba
 antes. Las suites dirigidas normales y ASan/UBSan cierran 1195 expresiones, 55 desplazamientos, 990

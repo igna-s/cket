@@ -1,8 +1,14 @@
 # C Ket examples
 
-The collection contains 36 C programs. The runner executes the 35 programs that fit the native
+The collection contains 37 C programs. The runner executes the 36 programs that fit the native
 statevector simulator; [types.c](types.c) intentionally demonstrates an exportable 32-bit register
 that exceeds its 24-qubit limit.
+
+For a small usable package with executables, OpenQASM circuits and resource reports, run
+`bash scripts/run-block.sh 01`. See the
+[incremental delivery guide](../docs/entregas-incrementales.es.md). The new
+[quantum_buckets.c](quantum_buckets.c) computes a byte's quotient by three while the input is in
+superposition, then explicitly measures the correlated input and bucket.
 
 Run these commands from the repository root in Linux or WSL. See the
 [installation instructions](../README.md) for GCC and plugin dependencies.

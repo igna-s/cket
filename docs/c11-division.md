@@ -80,7 +80,7 @@ reversible computation.
 
 The `%` operator now has a reversible path for a constant divisor of magnitude 2 through 16; the
 existing power-of-two path is tried first. A captured CPU divisor can use this path when its saved
-value is in that range. This does not add a small-constant quotient implementation.
+value is in that range. The quotient has the separate implementation described below.
 
 For width `w`, accumulate the raw dividend bits with weights `2^j mod d` in a residue register of at
 most four bits. Each update permutes `0..d-1` and fixes unused encodings. Controlled X gates
@@ -111,6 +111,47 @@ general preparation limit or establish all C11 integer contexts. The later
 [selection-view implementation](c11-selections.md) checks that same direct boundary selection; its
 failed attempt remains part of the historical evidence. General wide-expression resource limits
 still apply.
+
+## Quotient by a small constant
+
+The `/` operator now has a reversible path for a constant divisor of magnitude 2 through 16,
+including a retained CPU divisor with a saved value in that range. The existing power-of-two path is
+tried first. Signed division truncates toward zero, including the minimum signed dividend; typed
+definedness checks still reject undefined C operations before synthesis.
+
+For `d = 2^k * m` with odd `m`, scan the magnitude bits above position `k` from most to least
+significant. Each step emits the requested quotient bit and updates a residue using the reversible
+permutations `r -> 2r mod m` and a controlled increment. A reusable magnitude bit avoids a
+full-width absolute-value register. The small residue permutations enumerate their bounded
+encodings, rather than all dividend values. The existing recorded inverse clears the workspace; the
+source register and its phases remain available.
+
+Direct conversion to bool, logical negation, and equality/inequality with zero in either operand
+order have a smaller path: a quotient is zero exactly for dividends in `(-abs(d), abs(d))`. This
+path checks at most 31 representable input patterns, then inverts the predicate when needed. It
+enumerates that bounded interval, not the full dividend domain, and avoids allocating a full-width
+quotient merely to use it as a condition.
+
+The maintained matrix adds **2310 finite domains** to `validate_expressions`: all byte inputs,
+selected 32/64-bit limits and divisor boundaries, signed/unsigned cases, narrow results, full 32-bit
+results, six Boolean forms, both synthesis policies, coherent controls, relative phases, preserved
+sources and clean inverses. Normal and ASan/UBSan qualifications pass **3505 expression checks**, 55
+shift checks, 990 division checks, 393 native checks and 271 in-place checks each. Their fresh cores
+were built on the production-identical 152-input revision; the 153-input revision rebuilds the
+changed expression validator. These finite gate-action checks are not a claim of dense wide-state
+execution or a new complete-state proof of every compiled quotient program.
+
+[quantum_buckets.c](../examples/quantum_buckets.c) is a runnable byte example:
+
+```bash
+build/cket examples/quantum_buckets.c --run -o build/quantum_buckets
+```
+
+It prepares values 0 through 15 in superposition, computes the quotient by three, then explicitly
+measures both correlated registers. The [first delivery](entregas-incrementales.es.md) packages it
+with other small usable programs and exports. Full 64-bit source and result registers together
+already consume all 128 public wires; this change does not make their additional workspace fit.
+General variable-divisor and expression contexts retain their existing restrictions.
 
 ## Resources and open cases
 
