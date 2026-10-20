@@ -47,6 +47,11 @@ expresiones, con 2310 dominios nuevos. La [descripción técnica](c11-division.m
 fuentes, los núcleos reutilizados y el alcance de esas pruebas. La campaña amplia anterior no
 certifica automáticamente este nuevo código.
 
+También se añaden [`strcpy` y `strncpy`](c11-string-copy.md) hacia almacenamiento cuántico: copia
+hasta NUL, conservación de la cola y relleno con ceros según corresponda. Las escrituras reutilizan
+la historia reversible y admiten fuentes CPU conocidas. La calificación completa sigue aplazada; los
+dominios se comprueban dentro del circuito.
+
 ## La respuesta corta
 
 El proyecto **ya compila y ejecuta programas con un subconjunto de operaciones cuánticas sobre
@@ -221,8 +226,9 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Comparación de bytes y caracteres        | `memcmp`, `strncmp`, `strcmp`; longitud con `strlen`.                                                                                                      | Admite rangos comprobados, constantes y capturas únicas de bytes actuales de objetos CPU conocidos, conservadas para la inversa. Siguen pendientes las direcciones y tamaños dinámicos, los accesos `volatile`/atómicos y otros contextos.                |
 | Prefijos de cadenas                      | `strspn`, `strcspn`.                                                                                                                                       | Vistas de 1–64 bytes con NUL dentro del rango. La calificación exhaustiva del nuevo avance queda pendiente.                                                                                                                                               |
 | Predicados de búsqueda                   | `memchr`, `strchr`, `strrchr`, `strpbrk`, `strstr`.                                                                                                        | Comparaciones con NULL y direcciones del mismo objeto, además de restas de posiciones. Se permiten préstamos locales inmutables, alias y lecturas de caracteres; escrituras, rebinding y ABI general siguen pendientes. Calificación exhaustiva aplazada. |
+| Copia de cadenas                         | `strcpy`, `strncpy`.                                                                                                                                       | Destino cuántico comprobado, cola preservada, padding e historia reversible; calificación exhaustiva pendiente.                                                                                                                                           |
 
-Son **36 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Son **38 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -235,13 +241,13 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      773 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       83 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      771 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       85 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 83 parciales incluyen los
-36 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 83 funciones completas.** El estado parcial registra código disponible; no
+El inventario no registra entradas como completamente implementadas. Las 85 parciales incluyen los
+38 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 85 funciones completas.** El estado parcial registra código disponible; no
 certifica las pruebas aplazadas del nuevo bloque de cadenas.
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un

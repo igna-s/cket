@@ -54,6 +54,7 @@ INTEGER_TYPES = {
 }
 ABS = {"abs", "labs", "llabs", "imaxabs"}
 STRING_SPANS = {"strspn", "strcspn"}
+STRING_COPIES = {"strcpy", "strncpy"}
 STRING_SEARCHES = {"memchr", "strchr", "strrchr", "strpbrk", "strstr"}
 MEMORY_COPY = {"memcpy", "memmove"}
 DIVISION = {"div", "ldiv", "lldiv", "imaxdiv"}
@@ -215,6 +216,25 @@ def semantics(header, name, kind, optional):
             "exceed the current 128-qubit representation. Small complete phased states and inverse "
             "are validated separately from wide circuit generation. General product ABI, library "
             "composition and wider resource budgets remain open.",
+        )
+    if header == "string.h" and name in STRING_COPIES:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [],
+            "String copies lower to typed quantum updates on mutable checked padding-free "
+            "integer object bytes, preserving untouched bytes and retaining overwrite history. "
+            "strcpy copies through a NUL that must fit both checked source and destination; "
+            "its full remaining source view is at most 64 bytes. strncpy uses a constant "
+            "count at most 64, zero-pads after NUL, and permits a nonterminated source when "
+            "n readable bytes exist. Known nonvolatile CPU sources use once-only guarded "
+            "byte captures. Overlapping potential byte ranges are rejected conservatively. "
+            "Local destination-return borrows and discarded-call sequences are supported. "
+            "Quantum-to-CPU writes, dynamic addresses/counts, general layouts, indirect ABI "
+            "and further return consumers remain pending. Gate/history budgets apply. Full "
+            "state, inverse, sanitizer and compiler-context qualification is deferred; the "
+            "delivery example is finite evidence, not complete C11 support.",
         )
     if header == "string.h" and name in STRING_SPANS:
         return (
@@ -599,9 +619,11 @@ def audit(require_complete=False):
         assert set(r["restriction_classes"]) <= {"P", "R", "S"}
         assert r["contract"] and r["milestone"]
         assert all((ROOT / p).is_file() for p in r["tests"])
-    assert ABS | MEMORY_COPY | STRING_SPANS | STRING_SEARCHES | {"memset", "strlen", "strcmp"} <= {
-        r["name"] for r in rows if r["quantum"] in {"partial", "implemented"}
-    }
+    assert ABS | MEMORY_COPY | STRING_SPANS | STRING_COPIES | STRING_SEARCHES | {
+        "memset",
+        "strlen",
+        "strcmp",
+    } <= {r["name"] for r in rows if r["quantum"] in {"partial", "implemented"}}
     for name in (
         "alignof",
         "__alignof_is_defined",

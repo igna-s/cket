@@ -6,6 +6,7 @@ bool standard_integer_division(tree fn);
 bool standard_memory_compare(tree fn);
 bool standard_string_length(tree fn);
 bool standard_string_span(tree fn);
+bool standard_string_copy(tree fn);
 std::string standard_string_search(tree fn);
 bool standard_memory_set(tree fn);
 std::string standard_ctype(tree call);
@@ -1061,9 +1062,10 @@ bool expand_pointer_borrow(tree decl, tree &prefix) {
         return false;
     tree address = initial;
     bool memory_call = false, move = false;
-    if (TREE_CODE(initial) == CALL_EXPR && call_expr_nargs(initial) == 3) {
+    if (TREE_CODE(initial) == CALL_EXPR && call_expr_nargs(initial) >= 2) {
         tree fn = get_callee_fndecl(initial);
-        memory_call = standard_memory_set(fn) || standard_memory_copy(fn, move);
+        memory_call =
+            standard_memory_set(fn) || standard_memory_copy(fn, move) || standard_string_copy(fn);
         if (memory_call)
             address = CALL_EXPR_ARG(initial, 0);
     }
@@ -1084,7 +1086,8 @@ bool expand_pointer_borrow(tree decl, tree &prefix) {
         return true;
     }
     prefix = memory_call ? expand_quantum_program(initial) : build_empty_stmt(at(decl));
-    if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix)) {
+    if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix) &&
+        !quantum_string_copies.count(prefix)) {
         // The normal adapter already emitted its storage/count/CPU-boundary diagnostic.
         return true;
     }
@@ -1326,8 +1329,8 @@ tree expand_static_for_block(tree block) {
             tree fn = get_callee_fndecl(value);
             if (standard_memory_copy(fn, move) || standard_memory_compare(fn) ||
                 standard_string_length(fn) || standard_string_span(fn) ||
-                !standard_string_search(fn).empty() || standard_memory_set(fn) ||
-                quantum_function(fn) || !standard_ctype(value).empty()) {
+                standard_string_copy(fn) || !standard_string_search(fn).empty() ||
+                standard_memory_set(fn) || quantum_function(fn) || !standard_ctype(value).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))
@@ -1533,6 +1536,11 @@ tree expand_quantum_program(tree value) {
         }
         if (standard_memory_set(fn)) {
             tree expanded = expand_memory_set(value);
+            if (expanded)
+                return expanded;
+        }
+        if (standard_string_copy(fn)) {
+            tree expanded = expand_string_copy(value);
             if (expanded)
                 return expanded;
         }

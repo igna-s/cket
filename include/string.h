@@ -15,6 +15,14 @@ extern void *__cket_memset(void *destination, int value, size_t count) __asm__("
 #undef memset
 #define memset(destination, value, count) __cket_memset((destination), (value), (count))
 
+extern char *__cket_strcpy(char *destination, const char *source) __asm__("strcpy");
+#undef strcpy
+#define strcpy(destination, source) __cket_strcpy((destination), (source))
+
+extern char *__cket_strncpy(char *destination, const char *source, size_t count) __asm__("strncpy");
+#undef strncpy
+#define strncpy(destination, source, count) __cket_strncpy((destination), (source), (count))
+
 extern int __cket_strncmp(const char *left, const char *right, size_t count) __asm__("strncmp");
 #undef strncmp
 #define strncmp(left, right, count) __cket_strncmp((left), (right), (count))

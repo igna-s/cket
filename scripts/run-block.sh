@@ -13,7 +13,7 @@ destination="build/blocks/$block"
 mkdir -p "$destination"
 export CKET_SEED="${CKET_SEED:-7}"
 if [[ "$block" == 06 ]]; then
-    names=(string_spans string_search search_positions saved_search)
+    names=(string_spans string_search search_positions saved_search string_copy)
     source_directory=examples/blocks/06
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 02 ]]; then
@@ -29,8 +29,16 @@ for name in "${names[@]}"; do
     printf '\nBlock %s: %s\n' "$block" "$name"
     build/cket "$source_directory/$name.c" -O2 -o "$destination/$name"
     "$destination/$name"
-    build/cket "$source_directory/$name.c" -O2 --emit-qasm -o "$destination/$name.qasm"
-    build/cket "$source_directory/$name.c" -O2 --resources -o "$destination/$name.resources.txt"
+    bindings="$source_directory/$name.bindings.json"
+    if [[ -f "$bindings" ]]; then
+        printf 'Static export uses classical bindings from %s\n' "$bindings"
+        build/cket "$source_directory/$name.c" -O2 --emit-ir -o "$destination/$name.ir.json"
+        build/cket_backend --emit-qasm "$destination/$name.ir.json" --bindings "$bindings" >"$destination/$name.qasm"
+        build/cket_backend --resources "$destination/$name.ir.json" --bindings "$bindings" >"$destination/$name.resources.txt"
+    else
+        build/cket "$source_directory/$name.c" -O2 --emit-qasm -o "$destination/$name.qasm"
+        build/cket "$source_directory/$name.c" -O2 --resources -o "$destination/$name.resources.txt"
+    fi
 done
 
 printf '\nBlock %s ready: %u executables, QASM circuits and resource reports in %s.\n' \

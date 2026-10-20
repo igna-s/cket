@@ -270,9 +270,14 @@ volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls
 The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
 expressions, direct null/address predicates and same-object differences for `memchr`, `strchr`,
 `strrchr`, `strpbrk` and `strstr`. Local immutable search pointers support aliases, character
-dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the four
+dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the five
 delivery examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context
 qualification remain pending.
+
+Checked [`strcpy` and `strncpy`](docs/c11-string-copy.md) now copy strings into quantum integer
+storage using retained overwrite history. The block 06 example covers a superposed source, unchanged
+tail bytes, zero padding and a partial integer write from a CPU source. Dynamic counts, general
+return consumers and full qualification remain pending.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
@@ -722,7 +727,7 @@ normal importer capacity failure, its correction and subsequent normal/ASan/UBSa
 
 For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
 `--require-complete` mode deliberately fails while any interface remains pending or partial. The
-current index contains 1224 interfaces: 773 pending, 83 partial and 368 metadata facilities. The
+current index contains 1224 interfaces: 771 pending, 85 partial and 368 metadata facilities. The
 index covers the named C11 profile, including optional facilities; it is not an implementation or a
 test result for each entry.
 

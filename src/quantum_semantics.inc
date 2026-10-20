@@ -250,7 +250,7 @@ void append(tree *list, tree value) {
 
 tree quantum_use(tree *node, int *walk, void *) {
     if (quantum_indexed_accesses.count(*node) || quantum_memory_copies.count(*node) ||
-        quantum_memory_sets.count(*node))
+        quantum_string_copies.count(*node) || quantum_memory_sets.count(*node))
         return *node;
     if (quantum(*node))
         return *node;
@@ -502,7 +502,8 @@ bool discarded_memory_sequence(tree value) {
     value = strip(value);
     if (!value)
         return false;
-    if (quantum_memory_sets.count(value) || quantum_memory_copies.count(value))
+    if (quantum_memory_sets.count(value) || quantum_memory_copies.count(value) ||
+        quantum_string_copies.count(value))
         return true;
     return TREE_CODE(value) == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0)) &&
            discarded_memory_sequence(TREE_OPERAND(value, 1));
@@ -1815,6 +1816,37 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
+    if (quantum_string_copies.count(value)) {
+        tree list = alloc_stmt_list();
+        for (tree update : quantum_string_copies.at(value)) {
+            auto &target = variables.at(strip(TREE_OPERAND(update, 0)));
+            cleanup(&list);
+            if (!target.lowered || target.moved || target.released) {
+                error_at(at(value), "|c>: string copy requires available destination storage");
+                return build_zero_cst(TREE_TYPE(value));
+            }
+            consume(target);
+            taint_uniform(target.id);
+            for (const auto &control : controls)
+                taint_uniform(control.first);
+            // Missing-terminator leaves encode a circuit domain check, even
+            // when this particular source supplies only captured CPU bytes.
+            unsigned previous_depth = coherent_expression_depth;
+            ++coherent_expression_depth;
+            std::set<unsigned> dependencies;
+            std::string expression = cast_result(
+                evaluate_expression(TREE_OPERAND(update, 1), dependencies, &list), target);
+            coherent_expression_depth = previous_depth;
+            // A copy overwrites information. A self-dependent byte mask is
+            // not a permutation of the old word; retain its previous owner.
+            versioned_assignment(target, expression, dependencies, at(value), &list);
+            cleanup(&list);
+        }
+        tree result = build_zero_cst(TREE_TYPE(value));
+        for (auto it = tsi_last(list); !tsi_end_p(it); tsi_prev(&it))
+            result = build2(COMPOUND_EXPR, TREE_TYPE(value), tsi_stmt(it), result);
+        return result;
+    }
     if (quantum_memory_sets.count(value)) {
         const auto &operation = quantum_memory_sets.at(value);
         tree list = alloc_stmt_list();
@@ -2033,7 +2065,8 @@ tree lower_node(tree value) {
         return result;
     }
     if (CONVERT_EXPR_P(value) && TREE_TYPE(value) == void_type_node &&
-        (quantum_memory_copies.count(strip(value)) || quantum_memory_sets.count(strip(value))))
+        (quantum_memory_copies.count(strip(value)) || quantum_memory_sets.count(strip(value)) ||
+         quantum_string_copies.count(strip(value))))
         return lower_node(strip(value));
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
          code == POSTDECREMENT_EXPR) &&

@@ -929,8 +929,8 @@ def main(language):
             'complete': 0,
         }
         and len(current_index['interfaces']) == 1224
-        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 773
-        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 83
+        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 771
+        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 85
         and all(
             row['quantum'] == 'partial'
             for row in current_index['interfaces']
@@ -1635,6 +1635,12 @@ def main(language):
     delivery_name = delivery_index['active']
     assert re.fullmatch(r'[a-z0-9-]+', delivery_name)
     assert delivery_name in delivery_index['history']
+    assert len(delivery_index['history']) == len(set(delivery_index['history']))
+    assert all(re.fullmatch(r'[a-z0-9-]+', name) for name in delivery_index['history'])
+    incremental_capsules = tuple(
+        (name, json.loads((ROOT / 'docs/audit-evidence' / name / 'summary.json').read_text()))
+        for name in delivery_index['history']
+    )
     delivery_folder = ROOT / 'docs/audit-evidence' / delivery_name
     delivery = json.loads((delivery_folder / 'summary.json').read_text())
     with tarfile.open(delivery_folder / 'evidence.tar.gz') as archive:
@@ -1689,8 +1695,7 @@ def main(language):
         ('shift-truth-v3', truth_summary),
         ('string-library-v1', strings_summary),
         ('search-positions-v2', positions),
-        (delivery_name, delivery),
-    )
+    ) + incremental_capsules
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
         phase_broad_failure['status'] == 'failed-broad-campaign'
@@ -1736,7 +1741,7 @@ def main(language):
         *sorted(
             path
             for folder in (
-                delivery_name,
+                *delivery_index['history'],
                 'pointer-differences',
                 'pointer-differences-maintained',
                 'coherent-cpu-conditions',

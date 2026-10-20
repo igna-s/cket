@@ -64,6 +64,7 @@ struct QuantumMemoryCopy {
 };
 
 std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
+std::map<tree, std::vector<tree>> quantum_string_copies;
 
 struct QuantumMemorySet {
     tree fill;
@@ -466,6 +467,7 @@ void finish_function(void *event, void *) {
     quantum_pointer_aliases.clear();
     quantum_search_pointers.clear();
     quantum_memory_copies.clear();
+    quantum_string_copies.clear();
     quantum_memory_sets.clear();
     quantum_indexed_accesses.clear();
     indexed_expansions.clear();

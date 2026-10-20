@@ -1,8 +1,12 @@
 # Evidence for the tested C11 subset
 
-The new [saved-search advance](saved-search-v2/README.es.md) adds local immutable search pointers,
-aliases and character reads, with backend-proven support intervals. Its four examples and normal
-native regressions remain separate from the deferred complete qualification. The
+The new [string-copy advance](string-copy-v4/README.es.md) adds partial strcpy/strncpy with retained
+overwrite history, known CPU sources and explicit static export bindings. Failed attempts retain
+their actual outcomes; complete qualification remains deferred.
+
+The previous [saved-search advance](saved-search-v2/README.es.md) adds local immutable search
+pointers, aliases and character reads, with backend-proven support intervals. Its four examples and
+normal native regressions remain separate from the deferred complete qualification. The
 [delivery index](delivery-index.json) identifies the active source snapshot; earlier deliveries
 retain their original sources and results.
 
