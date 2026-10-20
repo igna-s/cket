@@ -35,6 +35,7 @@ ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build
 "$gcc_compiler" "${flags[@]}" tests/test_examples.c tests/validation.c -o build/test_examples
 "$gcc_compiler" "${flags[@]}" tests/validate_harness.c tests/validation.c -o build/validate_harness
 "$gcc_compiler" "${flags[@]}" tests/validate_shifts.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_shifts
+"$gcc_compiler" "${flags[@]}" tests/validate_sparse.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_sparse
 "$gcc_compiler" "${flags[@]}" tests/validate_expressions.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_expressions
 "$gcc_compiler" "${flags[@]}" tests/validate_inplace.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_inplace
 "$gcc_compiler" "${flags[@]}" tests/validate_memcopy.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_memcopy

@@ -26,8 +26,10 @@ physical impossibilities. CPU jumps without lifetime proofs are currently reject
 not required; justification of the transformation boundary is.
 
 Language width, circuit workspace, and simulation have distinct limits. The current reference
-exports up to 128 physical qubits and simulates up to 24. Exhausting a budget produces a diagnostic
-rather than silent enumeration of a large domain.
+exports up to 128 physical qubits and simulates up to 24 in the default dense mode. The opt-in
+[sparse runtime](simulacion-dispersa.es.md) supports up to 128 physical wires with an explicit
+occupied-support budget. Exhausting a budget produces a diagnostic rather than silent enumeration of
+a large domain.
 
 ## Priorities and verifiable criteria
 

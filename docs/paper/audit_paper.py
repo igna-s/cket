@@ -1311,16 +1311,12 @@ def main(language):
             for command in record['commands']
         )
     check(
-        'Delivery155: exact current/archive source identity, fresh Linux build, eight runnable exports and1509 example checks',
+        'Historical delivery155: exact archived source identity, fresh Linux build, eight runnable exports and1509 example checks',
         division_delivery['status'] == 'passed-usable-delivery-and-targeted-division'
         and division_delivery['source_files'] == len(division_sources) == 155
         and division_sources
         == division_delivery['source_sha256']
         == delivery_record['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in division_sources.items()
-        )
         and delivery_record['status'] == 'passed-delivery-one'
         and delivery_record['exit_code'] == 0
         and [row['name'] for row in delivery_record['commands']]
@@ -1367,6 +1363,65 @@ def main(language):
             for configuration in ('normal', 'sanitized')
         ),
     )
+    sparse_folder = ROOT / 'docs/audit-evidence/sparse-simulation-v1'
+    sparse_summary = json.loads((sparse_folder / 'summary.json').read_text())
+    with tarfile.open(sparse_folder / 'evidence.tar.gz') as archive:
+        sparse_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in sparse_summary['source_sha256']
+        }
+        sparse_records = {
+            mode: json.load(archive.extractfile('records/' + mode + '/exit.json'))
+            for mode in ('normal', 'sanitized')
+        }
+        sparse_logs_match = all(
+            hashlib.sha256(
+                archive.extractfile('records/' + mode + '/' + command['log']).read()
+            ).hexdigest()
+            == command['log_sha256']
+            for mode, record in sparse_records.items()
+            for command in record['commands']
+        )
+    check(
+        'Sparse159: exact current/archive sources,88 targeted checks,393 native tests and1509 example checks per configuration',
+        sparse_summary['status'] == 'passed-targeted-sparse-and-native-wide-examples'
+        and sparse_summary['source_files'] == len(sparse_sources) == 159
+        and sparse_sources == sparse_summary['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in sparse_sources.items()
+        )
+        and sparse_summary['checks_per_configuration']
+        == {'sparse': 88, 'native': 393, 'examples': 1509}
+        and sparse_summary['wide_examples_peak_qubits'] == {'wide_integers': 99, 'wide_size': 84}
+        and all(
+            record['status'] == 'passed-sparse-targeted'
+            and record['exit_code'] == 0
+            and record['source_sha256'] == sparse_sources
+            and all(row['returncode'] == 0 for row in record['commands'])
+            for record in sparse_records.values()
+        )
+        and sparse_records['normal']['commands'][0]['name'] == 'fresh-build'
+        and sparse_logs_match,
+    )
+    rare_born = sparse_summary['rare_born_reproduction']
+    check(
+        'Sparse159: reused unchanged sanitizer plugin and the actual earlier rare-Born failure retain their identities',
+        sparse_records['sanitized']['plugin_reuse'] == sparse_summary['plugin_reuse']
+        and sparse_summary['plugin_reuse']['binary_sha256']
+        == division_qualification['qualification-sanitized']['core_sha256']['cket_plugin.so']
+        and all(
+            sparse_sources[name] == sha
+            for name, sha in sparse_summary['plugin_reuse']['plugin_inputs_sha256'].items()
+        )
+        and rare_born['status'] == 'confirmed-rare-born-cutoff-fix'
+        and rare_born['records']['previous153']['test_returncode'] == 1
+        and rare_born['records']['current159']['test_returncode'] == 0
+        and rare_born['records']['previous153']['library_sha256']
+        == division_qualification['qualification-normal']['core_sha256']['libcket_quantum.a']
+        and rare_born['records']['current159']['library_sha256']
+        == sparse_records['normal']['core_sha256']['libcket_quantum.a'],
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1382,6 +1437,7 @@ def main(language):
         ('common-remainder-v2', remainder),
         ('selection-views-v5', selection),
         ('common-division-v3', division_delivery),
+        ('sparse-simulation-v1', sparse_summary),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1444,6 +1500,7 @@ def main(language):
                 'common-remainder-v2',
                 'selection-views-v5',
                 'common-division-v3',
+                'sparse-simulation-v1',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',

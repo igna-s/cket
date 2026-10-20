@@ -3,8 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+static double random_unit(qc_context *c);
+#include "sparse_simulator.inc"
+
 int qc_sim_grow(qc_context *c, unsigned width) {
-    if (!c->simulate)
+    if (!c->simulate || c->sparse_limit)
         return 1;
     if (width > QC_MAX_SIMULATED)
         return qc_fail(c, "native statevector execution is limited to %d qubits", QC_MAX_SIMULATED);
@@ -20,9 +23,13 @@ int qc_sim_grow(qc_context *c, unsigned width) {
     return 1;
 }
 
-void qc_sim_gate(qc_context *c, const qc_gate *g) {
+int qc_sim_gate(qc_context *c, const qc_gate *g) {
+    if (c->error[0])
+        return 0;
     if (!c->simulate)
-        return;
+        return 1;
+    if (c->sparse_limit)
+        return sparse_gate(c, g);
     uint64_t bit = UINT64_C(1) << g->target;
     if (g->kind == QC_PHASE) {
         double complex factor = cos(g->angle) + I * sin(g->angle);
@@ -45,6 +52,7 @@ void qc_sim_gate(qc_context *c, const qc_gate *g) {
                 }
             }
     }
+    return 1;
 }
 
 static double random_unit(qc_context *c) {
@@ -58,6 +66,8 @@ static double random_unit(qc_context *c) {
 int qc_sim_measure(qc_context *c, unsigned wire) {
     if (!c->simulate)
         return 0;
+    if (c->sparse_limit)
+        return sparse_measure(c, wire);
     uint64_t mask = UINT64_C(1) << wire;
     double p1 = 0, p0 = 0;
     for (size_t i = 0; i < c->dimension; ++i) {
@@ -67,7 +77,7 @@ int qc_sim_measure(qc_context *c, unsigned wire) {
         else
             p0 += p;
     }
-    int result = p0 < 1e-15 ? 1 : p1 < 1e-15 ? 0 : random_unit(c) < p1 / (p0 + p1);
+    int result = p0 == 0 ? 1 : p1 == 0 ? 0 : random_unit(c) < p1 / (p0 + p1);
     double scale = 1 / sqrt(result ? p1 : p0);
     for (size_t i = 0; i < c->dimension; ++i) {
         if (!!(i & mask) == result)
@@ -81,6 +91,8 @@ int qc_sim_measure(qc_context *c, unsigned wire) {
 int qc_sim_clean(qc_context *c, const qc_register *r) {
     if (!c->simulate)
         return 1;
+    if (c->sparse_limit)
+        return sparse_clean(c, r);
     uint64_t mask = 0;
     for (unsigned b = 0; b < r->width; ++b)
         mask |= UINT64_C(1) << r->wires[b];

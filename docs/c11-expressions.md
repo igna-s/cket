@@ -42,8 +42,9 @@ information or intermediate values.
 
 Each arithmetic plan limits proof/synthesis work to two million steps, recursive depth to 128, facts
 to 128 per branch, additional branch-range storage to 16 MiB, and temporary register records to 512.
-The backend's 128-qubit representation and the native simulator's 24-qubit limit also apply.
-Exceeding a budget is an explicit resource restriction (**R**).
+The backend's 128-qubit representation and the default dense simulator's 24-qubit limit also apply.
+Opt-in [sparse execution](simulacion-dispersa.es.md) uses an occupied-support budget within the same
+128-qubit representation. Exceeding a budget is an explicit resource restriction (**R**).
 
 ## Finite validation
 

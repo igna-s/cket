@@ -13,6 +13,11 @@ typedef unsigned __int128 qc_mask;
 #define QC_WIRE(n) ((qc_mask)1 << (n))
 
 typedef struct {
+    qc_mask basis;
+    double complex amplitude;
+} qc_sparse_term;
+
+typedef struct {
     enum qc_kind kind;
     unsigned target;
     qc_mask mask, pattern;
@@ -79,13 +84,15 @@ struct qc_context {
     uint64_t h, x, cx, ccx, mcx, phase, global_phase, measure, reset, rng;
     double complex *state;
     size_t dimension;
+    qc_sparse_term *sparse;
+    size_t sparse_count, sparse_limit;
 };
 
 int qc_fail(qc_context *c, const char *format, ...);
 int qc_emit(
     qc_context *c, enum qc_kind kind, unsigned target, qc_mask mask, qc_mask pattern, double angle);
 int qc_sim_grow(qc_context *c, unsigned width);
-void qc_sim_gate(qc_context *c, const qc_gate *gate);
+int qc_sim_gate(qc_context *c, const qc_gate *gate);
 int qc_sim_measure(qc_context *c, unsigned wire);
 int qc_sim_clean(qc_context *c, const qc_register *reg);
 int qc_apply_token(qc_context *c,

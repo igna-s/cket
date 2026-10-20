@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "en",
-  "checks": 407,
+  "checks": 413,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -708,6 +708,16 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/blocks/02/wide_integers.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/02/wide_size.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/circuit_module.c",
       "passed": true,
       "detail": ""
@@ -1113,6 +1123,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/engine/sparse_simulator.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/engine/structured.inc",
       "passed": true,
       "detail": ""
@@ -1439,6 +1454,11 @@
     },
     {
       "check": "Fuente local tests/validate_shifts.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/validate_sparse.c",
       "passed": true,
       "detail": ""
     },
@@ -2018,12 +2038,22 @@
       "detail": ""
     },
     {
-      "check": "Delivery155: exact current/archive source identity, fresh Linux build, eight runnable exports and1509 example checks",
+      "check": "Historical delivery155: exact archived source identity, fresh Linux build, eight runnable exports and1509 example checks",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Division153:2310 new finite domains and3505 expression checks per configuration; reused cores retain152-input provenance",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sparse159: exact current/archive sources,88 targeted checks,393 native tests and1509 example checks per configuration",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sparse159: reused unchanged sanitizer plugin and the actual earlier rare-Born failure retain their identities",
       "passed": true,
       "detail": ""
     },
@@ -2046,7 +2076,7 @@
   "audit_checkout": {
     "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 202
+    "source_files_in_manifest": 206
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",

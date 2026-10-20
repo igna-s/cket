@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The current [usable block 01](common-division-v3/README.es.md) adds small-constant quotient
+The current [sparse execution advance](sparse-simulation-v1/README.es.md) makes low-support int32
+and LP64-size_t64 examples executable in the native C runtime. Targeted normal/sanitizer runs pass
+88 new checks,393 native tests and1509 example checks on159 frozen inputs. A separate reproduction
+confirms and fixes the old dense small-probability cutoff. Full C11 remains open.
+
+The previous [usable block 01](common-division-v3/README.es.md) adds small-constant quotient
 synthesis, direct Boolean consumers and a runnable superposition/bucket example. Its fresh Linux
 delivery runs eight programs and exports, with 1509 example checks. Separate normal/sanitizer
 qualifications pass 3505 expression checks per configuration, including 2310 new finite gate-action

@@ -1,5 +1,11 @@
 # Auditoría del repositorio y de los papers
 
+El [avance disperso del bloque 02](simulacion-dispersa.es.md) permite ejecutar los ejemplos anchos
+de enteros con soporte acotado, con picos de circuito de 99 y 84 qubits. La
+[evidencia de 159 entradas](audit-evidence/sparse-simulation-v1/README.es.md) registra las
+calificaciones normales y ASan/UBSan y la reproducción/corrección del corte de probabilidades
+pequeñas del simulador anterior. La compatibilidad completa y la auditoría amplia siguen abiertas.
+
 La [entrega incremental 01](entregas-incrementales.es.md) incorpora división reversible por
 constantes pequeñas, consumidores booleanos y un ejemplo de agrupación coherente de bytes. Se
 priorizan código utilizable y verificaciones dirigidas; las campañas amplias conservan su estado y

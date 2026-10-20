@@ -162,12 +162,14 @@ Scalar projections with narrow destinations can fit and now generate power-of-tw
 32/64-bit sources. Wider representations are a required future implementation, not a semantic
 prohibition.
 
-Native state simulation is limited to 24 qubits (**R**). Full `div_t` products therefore have
-circuit-generation evidence, while small projections have complete state comparisons. General 64-bit
-variable division still needs a wider remainder workspace and resource expansion (**P/R**). Sharing
-the two field computations, general retained-history composition, effectful quantum argument capture
-and full interprocedural product composition remain **P**. No hidden destructive operation is used
-to reduce these costs.
+Default dense state simulation is limited to 24 qubits (**R**). The
+[sparse runtime](simulacion-dispersa.es.md) now supports wide states with a bounded occupied
+support; this does not certify every library-product context. The historical full `div_t` product
+matrix has circuit-generation evidence, while small projections have complete state comparisons.
+General 64-bit variable division still needs a wider remainder workspace and resource expansion
+(**P/R**). Sharing the two field computations, general retained-history composition, effectful
+quantum argument capture and full interprocedural product composition remain **P**. No hidden
+destructive operation is used to reduce these costs.
 
 [Unconditional scalar assignments](c11-history.md) can now version division/remainder results and
 preserve old dependents. This does not extend the general product ABI or versioned branch/loop

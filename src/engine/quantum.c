@@ -49,6 +49,38 @@ qc_context *qc_create(int simulate, uint64_t seed) {
     return c;
 }
 
+qc_context *qc_create_sparse(uint64_t seed, size_t max_states) {
+    if (!max_states || max_states > QC_SPARSE_MAX_STATES)
+        return NULL;
+    qc_context *c = qc_create(0, seed);
+    if (!c)
+        return NULL;
+    c->sparse = malloc(sizeof *c->sparse);
+    if (!c->sparse) {
+        qc_destroy(c);
+        return NULL;
+    }
+    c->simulate = 1;
+    c->sparse_limit = max_states;
+    c->sparse_count = 1;
+    c->sparse[0] = (qc_sparse_term){0, 1};
+    return c;
+}
+
+size_t qc_sparse_size(const qc_context *c) {
+    return c->sparse_count;
+}
+
+int qc_sparse_entry(
+    const qc_context *c, size_t row, uint64_t *low, uint64_t *high, double complex *amplitude) {
+    if (row >= c->sparse_count || !low || !high || !amplitude)
+        return 0;
+    *low = (uint64_t)c->sparse[row].basis;
+    *high = (uint64_t)(c->sparse[row].basis >> 64);
+    *amplitude = c->sparse[row].amplitude;
+    return 1;
+}
+
 void qc_allow_tables(qc_context *c, int allowed) {
     c->allow_tables = !!allowed;
 }
@@ -84,6 +116,7 @@ void qc_destroy(qc_context *c) {
     free(c->registers);
     free(c->gates);
     free(c->state);
+    free(c->sparse);
     free(c);
 }
 
@@ -96,6 +129,12 @@ size_t qc_state_size(const qc_context *c) {
 }
 
 double complex qc_amplitude(const qc_context *c, size_t index) {
+    if (c->sparse_limit) {
+        for (size_t row = 0; row < c->sparse_count; ++row)
+            if (c->sparse[row].basis == (qc_mask)index)
+                return c->sparse[row].amplitude;
+        return 0;
+    }
     return index < c->dimension ? c->state[index] : 0;
 }
 
@@ -228,6 +267,8 @@ int qc_emit(qc_context *c,
             qc_mask mask,
             qc_mask pattern,
             double angle) {
+    if (c->error[0])
+        return 0;
     if ((kind == QC_X || kind == QC_H) && (mask & (QC_WIRE(target))))
         return qc_fail(c, "a quantum control aliases its target");
     if (pattern & ~mask)
@@ -283,8 +324,7 @@ int qc_emit(qc_context *c,
         ++c->measure;
     else if (kind == QC_RESET)
         ++c->reset;
-    qc_sim_gate(c, &gate);
-    return 1;
+    return qc_sim_gate(c, &gate);
 }
 
 static int allocate(qc_context *c, uint32_t id, unsigned width, int ancillary, int signed_type) {
@@ -1145,7 +1185,8 @@ static int search_value(qc_context *c, const cj_doc *d, int inst, uint32_t id, u
             for (unsigned j = 0; j < r->width; ++j) {
                 if (qc_sim_measure(c, r->wires[j])) {
                     qc_gate x = {QC_X, r->wires[j], 0, 0, 0};
-                    qc_sim_gate(c, &x);
+                    if (!qc_sim_gate(c, &x))
+                        return 0;
                 }
                 if (!qc_emit(c, QC_RESET, r->wires[j], 0, 0, 0))
                     return 0;
@@ -1879,7 +1920,8 @@ int qc_apply_token(qc_context *c,
             int measured = qc_sim_measure(c, r->wires[b]);
             if (measured) {
                 qc_gate xgate = {QC_X, r->wires[b], 0, 0, 0};
-                qc_sim_gate(c, &xgate);
+                if (!qc_sim_gate(c, &xgate))
+                    return 0;
             }
             if (!qc_emit(c, QC_RESET, r->wires[b], 0, 0, 0))
                 return 0;

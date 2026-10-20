@@ -9,7 +9,7 @@
 `|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write
 expressions and coherent conditions, and let the compiler build reversible circuits and clean
 temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C
-statevector simulator.
+statevector simulator, with dense and opt-in sparse execution modes.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **0.4.0**, with **GCC 11.4.0** as
@@ -73,6 +73,11 @@ reversible `/` for divisor magnitude 2 through 16 and direct Boolean consumers. 
 finite regressions check 2310 additional domains; the runnable
 [quantum buckets example](examples/quantum_buckets.c) computes correlated groups from a byte
 superposition before explicit measurement. General division and complete C11 remain partial.
+
+The native runtime now offers [sparse simulation](docs/simulacion-dispersa.es.md) for circuits with
+up to 128 physical wires and bounded occupied support. `bash scripts/run-block.sh 02` runs an
+`int32` quotient and a `size_t64` example that exceed the default dense limit. This is a usable
+advance within block 02; the complete integer/C11 objective remains open.
 
 ## Install and build
 
@@ -503,9 +508,10 @@ open controls add X gates, so logical and exported gate totals may differ.
 
 ## Example reference
 
-The collection now contains 36 C examples, including loops, sums, Fibonacci, dot products, extrema,
-interactive input and measurement feedback. See the [examples guide](examples/README.md) for the
-complete catalog, expected results and input formats. Run all 35 simulator-compatible examples with:
+The top-level collection now contains 37 C examples, including loops, sums, Fibonacci, dot products,
+extrema, interactive input and measurement feedback. See the [examples guide](examples/README.md)
+for the complete catalog, expected results and input formats. Run all 35 simulator-compatible
+examples with:
 
 ```bash
 bash scripts/run-examples.sh --all
@@ -535,18 +541,22 @@ refer to seed 7.
 
 ## Current limits and troubleshooting
 
-| Limit                                 | Current contract                                                    |
-| ------------------------------------- | ------------------------------------------------------------------- |
-| Quantum integer width                 | Up to 64 bits.                                                      |
-| Gate storage / statevector simulation | 128 physical qubits / 24 physical qubits.                           |
-| Finite synthesis fallback             | At most 12 relevant input bits; disable with backend `--no-tables`. |
-| Symbolic synthesis                    | 256 terms per bit and two million work steps.                       |
-| IR expressions                        | 100,000 tokens, 128 levels; input files up to 64 MiB.               |
-| Fixed loop expansion                  | At most 4096 checked iterations.                                    |
+| Limit                     | Current contract                                                    |
+| ------------------------- | ------------------------------------------------------------------- |
+| Quantum integer width     | Up to 64 bits.                                                      |
+| Gate storage              | 128 physical qubits.                                                |
+| Dense simulation          | 24 physical qubits; default runtime mode.                           |
+| Sparse simulation         | Up to 128 physical wires and a configured occupied-support budget.  |
+| Finite synthesis fallback | At most 12 relevant input bits; disable with backend `--no-tables`. |
+| Symbolic synthesis        | 256 terms per bit and two million work steps.                       |
+| IR expressions            | 100,000 tokens, 128 levels; input files up to 64 MiB.               |
+| Fixed loop expansion      | At most 4096 checked iterations.                                    |
 
 The 24-qubit vector alone uses 256 MiB. Full declared widths and temporary ancillas count even when
 preparation uses a smaller support. Released clean wires can be reused, but vector dimension does
-not shrink. A 32-bit `quant int` can therefore export while failing to execute on this simulator.
+not shrink. A 32-bit `quant int` can therefore export while failing in dense mode. Opt-in sparse
+execution supports wider low-support states, with 65536 occupied labels by default and an explicit
+diagnostic on support exhaustion. See the [sparse guide](docs/simulacion-dispersa.es.md).
 
 Register synthesis covers addition, subtraction, multiplication, division, remainder, and
 comparisons beyond 12 relevant bits. Growth tests include two 16-bit inputs, or 32 relevant bits.

@@ -62,20 +62,30 @@ informe estático registra un pico de 16 qubits. La
 [evidencia del bloque](audit-evidence/common-division-v3/README.es.md) separa esta construcción de
 las pruebas normales y con sanitizadores de la división.
 
+## Avance utilizable del bloque 02
+
+Ya está disponible `bash scripts/run-block.sh 02`, con dos programas de enteros anchos en el
+[motor disperso](simulacion-dispersa.es.md): división con `int` de 32 bits y un cálculo con `size_t`
+de 64 bits. El runner genera los ejecutables, circuitos e informes de recursos. El soporte ocupado
+tiene un presupuesto explícito; no se promete simular cualquier estado de 128 qubits.
+
+Este avance mantiene el bloque 02 abierto: faltan combinaciones y contextos enteros generales.
+Permite usar la nueva capacidad mientras se sigue trabajando en el alcance completo.
+
 ## Orden de las siguientes entregas
 
-| Bloque | Entrega utilizable que se debe cerrar                                                            | Estado                                      |
-| ------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------- |
-| 01     | Base anterior, ejemplos ejecutables y exportación.                                               | Integrada; comandos y límites documentados. |
-| 02     | Tipos enteros comunes y consumidores: ampliar operadores, conversiones, condiciones y recursos.  | Parcial; próximo bloque de implementación.  |
-| 03     | Funciones y flujo de control habituales con contratos de vida e inversa.                         | Parcial.                                    |
-| 04     | Arrays y estructuras de tamaño fijo en programas compuestos.                                     | Parcial.                                    |
-| 05     | Punteros y operaciones de memoria dentro de rangos comprobados.                                  | Adaptadores parciales.                      |
-| 06     | Cadenas y clasificación/conversión de caracteres.                                                | Adaptadores parciales.                      |
-| 07     | Resto de interfaces enteras habituales de la biblioteca C.                                       | Parcial o pendiente según interfaz.         |
-| 08     | Aritmética `float`, `double` y compleja con semántica declarada.                                 | Pendiente.                                  |
-| 09     | Construcciones e interfaces restantes del inventario C11, con contratos explícitos por contexto. | Pendiente en gran parte.                    |
-| 10     | Integración final, compatibilidad documentada y cierre de afirmaciones del repo y los papers.    | Pendiente.                                  |
+| Bloque | Entrega utilizable que se debe cerrar                                                            | Estado                                           |
+| ------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
+| 01     | Base anterior, ejemplos ejecutables y exportación.                                               | Integrada; comandos y límites documentados.      |
+| 02     | Tipos enteros comunes y consumidores: ampliar operadores, conversiones, condiciones y recursos.  | Avance usable de int32/size_t64; bloque abierto. |
+| 03     | Funciones y flujo de control habituales con contratos de vida e inversa.                         | Parcial.                                         |
+| 04     | Arrays y estructuras de tamaño fijo en programas compuestos.                                     | Parcial.                                         |
+| 05     | Punteros y operaciones de memoria dentro de rangos comprobados.                                  | Adaptadores parciales.                           |
+| 06     | Cadenas y clasificación/conversión de caracteres.                                                | Adaptadores parciales.                           |
+| 07     | Resto de interfaces enteras habituales de la biblioteca C.                                       | Parcial o pendiente según interfaz.              |
+| 08     | Aritmética `float`, `double` y compleja con semántica declarada.                                 | Pendiente.                                       |
+| 09     | Construcciones e interfaces restantes del inventario C11, con contratos explícitos por contexto. | Pendiente en gran parte.                         |
+| 10     | Integración final, compatibilidad documentada y cierre de afirmaciones del repo y los papers.    | Pendiente.                                       |
 
 Las capacidades parciales de un bloque futuro siguen disponibles; solo se lo contará como entregado
 cuando tenga un alcance concreto y comprobado. En cada avance se prioriza implementar y publicar ese

@@ -19,6 +19,17 @@ int qc_circuit_apply(qc_context *context,
                      const unsigned *values,
                      size_t control_count);
 qc_context *qc_create(int simulate, uint64_t seed);
+/* Opt-in sparse statevector: 1..QC_SPARSE_MAX_STATES occupied basis labels,
+ * up to the existing 128 physical wires. Exceeding support fails explicitly;
+ * nonzero amplitudes are never intentionally pruned. */
+#define QC_SPARSE_MAX_STATES 1048576u
+qc_context *qc_create_sparse(uint64_t seed, size_t max_states);
+size_t qc_sparse_size(const qc_context *context);
+int qc_sparse_entry(const qc_context *context,
+                    size_t row,
+                    uint64_t *low,
+                    uint64_t *high,
+                    double complex *amplitude);
 void qc_allow_tables(qc_context *context, int allowed);
 /* Native execution captures the effective thread locale at ctype_capture.
  * Static synthesis instead requires an explicitly named immutable locale. */
@@ -59,6 +70,8 @@ int qc_document(qc_context *context, const char *ir, int validation, int ignore_
 int qc_qasm(const qc_context *context, FILE *output);
 void qc_resources(const qc_context *context, FILE *output);
 unsigned qc_qubits(const qc_context *context);
+/* Dense extent; zero for nonsimulating or sparse contexts. Sparse enumeration
+ * uses qc_sparse_size/entry; qc_amplitude still queries a low-size_t label. */
 size_t qc_state_size(const qc_context *context);
 double complex qc_amplitude(const qc_context *context, size_t index);
 /* Read bounded text, rejecting embedded NUL bytes rather than truncating. */

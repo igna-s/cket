@@ -9,6 +9,12 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 un comando para compilarlos y ejecutarlos, circuitos OpenQASM e informes de recursos. “10%, 20%…”
 cuenta bloques de ese plan; no representa cobertura de C11 ni esfuerzo restante.
 
+**Avance del bloque 02:** el [motor disperso](simulacion-dispersa.es.md) permite ejecutar circuitos
+de hasta 128 qubits con soporte ocupado acotado. Los nuevos ejemplos usan realmente `int` de 32 bits
+y `size_t` de 64 bits en el runtime C y miden explícitamente al final; no solo exportan circuitos.
+Se corrige además un corte fijo de probabilidades pequeñas en el motor denso. El bloque 02 y la
+compatibilidad completa con C11 siguen abiertos.
+
 **Nuevo código integrado:** división reversible por constantes de magnitud 2 a 16 y consumo directo
 del cociente como booleano, negación y comparación con cero. El ejemplo
 [`quantum_buckets.c`](../examples/quantum_buckets.c) calcula grupos sobre una superposición de bytes

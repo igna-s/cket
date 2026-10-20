@@ -33,8 +33,10 @@ or a claim that the first groups are already complete.
    avoids the previous `int % 3` workspace failure and has finite boundary/control/inverse evidence.
    This closes that arithmetic case, not the whole integer foundation. The
    [selection-view implementation](c11-selections.md) also removes the full-word temporary that
-   blocked direct selection between signed 64-bit limits. Common division, general wide expressions
-   and the remaining consuming contexts still require work.
+   blocked direct selection between signed 64-bit limits. The
+   [sparse runtime](simulacion-dispersa.es.md) now permits actual native execution of wide registers
+   with bounded occupied support. General division, general wide expressions and the remaining
+   consuming contexts still require work.
 1. Close the common consuming contexts: conditions, loops, direct functions, arrays, basic structs,
    checked pointers, and frequent memory/string operations. The `memset` temporary-lifetime
    correction now has a

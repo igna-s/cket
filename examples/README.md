@@ -1,8 +1,12 @@
 # C Ket examples
 
-The collection contains 37 C programs. The runner executes the 36 programs that fit the native
-statevector simulator; [types.c](types.c) intentionally demonstrates an exportable 32-bit register
-that exceeds its 24-qubit limit.
+The top-level collection contains 37 C programs. The runner executes the 36 programs that fit the
+default dense statevector simulator; [types.c](types.c) intentionally demonstrates an exportable
+32-bit register that exceeds its 24-qubit limit.
+
+The additional [block 02 examples](blocks/02/) use opt-in sparse execution for ordinary 32-bit `int`
+and 64-bit `size_t`. Run `bash scripts/run-block.sh 02`; the
+[sparse simulation guide](../docs/simulacion-dispersa.es.md) explains its support budget.
 
 For a small usable package with executables, OpenQASM circuits and resource reports, run
 `bash scripts/run-block.sh 01`. See the

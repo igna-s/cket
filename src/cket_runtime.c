@@ -4,6 +4,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <unistd.h>
 
@@ -34,7 +35,28 @@ static void start_engine(void) {
             exit(EXIT_FAILURE);
         }
     }
-    engine = qc_create(1, seed);
+    const char *simulator = getenv("CKET_SIMULATOR");
+    if (simulator && *simulator && strcmp(simulator, "dense") && strcmp(simulator, "sparse")) {
+        fputs("|c> runtime: CKET_SIMULATOR must be dense or sparse\n", stderr);
+        exit(EXIT_FAILURE);
+    }
+    if (simulator && !strcmp(simulator, "sparse")) {
+        size_t limit = 65536;
+        const char *states = getenv("CKET_SPARSE_STATES");
+        if (states) {
+            char *end;
+            errno = 0;
+            unsigned long long value = strtoull(states, &end, 10);
+            if (errno || end == states || *end || *states == '-' || !value ||
+                value > QC_SPARSE_MAX_STATES) {
+                fputs("|c> runtime: CKET_SPARSE_STATES must be 1..1048576\n", stderr);
+                exit(EXIT_FAILURE);
+            }
+            limit = (size_t)value;
+        }
+        engine = qc_create_sparse(seed, limit);
+    } else
+        engine = qc_create(1, seed);
     if (!engine)
         fail();
     qc_ctype_runtime(engine);
