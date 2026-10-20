@@ -13,7 +13,7 @@ destination="build/blocks/$block"
 mkdir -p "$destination"
 export CKET_SEED="${CKET_SEED:-7}"
 if [[ "$block" == 02 ]]; then
-    names=(wide_integers wide_size variable_shift)
+    names=(wide_integers wide_size variable_shift shift_predicate)
     source_directory=examples/blocks/02
     export CKET_SIMULATOR=sparse
 else

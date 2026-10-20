@@ -13,9 +13,10 @@ bash scripts/run-block.sh 02
 CKET_SIMULATOR=sparse build/blocks/02/wide_integers
 CKET_SIMULATOR=sparse build/blocks/02/wide_size
 CKET_SIMULATOR=sparse build/blocks/02/variable_shift
+CKET_SIMULATOR=sparse build/blocks/02/shift_predicate
 ```
 
-El runner deja tres ejecutables, sus circuitos OpenQASM y sus informes de recursos en
+El runner deja cuatro ejecutables, sus circuitos OpenQASM y sus informes de recursos en
 `build/blocks/02/`. La variable se debe conservar al ejecutar después un binario individual.
 
 | Programa        | Operación cuántica                                                            | Salidas válidas en el perfil Linux LP64                                                         |
@@ -27,6 +28,11 @@ El nuevo `variable_shift` calcula `value >> count` con un `uint32_t` y un contad
 de 0 a 31. Su resultado medido debe coincidir con la referencia C aplicada a los operandos medidos.
 El [selector de posiciones](c11-shifts.md) evita el límite anterior de auxiliares y su circuito usa
 105 qubits.
+
+`shift_predicate` usa un entero de 64 bits y un contador en superposición de 0 a 63. Calcula si el
+desplazamiento es distinto de cero y si lo es después de convertirlo a byte, conservando ambas
+semánticas. El circuito usa 85 qubits; se miden explícitamente los predicados y sus operandos y se
+comprueban sus correlaciones con operaciones C clásicas.
 
 Los dos programas anteriores miden explícitamente al final y comprueban las correlaciones de la
 tabla. Sus informes estáticos registran picos de 99 y 84 qubits respectivamente; ejecutarlos no

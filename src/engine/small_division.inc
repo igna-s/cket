@@ -103,25 +103,8 @@ static int ar_small_division(
  * zero-quotient interval is enumerated, never the full dividend domain.
  * Typed definedness was checked before lowering, including overflow guards. */
 static int ar_small_division_truth(ar_builder *p, int e, ar_value *out) {
-    int op = cj_get(p->d, e, "op"), nodes[3], division = -1, invert = 0;
-    unsigned count = expr_nodes(p->d, e, nodes);
-    if (count == 1 &&
-        (cj_equal(p->d, op, "not") || (cj_equal(p->d, op, "cast") && p->ranges[e].width == 1)) &&
-        cj_equal(p->d, cj_get(p->d, nodes[0], "op"), "div")) {
-        division = nodes[0];
-        invert = cj_equal(p->d, op, "not");
-    } else if (count == 2 && (cj_equal(p->d, op, "eq") || cj_equal(p->d, op, "ne"))) {
-        for (unsigned side = 0; side < 2; ++side) {
-            ar_range zero = p->ranges[nodes[1 - side]];
-            if (zero.lo == 0 && zero.hi == 0 &&
-                cj_equal(p->d, cj_get(p->d, nodes[side], "op"), "div")) {
-                division = nodes[side];
-                invert = cj_equal(p->d, op, "eq");
-                break;
-            }
-        }
-    }
-    if (division < 0)
+    int invert, division = ar_truth_input(p, e, &invert);
+    if (division < 0 || !cj_equal(p->d, cj_get(p->d, division, "op"), "div"))
         return 0;
     int args[3];
     if (expr_nodes(p->d, division, args) != 2)

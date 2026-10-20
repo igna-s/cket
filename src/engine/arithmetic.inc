@@ -1075,6 +1075,7 @@ static int ar_power_division(ar_builder *p,
 }
 
 #include "small_remainder.inc"
+#include "truth_views.inc"
 #include "small_division.inc"
 #include "select_views.inc"
 
@@ -1166,13 +1167,18 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
     }
     if (cj_equal(p->d, op, "cast") && range.width != 1) {
         ar_value source;
-        if (!ar_lower(p, nodes[0], requested, &source))
+        // Only the requested cast bits survive. The original typed operation
+        // was already checked for definedness before narrowing its output.
+        if (!ar_lower(p, nodes[0], width, &source))
             return 0;
         *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
         for (unsigned j = 0; j < width; ++j)
             out->bit[j] = ar_at(&source, j);
         return 1;
     }
+    int shifted_truth = ar_shift_truth(p, e, out);
+    if (shifted_truth)
+        return shifted_truth > 0;
     int quotient_truth = ar_small_division_truth(p, e, out);
     if (quotient_truth)
         return quotient_truth > 0;
@@ -1297,12 +1303,15 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
     int division = cj_equal(p->d, op, "div") || cj_equal(p->d, op, "mod");
     int absolute = cj_equal(p->d, op, "abs") || cj_equal(p->d, op, "uabs");
     int shift = cj_equal(p->d, op, "shl") || cj_equal(p->d, op, "shr");
+    int logical_not = cj_equal(p->d, op, "not");
     ar_value a, b;
     // Absolute value must inspect the original sign, even if the destination
     // narrows its magnitude; truncating the input first changes that sign.
     if (!ar_lower(p,
                   nodes[0],
-                  comparison || division || absolute || shift || range.width == 1 ? 64 : width,
+                  comparison || division || absolute || shift || logical_not || range.width == 1
+                      ? 64
+                      : width,
                   &a))
         return 0;
     if (n > 1 && !ar_lower(p, nodes[1], comparison || division || shift ? 64 : width, &b))
@@ -1389,11 +1398,11 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
                                                   : 5;
         return ar_compare(p, &a, &b, common, signed_order, relation, out);
     }
-    if (cj_equal(p->d, op, "not") || (cj_equal(p->d, op, "cast") && range.width == 1)) {
+    if (logical_not || (cj_equal(p->d, op, "cast") && range.width == 1)) {
         ar_bit truth;
         if (!ar_truth(p, &a, &truth))
             return 0;
-        truth.inverted ^= cj_equal(p->d, op, "not");
+        truth.inverted ^= logical_not;
         int one = 1;
         return ar_condition(p, ar_wire(out->bit[0]), &truth, &one, 1);
     }

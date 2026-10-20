@@ -1,0 +1,366 @@
+{
+  "status": "passed-targeted-truth-cast-and-logical-not-correction",
+  "source_files": 164,
+  "source_sha256": {
+    ".clang-format": "dbfda7a613671d884b579b3ba3b9ac1544aa5cd7e130a4daca270ef87567fecd",
+    ".editorconfig": "de5cba74ef919c19dd65e1d9b186cd27ea1bd026fcbb5248f837f43865a09c31",
+    ".github/workflows/verify.yml": "9f1ed0451891f3f6220a88a8557a565afa0ab81014be3cb1248a5ca74857c8e0",
+    "cket": "49726738d96c1c77a2ed050b3604cc9ed55d4753cf3dbb4ae0b9853ce0504905",
+    "examples/blocks/02/shift_predicate.c": "5bdacd146e06ae8d5c8e7accb69b04fb1f0ac8d03f9230446cf48ef0cfc00b31",
+    "examples/blocks/02/variable_shift.c": "86435cfd4dee4ed428a4f2edae54efc828bc6161d42933777a9160fa922255fc",
+    "examples/blocks/02/wide_integers.c": "99446b8fe61df02c91a231267ec0ce460f62336020efca35273e25219dda484f",
+    "examples/blocks/02/wide_size.c": "1a23cbcb1dff44b68d87a730d0ef574158f34215cf96af5758038c6057fc4f9e",
+    "examples/circuit_module.c": "f3be1bbb40de82dd95c3919e7327b2e2929ab50d22cbb95d4147d9f336405cc9",
+    "examples/coherent.c": "94b5ed8f1258ba62413f8eaaa0791e3b27d8512e3f87f873131742eb8628ecbc",
+    "examples/coherent_accumulate.c": "bf87f310e525e751df703070a40b2a5b6e3a8245363d0dd0b13d2c20243676ce",
+    "examples/do_while_countdown.c": "964b8f287160c9c361030d0aed15d2dd29843455a27b36802b684990f6ab267d",
+    "examples/dot_product.c": "bd2425a194fa63b45a89069edca2f2a297e258c7b49e617678cc24597726a831",
+    "examples/dynamic_vector.c": "846ac3571ad6851a94496109625df795f84440399d5076e43ff3652a7fa509e3",
+    "examples/entanglement.c": "7bef4e80da311ec77e2e266e42636a625776c0177847bd8b273287956992c20c",
+    "examples/fibonacci.c": "09b9286542e95bec22f716f3587ca343d3a84139357d9e5dc6fce799fb7e4a71",
+    "examples/find.c": "df216f2ae4d9b2e2de3686c1fa8513a1b3112d3e8eeb8bb29c752ebbb29c762d",
+    "examples/find_multiple.c": "0c8a684fded89145582184a5a30073bdf1b912a45f9ff9cb29d0c01236369900",
+    "examples/for_sum.c": "df1fe2431bb0f19f426fb56c3f7a532e0f31b51a1a013824da01f626108d7dbd",
+    "examples/fourier.c": "cff9940987d2b37d9fbfb651cc7eaeda1adc4b3208e317a3643ddd2b55a25d32",
+    "examples/functions.c": "1c57a333aec77f3bd9e914f7cfc01e966f71cf43999b55b20ee2c8f04446d14b",
+    "examples/hello.c": "a0ea4d79936ce21b43f77da106d9e7bfd692e8fe27418a701af674fffd9f416b",
+    "examples/hybrid_loop.c": "ef1e95f736e0221014d2dab3b2923873e3f9d8b3a0897ceb65a48532e546f6f0",
+    "examples/increment.qir.json": "b5eede2315df82a0033e5cf897a7f15c655bc3b755e601c68b2282fc5a1d0ec7",
+    "examples/input_minmax.c": "b880df44767120a1e73cfbc464d405f76de2bea45195aab5ea915dfbcc7b74ac",
+    "examples/input_sum.c": "f51e2ff7be8864be47c680ad6484b8ec1e68fac5382fce016a089693a7dc76a6",
+    "examples/maximum_scan.c": "e844216870005f8b526dc383676f7b39b409e0945d689cf5fbd9526381763b5c",
+    "examples/measurement_histogram.c": "8effb3638bc9c6f34312b5dbdd9b953697790c36fb20ca80fd04101fe4902b2e",
+    "examples/minimum_scan.c": "5a0448aeed6e96a5aef6966ed7d61f94674f8cd841689f90d85799bedfe62de8",
+    "examples/minmax_array.c": "e93bc65e3a29d678343ec1cca6b211f21af725abb212e2ba7db032f40ba0c080",
+    "examples/modular_arithmetic.c": "f5534d75362b6b4d5234f960d3d5f3156b33002ffe7e045a12e51fa3fb735816",
+    "examples/nested_for_sum.c": "3eda9a54d84cf795e38f22680127c8c424d1da8a8c8e829855cd1b34736e82c4",
+    "examples/pair_maximum.c": "8489e17e60786f7ce1da5117f212a25096465edaa59f3789e9a84da72605b46d",
+    "examples/pair_minimum.c": "9d1382071edee9b97be0f14eb3826d5f843faae71b46694ff0f20da5e07723e6",
+    "examples/phase_estimation.c": "276ce6023847229898875fceb7ab13a6fb9dc4dda2384022b0e4861567f9085c",
+    "examples/prepare_measure.c": "1872eab697f2fc01f3c8a5388b27b82c138e4a75ce36f0b5dfc463358c724a37",
+    "examples/products.c": "7b4f1ef6404722fa89d6c3e0dbdbd701b41859b9526d15d46bb652e2c195f282",
+    "examples/quantum_buckets.c": "aa0cccb85b32ab01de91693ba63b5988fd59a47ffb0360dabd5f302aefc88078",
+    "examples/read_input.h": "5dc337fcb55a346d4bf70edf5ce8cbe564374f88bf9ec2e779ad421293a680cf",
+    "examples/register_accumulate.c": "e52fabaf2d23a277b2a1252030babc25fce51ab78f07c6b3434f01ec1320e9f5",
+    "examples/repeat_until_success.c": "fe179a42b5f5489ba65f5d6baeda9605d9c68983689764c210ff4e1394996ea4",
+    "examples/search.c": "fcf1811157c4f93ff71e8d5032531893b19ed6ec9c08bc146c7736b00023f1ee",
+    "examples/search_constraints.c": "fa5294791d82ee5f22d7e501c343037be7eafc6f9b5c7fb4cc81d82277687ccd",
+    "examples/search_empty.c": "7ca101fec1911c0768a8d10fe2fafd27019ce5c9c6ae3d823d22d0cf00acb616",
+    "examples/types.c": "b68d9fbf4d2167a28db98a11dc81c241d1fcff10dc5d4781bc15d01b6d04bdba",
+    "examples/vector_function.c": "96909772a488cd66b2a8e8d5b6094c1e093526465925d0f5512e9a8208868a29",
+    "examples/while_sum.c": "7268d9b9781002c2d70ca9b0d3300fecbf01fd1a8fe241f9cc28272fe6d8ba5d",
+    "include/ctype.h": "f7db33056bec5a955c926654681a0eb287cb90931500e29eceddb865c8fc11a2",
+    "include/quantum.h": "bd5d164fe3a0b1cc2dc2a21a3308f140ca2a1ca0fa5ef3bd012e306f5016986a",
+    "include/string.h": "ebcfa92e70125536b5bcdebef048b548e4a378f452d6fe5e720a1181faa8c80c",
+    "scripts/archive-audit.py": "731c47f06ea93c1e8c87cee3cdf45f082c683d33d39191d086b1a7135f6ca82e",
+    "scripts/build-validation.sh": "29768b656e056d5cab2a3747bfaa23cd8a1d3c608f54786a8c2078ef38932819",
+    "scripts/build.sh": "d57c23a020b0e2546aba0a471b591adbe9ae1f1e14145cf2f0a8c60a8af09d57",
+    "scripts/demo.sh": "04a4d5a8e3031ab9c102545be563400da258d46338f40949056235e8b45e69c4",
+    "scripts/format.py": "a88d4b81ff44d1e137c09805968e7032c0d3060b2c09a1b734a101da533e7834",
+    "scripts/inventory_c11.py": "f4711d22149ae79ff2d4c59942cf25a50d94f646d08e3482e08f5c1fae8e9d79",
+    "scripts/reproduce-paper-baseline.sh": "e60dee2a73d9f8ce9bbd1dd3e69cfca2d14829fc9ab49252ab6d2583b71feee4",
+    "scripts/requirements-format.txt": "b60b543c2f6814539486c5a68bd87173503dba35fe0133504a004fde2f308745",
+    "scripts/run-block.sh": "57e268471b27a77e7d43f593358e4a1a20576aa19a331242fb3fb5266c95a641",
+    "scripts/run-examples.sh": "5c3308c979ad2476d0497d8fbee39fbf9f62b029d182620aebc516e6dbdae7ce",
+    "scripts/sanitize-all.sh": "06ec817ae8b40a5dcf5d5d94ada431cc2c626871296a38918236642c55843d7a",
+    "scripts/sanitize.sh": "cb91481f667f9c59376d61b52a0bc0680217a65fb94c32049cab4bca476e188a",
+    "scripts/setup-format.sh": "ad49353891434003a8d73ec8622e9cdaed8608d0bab389c42f7f3f68cfad9f74",
+    "scripts/test-c11-classical.sh": "935dc207f0d3fcc4657014eac1f70d2224a31bc8da151a1b4157a6f49c900711",
+    "scripts/test-format.py": "ad6187c8067e88307d8acaaad49cd0c2f6b95d0efcffa368fc8398d4f8ffac4c",
+    "scripts/test-locale-sanitizer.sh": "274cc3410d59914b7d5584515f0d7909d863e225dab507b4cd0b1f9e76804abb",
+    "scripts/test.sh": "23a8a9cf0639bc575dfe9f3d975ed9d565d8d46db474b67d01dd5a114faec817",
+    "scripts/unpack-gcc-deps.sh": "4cb9a8cfe821c21e1f36d0739ff79d18a7d5f0cfd31e35372a7aa8deb8ece0b0",
+    "scripts/verify.sh": "39582d08fb7c8e883acc1ced7a297ac2a0d25f4510731dff8e940d977c5a5121",
+    "src/cket.c": "bfba00675315cd6dbfb34f9c915ef454e25f09cd83f579b6c0ab4b378501e4c1",
+    "src/cket_backend.c": "576ece98de4732c4866c30bd155c302d6d829ed8f0457233bb6f56c482cf939d",
+    "src/cket_plugin.cpp": "1ddc193f8fc1eb9838a4b48de8a3f2fcb01046c66fea6600986ba1cf7e8795ae",
+    "src/cket_runtime.c": "3d06d49bb88e5a9ddd78f51ca75937f44ad03fa29cf267d9e89317c67fb0acb5",
+    "src/engine/arithmetic.inc": "e1e14fc54ddcf3f3af552f92ad587c180a7618b3765fb62362a845cff1081f85",
+    "src/engine/binding.inc": "bd104552b6198ff627b437013f9f02fd7c68193db31bfc59c38c8213fe678eec",
+    "src/engine/circuit.inc": "d6226bc5cce13d02bb7765b7b35eb60661c6366aceb86b81863b4b4864f71d1f",
+    "src/engine/ctype.inc": "07a53c868b9f5a3e281f85ef54825bf19300a8cd9ffb6ecca0ea866e37334de4",
+    "src/engine/inplace.inc": "c00a5a3bb3cc97f2b32de0c643d09c2cad7ed486e83a228eb8b5e8167ed3f27f",
+    "src/engine/internal.h": "56170b4d42329fbbcbb4274837121862c8ee754ad126f4ef3b199436547c5f09",
+    "src/engine/json.c": "7bd970801adbbd3cc2f265bfa14fbb3b373c0742e0305ffc42e514df65e4bbe3",
+    "src/engine/json.h": "d8ac25b9d91d5c67448c2966762e08382aa943db18242c024b6f81742d147bc5",
+    "src/engine/phase.inc": "d80c9579ab4f3726f0d741e4d3d44604f12c7136651d2b0d975f663b04e47cfb",
+    "src/engine/phase_verify.inc": "e9b66001faa139bd0608f2453665dfb9dc7692e3bf4d54015e0d8f2492f3d5f6",
+    "src/engine/quantum.c": "d252c64f32bcdedf5f00ee72ed328ea650e8f38ed592cb62cebd7a0a7684e2e9",
+    "src/engine/quantum.h": "b4e0f8f7dafa1f403d80dcabefd130b6f6fcd7be25d0959bc53fcef8176b7185",
+    "src/engine/select_views.inc": "49e4ebeccdb816a7ff5cf40865c778eded39f0d30fe61df02dfc8f3ac04eeade",
+    "src/engine/simulator.c": "2db49f83123fe325e6bc97e8f30d65c8de7815acf2a88f9189c76660cf4c7e26",
+    "src/engine/small_division.inc": "a50048f61b37463541d73626fd929f1a20e87fa7e15ca1240a463ca3a052946f",
+    "src/engine/small_remainder.inc": "73c786f7d5aa643e5d92734fb2ef2beafac754ee2a9cc4cdb66ab2aae82c5450",
+    "src/engine/sparse_simulator.inc": "640d7e9d75d24733d6a320315701da5f0e156f909f00da8bedb47f2ad4a97c20",
+    "src/engine/structured.inc": "d650cf31a787e896e88e4736a439fa2862b3fad99b097262d61dbc5060505404",
+    "src/engine/truth_views.inc": "75a205f94c8cf64616dc82eadddb876a77936fbf4999edc70cfc1afcdd604e2d",
+    "src/engine/verify.c": "a6f0d60ae37a42d3a881b8cf1c063a31ce01156473770a58c904110c6506bcc3",
+    "src/quantum_frontend.inc": "c7d83af76ed697eb4262489cfd77b59ac84e0a0bf7ee07237ff65dedbeee6e9d",
+    "src/quantum_lifetimes.inc": "a94e539a82d9fce75f09ef2ed448d8d94987db3d9dd3d151d07b3b4470a2da0b",
+    "src/quantum_memory.inc": "284a3a9e248d36e9fec8d0af94f366d9db9dfc802d7995179bdb6df4920336b3",
+    "src/quantum_phase.inc": "2a3be9bf085ee393ce6ff0037e1934bc2ffe0d61ca07c6ff75a18b9cd031eb8e",
+    "src/quantum_semantics.inc": "137b76d37addaf6faa580a4053c48d3ab99a79e3a38896c3bf4cea12b078e02a",
+    "tests/benchmark_synthesis.c": "4f5e19dd9f48e3402418c65d9ef12ff647b3cbd4ec3dc1a8adfb845700d77105",
+    "tests/byte_snapshot_trace.inc": "380105970c85af0ccbdb61ef151feb2975dcc19b9684632de89ee0cc1113d0ea",
+    "tests/c11_classical.c": "dd215b9159927786392690a428774715c0ef7a88359becbd4a4887882f0649b5",
+    "tests/expression_basis.inc": "946ee624e9ae20a64d3dd5f38ce61eb7cf6c27f879038654bdcfe4954de9a01e",
+    "tests/fuzz_frontend.c": "e1987acfcf8d1fc58cab62455e5e826762535261a5758cc1531fffd5431b728f",
+    "tests/glibc-locale.lsan": "20d4c2a57be90f6cd80c6a9f8e5ab6aa2cccd0f1d51123e5370209bf6f30457b",
+    "tests/locale_fixture.h": "4c1143798aab2cf0305a3ecc2c39ba494f8340deb6cf589e6e9c356ee0a14b58",
+    "tests/memory_return_state.inc": "a12880fe4085c17863c5a995153fbac713984f13c5db256e83397b1f2645cdb7",
+    "tests/memory_sequence_state.inc": "db7a9504033079ac1bcf4e2baf70333bf489088f4cf86b22532037b91c2b62a5",
+    "tests/memset_effects.inc": "87713abdad41b1c9720d56c0e0dea75ff2267d85f7038de67c5a5cef68bcd97a",
+    "tests/memset_lifetimes.inc": "839c6d5c135469ad06c8c18f6ea0db1eb45689fd0938c011226ed72b7eb8b8fc",
+    "tests/memset_state.inc": "abc5783a7819172ef47b1bbbf0b794791d080c9829ac09ccb05ddb645c2c3814",
+    "tests/phase_capture.inc": "5e5dff4b77b12621bac721eb7888f9b7ded4db159db524f5d390357598323df6",
+    "tests/qasm_reference.c": "f90ea6e7df1ae9dcd166553978922a4ffca8e80c9c5a1ae9d07850b9d5c288d9",
+    "tests/qasm_reference.h": "d0385b548d4039a4333b6e5551809314a8d9a16882117ca61f3c1da623284af5",
+    "tests/qasm_samples.c": "954389abb8aacc5a5573974ee968e9a6b77c671559fd8d28889d6ff55d55a783",
+    "tests/repro_glibc_locale.c": "aa261ff7f9a9a8a050b0468e1f2ceb4ad05f8e88499136aba174c8b87904bbff",
+    "tests/select_cpu_trace.inc": "38979c4edc5a67f4496e998b207206d5e39f864c81e76ca4d17944237ab0f019",
+    "tests/selection_state.inc": "a054d8e0e0e553066bb3fdbf56d2a3f3cb9bb39ab77909efb48a306d0dd3ba1e",
+    "tests/shift_state.inc": "e7a5288fbd58226032a14b59f6db3198234c21c3524f8aa27c869669bea14e28",
+    "tests/shift_truth_state.inc": "c930145fbc32349c72eb3915e0b31dc489561987fd01e06a15022740f1320073",
+    "tests/small_division_state.inc": "4744212c80892fd2237ea5b0e72afd898039326206b9bd62ffa8ae998a4d03d3",
+    "tests/small_remainder_state.inc": "d86721b98ad7a58dd0d0717f2e0c92a2f7dcc93120dfb43fd5ea7b191f20aff0",
+    "tests/test_coherent_history.inc": "6338b2cd2be0b7e792ea37d08111830f94ff42522d3b27770465d28e9f745d79",
+    "tests/test_composition.inc": "83682f4256f1b217269ab58ece84da05635b5a735379cca1a16c1a2c6ec5d4e6",
+    "tests/test_cpu_history.inc": "5480c1411a331d63a642b5bb0652a072742a0ce2822aba28e60f77eee6030507",
+    "tests/test_cpu_owners.inc": "c1f1eb2910f6fa886e3ae4f7f7c3db5798634b43d59ace1d2c7f4352209f3642",
+    "tests/test_cpu_word_history.inc": "a75604299b05c6cf5651aa92b32c0ae5313024d26a34b83df47b617c60e0537c",
+    "tests/test_effect_values.inc": "2644d8ed96f053811b0196d7ee3fefca3a28b8a533d426db48cac76024da9b1f",
+    "tests/test_examples.c": "e15e855683e299bfa076717d8668a04d6cf542f9f78cf881d4cac229289f4d9e",
+    "tests/test_exhaustive.inc": "23f0c716c8426c2a8a6c8181b90c848394e2f5fcbd533e957f525a51f38059ce",
+    "tests/test_fourier.inc": "64bbd5fe7cefaf0f43b12a00d05a938747395f35fc28897d95ab74f822f633e4",
+    "tests/test_indexed.inc": "8f759f40b05ad4c5d963e3db196b66818cc1bad2d19272f4bfc3919b04c6df28",
+    "tests/test_lazy_values.inc": "5afb2f5dded0e625dc7a578089b79560a9a3ad9b89dca7b862cf7fd995498af4",
+    "tests/test_library.inc": "93e1790a493091ba402f32ae91a63a952f86f5d9f1f1994fc7005e83aebc41c6",
+    "tests/test_memory.inc": "0335d76a9020aad45629d1ac853bc02807c171d7e58805c465f6f7af23abf77a",
+    "tests/test_native.c": "d6d1bab562833ad3ffbd8a38b51151a1d429cc913b931585b8a3e0cfee35000f",
+    "tests/test_observations.inc": "be3d819382c6360f3c497743f977e72adf3e8b8af179ac705b5dd13ff6207831",
+    "tests/test_properties.inc": "47c261767475625c9c7279495f59afcde7106190f8dd6fcb8cfad6799c329dfe",
+    "tests/test_scalable.inc": "7e1bfb36989a1548fbb373d3d1a536133152b8296c0a6f91643610c7349e9b19",
+    "tests/validate_bindings.c": "346d600b594d4be8b9f98e9efec9afbc71f89e049c2e2fe43f3bdfe1dcc785e9",
+    "tests/validate_byte_snapshots.c": "810ecfe6938285d9b1eb246a3b79b1b5d53b41512afcf8f123f14f8aded1cd2f",
+    "tests/validate_controlled_operands.c": "06bf7339360e6a463c18a38f198de2f4f5987727357987e7adb38fa29800c521",
+    "tests/validate_ctype.c": "16e29fe3b2b5cf264be7bbdd2b9e96eb459be91eb2af48ed6adf6af77e5e9d08",
+    "tests/validate_division.c": "14ef43fcfbbbb127aed3347f0c1cc880d798e765f75fd8cc98c8d0824fd0a3bf",
+    "tests/validate_expressions.c": "0c7cf19a0fad2bedfc15790498454dc4757c0568bb53e52f83731b5f4cfa2a67",
+    "tests/validate_harness.c": "0cc74202666f9a480f4d81b4732143deccf105cf1de8c5c2aaaf4637a2f381b5",
+    "tests/validate_history.c": "59572b9fc56028c2dadebba182a3a27e54efca508b0308fd779288dd9cd5540e",
+    "tests/validate_inplace.c": "08486aaadda6c61c1788bc0daa7f94686a80819bf648db627ad7ce595925a6cc",
+    "tests/validate_library.c": "dd243d0dbb2c5af4ac4fc9fd591781239c692f9308c7d8cd4c2975ff7af2a1ef",
+    "tests/validate_memcmp.c": "8734a73518a14fb7c47042a7d8e333f9462402f60ec1b977032636beaeb2caa0",
+    "tests/validate_memcopy.c": "2b295004b9c937ba582c3af3c78b3e27ee87913aec16670eba02466e0c65a88f",
+    "tests/validate_memory_returns.c": "76a252337af605dbe44592848af8952e6a174eac0db2f892117f7d0038001fc2",
+    "tests/validate_memory_sequences.c": "40965ab7acc5f6a63d1df8043908262fae0898c1b4a26824ff423431dc3ddc2f",
+    "tests/validate_memset.c": "1c53118d3d015baa4368f5bdf815c2d68ec79fd1db7b8e9698938232981a3d0b",
+    "tests/validate_numeric_locale.c": "3e5ad80c6b3735e0e8b59258c4ef65a0436221d08bd7a3ab16bf56265f3d074a",
+    "tests/validate_phase.c": "24fd0f8477f3628b6bc631c3ff2406adad12c125ab7ac7687b8298ee3fe579c8",
+    "tests/validate_pointer_differences.c": "e7e155f686aa0568e8cdaf5ee89a186100141ca20aac2c295bd8a5bf602e3cdc",
+    "tests/validate_profiles.c": "72f61af8327886a58ddd6dcafb2bf01112d286289a647469ca4783c14a1daf45",
+    "tests/validate_qasm.c": "bc09c9f341eb960327d9501515dbeb2ea7d055327cf2292eabdb891443b48a25",
+    "tests/validate_shifts.c": "35b5f5a31594e66dd5b22e48da0893d3c8097525c2d633b6ef60a2de0059666d",
+    "tests/validate_sparse.c": "0170bff1696de2a8b9343852a514fc1b137e285d865753495ad0666d7b1fe776",
+    "tests/validate_strings.c": "bc9f8e623f65b2d89086b6230d9e99a6ac3eb7cb4fa92fb1649fef9511ec2eec",
+    "tests/validate_strncmp.c": "2142db4d622203a0188ddde26eafc8d5484ba290729752c30f9922c4b44a03cc",
+    "tests/validation.c": "cbf5f326c837468bd90d4a7e8da6131aa8c16d51b63b056db80ae9762ffde4f9",
+    "tests/validation.h": "cb745670df18c14a90c49f8e55ed04a150d1366f9a68911eeb9505a0d15fd3a7"
+  },
+  "checks_per_configuration": {
+    "shifts": 203,
+    "expressions": 3505,
+    "native": 393,
+    "division": 990
+  },
+  "new_complete_sparse_domains_per_configuration": 132,
+  "closed_commands_zero": {
+    "normal": 6,
+    "sanitized": 17
+  },
+  "plugin_reuse": {
+    "source_project": "/tmp/quantum-audit-isolated-20261017/build/shift-mux-v1",
+    "plugin_inputs_sha256": {
+      "include/ctype.h": "f7db33056bec5a955c926654681a0eb287cb90931500e29eceddb865c8fc11a2",
+      "include/quantum.h": "bd5d164fe3a0b1cc2dc2a21a3308f140ca2a1ca0fa5ef3bd012e306f5016986a",
+      "include/string.h": "ebcfa92e70125536b5bcdebef048b548e4a378f452d6fe5e720a1181faa8c80c",
+      "src/cket_plugin.cpp": "1ddc193f8fc1eb9838a4b48de8a3f2fcb01046c66fea6600986ba1cf7e8795ae",
+      "src/quantum_frontend.inc": "c7d83af76ed697eb4262489cfd77b59ac84e0a0bf7ee07237ff65dedbeee6e9d",
+      "src/quantum_lifetimes.inc": "a94e539a82d9fce75f09ef2ed448d8d94987db3d9dd3d151d07b3b4470a2da0b",
+      "src/quantum_memory.inc": "284a3a9e248d36e9fec8d0af94f366d9db9dfc802d7995179bdb6df4920336b3",
+      "src/quantum_phase.inc": "2a3be9bf085ee393ce6ff0037e1934bc2ffe0d61ca07c6ff75a18b9cd031eb8e",
+      "src/quantum_semantics.inc": "137b76d37addaf6faa580a4053c48d3ab99a79e3a38896c3bf4cea12b078e02a"
+    },
+    "binary_sha256": "ed1923833d0c16d54cde33614d3a4d5898fe6180028c5889fbd604c847f02600",
+    "scope": "Only the unchanged GCC plugin is reused with byte-verified sources. Every engine component, runtime, driver, backend and listed validator is freshly compiled with ASan/UBSan below."
+  },
+  "build_scope": "Fresh full normal build; fresh ASan/UBSan engine, runtime, driver, backend and validators, reusing only the byte-verified unchanged GCC plugin.",
+  "example": {
+    "name": "shift_predicate",
+    "peak_qubits": 85,
+    "block02_programs": 4
+  },
+  "exact_regressions": {
+    "previous_resource_cases": {
+      "scope": "Actual previous161-input compiler; frontend/IR resource acceptance only, no state execution.",
+      "previous_core_sha256": {
+        "cket": "545513b609166d80377c9a3f80e4ad1a205437710ace07bd2bb1c91866f7db8a",
+        "cket_plugin.so": "f8d5dcd1b975588832240093f502208fdfb061748a911d9a015bcbda382baed5",
+        "libcket_quantum.a": "15997d3440b58f5c07e3cb425f27664b8580766d3a2842c90c038b4dff9bea24"
+      },
+      "cases": [
+        {
+          "name": "left-bool",
+          "source_sha256": "d922f828fc4dc0d9985c344d91f324cd791b50228b924d0c1330255efa8e733d",
+          "argv": [
+            "/tmp/quantum-audit-isolated-20261017/build/shift-mux-v1/build/cket",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/left-bool.c",
+            "-O2",
+            "--emit-ir",
+            "-o",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/left-bool.json"
+          ],
+          "returncode": 1,
+          "diagnostic": "|c> backend: gate IR is limited to 128 physical qubits\n"
+        },
+        {
+          "name": "right-bool",
+          "source_sha256": "1f1c38aee40a96b68a49c80128dbfc205cb89134faa1f9ecab73e916f861512d",
+          "argv": [
+            "/tmp/quantum-audit-isolated-20261017/build/shift-mux-v1/build/cket",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/right-bool.c",
+            "-O2",
+            "--emit-ir",
+            "-o",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/right-bool.json"
+          ],
+          "returncode": 1,
+          "diagnostic": "|c> backend: gate IR is limited to 128 physical qubits\n"
+        },
+        {
+          "name": "left-byte-bool",
+          "source_sha256": "8c224279c29836857312a28c78a98e77b0bd8026652aa3fcdf221a2119c03c04",
+          "argv": [
+            "/tmp/quantum-audit-isolated-20261017/build/shift-mux-v1/build/cket",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/left-byte-bool.c",
+            "-O2",
+            "--emit-ir",
+            "-o",
+            "/tmp/quantum-audit-isolated-20261017/build/shift-truth-baseline-v1/left-byte-bool.json"
+          ],
+          "returncode": 1,
+          "diagnostic": "|c> backend: gate IR is limited to 128 physical qubits\n"
+        }
+      ]
+    },
+    "current_cases": [
+      {
+        "name": "left-bool",
+        "source_sha256": "d922f828fc4dc0d9985c344d91f324cd791b50228b924d0c1330255efa8e733d",
+        "compile_returncode": 0,
+        "resources": [
+          {
+            "tables": false,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       67\nPeak qubits:    76\nH              7\nX              4\nCNOT           8\nMCX            128\nMEASURE        74\nDepth:         141\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          },
+          {
+            "tables": true,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       67\nPeak qubits:    76\nH              7\nX              2\nCNOT           6\nMCX            128\nMEASURE        74\nDepth:         136\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          }
+        ]
+      },
+      {
+        "name": "right-bool",
+        "source_sha256": "1f1c38aee40a96b68a49c80128dbfc205cb89134faa1f9ecab73e916f861512d",
+        "compile_returncode": 0,
+        "resources": [
+          {
+            "tables": false,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       67\nPeak qubits:    76\nH              7\nX              4\nCNOT           8\nMCX            128\nMEASURE        74\nDepth:         141\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          },
+          {
+            "tables": true,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       67\nPeak qubits:    76\nH              7\nX              2\nCNOT           6\nMCX            128\nMEASURE        74\nDepth:         136\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          }
+        ]
+      },
+      {
+        "name": "left-byte-bool",
+        "source_sha256": "8c224279c29836857312a28c78a98e77b0bd8026652aa3fcdf221a2119c03c04",
+        "compile_returncode": 0,
+        "resources": [
+          {
+            "tables": false,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       75\nPeak qubits:    84\nH              7\nX              4\nCNOT           8\nMCX            74\nMEASURE        74\nDepth:         89\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          },
+          {
+            "tables": true,
+            "returncode": 0,
+            "report": "Logical qubits: 9\nAncillas:       75\nPeak qubits:    84\nH              7\nX              2\nCNOT           6\nMCX            74\nMEASURE        74\nDepth:         82\nLogical gates before hardware decomposition, including open controls. Table-based fallback is exponential; structured paths have separate resource contracts.\nJSON parses:   0\nSynthesis runs:2\nPlan hits:     0\n"
+          }
+        ]
+      }
+    ],
+    "word_not": {
+      "previous161": {
+        "library_sha256": "15997d3440b58f5c07e3cb425f27664b8580766d3a2842c90c038b4dff9bea24",
+        "returncode": 1,
+        "stdout": "source=2 count=0 correct_output0_amplitude=0 incorrect_output1_amplitude=0.35355339059327384\n"
+      },
+      "candidate164v2": {
+        "library_sha256": "3d2e7cbc7986c26db91059703f313160fa2f472e71c93969f348df0044f3c2c8",
+        "returncode": 1,
+        "stdout": "source=2 count=0 correct_output0_amplitude=0 incorrect_output1_amplitude=0.35355339059327384\n"
+      },
+      "current164v3": {
+        "library_sha256": "4d35c517c777d2e13040449696851a571c07f8e31dea354d10f16d7a7ca772ce",
+        "returncode": 0,
+        "stdout": "source=2 count=0 correct_output0_amplitude=0.35355339059327384 incorrect_output1_amplitude=0\n"
+      }
+    },
+    "status": "confirmed-three-resource-fixes-and-word-not-correction"
+  },
+  "failed_attempts": {
+    "v1": {
+      "normal": {
+        "status": "failed-shift-truth-targeted",
+        "exit_code": 1,
+        "failed_command": "fresh-build",
+        "diagnostic": "AssertionError(('fresh-build', 'In file included from tests/validate_shifts.c:16:\\ntests/validate_shifts.c: In function \u2018main\u2019:\\ntests/shift_truth_state.inc:201:87: error: \u2018%s\u2019 directive output may be truncated writing up to 2399 bytes into a region of size between 257 and 2656 [-Werror=format-truncation=]\\n  201 |                              \"{\\\\\"op\\\\\":\\\\\"%s\\\\\",\\\\\"bits\\\\\":32,\\\\\"signed\\\\\":true,\\\\\"args\\\\\":[%s,%s]}\",\\n      |                                                                                       ^~\\nIn file included from /usr/include/stdio.h:894,\\n                 from src/engine/quantum.h:6,\\n                 from src/engine/internal.h:3,\\n                 from tests/validate_shifts.c:1:\\n/usr/include/x86_64-linux-gnu/bits/stdio2.h:71:10: note: \u2018__builtin___snprintf_chk\u2019 output between 47 and 4845 bytes into a destination of size 2700\\n   71 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\\n      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\n   72 |                                    __glibc_objsize (__s), __fmt,\\n      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\n   73 |                                    __va_arg_pack ());\\n      |                                    ~~~~~~~~~~~~~~~~~\\ncc1: all warnings being treated as errors\\n'))"
+      },
+      "sanitized": {
+        "status": "failed-shift-truth-targeted",
+        "exit_code": 1,
+        "failed_command": "build-validate_shifts",
+        "diagnostic": "AssertionError(('build-validate_shifts', 'In file included from tests/validate_shifts.c:16:\\ntests/validate_shifts.c: In function \u2018main\u2019:\\ntests/shift_truth_state.inc:201:87: error: \u2018%s\u2019 directive output may be truncated writing up to 2399 bytes into a region of size between 257 and 2656 [-Werror=format-truncation=]\\n  201 |                              \"{\\\\\"op\\\\\":\\\\\"%s\\\\\",\\\\\"bits\\\\\":32,\\\\\"signed\\\\\":true,\\\\\"args\\\\\":[%s,%s]}\",\\n      |                                                                                       ^~\\nIn file included from /usr/include/stdio.h:894,\\n                 from src/engine/quantum.h:6,\\n                 from src/engine/internal.h:3,\\n                 from tests/validate_shifts.c:1:\\n/usr/include/x86_64-linux-gnu/bits/stdio2.h:71:10: note: \u2018__builtin___snprintf_chk\u2019 output between 47 and 4845 bytes into a destination of size 2700\\n   71 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\\n      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\n   72 |                                    __glibc_objsize (__s), __fmt,\\n      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\\n   73 |                                    __va_arg_pack ());\\n      |                                    ~~~~~~~~~~~~~~~~~\\ncc1: all warnings being treated as errors\\n'))"
+      }
+    },
+    "v2": {
+      "normal": {
+        "status": "failed-shift-truth-targeted",
+        "exit_code": 1,
+        "failed_command": "validate_shifts",
+        "diagnostic": "AssertionError(('validate_shifts', 'shift truth value mismatch width=64 form=1 count=0\\nPASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse\\nPASS 16 sparse joint-state shift domains: all bytes/counts, selected wide words, signed extension, phases, controls, bounded workspace and clean inverse\\n'))"
+      },
+      "sanitized": {
+        "status": "failed-shift-truth-targeted",
+        "exit_code": 1,
+        "failed_command": "validate_shifts",
+        "diagnostic": "AssertionError(('validate_shifts', 'shift truth value mismatch width=64 form=1 count=0\\nPASS shift joint states: 20 domains with relative phase, narrowing, signed extension, correlated count, open control and clean inverse\\nPASS 16 sparse joint-state shift domains: all bytes/counts, selected wide words, signed extension, phases, controls, bounded workspace and clean inverse\\n'))"
+      }
+    }
+  },
+  "pilot_scope": "Two initial direct-word NOT pilots returned correct states on the previous compiler. Their driver expectation was wrong; no successful wrapper exit record is invented. The final no-table nested shift/cast case actually reaches the affected arithmetic fallback and fails on both previous161 and candidate164v2.",
+  "validation_scope": "Four stated source labels per width and every promoted32/64-bit shift count, six truth forms, byte casts, both synthesis policies, controls, full complex sparse states and clean inverse; not all C11 expressions or wide inputs.",
+  "block02_status": "usable advance; integer foundation remains open",
+  "broad_regression": "pending-for-these-inputs",
+  "remote_ci": "pending-for-these-inputs",
+  "artifact_sha256": {
+    "evidence.tar.gz": "20f2597ffdc13d630d017b9def23187fb07bffc419c521e48b416ec97c39cc5d"
+  }
+}

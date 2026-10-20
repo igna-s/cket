@@ -85,6 +85,12 @@ wire budget now generate circuits; the block 02
 [variable_shift program](examples/blocks/02/variable_shift.c) executes in sparse mode with 105
 wires.
 
+The [Boolean shift consumers](docs/c11-shifts.md#boolean-consumers-and-integer-conversions) now
+avoid a full shifted word when only its truth is needed, and integer conversions restrict private
+output width. The block 02 [shift_predicate example](examples/blocks/02/shift_predicate.c) executes
+64-bit shift/byte predicates with 85 wires. A numeric logical-negation bug in the arithmetic
+fallback is also corrected; its previous wrong joint state is preserved as regression evidence.
+
 ## Install and build
 
 Use Linux or WSL. On Windows, open a WSL terminal and work inside the repository there. The

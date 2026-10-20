@@ -21,6 +21,12 @@ ahora generan circuito los desplazamientos variables de 32 bits que antes agotab
 en la revisión anterior. Las pruebas dirigidas incluyen fases e inversas, conservando los límites de
 las fuentes y dominios comprobados.
 
+El nuevo `shift_predicate` usa desplazamientos de 64 bits como booleanos y tras convertirlos a byte,
+con 85 qubits. Evita temporales enteros innecesarios y corrige una negación lógica incorrecta en la
+ruta aritmética de expresiones anidadas. La [evidencia](audit-evidence/shift-truth-v3/README.es.md)
+conserva los tres rechazos previos por recursos, el error numérico y los intentos de prueba
+fallidos.
+
 **Nuevo código integrado:** división reversible por constantes de magnitud 2 a 16 y consumo directo
 del cociente como booleano, negación y comparación con cero. El ejemplo
 [`quantum_buckets.c`](../examples/quantum_buckets.c) calcula grupos sobre una superposición de bytes

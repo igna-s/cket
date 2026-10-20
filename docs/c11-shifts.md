@@ -46,9 +46,29 @@ to 24; [sparse execution](simulacion-dispersa.es.md) supports wider bounded-supp
 separate counter already exceed 128 wires, independently of this workspace improvement; narrow
 results and general future resource expansion retain their separate contracts.
 
+## Boolean consumers and integer conversions
+
+Direct truth conversion, logical negation, and equality/inequality with zero in either operand order
+now test the surviving source bits without constructing a full shifted word. Count patterns are
+disjoint; controlled zero tests compute one private predicate bit, then the existing inverse cleans
+it. Left shift tests the low bits that survive modular truncation. Right shift includes the original
+high bits and the declared arithmetic sign extension. Definedness is still checked first.
+
+Non-Boolean integer casts now request only their needed result bits from the child expression. An
+intervening byte conversion therefore retains its own zero/nonzero meaning; it is not replaced with
+truth of the unconverted full word. Logical negation must inspect the complete converted operand
+even though C gives `!` an `int` result with values zero or one. The arithmetic fallback previously
+narrowed such an operand to one bit in some nested shift/cast expressions; that numeric bug is
+corrected and its exact no-table reproduction is retained.
+
+`shift_predicate` in block 02 uses a 64-bit source and a count in superposition, computing both
+`(value << count) != 0` and `(bool)(uint8_t)(value << count)`. Its circuit uses 85 physical wires.
+The [current evidence](audit-evidence/shift-truth-v3/README.es.md) separates those executions from
+the three previous frontend resource failures and the numeric fallback regression.
+
 ## Evidence and limits
 
-`build/validate_shifts` runs 71 checks:
+`build/validate_shifts` runs 203 checks:
 
 - Twenty complete joint-state comparisons across ten small domains, with finite synthesis
   enabled/disabled, nontrivial relative phase, unsigned modular truncation, signed extension, 64-bit
@@ -60,6 +80,11 @@ results and general future resource expansion retain their separate contracts.
   applicable 32/64-bit shift amount; full 32-bit and narrow 64-bit results, signed right extension,
   coherent controls, source/result phases, source preservation and a clean inverse. Their finite
   source domains are explicit in `tests/shift_state.inc`; they do not cover every wide input value.
+- Another 132 sparse joint-state domains cover six truth forms, four declared source labels at
+  8/32/64 bits, all counts of the promoted 32/64-bit word, byte conversions, both synthesis
+  policies, coherent controls, phases, source preservation and a clean inverse. The signed labels
+  are -2, -1, 0 and 1; unsigned labels use the corresponding width's modular encoding. Eight-bit
+  unsigned left inputs are explicitly promoted to unsigned32 so every selected count is defined.
 - Fourteen definedness checks in both routes: negative/out-of-width counters, signed negative left
   operands, signed overflow and superpositions containing invalid arithmetic.
 - Five executions combining a typed function, a fixed array, a static loop, conversions, arithmetic,
@@ -67,7 +92,7 @@ results and general future resource expansion retain their separate contracts.
 - Ten frontend exports of both shifts on 20 relevant input bits across `-O0`, `-O1`, `-O2`, `-O3`,
   `-Os`, with backend truth tables disabled.
 
-The [current targeted evidence](audit-evidence/shift-mux-v1/README.es.md) separates source
+The [previous targeted evidence](audit-evidence/shift-mux-v1/README.es.md) separates source
 identities, normal/sanitizer builds and the actual previous compiler rejection. The
 [variable_shift example](../examples/blocks/02/variable_shift.c) now compiles and executes with 105
 physical wires in sparse mode; the same source exceeds the physical budget on the previous 159-input

@@ -1,0 +1,206 @@
+{
+  "source_sha256": "5bdacd146e06ae8d5c8e7accb69b04fb1f0ac8d03f9230446cf48ef0cfc00b31",
+  "configurations": {
+    "normal": {
+      "compile_argv": [
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/build/cket",
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/examples/blocks/02/shift_predicate.c",
+        "-O2",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/build/native-predicate-v1/normal"
+      ],
+      "compile_returncode": 0,
+      "binary_sha256": "c0b041df8359929f6a4458ff6a5fcfcfff705bd7f302b233f7e764d853987317",
+      "core_sha256": {
+        "cket": "f45a5aa6b7423e4c479db8277cd0af43790b1f5badb2c944f9506261d1e0568d",
+        "cket_backend": "98af3322b1d839ee7e3af4506b8211bd8768958b1c7a2875f20760079df50dc5",
+        "cket_plugin.so": "f8d5dcd1b975588832240093f502208fdfb061748a911d9a015bcbda382baed5",
+        "cket_runtime.o": "2a1c3862463773e8ceb81cae9169cacd9dde9244a3598f779cf15ffd4c95d69e",
+        "libcket_quantum.a": "4d35c517c777d2e13040449696851a571c07f8e31dea354d10f16d7a7ca772ce"
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "returncode": 0,
+          "stdout": "control=1 count=59 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 1,
+          "returncode": 0,
+          "stdout": "control=1 count=12 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 2,
+          "returncode": 0,
+          "stdout": "control=1 count=24 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 3,
+          "returncode": 0,
+          "stdout": "control=0 count=43 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 4,
+          "returncode": 0,
+          "stdout": "control=0 count=51 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 5,
+          "returncode": 0,
+          "stdout": "control=0 count=55 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 6,
+          "returncode": 0,
+          "stdout": "control=1 count=39 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 7,
+          "returncode": 0,
+          "stdout": "control=0 count=4 nonzero=1 byte_nonzero=1\n"
+        },
+        {
+          "seed": 8,
+          "returncode": 0,
+          "stdout": "control=1 count=24 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 9,
+          "returncode": 0,
+          "stdout": "control=1 count=26 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 10,
+          "returncode": 0,
+          "stdout": "control=0 count=32 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 11,
+          "returncode": 0,
+          "stdout": "control=0 count=42 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 12,
+          "returncode": 0,
+          "stdout": "control=1 count=50 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 13,
+          "returncode": 0,
+          "stdout": "control=1 count=21 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 14,
+          "returncode": 0,
+          "stdout": "control=0 count=1 nonzero=1 byte_nonzero=1\n"
+        },
+        {
+          "seed": 15,
+          "returncode": 0,
+          "stdout": "control=1 count=12 nonzero=0 byte_nonzero=0\n"
+        }
+      ]
+    },
+    "sanitized": {
+      "compile_argv": [
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/build/sanitized/build/cket",
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/examples/blocks/02/shift_predicate.c",
+        "-O2",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/shift-truth-v3/build/native-predicate-v1/sanitized"
+      ],
+      "compile_returncode": 0,
+      "binary_sha256": "ebf08b4d29558fcc118b5ad0cdb27c134aaa817542cdd1f55c4b6d9785c3fc02",
+      "core_sha256": {
+        "cket": "a5d27d07ee235e674d830a882f49c4d378c7bd3510ccbcacc77be60c3c9fc015",
+        "cket_backend": "65035d9daf346bdba4ee0bbb2c942b650967a579762ef2c965033f82fde030bd",
+        "cket_plugin.so": "ed1923833d0c16d54cde33614d3a4d5898fe6180028c5889fbd604c847f02600",
+        "cket_runtime.o": "fa386175252a9b4ee3971c3419dd6cad716b132ee82f4c2a986fd703c8fa2f42",
+        "libcket_quantum.a": "ae688c755465aed91b2a350f77edcbfc5263dfe0be607248de47556df587209e"
+      },
+      "runs": [
+        {
+          "seed": 0,
+          "returncode": 0,
+          "stdout": "control=1 count=59 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 1,
+          "returncode": 0,
+          "stdout": "control=1 count=12 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 2,
+          "returncode": 0,
+          "stdout": "control=1 count=24 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 3,
+          "returncode": 0,
+          "stdout": "control=0 count=43 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 4,
+          "returncode": 0,
+          "stdout": "control=0 count=51 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 5,
+          "returncode": 0,
+          "stdout": "control=0 count=55 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 6,
+          "returncode": 0,
+          "stdout": "control=1 count=39 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 7,
+          "returncode": 0,
+          "stdout": "control=0 count=4 nonzero=1 byte_nonzero=1\n"
+        },
+        {
+          "seed": 8,
+          "returncode": 0,
+          "stdout": "control=1 count=24 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 9,
+          "returncode": 0,
+          "stdout": "control=1 count=26 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 10,
+          "returncode": 0,
+          "stdout": "control=0 count=32 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 11,
+          "returncode": 0,
+          "stdout": "control=0 count=42 nonzero=1 byte_nonzero=0\n"
+        },
+        {
+          "seed": 12,
+          "returncode": 0,
+          "stdout": "control=1 count=50 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 13,
+          "returncode": 0,
+          "stdout": "control=1 count=21 nonzero=0 byte_nonzero=0\n"
+        },
+        {
+          "seed": 14,
+          "returncode": 0,
+          "stdout": "control=0 count=1 nonzero=1 byte_nonzero=1\n"
+        },
+        {
+          "seed": 15,
+          "returncode": 0,
+          "stdout": "control=1 count=12 nonzero=0 byte_nonzero=0\n"
+        }
+      ]
+    }
+  },
+  "status": "passed-32-native-predicate-executions"
+}

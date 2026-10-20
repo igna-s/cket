@@ -64,11 +64,15 @@ las pruebas normales y con sanitizadores de la división.
 
 ## Avance utilizable del bloque 02
 
-Ya está disponible `bash scripts/run-block.sh 02`, con tres programas de enteros anchos en el
+Ya está disponible `bash scripts/run-block.sh 02`, con cuatro programas de enteros anchos en el
 [motor disperso](simulacion-dispersa.es.md): división con `int` de 32 bits y un cálculo con `size_t`
 de 64 bits, además de desplazamiento variable de 32 bits con un contador cuántico. El runner genera
 los ejecutables, circuitos e informes de recursos. El soporte ocupado tiene un presupuesto
 explícito; no se promete simular cualquier estado de 128 qubits.
+
+El cuarto programa, `shift_predicate`, usa un desplazamiento de 64 bits como booleano y después de
+una conversión a byte. Ya ejecuta con 85 qubits, sin construir el resultado entero completo para
+preguntar si es cero. Se corrigió además una negación lógica incorrecta de la ruta aritmética.
 
 Este avance mantiene el bloque 02 abierto: faltan combinaciones y contextos enteros generales.
 Permite usar la nueva capacidad mientras se sigue trabajando en el alcance completo.

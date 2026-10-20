@@ -12,6 +12,12 @@ width. Signed negation requires exclusion of the minimum value of its expression
 complement operates on the declared integer representation; conversion to `_Bool` normalizes any
 nonzero value to one.
 
+The arithmetic fallback now preserves the full operand of logical negation. A nested integer
+conversion may narrow the value before `!`, but the one-bit truth result must not narrow that
+converted operand again. The
+[shift truth/cast regressions](c11-shifts.md#boolean-consumers-and-integer-conversions) retain an
+exact previous wrong-state reproduction and the corrected inverse/phase checks.
+
 Logical short circuiting and `?:` analyze arithmetic only on the support of the arm that C selects.
 For example, `x ? 3 / x : y` can be defined when `x` includes zero: the division arm must prove
 `x != 0`. A division reachable with a zero divisor is rejected. No measurement chooses an arm.

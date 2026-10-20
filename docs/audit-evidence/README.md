@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The current [shift multiplexer](shift-mux-v1/README.es.md) removes the former full-word stage
+The current [shift truth/cast advance](shift-truth-v3/README.es.md) removes three previous resource
+failures and corrects a numeric logical-negation error in the arithmetic fallback. The fourth block
+02 example executes with 85 wires. Targeted checks retain source identity, earlier failed attempts
+and the exact wrong-state reproduction; complete C11 remains open.
+
+The previous [shift multiplexer](shift-mux-v1/README.es.md) removes the former full-word stage
 workspace, enabling complete32-bit variable-shift circuits and a105-wire native example. Targeted
 normal/sanitizer runs check71 shift domains/contracts,3505 expressions and393 native cases on161
 inputs, with complete finite phased sparse states and actual previous failure preserved.

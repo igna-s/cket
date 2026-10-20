@@ -13,6 +13,7 @@ static void apply(qc_context *c, const char *operation) {
 }
 
 #include "shift_state.inc"
+#include "shift_truth_state.inc"
 
 static void joint_states(void) {
     /* Every basis pair, relative phase, control branch and private wire is
@@ -306,6 +307,7 @@ int main(int argc, char **argv) {
         validation_fail("usage: validate_shifts");
     joint_states();
     wide_sparse_states();
+    shift_truth_states();
     exports_and_rejections();
     validation v;
     validation_init(&v, argv[0]);

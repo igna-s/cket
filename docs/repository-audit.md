@@ -1,5 +1,12 @@
 # Auditoría del repositorio y de los papers
 
+El avance de [predicados y conversiones](c11-shifts.md#boolean-consumers-and-integer-conversions)
+elimina tres rechazos anteriores por recursos y corrige una negación lógica que podía reducir un
+operando a su bit bajo en la ruta aritmética. El ejemplo nuevo usa 85 qubits. La
+[evidencia](audit-evidence/shift-truth-v3/README.es.md) conserva los casos exactos, las fuentes de
+cada intento y los fallos previos, sin atribuir el error a las rutas estructuradas que sí
+funcionaban.
+
 El [selector reversible de desplazamientos](c11-shifts.md) ya genera los circuitos completos de 32
 bits que antes agotaban los recursos. El mismo ejemplo C falla por qubits en la revisión previa y
 ahora ejecuta en modo disperso con 105 qubits. La

@@ -1438,14 +1438,10 @@ def main(language):
             for command in record['commands']
         )
     check(
-        'Shift161: exact current/archive sources,71 shift checks,3505 expressions and393 native tests per configuration',
+        'Historical shift161: exact archived sources,71 shift checks,3505 expressions and393 native tests per configuration',
         shift_summary['status'] == 'passed-targeted-shift-multiplexer'
         and shift_summary['source_files'] == len(shift_sources) == 161
         and shift_sources == shift_summary['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
-            for name, digest in shift_sources.items()
-        )
         and shift_summary['checks_per_configuration']
         == {'shifts': 71, 'expressions': 3505, 'native': 393}
         and shift_summary['new_complete_sparse_domains_per_configuration'] == 16
@@ -1478,6 +1474,90 @@ def main(language):
         and shift_summary['previous_failure']['previous_core_sha256']['libcket_quantum.a']
         == sparse_records['normal']['core_sha256']['libcket_quantum.a'],
     )
+    truth_folder = ROOT / 'docs/audit-evidence/shift-truth-v3'
+    truth_summary = json.loads((truth_folder / 'summary.json').read_text())
+    truth_native = json.loads((truth_folder / 'native-example.json').read_text())
+    with tarfile.open(truth_folder / 'evidence.tar.gz') as archive:
+        truth_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in truth_summary['source_sha256']
+        }
+        truth_records = {
+            mode: json.load(archive.extractfile('records/' + mode + '/exit.json'))
+            for mode in ('normal', 'sanitized')
+        }
+        truth_logs_match = all(
+            hashlib.sha256(
+                archive.extractfile('records/' + mode + '/' + command['log']).read()
+            ).hexdigest()
+            == command['log_sha256']
+            for mode, record in truth_records.items()
+            for command in record['commands']
+        )
+    check(
+        'Truth164: exact current/archive sources,203 shift checks,3505 expressions,393 native cases and990 divisions per configuration',
+        truth_summary['status'] == 'passed-targeted-truth-cast-and-logical-not-correction'
+        and truth_summary['source_files'] == len(truth_sources) == 164
+        and truth_sources == truth_summary['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == digest
+            for name, digest in truth_sources.items()
+        )
+        and truth_summary['checks_per_configuration']
+        == {'shifts': 203, 'expressions': 3505, 'native': 393, 'division': 990}
+        and truth_summary['new_complete_sparse_domains_per_configuration'] == 132
+        and truth_summary['example']['peak_qubits'] == 85
+        and all(
+            record['status'] == 'passed-shift-truth-targeted'
+            and record['exit_code'] == 0
+            and record['source_sha256'] == truth_sources
+            and all(row['returncode'] == 0 for row in record['commands'])
+            for record in truth_records.values()
+        )
+        and truth_logs_match,
+    )
+    truth_exact = truth_summary['exact_regressions']
+    check(
+        'Truth164: actual resource failures, numeric wrong-state reproduction, earlier failed candidates and exact native example stay distinct',
+        truth_summary['plugin_reuse']['binary_sha256']
+        == shift_records['sanitized']['core_sha256']['cket_plugin.so']
+        and all(
+            truth_sources[n] == sha
+            for n, sha in truth_summary['plugin_reuse']['plugin_inputs_sha256'].items()
+        )
+        and truth_exact['status'] == 'confirmed-three-resource-fixes-and-word-not-correction'
+        and len(truth_exact['current_cases'])
+        == len(truth_exact['previous_resource_cases']['cases'])
+        == 3
+        and all(row['returncode'] == 1 for row in truth_exact['previous_resource_cases']['cases'])
+        and all(
+            row['compile_returncode'] == 0 and all(r['returncode'] == 0 for r in row['resources'])
+            for row in truth_exact['current_cases']
+        )
+        and [
+            truth_exact['word_not'][key]['returncode']
+            for key in ('previous161', 'candidate164v2', 'current164v3')
+        ]
+        == [1, 1, 0]
+        and truth_exact['word_not']['previous161']['library_sha256']
+        == shift_records['normal']['core_sha256']['libcket_quantum.a']
+        and truth_exact['word_not']['current164v3']['library_sha256']
+        == truth_records['normal']['core_sha256']['libcket_quantum.a']
+        and all(
+            row['status'] == 'failed-shift-truth-targeted' and row['exit_code'] == 1
+            for modes in truth_summary['failed_attempts'].values()
+            for row in modes.values()
+        )
+        and truth_native['status'] == 'passed-32-native-predicate-executions'
+        and truth_native['source_sha256'] == truth_sources['examples/blocks/02/shift_predicate.c']
+        and all(
+            row['compile_returncode'] == 0
+            and len(row['runs']) == 16
+            and all(r['returncode'] == 0 for r in row['runs'])
+            and row['core_sha256'] == truth_records[mode]['core_sha256']
+            for mode, row in truth_native['configurations'].items()
+        ),
+    )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1495,6 +1575,7 @@ def main(language):
         ('common-division-v3', division_delivery),
         ('sparse-simulation-v1', sparse_summary),
         ('shift-mux-v1', shift_summary),
+        ('shift-truth-v3', truth_summary),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1559,6 +1640,7 @@ def main(language):
                 'common-division-v3',
                 'sparse-simulation-v1',
                 'shift-mux-v1',
+                'shift-truth-v3',
                 'deferred-phase-v6',
                 'deferred-phase-v6-broad-failure',
                 'guarded-cpu-loads-v3',
