@@ -2,6 +2,7 @@
 /build/
 /out/
 /tmp/pdfs/
+/tmp/lightning-returns-slots/
 __pycache__/
 *.qir
 *.qasm
