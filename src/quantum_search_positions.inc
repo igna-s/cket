@@ -10,10 +10,20 @@ tree search_pointer_call(tree pointer) {
     pointer = strip(pointer);
     while (pointer && TREE_CODE(pointer) == SAVE_EXPR)
         pointer = strip(TREE_OPERAND(pointer, 0));
+    if (quantum_search_pointers.count(pointer))
+        return pointer;
     return pointer && TREE_CODE(pointer) == CALL_EXPR &&
                    !standard_string_search(get_callee_fndecl(pointer)).empty()
                ? pointer
                : NULL_TREE;
+}
+
+tree search_absolute_position(const QuantumStringSearch &search, tree type, location_t location) {
+    return fold_build2_loc(location,
+                           PLUS_EXPR,
+                           type,
+                           fold_convert(type, search.position),
+                           build_int_cstu(type, search.source.offset));
 }
 
 // GCC supplies a byte difference here and divides by the pointed-to element
@@ -35,6 +45,21 @@ tree expand_search_pointer_difference(tree value) {
         error_at(at(value), "%s", message);
         return build_zero_cst(TREE_TYPE(value));
     };
+    QuantumStringSearch other;
+    tree other_pointer = reverse ? left : right;
+    if (search_pointer_call(other_pointer) && expand_string_search(other_pointer, other, true)) {
+        tree type = TREE_TYPE(value);
+        if (!same_search_object(search.source, other.source) || !INTEGRAL_TYPE_P(type) ||
+            TYPE_UNSIGNED(type) || !TYPE_PRECISION(type) || TYPE_PRECISION(type) > 64)
+            return reject(
+                "|c>: saved quantum search subtraction needs the same checked object and a signed difference type");
+        tree a = search_absolute_position(search, type, at(value));
+        tree b = search_absolute_position(other, type, at(value));
+        tree difference =
+            fold_build2_loc(at(value), MINUS_EXPR, type, reverse ? b : a, reverse ? a : b);
+        difference = string_search_domain(other, difference, at(value), true);
+        return string_search_domain(search, difference, at(value), true);
+    }
     QuantumByteRange base;
     if (!resolve_byte_range(reverse ? left : right, base) ||
         !same_search_object(search.source, base))
@@ -77,6 +102,42 @@ tree expand_search_pointer_comparison(tree value) {
     QuantumStringSearch search;
     if (!expand_string_search(call, search, true))
         return NULL_TREE;
+    QuantumStringSearch other;
+    tree other_pointer = reverse ? left : right;
+    if (search_pointer_call(other_pointer) && expand_string_search(other_pointer, other, true)) {
+        if (!same_search_object(search.source, other.source)) {
+            error_at(
+                at(value),
+                "|c>: saved quantum search comparison requires the same checked storage object");
+            return build_zero_cst(TREE_TYPE(value));
+        }
+        enum tree_code relation = TREE_CODE(value);
+        bool equality = relation == EQ_EXPR || relation == NE_EXPR;
+        tree a = search_absolute_position(search, size_type_node, at(value));
+        tree b = search_absolute_position(other, size_type_node, at(value));
+        tree result = fold_build2_loc(at(value),
+                                      equality ? EQ_EXPR : relation,
+                                      boolean_type_node,
+                                      reverse ? b : a,
+                                      reverse ? a : b);
+        if (equality) {
+            tree both_found = fold_build2_loc(
+                at(value), TRUTH_ANDIF_EXPR, boolean_type_node, search.found, other.found);
+            tree either_found = fold_build2_loc(
+                at(value), TRUTH_ORIF_EXPR, boolean_type_node, search.found, other.found);
+            tree both_missing =
+                fold_build1_loc(at(value), TRUTH_NOT_EXPR, boolean_type_node, either_found);
+            result =
+                fold_build2_loc(at(value), TRUTH_ANDIF_EXPR, boolean_type_node, both_found, result);
+            result = fold_build2_loc(
+                at(value), TRUTH_ORIF_EXPR, boolean_type_node, both_missing, result);
+            if (relation == NE_EXPR)
+                result = fold_build1_loc(at(value), TRUTH_NOT_EXPR, boolean_type_node, result);
+        }
+        result = string_search_domain(other, result, at(value), !equality);
+        return fold_convert(TREE_TYPE(value),
+                            string_search_domain(search, result, at(value), !equality));
+    }
     QuantumByteRange base;
     if (!resolve_byte_range(reverse ? left : right, base) ||
         !same_search_object(search.source, base)) {

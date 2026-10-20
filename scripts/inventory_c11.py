@@ -248,8 +248,12 @@ def semantics(header, name, kind, optional):
             "String views require an in-view NUL; strpbrk excludes it and an empty strstr "
             "needle succeeds. Relative byte positions distinguish first and last occurrence; "
             "NULL subtraction and ordering have no defined C meaning and use a domain guard. "
-            "Returned-pointer storage, pointer arithmetic before consumption, dereference and general "
-            "pointer consumers, indirect quantum ABI and dynamic extents remain pending. "
+            "Local immutable character/void-pointer borrows save a once-only quantum selector "
+            "and provenance; aliases share it. Character dereference and constant indexing "
+            "read current source bytes while captured positions remain fixed. Pointer writes, "
+            "rebinding, general pointer arithmetic/ABI, dynamic extents and further consumers "
+            "remain pending. Native read validation and complete quantum qualification remain "
+            "deferred where not covered by the delivery examples. "
             "Delivery examples do not certify the deferred coherent/inverse, sanitizer "
             "or complete GCC context qualification. Resource budgets apply.",
         )

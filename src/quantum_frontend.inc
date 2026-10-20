@@ -1431,6 +1431,8 @@ tree expand_quantum_program(tree value) {
                 return instantiate_quantum_call(init, decl);
         }
         tree pointer_prefix = NULL_TREE;
+        if (expand_search_pointer_borrow(decl, pointer_prefix))
+            return pointer_prefix;
         if (expand_pointer_borrow(decl, pointer_prefix))
             return pointer_prefix;
         if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl)) &&
@@ -1485,6 +1487,9 @@ tree expand_quantum_program(tree value) {
             DECL_INITIAL(decl) = expand_quantum_program(DECL_INITIAL(decl));
         return value;
     }
+    tree rejected_search_write = reject_search_pointer_write(value);
+    if (rejected_search_write)
+        return rejected_search_write;
     if (code == POINTER_DIFF_EXPR) {
         tree search = expand_search_pointer_difference(value);
         if (search)
@@ -1615,6 +1620,9 @@ tree expand_quantum_program(tree value) {
         return value;
     }
     if (code == INDIRECT_REF) {
+        tree search = expand_search_pointer_read(value);
+        if (search)
+            return search;
         tree selected = dynamic_product_access(value);
         if (selected)
             return selected;
@@ -1623,6 +1631,11 @@ tree expand_quantum_program(tree value) {
             return element;
     }
     if (code == ARRAY_REF || code == COMPONENT_REF) {
+        if (code == ARRAY_REF) {
+            tree search = expand_search_pointer_read(value);
+            if (search)
+                return search;
+        }
         if (code == COMPONENT_REF) {
             tree container = strip(TREE_OPERAND(value, 0));
             while (container && TREE_CODE(container) == SAVE_EXPR)
@@ -1665,7 +1678,8 @@ tree expand_quantum_program(tree value) {
             at(value),
             "|c>: quantum products cannot decay to CPU pointers or be read as a whole; access their elements");
     if (code == VAR_DECL &&
-        (quantum_references.count(value) || quantum_pointer_aliases.count(value)))
+        (quantum_references.count(value) || quantum_pointer_aliases.count(value) ||
+         quantum_search_pointers.count(value)))
         error_at(
             at(value),
             "|c>: quantum reference cannot escape to CPU memory or be rebound without a checked borrow");

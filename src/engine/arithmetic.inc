@@ -437,6 +437,12 @@ static int ar_bound(ar_builder *p, int e, unsigned depth) {
                 r->lo = 0;
                 r->hi = (__int128)(bits_mask(s->width) & ~s->zero_mask);
             }
+            if (s->support_interval) {
+                if (r->lo < (__int128)s->support_lower)
+                    r->lo = s->support_lower;
+                if (r->hi > (__int128)s->support_upper)
+                    r->hi = s->support_upper;
+            }
             int fixed;
             if (s->width == 1 && ar_register_boolean_constant(p, s->id, &fixed, 0))
                 r->lo = r->hi = numeric((uint64_t)fixed, 1, r->sign);
@@ -1489,6 +1495,39 @@ static void ar_free(ar_builder *p) {
     }
     free(p->ranges);
     free(p->gates);
+}
+
+// Optional, independently inferred support for an initialized output. This
+// proves no property from a frontend assertion. Failed/budgeted inference
+// retains the ordinary full-type support and does not reject a valid circuit.
+static int computed_interval(qc_context *c,
+                             const cj_doc *d,
+                             int e,
+                             unsigned width,
+                             int sign,
+                             uint64_t *lower,
+                             uint64_t *upper) {
+    if (d->count > 100000)
+        return 0;
+    ar_builder p = {.c = c, .d = d};
+    p.ranges = calloc((size_t)d->count, sizeof *p.ranges);
+    if (!p.ranges)
+        return 0;
+    char previous_error[sizeof c->error];
+    memcpy(previous_error, c->error, sizeof previous_error);
+    unsigned previous_work = c->symbolic_work;
+    int ok = ar_bound(&p, e, 0);
+    ar_range range = p.ranges[e];
+    uint64_t maximum = sign == 0 ? bits_mask(width) : bits_mask(width - 1);
+    ok = ok && range.valid && range.lo >= 0 && range.hi <= (__int128)maximum;
+    if (ok) {
+        *lower = (uint64_t)range.lo;
+        *upper = (uint64_t)range.hi;
+    }
+    ar_free(&p);
+    memcpy(c->error, previous_error, sizeof c->error);
+    c->symbolic_work = previous_work;
+    return ok;
 }
 
 static int arithmetic_compute(

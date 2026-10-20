@@ -53,8 +53,45 @@ evaluated expression has a provably defined domain, so general guarded compositi
 qualification. CPU object identity is checked independently of contents: two arrays containing the
 same bytes do not become the same pointer provenance.
 
-Saving a search pointer, adding an offset before consumption, dereferencing it or passing it to
-another function remains pending. Such calls cannot inspect a host placeholder as quantum data.
+Local character/void pointers can now retain a search result. The compiler saves an 8-bit quantum
+selector once, with a missing-match sentinel and checked object provenance. Copying the local
+pointer creates an immutable alias of that selector. Null tests, same-object comparisons and
+differences consume the saved result rather than rerunning the search. Two saved results compare
+equal when both are null, or when both select the same address in the same checked object.
+
+```c
+const char *last = strrchr(text, 'a');
+const char *alias = last;
+quant int8_t offset = alias - text;
+quant char selected = *alias;
+quant char following = alias[1];
+```
+
+Character reads support direct dereference and constant indexing, including constant pointer-byte
+offsets within a read expression. A read selects from the checked object bytes without measuring the
+selector. The pointer must be nonnull and the selected address must be inside the object; one-past
+addresses are not readable. The result has the pointed-to character's signedness. Dynamic indexes,
+wider pointed-to layouts and volatile/atomic reads remain pending.
+
+The saved position is fixed, while a later read uses current source contents. Mutable CPU sources
+capture fresh candidate bytes, retaining initial string-reachability guards from the original
+search. These accesses can load multiple checked candidate bytes; they do not provide quantum RAM.
+Quantum source updates remain subject to the existing dependency and retained-history rules. CPU
+mutation, guard-page access, quantum mutation and every mixed context still need the deferred
+qualification; the delivery example alone does not establish those contracts exhaustively.
+
+These local borrows cannot be rebound or used for writes; pointer/overwrite history remains pending.
+General pointer arithmetic outside a read, passing/returning a pointer through a function, escaping
+to CPU storage and a general quantum pointer ABI are also pending. Such uses cannot inspect a host
+placeholder as quantum data.
+
+The engine now retains conservative nonnegative support intervals inferred from computed
+expressions. It can independently prove the bounds of a saved selector instead of treating it as
+every possible byte. Basis-changing operations invalidate these certificates. Table synthesis
+extends certified unreachable labels without evaluating their invalid C branches; interval analysis
+uses the same certificates. Inference is optional and bounded: a failed proof preserves the ordinary
+full-type domain rather than accepting an asserted frontend range. Complete qualification of this
+shared-engine change remains part of the deferred closure.
 
 Known CPU objects supply once-only byte captures. String loads stop at their own CPU terminator;
 saved inverses retain the captured values after subsequent CPU mutation. Volatile and atomic objects
@@ -67,8 +104,9 @@ preserve calls for the quantum frontend before GCC folds them into host byte ope
 user functions with matching names are not recognized as library adapters.
 
 The examples are [`string_spans.c`](../examples/blocks/06/string_spans.c),
-[`string_search.c`](../examples/blocks/06/string_search.c) and
-[`search_positions.c`](../examples/blocks/06/search_positions.c). Build with GCC 11, then run:
+[`string_search.c`](../examples/blocks/06/string_search.c),
+[`search_positions.c`](../examples/blocks/06/search_positions.c) and
+[`saved_search.c`](../examples/blocks/06/saved_search.c). Build with GCC 11, then run:
 
 ```bash
 CC=gcc-11 CXX=g++-11 bash scripts/build.sh

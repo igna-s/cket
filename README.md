@@ -269,9 +269,10 @@ volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls
 
 The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
 expressions, direct null/address predicates and same-object differences for `memchr`, `strchr`,
-`strrchr`, `strpbrk` and `strstr`. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the three
-delivery examples. General returned quantum pointers and full state/inverse, sanitizer and
-GCC-context qualification remain pending.
+`strrchr`, `strpbrk` and `strstr`. Local immutable search pointers support aliases, character
+dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the four
+delivery examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context
+qualification remain pending.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent

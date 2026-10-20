@@ -31,6 +31,8 @@ typedef struct {
     int alive, clean, prepared, ancillary, history, finished;
     int signed_type, basis_known, uniform;
     uint64_t basis_value, zero_mask, uniform_upper;
+    int support_interval;
+    uint64_t support_lower, support_upper;
     char *definition;
     qc_mask definition_mask, definition_pattern;
     uint32_t deps[QC_MAX_SOURCES];

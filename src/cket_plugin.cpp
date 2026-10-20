@@ -464,6 +464,7 @@ void finish_function(void *event, void *) {
     quantum_division_products.clear();
     quantum_references.clear();
     quantum_pointer_aliases.clear();
+    quantum_search_pointers.clear();
     quantum_memory_copies.clear();
     quantum_memory_sets.clear();
     quantum_indexed_accesses.clear();

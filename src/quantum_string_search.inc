@@ -5,9 +5,20 @@ struct QuantumStringSearch {
     tree found = boolean_false_node;
     tree position = build_zero_cst(size_type_node);
     tree defined = boolean_true_node;
+    uint64_t positions = 0;
 };
 
+std::map<tree, QuantumStringSearch> quantum_search_pointers;
+
 bool expand_string_search(tree call, QuantumStringSearch &search, bool position) {
+    call = strip(call);
+    while (call && TREE_CODE(call) == SAVE_EXPR)
+        call = strip(TREE_OPERAND(call, 0));
+    auto saved = quantum_search_pointers.find(call);
+    if (saved != quantum_search_pointers.end()) {
+        search = saved->second;
+        return true;
+    }
     if (!call || TREE_CODE(call) != CALL_EXPR)
         return false;
     std::string operation = standard_string_search(get_callee_fndecl(call));
@@ -50,6 +61,7 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
         return reject("|c>: quantum string search needs a NUL inside each checked string view");
     if (count > 64 || pattern_count > 64)
         return reject("|c>: quantum search exceeds the 64-byte expression synthesis bound");
+    search.positions = count;
     string.stop_at_zero = !memory;
     pattern.stop_at_zero = true;
     tree character = NULL_TREE;
@@ -174,3 +186,4 @@ tree expand_string_search_relation(tree value) {
 }
 
 #include "quantum_search_positions.inc"
+#include "quantum_search_pointers.inc"

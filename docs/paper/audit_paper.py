@@ -1612,14 +1612,10 @@ def main(language):
         }
         positions_failed_exit = json.load(archive.extractfile('failed/v1/exit.json'))
     check(
-        'Search170 positions: exact current/archive sources, first/last consumers and deferred complete qualification',
+        'Historical search170 positions: exact archived sources, first/last consumers and deferred complete qualification',
         positions['status'] == 'built-and-examples-executed-full-qualification-deferred'
         and positions['source_files'] == len(positions_sources) == 170
         and positions_sources == positions['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
-            for name, sha in positions_sources.items()
-        )
         and all(value == 'deferred' for value in positions['qualification'].values())
         and positions['new_partial_interfaces'] == [],
     )
@@ -1634,6 +1630,44 @@ def main(language):
         == 3
         and positions_failed_exit['status'] == 'failed'
         and positions_failed_exit['commands'][-1]['exit_code'] == 1,
+    )
+    delivery_index = json.loads((ROOT / 'docs/audit-evidence/delivery-index.json').read_text())
+    delivery_name = delivery_index['active']
+    assert re.fullmatch(r'[a-z0-9-]+', delivery_name)
+    assert delivery_name in delivery_index['history']
+    delivery_folder = ROOT / 'docs/audit-evidence' / delivery_name
+    delivery = json.loads((delivery_folder / 'summary.json').read_text())
+    with tarfile.open(delivery_folder / 'evidence.tar.gz') as archive:
+        delivery_sources = {
+            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
+            for name in delivery['source_sha256']
+        }
+        delivery_exit = json.load(archive.extractfile('records/exit.json'))
+        delivery_logs_match = all(
+            hashlib.sha256(archive.extractfile('records/' + name).read()).hexdigest() == sha
+            for name, sha in delivery['log_sha256'].items()
+        )
+        delivery_native = archive.extractfile('records/native.log').read().decode()
+    check(
+        'Active incremental delivery: current/archive source identity and qualification scope remain explicit',
+        delivery['source_files'] == len(delivery_sources)
+        and delivery_sources == delivery['source_sha256']
+        and all(
+            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
+            for name, sha in delivery_sources.items()
+        )
+        and delivery['status'] == 'built-and-examples-executed-full-qualification-deferred'
+        and all(value == 'deferred' for value in delivery['qualification'].values()),
+    )
+    check(
+        'Active incremental delivery: closed build/examples and native checks are distinct from deferred exhaustive campaigns',
+        delivery_exit['status'] == delivery['status']
+        and all(row['exit_code'] == 0 for row in delivery_exit['commands'])
+        and delivery_logs_match
+        and delivery['native_regression']['exit_code'] == 0
+        and re.search(
+            rf"^{delivery['native_regression']['checks']} passed, 0 failed ", delivery_native, re.M
+        ),
     )
     current_capsules = (
         ('controlled-operands-integration', current_integration),
@@ -1655,6 +1689,7 @@ def main(language):
         ('shift-truth-v3', truth_summary),
         ('string-library-v1', strings_summary),
         ('search-positions-v2', positions),
+        (delivery_name, delivery),
     )
     check(
         'Deferred phase broad regression: the actual failed closure is preserved separately from its running snapshot',
@@ -1684,6 +1719,7 @@ def main(language):
         *sorted((BASE / 'figures').rglob('*.png')),
         *sorted((BASE / 'figures').rglob('*.svg')),
         *[ROOT / p for p in local_paths],
+        ROOT / 'docs/audit-evidence/delivery-index.json',
         *sorted(EVIDENCE.glob('*.log')),
         ROOT / 'docs/audit-evidence/verify.log',
         ROOT / 'docs/audit-evidence/results.json',
@@ -1700,6 +1736,7 @@ def main(language):
         *sorted(
             path
             for folder in (
+                delivery_name,
                 'pointer-differences',
                 'pointer-differences-maintained',
                 'coherent-cpu-conditions',

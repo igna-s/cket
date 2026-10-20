@@ -190,6 +190,7 @@ static void clear_definition(qc_register *r) {
     r->definition = NULL;
     r->ndeps = 0;
     r->definition_mask = r->definition_pattern = 0;
+    r->support_interval = 0;
 }
 
 static int unborrowed(qc_context *c, uint32_t id) {
@@ -226,6 +227,8 @@ static int remember_dependency(qc_context *c, qc_register *r, uint32_t id) {
 static void unknown_support(qc_register *r) {
     r->basis_known = r->uniform = 0;
     r->zero_mask = 0;
+    r->support_interval = 0;
+    r->support_lower = r->support_upper = 0;
 }
 
 static void taint_uniform(qc_context *c, uint32_t id, qc_mask *seen) {
@@ -762,7 +765,10 @@ static int synthesize_compute(
         values(&dom, i, vals);
         int reachable = 1;
         for (unsigned j = 0; j < dom.count; ++j)
-            if ((fixed[j] >= 0 && vals[j] != (uint64_t)fixed[j]) ||
+            if ((reg(c, dom.sources[j].id)->support_interval &&
+                 (vals[j] < reg(c, dom.sources[j].id)->support_lower ||
+                  vals[j] > reg(c, dom.sources[j].id)->support_upper)) ||
+                (fixed[j] >= 0 && vals[j] != (uint64_t)fixed[j]) ||
                 vals[j] != (vals[alias[j]] ^ (uint64_t)inverted[j])) {
                 reachable = 0;
                 break;
@@ -843,6 +849,13 @@ static int compute(
                                  j == dom.count ? 0 : r->basis_value,
                                  j == dom.count ? 0 : r->zero_mask,
                                  j == dom.count ? 0 : r->epoch);
+        if (j != dom.count)
+            used += (size_t)snprintf(key + used,
+                                     capacity - used,
+                                     "/support:%d:%" PRIu64 ":%" PRIu64,
+                                     r->support_interval,
+                                     r->support_lower,
+                                     r->support_upper);
         for (unsigned b = 0; b < r->width; ++b)
             used += (size_t)snprintf(key + used, capacity - used, ":%u", r->wires[b]);
     }
@@ -1729,6 +1742,7 @@ int qc_apply_token(qc_context *c,
         r->zero_mask = bits_mask(r->width) & ~high;
         r->uniform = low != high;
         r->uniform_upper = high;
+        r->support_interval = 0;
         ++r->epoch;
         return 1;
     }
@@ -1792,6 +1806,7 @@ int qc_apply_token(qc_context *c,
             r->basis_value = 0;
             r->zero_mask = bits_mask(r->width);
             r->uniform = 0;
+            r->support_interval = 0;
         } else {
             domain dom;
             if (!collect_domain(c, d, expr, &dom)) {
@@ -1816,6 +1831,23 @@ int qc_apply_token(qc_context *c,
             r->clean = 0;
             r->prepared = 1;
             unknown_support(r);
+            uint64_t lower, upper;
+            if (computed_interval(c, d, expr, r->width, r->signed_type, &lower, &upper)) {
+                if (mask)
+                    lower = 0; // The inactive clean target remains zero.
+                r->support_interval = 1;
+                r->support_lower = lower;
+                r->support_upper = upper;
+                uint64_t prefix = upper;
+                for (unsigned shift = 1; shift < 64; shift *= 2)
+                    prefix |= prefix >> shift;
+                r->zero_mask = bits_mask(r->width) & ~prefix;
+                if (lower == upper) {
+                    r->basis_known = 1;
+                    r->basis_value = lower;
+                    r->zero_mask = bits_mask(r->width) & ~lower;
+                }
+            }
         }
         ++r->epoch;
         return 1;

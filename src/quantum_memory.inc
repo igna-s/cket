@@ -9,6 +9,7 @@ struct QuantumByteRange {
     const char *error = nullptr;
     tree cpu_address = NULL_TREE;
     tree cpu_object = NULL_TREE;
+    tree cpu_guard = NULL_TREE;
     uint64_t cpu_size = 0;
     std::map<uint64_t, tree> cpu_bytes;
     bool stop_at_zero = false;
@@ -296,6 +297,9 @@ tree object_byte(QuantumByteRange &range, uint64_t index, location_t location) {
                                                       previous,
                                                       build_zero_cst(integer_type_node))
                                     : boolean_true_node;
+            if (range.cpu_guard)
+                enabled = fold_build2_loc(
+                    location, TRUTH_ANDIF_EXPR, boolean_type_node, enabled, range.cpu_guard);
             // A conditional load in this caller can be speculated by GCC from
             // the known enclosing object size. The private runtime query keeps
             // disabled addresses unread, including protected pages after NUL.
