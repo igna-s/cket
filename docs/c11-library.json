@@ -14125,14 +14125,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Concatenation snapshots the original destination length and source prefix length before typed quantum updates, retaining overwrite history and untouched bytes. The mutable checked padding-free integer destination has a 1..64-byte remaining view with an in-view NUL; the appended prefix plus its NUL must fit. strcat needs an in-view source NUL within 64 bytes. strncat uses a constant append limit at most 64, requires no NUL when that many source bytes exist, and always terminates the result without padding its tail. Known nonvolatile CPU sources use guarded once-only captures. Potential overlap is rejected conservatively. Local destination-return borrows and discarded call sequences are supported. Dynamic pointers/counts, general layouts/ABI and further lifetime contexts remain pending; explicit gate, history and expression budgets apply. Full coherent/inverse, sanitizer and GCC qualification is deferred; delivery examples are finite evidence only."
     },
     {
       "header": "string.h",
@@ -14141,14 +14141,14 @@
       "source_index": "B.23",
       "profile": "core-or-target-conditional",
       "classical": "GCC/libc target; not an exhaustive certification",
-      "quantum": "pending",
+      "quantum": "partial",
       "restriction_classes": [
         "P",
         "R"
       ],
       "milestone": "M4/M7",
       "tests": [],
-      "contract": "Not implemented: Use bounded quantum byte/string storage with checked aliases and explicit length/terminator domains. Copy into zero storage creates basis correlation, not a cloned unknown state; destructive/overlapping writes retain history."
+      "contract": "Concatenation snapshots the original destination length and source prefix length before typed quantum updates, retaining overwrite history and untouched bytes. The mutable checked padding-free integer destination has a 1..64-byte remaining view with an in-view NUL; the appended prefix plus its NUL must fit. strcat needs an in-view source NUL within 64 bytes. strncat uses a constant append limit at most 64, requires no NUL when that many source bytes exist, and always terminates the result without padding its tail. Known nonvolatile CPU sources use guarded once-only captures. Potential overlap is rejected conservatively. Local destination-return borrows and discarded call sequences are supported. Dynamic pointers/counts, general layouts/ABI and further lifetime contexts remain pending; explicit gate, history and expression budgets apply. Full coherent/inverse, sanitizer and GCC qualification is deferred; delivery examples are finite evidence only."
     },
     {
       "header": "string.h",

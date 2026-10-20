@@ -52,6 +52,11 @@ hasta NUL, conservación de la cola y relleno con ceros según corresponda. Las 
 la historia reversible y admiten fuentes CPU conocidas. La calificación completa sigue aplazada; los
 dominios se comprueban dentro del circuito.
 
+También se incorpora [concatenación con `strcat` y `strncat`](c11-string-concat.md): las longitudes
+originales se capturan antes de escribir y las actualizaciones conservan historia reversible. El
+ejemplo nuevo combina longitud de destino en superposición y append acotado desde una fuente sin
+NUL. La calificación completa sigue aplazada.
+
 ## La respuesta corta
 
 El proyecto **ya compila y ejecuta programas con un subconjunto de operaciones cuánticas sobre
@@ -227,8 +232,9 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Prefijos de cadenas                      | `strspn`, `strcspn`.                                                                                                                                       | Vistas de 1–64 bytes con NUL dentro del rango. La calificación exhaustiva del nuevo avance queda pendiente.                                                                                                                                               |
 | Predicados de búsqueda                   | `memchr`, `strchr`, `strrchr`, `strpbrk`, `strstr`.                                                                                                        | Comparaciones con NULL y direcciones del mismo objeto, además de restas de posiciones. Se permiten préstamos locales inmutables, alias y lecturas de caracteres; escrituras, rebinding y ABI general siguen pendientes. Calificación exhaustiva aplazada. |
 | Copia de cadenas                         | `strcpy`, `strncpy`.                                                                                                                                       | Destino cuántico comprobado, cola preservada, padding e historia reversible; calificación exhaustiva pendiente.                                                                                                                                           |
+| Concatenación                            | `strcat`, `strncat`.                                                                                                                                       | Longitudes originales capturadas antes de escribir, terminación y cola preservada; calificación exhaustiva pendiente.                                                                                                                                     |
 
-Son **38 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Son **40 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -241,13 +247,13 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      771 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       85 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      769 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       87 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 85 parciales incluyen los
-38 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 85 funciones completas.** El estado parcial registra código disponible; no
+El inventario no registra entradas como completamente implementadas. Las 87 parciales incluyen los
+40 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 87 funciones completas.** El estado parcial registra código disponible; no
 certifica las pruebas aplazadas del nuevo bloque de cadenas.
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un

@@ -64,7 +64,12 @@ struct QuantumMemoryCopy {
 };
 
 std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
-std::map<tree, std::vector<tree>> quantum_string_copies;
+
+struct QuantumStringWrite {
+    std::vector<tree> prefix, updates;
+};
+
+std::map<tree, QuantumStringWrite> quantum_string_copies;
 
 struct QuantumMemorySet {
     tree fill;

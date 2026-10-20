@@ -1,10 +1,11 @@
 {
-  "active": "string-copy-v4",
+  "active": "string-concat-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
     "saved-search-v2",
-    "string-copy-v4"
+    "string-copy-v4",
+    "string-concat-v1"
   ],
   "meaning": "Current source identity selects one incremental delivery. Historical artifacts retain their own sources; deferred qualification is not a passed full audit."
 }

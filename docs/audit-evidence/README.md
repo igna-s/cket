@@ -1,8 +1,12 @@
 # Evidence for the tested C11 subset
 
-The new [string-copy advance](string-copy-v4/README.es.md) adds partial strcpy/strncpy with retained
-overwrite history, known CPU sources and explicit static export bindings. Failed attempts retain
-their actual outcomes; complete qualification remains deferred.
+The new [concatenation advance](string-concat-v1/README.es.md) adds partial strcat/strncat with
+snapshotted original lengths and retained-history updates. Six runnable examples remain separate
+from deferred complete coherent/inverse and compiler-context qualification.
+
+The previous [string-copy advance](string-copy-v4/README.es.md) adds partial strcpy/strncpy with
+retained overwrite history, known CPU sources and explicit static export bindings. Failed attempts
+retain their actual outcomes; complete qualification remains deferred.
 
 The previous [saved-search advance](saved-search-v2/README.es.md) adds local immutable search
 pointers, aliases and character reads, with backend-proven support intervals. Its four examples and

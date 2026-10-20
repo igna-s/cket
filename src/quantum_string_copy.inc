@@ -1,7 +1,78 @@
 // String copies become ordinary typed quantum updates. Existing overwrite
 // lowering retains old owners when necessary; no unknown input is erased.
+tree expand_string_concat(tree call);
+
+uint64_t string_byte_mask(const QuantumByteRange &range, uint64_t position) {
+    unsigned byte = (unsigned)(position % range.stride);
+    unsigned shift = 8 * (BYTES_BIG_ENDIAN ? (unsigned)range.stride - byte - 1 : byte);
+    return uint64_t{255} << shift;
+}
+
+void string_word_byte(QuantumByteRange &destination,
+                      uint64_t index,
+                      tree byte,
+                      std::vector<std::pair<tree, tree>> &words,
+                      location_t location) {
+    uint64_t position = destination.offset + index;
+    tree target = destination.elements[(size_t)(position / destination.stride)];
+    tree type = unsigned_type_for(TREE_TYPE(target));
+    if (words.empty() || words.back().first != target)
+        words.emplace_back(target, fold_convert(type, target));
+    uint64_t full =
+        TYPE_PRECISION(type) == 64 ? UINT64_MAX : (uint64_t{1} << TYPE_PRECISION(type)) - 1;
+    tree kept =
+        fold_build2_loc(location,
+                        BIT_AND_EXPR,
+                        type,
+                        words.back().second,
+                        build_int_cstu(type, full ^ string_byte_mask(destination, position)));
+    tree part = fold_convert(type, fold_convert(unsigned_char_type_node, byte));
+    unsigned shift = 8 * (BYTES_BIG_ENDIAN ? (unsigned)destination.stride -
+                                                 (unsigned)(position % destination.stride) - 1
+                                           : (unsigned)(position % destination.stride));
+    if (shift)
+        part = fold_build2_loc(
+            location, LSHIFT_EXPR, type, part, build_int_cstu(integer_type_node, shift));
+    words.back().second = fold_build2_loc(location, BIT_IOR_EXPR, type, kept, part);
+}
+
+tree string_write_marker(tree call,
+                         const std::vector<std::pair<tree, tree>> &words,
+                         tree defined,
+                         std::vector<tree> prefix = {}) {
+    QuantumStringWrite operation;
+    operation.prefix = std::move(prefix);
+    std::vector<tree> arguments;
+    for (tree step : operation.prefix)
+        if (TREE_CODE(step) != DECL_EXPR)
+            arguments.push_back(step);
+    for (const auto &word : words) {
+        tree type = TREE_TYPE(word.first), next = fold_convert(type, word.second);
+        if (operation.updates.empty())
+            next = fold_build3_loc(at(call),
+                                   COND_EXPR,
+                                   type,
+                                   defined,
+                                   next,
+                                   missing_string_terminator(type, at(call)));
+        tree update = build2_loc(at(call), MODIFY_EXPR, type, word.first, next);
+        operation.updates.push_back(update);
+        arguments.push_back(update);
+    }
+    tree marker =
+        build_fn_decl("__cket_string_copy", build_function_type(TREE_TYPE(call), NULL_TREE));
+    tree result =
+        build_call_expr_loc_array(at(call), marker, (int)arguments.size(), arguments.data());
+    quantum_string_copies.emplace(result, std::move(operation));
+    return result;
+}
+
 tree expand_string_copy(tree call) {
     tree fn = get_callee_fndecl(call);
+    if (fndecl_built_in_p(fn, BUILT_IN_STRCAT) || fndecl_built_in_p(fn, BUILT_IN_STRNCAT) ||
+        name_of(fn) == "strcat" || name_of(fn) == "__cket_strcat" || name_of(fn) == "strncat" ||
+        name_of(fn) == "__cket_strncat")
+        return expand_string_concat(call);
     bool bounded = fndecl_built_in_p(fn, BUILT_IN_STRNCPY) || name_of(fn) == "strncpy" ||
                    name_of(fn) == "__cket_strncpy";
     if (call_expr_nargs(call) != (bounded ? 3 : 2))
@@ -43,17 +114,12 @@ tree expand_string_copy(tree call) {
     uint64_t reads = std::min(count, source_count);
     if (count && !reads)
         return reject("|c>: quantum string copy has no readable source byte");
-    auto byte_mask = [](const QuantumByteRange &range, uint64_t position) {
-        unsigned byte = (unsigned)(position % range.stride);
-        unsigned shift = 8 * (BYTES_BIG_ENDIAN ? (unsigned)range.stride - byte - 1 : byte);
-        return uint64_t{255} << shift;
-    };
     std::map<tree, uint64_t> source_masks;
     if (source.quantum)
         for (uint64_t i = 0; i < reads; ++i) {
             uint64_t position = source.offset + i;
             source_masks[source.elements[(size_t)(position / source.stride)]] |=
-                byte_mask(source, position);
+                string_byte_mask(source, position);
         }
     for (uint64_t i = 0; i < count; ++i) {
         uint64_t position = destination.offset + i;
@@ -61,7 +127,8 @@ tree expand_string_copy(tree call) {
         if (readonly_quantum_borrows.count(target))
             return reject("|c>: quantum string copy cannot write through a read-only borrow");
         auto overlap = source_masks.find(target);
-        if (overlap != source_masks.end() && (overlap->second & byte_mask(destination, position)))
+        if (overlap != source_masks.end() &&
+            (overlap->second & string_byte_mask(destination, position)))
             return reject(
                 "|c>: overlapping strcpy/strncpy byte ranges are unsupported; overlapping copies have undefined C behavior");
     }
@@ -87,41 +154,8 @@ tree expand_string_copy(tree call) {
                             boolean_type_node,
                             running,
                             fold_build1_loc(at(call), TRUTH_NOT_EXPR, boolean_type_node, zero));
-        uint64_t position = destination.offset + i;
-        tree target = destination.elements[(size_t)(position / destination.stride)];
-        tree type = unsigned_type_for(TREE_TYPE(target));
-        if (words.empty() || words.back().first != target)
-            words.emplace_back(target, fold_convert(type, target));
-        uint64_t mask = byte_mask(destination, position);
-        uint64_t full =
-            TYPE_PRECISION(type) == 64 ? UINT64_MAX : (uint64_t{1} << TYPE_PRECISION(type)) - 1;
-        tree kept = fold_build2_loc(
-            at(call), BIT_AND_EXPR, type, words.back().second, build_int_cstu(type, full ^ mask));
-        tree part = fold_convert(type, fold_convert(unsigned_char_type_node, selected));
-        unsigned shift = 8 * (BYTES_BIG_ENDIAN ? (unsigned)destination.stride -
-                                                     (unsigned)(position % destination.stride) - 1
-                                               : (unsigned)(position % destination.stride));
-        if (shift)
-            part = fold_build2_loc(
-                at(call), LSHIFT_EXPR, type, part, build_int_cstu(integer_type_node, shift));
-        words.back().second = fold_build2_loc(at(call), BIT_IOR_EXPR, type, kept, part);
+        string_word_byte(destination, i, selected, words, at(call));
     }
     tree defined = !bounded || count > source_count ? terminated : boolean_true_node;
-    std::vector<tree> updates;
-    for (const auto &word : words) {
-        tree type = TREE_TYPE(word.first), next = fold_convert(type, word.second);
-        if (updates.empty())
-            next = fold_build3_loc(at(call),
-                                   COND_EXPR,
-                                   type,
-                                   defined,
-                                   next,
-                                   missing_string_terminator(type, at(call)));
-        updates.push_back(build2_loc(at(call), MODIFY_EXPR, type, word.first, next));
-    }
-    tree marker =
-        build_fn_decl("__cket_string_copy", build_function_type(TREE_TYPE(call), NULL_TREE));
-    tree result = build_call_expr_loc_array(at(call), marker, (int)updates.size(), updates.data());
-    quantum_string_copies.emplace(result, std::move(updates));
-    return result;
+    return string_write_marker(call, words, defined);
 }

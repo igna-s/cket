@@ -929,8 +929,8 @@ def main(language):
             'complete': 0,
         }
         and len(current_index['interfaces']) == 1224
-        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 771
-        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 85
+        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 769
+        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 87
         and all(
             row['quantum'] == 'partial'
             for row in current_index['interfaces']

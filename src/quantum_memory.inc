@@ -59,9 +59,12 @@ bool standard_string_copy(tree fn) {
     if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
         return false;
     return fndecl_built_in_p(fn, BUILT_IN_STRCPY) || fndecl_built_in_p(fn, BUILT_IN_STRNCPY) ||
+           fndecl_built_in_p(fn, BUILT_IN_STRCAT) || fndecl_built_in_p(fn, BUILT_IN_STRNCAT) ||
            (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn)) &&
             (name_of(fn) == "strcpy" || name_of(fn) == "__cket_strcpy" ||
-             name_of(fn) == "strncpy" || name_of(fn) == "__cket_strncpy"));
+             name_of(fn) == "strncpy" || name_of(fn) == "__cket_strncpy" ||
+             name_of(fn) == "strcat" || name_of(fn) == "__cket_strcat" ||
+             name_of(fn) == "strncat" || name_of(fn) == "__cket_strncat"));
 }
 
 std::string standard_string_search(tree fn) {
@@ -401,6 +404,7 @@ tree expand_string_length(tree call) {
 #include "quantum_string_span.inc"
 #include "quantum_string_search.inc"
 #include "quantum_string_copy.inc"
+#include "quantum_string_concat.inc"
 
 tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
     tree fn = get_callee_fndecl(call);

@@ -55,6 +55,7 @@ INTEGER_TYPES = {
 ABS = {"abs", "labs", "llabs", "imaxabs"}
 STRING_SPANS = {"strspn", "strcspn"}
 STRING_COPIES = {"strcpy", "strncpy"}
+STRING_CONCATENATIONS = {"strcat", "strncat"}
 STRING_SEARCHES = {"memchr", "strchr", "strrchr", "strpbrk", "strstr"}
 MEMORY_COPY = {"memcpy", "memmove"}
 DIVISION = {"div", "ldiv", "lldiv", "imaxdiv"}
@@ -216,6 +217,25 @@ def semantics(header, name, kind, optional):
             "exceed the current 128-qubit representation. Small complete phased states and inverse "
             "are validated separately from wide circuit generation. General product ABI, library "
             "composition and wider resource budgets remain open.",
+        )
+    if header == "string.h" and name in STRING_CONCATENATIONS:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [],
+            "Concatenation snapshots the original destination length and source prefix length "
+            "before typed quantum updates, retaining overwrite history and untouched bytes. "
+            "The mutable checked padding-free integer destination has a 1..64-byte remaining "
+            "view with an in-view NUL; the appended prefix plus its NUL must fit. strcat needs "
+            "an in-view source NUL within 64 bytes. strncat uses a constant append limit at most "
+            "64, requires no NUL when that many source bytes exist, and always terminates the "
+            "result without padding its tail. Known nonvolatile CPU sources use guarded once-only "
+            "captures. Potential overlap is rejected conservatively. Local destination-return "
+            "borrows and discarded call sequences are supported. Dynamic pointers/counts, "
+            "general layouts/ABI and further lifetime contexts remain pending; explicit gate, "
+            "history and expression budgets apply. Full coherent/inverse, sanitizer and GCC "
+            "qualification is deferred; delivery examples are finite evidence only.",
         )
     if header == "string.h" and name in STRING_COPIES:
         return (

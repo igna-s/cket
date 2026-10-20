@@ -1818,7 +1818,21 @@ tree lower_node(tree value) {
     auto code = TREE_CODE(value);
     if (quantum_string_copies.count(value)) {
         tree list = alloc_stmt_list();
-        for (tree update : quantum_string_copies.at(value)) {
+        tree locals = NULL_TREE;
+        const auto &operation = quantum_string_copies.at(value);
+        for (tree step : operation.prefix) {
+            if (TREE_CODE(step) == DECL_EXPR) {
+                tree decl = DECL_EXPR_DECL(step);
+                DECL_CHAIN(decl) = locals;
+                locals = decl;
+            }
+            unsigned previous_depth = coherent_expression_depth;
+            ++coherent_expression_depth;
+            append(&list, lower_node(step));
+            coherent_expression_depth = previous_depth;
+            cleanup(&list);
+        }
+        for (tree update : operation.updates) {
             auto &target = variables.at(strip(TREE_OPERAND(update, 0)));
             cleanup(&list);
             if (!target.lowered || target.moved || target.released) {
@@ -1843,6 +1857,11 @@ tree lower_node(tree value) {
             cleanup(&list);
         }
         tree result = build_zero_cst(TREE_TYPE(value));
+        if (locals)
+            return build2(COMPOUND_EXPR,
+                          TREE_TYPE(value),
+                          build3(BIND_EXPR, void_type_node, locals, list, NULL_TREE),
+                          result);
         for (auto it = tsi_last(list); !tsi_end_p(it); tsi_prev(&it))
             result = build2(COMPOUND_EXPR, TREE_TYPE(value), tsi_stmt(it), result);
         return result;

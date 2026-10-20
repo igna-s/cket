@@ -80,15 +80,19 @@ Permite usar la nueva capacidad mientras se sigue trabajando en el alcance compl
 ## Avance del bloque 06: cadenas
 
 `bash scripts/run-block.sh 06` reúne `string_spans`, `string_search`, `search_positions`,
-`saved_search` y `string_copy`: longitudes con `strspn` y `strcspn`, y comprobaciones de existencia
-con `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`. Se añaden diferencias de posiciones y
-comparaciones con direcciones del mismo objeto, además de préstamos locales inmutables, alias y
-lecturas de caracteres mediante desreferencia o índices constantes. Los datos permanecen cuánticos
-hasta las mediciones explícitas de los ejemplos. Se usa el motor disperso y se generan los
-ejecutables, circuitos e informes de recursos.
+`saved_search`, `string_copy` y `string_concat`: longitudes con `strspn` y `strcspn`, y
+comprobaciones de existencia con `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`. Se añaden
+diferencias de posiciones y comparaciones con direcciones del mismo objeto, además de préstamos
+locales inmutables, alias y lecturas de caracteres mediante desreferencia o índices constantes. Los
+datos permanecen cuánticos hasta las mediciones explícitas de los ejemplos. Se usa el motor disperso
+y se generan los ejecutables, circuitos e informes de recursos.
 
 `string_copy` añade `strcpy` y `strncpy`, una fuente en superposición, cola preservada, padding y
 escritura parcial de un entero. El [contrato de copia](c11-string-copy.md) describe el alcance.
+
+`string_concat` añade `strcat` y `strncat`: longitud inicial en superposición, captura de longitudes
+antes de escribir, cola preservada y append desde una fuente sin NUL. El
+[contrato](c11-string-concat.md) describe los límites.
 
 El [contrato](c11-string-searches.md) limita las vistas y los consumidores de punteros. La matriz
 completa de estados, inversas y sanitizadores queda aplazada al cierre del bloque para priorizar

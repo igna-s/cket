@@ -23,6 +23,14 @@ extern char *__cket_strncpy(char *destination, const char *source, size_t count)
 #undef strncpy
 #define strncpy(destination, source, count) __cket_strncpy((destination), (source), (count))
 
+extern char *__cket_strcat(char *destination, const char *source) __asm__("strcat");
+#undef strcat
+#define strcat(destination, source) __cket_strcat((destination), (source))
+
+extern char *__cket_strncat(char *destination, const char *source, size_t count) __asm__("strncat");
+#undef strncat
+#define strncat(destination, source, count) __cket_strncat((destination), (source), (count))
+
 extern int __cket_strncmp(const char *left, const char *right, size_t count) __asm__("strncmp");
 #undef strncmp
 #define strncmp(left, right, count) __cket_strncmp((left), (right), (count))
