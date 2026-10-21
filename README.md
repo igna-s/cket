@@ -249,11 +249,12 @@ in [comma and lazy expressions](docs/c11-memory-sequences.md).
 CPU predicates inside coherent branches are supported. General returned-pointer consumers, runtime
 counts, dynamic allocation and general layouts remain pending.
 
-`memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole integer
-elements and constant extents. Known basis destinations use reversible translation and copying;
-`memmove` checks read-before-write overlap. Coherent controls are supported without hidden channels.
-Local checked return borrows preserve destination identity. General byte layouts, unknown
-overwritten values, dynamic extents and unrestricted returned-pointer consumers remain pending.
+`memcpy` and `memmove` have [checked quantum memory adapters](docs/c11-memcopy.md) for whole
+integers and a 64-byte object-byte path. Known-basis destinations retain their fast copy gates;
+unknown overwrites retain previous owners. Partial words, different integer sizes and known CPU
+source objects are supported. Read-before-write ordering preserves supported overlap, and checked
+return borrows preserve destination identity. General layouts, dynamic extents and unrestricted
+returned-pointer consumers remain pending. Complete qualification of the new extension is deferred.
 
 `strncmp` has a [bounded coherent character adapter](docs/c11-strncmp.md): it stops at a first
 difference or an equal NUL while preserving input bits and relative phases. Constant checked ranges,
@@ -270,7 +271,7 @@ volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls
 The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
 expressions, direct null/address predicates and same-object differences for `memchr`, `strchr`,
 `strrchr`, `strpbrk` and `strstr`. Local immutable search pointers support aliases, character
-dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the seven
+dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the eight
 delivery examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context
 qualification remain pending.
 

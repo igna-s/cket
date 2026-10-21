@@ -1,8 +1,12 @@
 # Evidence for the tested C11 subset
 
-The new [controlled concatenation advance](controlled-concat-v2/README.es.md) adds coherent Boolean
-control and a phase/Fourier example to the existing string adapters. Seven examples execute and
-export; complete state/inverse and compiler-context qualification remains deferred. The first
+The new [object-byte copy advance](byte-copy-v1/README.es.md) extends memcpy/memmove with retained
+overwrites, partial bytes, different integer sizes and known CPU source objects. Eight examples
+execute and export; full qualification remains deferred.
+
+The previous [controlled concatenation advance](controlled-concat-v2/README.es.md) adds coherent
+Boolean control and a phase/Fourier example to the existing string adapters. Seven examples execute
+and export; complete state/inverse and compiler-context qualification remains deferred. The first
 attempt's actual export rejection and source snapshot are preserved.
 
 The previous [concatenation advance](string-concat-v1/README.es.md) adds partial strcat/strncat with

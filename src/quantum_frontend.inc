@@ -833,8 +833,8 @@ bool standard_memory_copy(tree fn, bool &move) {
     move = fndecl_built_in_p(fn, BUILT_IN_MEMMOVE);
     if (!copy && !move && DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
         in_system_header_at(DECL_SOURCE_LOCATION(fn))) {
-        copy = name_of(fn) == "memcpy";
-        move = name_of(fn) == "memmove";
+        copy = name_of(fn) == "memcpy" || name_of(fn) == "__cket_memcpy";
+        move = name_of(fn) == "memmove" || name_of(fn) == "__cket_memmove";
     }
     return copy || move;
 }
@@ -957,6 +957,8 @@ tree expand_integer_division(tree call) {
     return result;
 }
 
+tree expand_byte_copy(tree call, bool move);
+
 tree expand_memory_copy(tree call, bool move) {
     if (call_expr_nargs(call) != 3)
         return NULL_TREE;
@@ -964,14 +966,13 @@ tree expand_memory_copy(tree call, bool move) {
     bool quantum_destination = resolve_quantum_reference(CALL_EXPR_ARG(call, 0), destination);
     bool quantum_source = resolve_quantum_reference(CALL_EXPR_ARG(call, 1), source);
     if (!quantum_destination && !quantum_source)
-        return NULL_TREE;
+        return expand_byte_copy(call, move);
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);
         return build_zero_cst(TREE_TYPE(call));
     };
     if (!quantum_destination || !quantum_source)
-        return reject(
-            "|c>: mixed CPU/quantum memory copy needs an implemented preparation contract or explicit measurement; byte copying cannot cross that boundary implicitly");
+        return expand_byte_copy(call, move);
     tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
     if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
         return reject(
@@ -984,12 +985,10 @@ tree expand_memory_copy(tree call, bool move) {
         !INTEGRAL_TYPE_P(destination.element_type) || !INTEGRAL_TYPE_P(source.element_type) ||
         TYPE_PRECISION(destination.element_type) != tree_to_uhwi(target_size) * BITS_PER_UNIT ||
         TYPE_PRECISION(source.element_type) != tree_to_uhwi(source_size) * BITS_PER_UNIT)
-        return reject(
-            "|c>: quantum byte copy currently requires equal-size integer elements without padding; byte views, bool padding and product layouts need further implementation");
+        return expand_byte_copy(call, move);
     uint64_t extent = tree_to_uhwi(bytes), stride = tree_to_uhwi(target_size);
     if (extent % stride)
-        return reject(
-            "|c>: partial-element quantum byte copy needs an implemented byte-access contract");
+        return expand_byte_copy(call, move);
     uint64_t count = extent / stride;
     if (destination.offset < 0 || source.offset < 0 ||
         (uint64_t)destination.offset > destination.elements.size() ||
@@ -1053,6 +1052,7 @@ tree expand_memory_copy(tree call, bool move) {
 }
 
 #include "quantum_memory.inc"
+#include "quantum_byte_copy.inc"
 
 // A standard memory function returns its destination, independently of the
 // quantum data. Emit its writes once, then retain only a checked address alias.

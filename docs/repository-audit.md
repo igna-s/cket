@@ -220,7 +220,12 @@ estos recuentos no representan una descomposición física. El contrato, la demo
 de esta etapa se detallan en [c11-inplace.md](c11-inplace.md). El historial general y la cobertura
 completa de M2 y C11 siguen pendientes.
 
-## Avance de M4/M7: copias de memoria
+## Integración histórica de M4/M7: copias de memoria
+
+Esta sección describe la implementación y las campañas históricas identificadas en sus archivos de
+evidencia. El [avance actual](c11-memcopy.md) añade sobrescrituras con historia, bytes parciales,
+tamaños diferentes y fuentes CPU conocidas; su calificación exhaustiva sigue pendiente. Las
+garantías históricas de cero auxiliares corresponden solo a la ruta de bases conocidas.
 
 `memcpy` y `memmove` tienen adaptadores parciales para registros enteros y arrays fijos con punteros
 clásicos comprobados. Se preservan los bits de la representación del perfil, incluidos destinos

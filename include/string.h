@@ -11,6 +11,14 @@
  * symbol, and taking the standard function's address retains the C interface. */
 extern int __cket_memcmp(const void *left, const void *right, size_t count) __asm__("memcmp");
 
+extern void *__cket_memcpy(void *destination, const void *source, size_t count) __asm__("memcpy");
+#undef memcpy
+#define memcpy(destination, source, count) __cket_memcpy((destination), (source), (count))
+
+extern void *__cket_memmove(void *destination, const void *source, size_t count) __asm__("memmove");
+#undef memmove
+#define memmove(destination, source, count) __cket_memmove((destination), (source), (count))
+
 extern void *__cket_memset(void *destination, int value, size_t count) __asm__("memset");
 #undef memset
 #define memset(destination, value, count) __cket_memset((destination), (value), (count))

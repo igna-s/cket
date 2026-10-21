@@ -20,7 +20,9 @@ static char *compile_case(validation *v,
     validation_path(compiler, sizeof compiler, "%s/build/cket", v->root);
     validation_path(artifact, sizeof artifact, "%s/memory.json", v->temp);
     validation_write(source, program);
-    char *command[] = {compiler,
+    char *command[] = {"env",
+                       "CKET_SIMULATOR=sparse",
+                       compiler,
                        source,
                        run ? "--run" : "--emit-ir",
                        (char *)levels[level],
@@ -235,37 +237,30 @@ static void contracts(validation *v) {
         "#include <quantum.h>\nstatic void memcpy(quant uint8_t *d,quant const uint8_t *s,unsigned n){*d+=n;}\nint main(void){quant uint8_t a=7,b=0;memcpy(&b,&a,1);return measure(b)!=1||measure(a)!=7;}\n",
         "quant uint8_t a=7,b=0;for(int i=0;i<1;++i)memcpy((void*)&b,(const void*)&a,1);return measure(b)!=7||measure(a)!=7;",
         "quant uint8_t a=7,b=0;void *p=memcpy((void*)&b,(const void*)&a,1);unsigned result=measure(b),source=measure(a);return result!=7||source!=7||p!=&b;",
-        "quant uint8_t a=7,b=0;quant uint8_t *p=memcpy((void*)&b,(const void*)&a,1);unsigned first=measure(*p),second=measure(b),source=measure(a);return first!=7||second!=first||source!=7||p!=&b;"};
+        "quant uint8_t a=7,b=0;quant uint8_t *p=memcpy((void*)&b,(const void*)&a,1);unsigned first=measure(*p),second=measure(b),source=measure(a);return first!=7||second!=first||source!=7||p!=&b;",
+        "quant uint8_t a=7,b=superposition(0,3);memcpy((void*)&b,(const void*)&a,1);unsigned r=measure(b),s=measure(a);return r!=7||s!=7;",
+        "quant uint8_t a=7,b=superposition(0,1);memmove((void*)&b,(const void*)&a,1);unsigned r=measure(b),s=measure(a);return r!=7||s!=7;",
+        "quant uint16_t a=7,b=0;memcpy((void*)&b,(const void*)&a,1);uint16_t r=0,s=7;memcpy(&r,&s,1);unsigned result=measure(b),source=measure(a);return result!=r||source!=7;",
+        "quant uint8_t a=7;quant uint16_t b=0;memcpy((void*)&b,(const void*)&a,1);uint16_t r=0;uint8_t s=7;memcpy(&r,&s,1);unsigned result=measure(b),source=measure(a);return result!=r||source!=7;",
+        "uint8_t a=7;quant uint8_t b=0;memcpy((void*)&b,&a,1);return measure(b)!=7||a!=7;",
+        "quant uint8_t a=7,b=0;quant uint8_t child=b+1;memcpy((void*)&b,(const void*)&a,1);unsigned old=measure(child),result=measure(b),source=measure(a);return old!=1||result!=7||source!=7;",
+        "quant uint8_t a=7,b=0;quant uint8_t child=a-a;memcpy((void*)&child,(const void*)&b,1);unsigned result=measure(child),source=measure(a),other=measure(b);return result||source!=7||other;"};
     const char *invalid[] = {
-        "quant uint8_t a=7,b=superposition(0,3);memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
-        "quant uint8_t a=7,b=superposition(0,1);memmove((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7;memcpy((void*)&a,(const void*)&a,1);measure(a);",
         "quant uint8_t a[3]={7,0,0};memcpy((void*)(a+1),(const void*)a,2);measure(a[0]);measure(a[1]);measure(a[2]);",
         "quant uint8_t a=7,b=0;size_t n=1;memcpy((void*)&b,(const void*)&a,n);measure(a);measure(b);",
-        "quant uint16_t a=7,b=0;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
-        "quant uint8_t a=7;quant uint16_t b=0;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;memcpy((void*)&b,(const void*)&a,2);measure(a);measure(b);",
         "quant uint8_t a=7;uint8_t b=0;memcpy(&b,(const void*)&a,1);measure(a);",
-        "uint8_t a=7;quant uint8_t b=0;memcpy((void*)&b,&a,1);measure(b);",
         "quant bool a=true,b=false;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;quant const uint8_t *p=&b;memcpy((void*)p,(const void*)&a,1);measure(a);measure(b);",
-        "quant uint8_t a=7,b=0;quant uint8_t child=b+1;memcpy((void*)&b,(const void*)&a,1);measure(child);measure(a);measure(b);",
-        "quant uint8_t a=7,b=0;quant uint8_t child=a-a;memcpy((void*)&child,(const void*)&b,1);measure(child);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;int n=2;while(n--)memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);"};
-    const char *diagnostics[] = {"destination in a known basis state",
-                                 "destination in a known basis state",
-                                 "overlapping quantum memcpy",
+    const char *diagnostics[] = {"overlapping quantum memcpy",
                                  "overlapping quantum memcpy",
                                  "constant byte count",
-                                 "partial-element quantum byte copy",
-                                 "equal-size integer elements",
                                  "exceeds its checked storage bounds",
-                                 "mixed CPU/quantum memory copy",
-                                 "mixed CPU/quantum memory copy",
-                                 "equal-size integer elements without padding",
+                                 "cannot write unmeasured data into CPU storage",
+                                 "integer object bytes without padding",
                                  "mutable destination storage",
-                                 "destination in a known basis state",
-                                 "destination in a known basis state",
                                  "per-iteration basis/history proof"};
     _Static_assert(sizeof diagnostics / sizeof *diagnostics == sizeof invalid / sizeof *invalid,
                    "every negative memory case needs its semantic diagnostic");
@@ -296,7 +291,7 @@ static void contracts(validation *v) {
                 }
             }
     puts(
-        "PASS memory bounds, known-basis destination, const, overlap, padding, CPU boundaries, checked returned borrows and classical libc preservation");
+        "PASS memory bounds, retained overwrites, byte views, const, overlap, padding, CPU boundaries, checked returned borrows and classical libc preservation (native contracts use sparse simulation)");
 }
 
 static void wide(validation *v) {

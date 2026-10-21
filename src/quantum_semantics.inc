@@ -2076,12 +2076,6 @@ tree lower_node(tree value) {
                     "|c>: quantum memory copy in a CPU loop needs a per-iteration basis/history proof; use a proved static expansion or explicit storage management");
                 return build_zero_cst(TREE_TYPE(value));
             }
-            if ((!target.clean && !target.basis_known) || target.derived || dependent(target.id)) {
-                error_at(
-                    at(value),
-                    "|c>: quantum memory copy needs an independent destination in a known basis state; overwriting unknown storage requires retained history");
-                return build_zero_cst(TREE_TYPE(value));
-            }
             for (const auto &control : controls)
                 if (target.id == control.first) {
                     error_at(at(value), "|c>: quantum memory copy destination aliases its control");
@@ -2097,6 +2091,11 @@ tree lower_node(tree value) {
             }
             std::set<unsigned> dependencies;
             std::string expr = cast_result(expression(pair.second, dependencies), target);
+            if ((!target.clean && !target.basis_known) || target.derived || dependent(target.id)) {
+                taint_uniform(source.id);
+                versioned_assignment(target, expr, dependencies, at(value), &list);
+                continue;
+            }
             if (target.basis_known && target.lower)
                 append(&list,
                        emit_operation(

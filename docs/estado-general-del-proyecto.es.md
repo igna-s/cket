@@ -62,6 +62,11 @@ privados en cero. El ejemplo `controlled_concat` conserva los bytes del destino 
 e incluye una secuencia de fase y Fourier con resultado esperado `1`. Los contextos generales de
 historia y las matrices completas de estados siguen pendientes de calificación.
 
+**Nuevo avance de memoria:** `memcpy` y `memmove` conservan historia al sobrescribir destinos
+desconocidos y añaden una ruta de bytes parciales, tamaños enteros diferentes y fuentes CPU
+conocidas. El ejemplo `byte_copy` se ejecuta y exporta con el paquete del bloque 06; las matrices
+completas de coherencia/inversa y contextos siguen aplazadas.
+
 ## La respuesta corta
 
 El proyecto **ya compila y ejecuta programas con un subconjunto de operaciones cuánticas sobre

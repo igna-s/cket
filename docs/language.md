@@ -101,11 +101,12 @@ condition overwrites preserve the selected arm; mixed CPU effects and general AB
 remain pending. Selection and cleanup add no measurement or reset.
 
 Standard [memory-copy adapters](c11-memcopy.md) accept checked fixed integer ranges and constant
-byte counts. Nonidentity destinations need an independent known basis value; translation and XOR
-copying preserve amplitudes and coherent controls. Exact `memmove` aliases are identity, and overlap
-uses read-before-write ordering. Unknown destinations need retained history. CPU-loop writes need a
-per-iteration proof, while proved static expansions can be checked individually. Byte views,
-padding, dynamic extents, mixed CPU boundaries and use of the returned pointer remain pending.
+byte counts. Known-basis destinations retain translation/XOR copy gates; unknown overwrites retain
+previous owners. A separate route supports up to 64 object bytes, partial words, different integer
+sizes and known CPU sources. Exact memmove aliases are identity and supported overlap uses
+read-before-write ordering. Checked local destination returns are supported. CPU-loop history,
+padding, dynamic extents, quantum-to-CPU writes and general pointer ABI remain pending. Full
+state/inverse and compiler-context qualification of the extension is deferred.
 
 In-place [bit permutations and affine word transformations](c11-inplace.md) have scalable
 certificates without truth tables or private qubits. An affine coefficient must be odd on the

@@ -227,11 +227,12 @@ input-preserving circuits, conversions, domain checks and error results. Impure 
 explicit CPU/channel boundary.
 
 `memcpy`/`memmove` cannot clone an arbitrary quantum state. The partial
-[implemented extension](c11-memcopy.md) copies computational-basis values reversibly into known
-basis destinations, creating correlations for superposed inputs. It includes controlled basis
-translation and read-before-write overlap ordering. Unknown overwritten values still need history,
-and general overlap needs a temporary/version strategy. Byte layouts, dynamic extents and
-unrestricted returned-pointer consumers remain pending.
+[implemented extension](c11-memcopy.md) copies computational-basis values with correlations for
+superposed inputs. Known-basis destinations use controlled translation and copy gates. Unknown
+overwrites now retain history; a checked byte route supports partial integer words, different
+integer sizes and known CPU sources. Read-before-write ordering preserves supported overlap. General
+layouts, dynamic extents, cyclic aliases and unrestricted returned-pointer consumers remain pending.
+The new extension has finite delivery evidence; full qualification is deferred.
 [Local checked destination returns and same-object distances](c11-memory-returns.md) have partial
 adapters. The partial [memset adapter](c11-memset.md) now preserves unknown overwritten state as
 history and applies fixed byte ranges with once-only value evaluation.
