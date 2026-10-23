@@ -1,5 +1,5 @@
 {
-  "active": "byte-copy-v1",
+  "active": "implementation-oct23-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -7,7 +7,8 @@
     "string-copy-v4",
     "string-concat-v1",
     "controlled-concat-v2",
-    "byte-copy-v1"
+    "byte-copy-v1",
+    "implementation-oct23-v1"
   ],
   "meaning": "Current source identity selects one incremental delivery. Historical artifacts retain their own sources; deferred qualification is not a passed full audit."
 }

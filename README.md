@@ -271,9 +271,9 @@ volatile/atomic CPU accesses, general quantum layouts and indirect quantum calls
 The new [string span and search adapters](docs/c11-string-searches.md) add `strspn`/`strcspn` length
 expressions, direct null/address predicates and same-object differences for `memchr`, `strchr`,
 `strrchr`, `strpbrk` and `strstr`. Local immutable search pointers support aliases, character
-dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the eight
-delivery examples. General pointer writes/ABI and full state/inverse, sanitizer and GCC-context
-qualification remain pending.
+dereference and constant indexing. Run `CC=gcc-11 bash scripts/run-block.sh 06` for the ten included
+examples. The latest additions await runtime qualification. General pointer writes/ABI and full
+state/inverse, sanitizer and GCC-context qualification remain pending.
 
 Checked [`strcpy` and `strncpy`](docs/c11-string-copy.md) now copy strings into quantum integer
 storage using retained overwrite history. The block 06 example covers a superposed source, unchanged
@@ -289,6 +289,10 @@ The controlled concatenation example adds strcat/strncat inside a quantum Boolea
 phase/Fourier sequence with expected output 1. Compiler-private zero captures are allocated
 independently of the branch; general user allocation and dynamic-loop lifetimes retain their
 restrictions. Complete state/inverse qualification remains deferred.
+
+Implementation now also includes checked [`atoi`/`atol`/`atoll`](docs/c11-decimal.md) and saved
+search-pointer character stores and value-producing increments. Runtime testing of this source state
+is deferred at the user's request. Earlier passed campaigns do not certify these additions.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
@@ -738,7 +742,7 @@ normal importer capacity failure, its correction and subsequent normal/ASan/UBSa
 
 For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
 `--require-complete` mode deliberately fails while any interface remains pending or partial. The
-current index contains 1224 interfaces: 769 pending, 87 partial and 368 metadata facilities. The
+current index contains 1224 interfaces: 766 pending, 90 partial and 368 metadata facilities. The
 index covers the named C11 profile, including optional facilities; it is not an implementation or a
 test result for each entry.
 

@@ -851,6 +851,8 @@ std::string standard_ctype(tree call) {
     if (!call || TREE_CODE(call) != CALL_EXPR)
         return "";
     tree fn = get_callee_fndecl(call);
+    if (fn && fn == decimal_space_fn)
+        return "isspace";
     if (!fn || !TREE_PUBLIC(fn) || !in_system_header_at(DECL_SOURCE_LOCATION(fn)))
         return "";
     std::string name = name_of(fn), effect = intrinsic(call);
@@ -1053,6 +1055,8 @@ tree expand_memory_copy(tree call, bool move) {
 
 #include "quantum_memory.inc"
 #include "quantum_byte_copy.inc"
+#include "quantum_decimal.inc"
+#include "quantum_search_writes.inc"
 
 // A standard memory function returns its destination, independently of the
 // quantum data. Emit its writes once, then retain only a checked address alias.
@@ -1490,9 +1494,9 @@ tree expand_quantum_program(tree value) {
             DECL_INITIAL(decl) = expand_quantum_program(DECL_INITIAL(decl));
         return value;
     }
-    tree rejected_search_write = reject_search_pointer_write(value);
-    if (rejected_search_write)
-        return rejected_search_write;
+    tree search_write = expand_search_pointer_write(value);
+    if (search_write)
+        return search_write;
     if (code == POINTER_DIFF_EXPR) {
         tree search = expand_search_pointer_difference(value);
         if (search)
@@ -1551,6 +1555,11 @@ tree expand_quantum_program(tree value) {
         }
         if (standard_string_length(fn)) {
             tree expanded = expand_string_length(value);
+            if (expanded)
+                return expanded;
+        }
+        if (standard_decimal_conversion(fn)) {
+            tree expanded = expand_decimal_conversion(value);
             if (expanded)
                 return expanded;
         }

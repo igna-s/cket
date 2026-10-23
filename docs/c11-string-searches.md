@@ -80,10 +80,15 @@ Quantum source updates remain subject to the existing dependency and retained-hi
 mutation, guard-page access, quantum mutation and every mixed context still need the deferred
 qualification; the delivery example alone does not establish those contracts exhaustively.
 
-These local borrows cannot be rebound or used for writes; pointer/overwrite history remains pending.
-General pointer arithmetic outside a read, passing/returning a pointer through a function, escaping
-to CPU storage and a general quantum pointer ABI are also pending. Such uses cannot inspect a host
-placeholder as quantum data.
+These local pointer handles cannot be rebound; pointer history remains pending. Character stores,
+simple/compound assignments and prefix/postfix increments now use a once-only value capture and
+retained destination history. The source must be mutable quantum integer storage, the selected
+address nonnull and in bounds, and indexes constant. The assignment value is available to an ordered
+quantum consumer. CPU destinations, volatile/atomic effects and general layouts remain pending. This
+new write implementation awaits runtime, complete-state and inverse qualification; source reads use
+the previously documented current-byte model. General pointer arithmetic outside a read,
+passing/returning a pointer through a function, escaping to CPU storage and a general quantum
+pointer ABI are also pending. Such uses cannot inspect a host placeholder as quantum data.
 
 The engine now retains conservative nonnegative support intervals inferred from computed
 expressions. It can independently prove the bounds of a saved selector instead of treating it as

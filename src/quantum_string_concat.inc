@@ -19,11 +19,12 @@ tree string_length_expression(QuantumByteRange &range,
     return length;
 }
 
-tree string_length_capture(tree call,
+tree quantum_value_capture(tree call,
                            tree expression,
                            const char *name,
-                           std::vector<tree> &prefix) {
-    tree type = build_qualified_type(unsigned_char_type_node, TYPE_QUAL_VOLATILE);
+                           std::vector<tree> &prefix,
+                           tree value_type = unsigned_char_type_node) {
+    tree type = build_qualified_type(value_type, TYPE_QUAL_VOLATILE);
     std::string identifier = std::string(name) + std::to_string(next_id);
     tree decl = build_decl(at(call), VAR_DECL, get_identifier(identifier.c_str()), type);
     DECL_CONTEXT(decl) = active_function;
@@ -35,7 +36,7 @@ tree string_length_capture(tree call,
     record_decl(decl, nullptr);
     prefix.push_back(build1(DECL_EXPR, void_type_node, decl));
     prefix.push_back(build2_loc(at(call), MODIFY_EXPR, type, decl, fold_convert(type, expression)));
-    return fold_convert(integer_type_node, decl);
+    return fold_convert(value_type, decl);
 }
 
 tree expand_string_concat(tree call) {
@@ -103,8 +104,12 @@ tree expand_string_concat(tree call) {
         bounded && reads == limit ? build_int_cstu(unsigned_char_type_node, limit) : invalid;
     tree source_length = string_length_expression(source, reads, source_fallback, at(call));
     std::vector<tree> prefix;
-    tree start = string_length_capture(call, destination_length, "__cket_concat_start_", prefix);
-    tree copied = string_length_capture(call, source_length, "__cket_concat_count_", prefix);
+    tree start = fold_convert(
+        integer_type_node,
+        quantum_value_capture(call, destination_length, "__cket_concat_start_", prefix));
+    tree copied =
+        fold_convert(integer_type_node,
+                     quantum_value_capture(call, source_length, "__cket_concat_count_", prefix));
     tree end = fold_build2_loc(at(call), PLUS_EXPR, integer_type_node, start, copied);
     tree defined = fold_build2_loc(
         at(call), LT_EXPR, boolean_type_node, end, build_int_cstu(integer_type_node, count));

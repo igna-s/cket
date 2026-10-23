@@ -173,6 +173,22 @@ def semantics(header, name, kind, optional):
             [],
             "Optional Annex K target profile; no quantum adapter is implemented.",
         )
+    if header == "stdlib.h" and name in {"atoi", "atol", "atoll"}:
+        return (
+            "partial",
+            ["P", "R"],
+            "M2/M7",
+            [],
+            "Checked quantum decimal conversion on 1..64 padding-free integer object bytes "
+            "with an in-view NUL. Captured LC_CTYPE rules classify leading whitespace; an "
+            "optional sign and the initial ASCII digit run produce the signed target result, "
+            "or zero when no digits convert. Overflow is a circuit domain failure. "
+            "Private typed state retains intermediate magnitudes/signs without measurement. "
+            "CPU calls and function addresses preserve libc ABI. Static export requires an "
+            "explicit locale profile. Other encodings, strtol/end pointers, dynamic addresses "
+            "and general loop/lifetime contexts remain pending. Resource budgets apply; "
+            "full states/inverses, sanitizers and GCC-context qualification are deferred.",
+        )
     if header == "ctype.h":
         return (
             "partial",

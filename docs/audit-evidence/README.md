@@ -1,8 +1,12 @@
 # Evidence for the tested C11 subset
 
-The new [object-byte copy advance](byte-copy-v1/README.es.md) extends memcpy/memmove with retained
-overwrites, partial bytes, different integer sizes and known CPU source objects. Eight examples
-execute and export; full qualification remains deferred.
+The current [implementation advance](implementation-oct23-v1/README.es.md) adds decimal conversion
+and saved search-pointer stores. It records build evidence only. Runtime and exhaustive tests are
+deferred at the user's request; previous passing campaigns retain their own source identity.
+
+The previous [object-byte copy advance](byte-copy-v1/README.es.md) extends memcpy/memmove with
+retained overwrites, partial bytes, different integer sizes and known CPU source objects. Eight
+examples execute and export; full qualification remains deferred.
 
 The previous [controlled concatenation advance](controlled-concat-v2/README.es.md) adds coherent
 Boolean control and a phase/Fourier example to the existing string adapters. Seven examples execute
@@ -67,7 +71,7 @@ Independent compiled string circuits passed 640 complete complex states with sav
 80-command broad campaign later completed in two segments, archived with the
 [148-input evidence](common-remainder-v2/README.es.md); its
 [remote CI](integrated144-remote-ci/README.es.md) also passed. These results do not certify the
-later inputs. The current inventory has 769 pending, 87 partial and 368 metadata entries.
+later inputs. The current inventory has 766 pending, 90 partial and 368 metadata entries.
 Cybersecurity stays classical.
 
 The preceding 138-input [full campaign](controlled-operands-full/summary.json) and

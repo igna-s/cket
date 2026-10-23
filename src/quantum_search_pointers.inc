@@ -152,7 +152,9 @@ tree expand_search_pointer_read(tree value) {
     return string_search_domain(search, result, at(value), true);
 }
 
-tree reject_search_pointer_write(tree value) {
+tree expand_search_byte_write(tree value, tree target, QuantumStringSearch search, int64_t delta);
+
+tree expand_search_pointer_write(tree value) {
     enum tree_code code = TREE_CODE(value);
     if (code != MODIFY_EXPR && code != INIT_EXPR && code != PREINCREMENT_EXPR &&
         code != POSTINCREMENT_EXPR && code != PREDECREMENT_EXPR && code != POSTDECREMENT_EXPR)
@@ -160,11 +162,13 @@ tree reject_search_pointer_write(tree value) {
     tree target = strip(TREE_OPERAND(value, 0));
     QuantumStringSearch search;
     int64_t delta = 0;
-    if (!quantum_search_pointers.count(target) && !search_read_reference(target, search, delta))
+    bool rebind = quantum_search_pointers.count(target);
+    if (!rebind && !search_read_reference(target, search, delta))
         return NULL_TREE;
-    error_at(
-        at(value),
-        "|c>: saved quantum search pointers are immutable read-only borrows; writes/rebinding need retained pointer and overwrite history");
+    if (!rebind)
+        return expand_search_byte_write(value, target, search, delta);
+    error_at(at(value),
+             "|c>: saved quantum search pointer rebinding requires retained pointer history");
     return TREE_TYPE(value) == void_type_node ? build_empty_stmt(at(value))
                                               : build_zero_cst(TREE_TYPE(value));
 }

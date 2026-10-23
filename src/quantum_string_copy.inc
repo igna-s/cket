@@ -39,9 +39,11 @@ void string_word_byte(QuantumByteRange &destination,
 tree string_write_marker(tree call,
                          const std::vector<std::pair<tree, tree>> &words,
                          tree defined,
-                         std::vector<tree> prefix = {}) {
+                         std::vector<tree> prefix = {},
+                         tree result_value = NULL_TREE) {
     QuantumStringWrite operation;
     operation.prefix = std::move(prefix);
+    operation.result = result_value;
     std::vector<tree> arguments;
     for (tree step : operation.prefix)
         if (TREE_CODE(step) != DECL_EXPR)
@@ -59,6 +61,8 @@ tree string_write_marker(tree call,
         operation.updates.push_back(update);
         arguments.push_back(update);
     }
+    if (result_value)
+        arguments.push_back(result_value);
     tree marker =
         build_fn_decl("__cket_string_copy", build_function_type(TREE_TYPE(call), NULL_TREE));
     tree result =

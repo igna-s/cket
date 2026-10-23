@@ -1,6 +1,6 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 20 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 23 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
@@ -66,6 +66,12 @@ historia y las matrices completas de estados siguen pendientes de calificación.
 desconocidos y añaden una ruta de bytes parciales, tamaños enteros diferentes y fuentes CPU
 conocidas. El ejemplo `byte_copy` se ejecuta y exporta con el paquete del bloque 06; las matrices
 completas de coherencia/inversa y contextos siguen aplazadas.
+
+**Implementación en curso, pruebas aplazadas por indicación del usuario:** se añaden `atoi`, `atol`
+y `atoll` sobre cadenas cuánticas comprobadas, y escrituras de caracteres mediante punteros
+guardados de búsqueda, incluidos asignaciones e incrementos con resultado. La versión actual solo
+tiene comprobaciones de compilación; sus ejecuciones, estados completos, inversas y matrices quedan
+pendientes. Los resultados anteriores conservan sus propias fuentes.
 
 ## La respuesta corta
 
@@ -244,7 +250,7 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Copia de cadenas                         | `strcpy`, `strncpy`.                                                                                                                                       | Destino cuántico comprobado, cola preservada, padding e historia reversible; calificación exhaustiva pendiente.                                                                                                                                           |
 | Concatenación                            | `strcat`, `strncat`.                                                                                                                                       | Longitudes originales capturadas antes de escribir, terminación y cola preservada; calificación exhaustiva pendiente.                                                                                                                                     |
 
-Son **40 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Son **43 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -257,13 +263,13 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      769 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       87 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      766 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       90 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 87 parciales incluyen los
-40 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 87 funciones completas.** El estado parcial registra código disponible; no
+El inventario no registra entradas como completamente implementadas. Las 90 parciales incluyen los
+43 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 90 funciones completas.** El estado parcial registra código disponible; no
 certifica las pruebas aplazadas del nuevo bloque de cadenas.
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un

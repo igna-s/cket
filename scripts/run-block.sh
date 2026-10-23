@@ -13,7 +13,7 @@ destination="build/blocks/$block"
 mkdir -p "$destination"
 export CKET_SEED="${CKET_SEED:-7}"
 if [[ "$block" == 06 ]]; then
-    names=(string_spans string_search search_positions saved_search string_copy string_concat controlled_concat byte_copy)
+    names=(string_spans string_search search_positions saved_search string_copy string_concat controlled_concat byte_copy decimal_conversion search_write)
     source_directory=examples/blocks/06
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 02 ]]; then
@@ -29,6 +29,11 @@ for name in "${names[@]}"; do
     printf '\nBlock %s: %s\n' "$block" "$name"
     build/cket "$source_directory/$name.c" -O2 -o "$destination/$name"
     "$destination/$name"
+    static_profile=()
+    if [[ "$name" == decimal_conversion ]]; then
+        static_profile=(--ctype-locale C)
+        printf 'Static character profile: C (native execution captures its effective locale)\n'
+    fi
     bindings="$source_directory/$name.bindings.json"
     if [[ -f "$bindings" ]]; then
         printf 'Static export uses classical bindings from %s\n' "$bindings"
@@ -36,8 +41,8 @@ for name in "${names[@]}"; do
         build/cket_backend --emit-qasm "$destination/$name.ir.json" --bindings "$bindings" >"$destination/$name.qasm"
         build/cket_backend --resources "$destination/$name.ir.json" --bindings "$bindings" >"$destination/$name.resources.txt"
     else
-        build/cket "$source_directory/$name.c" -O2 --emit-qasm -o "$destination/$name.qasm"
-        build/cket "$source_directory/$name.c" -O2 --resources -o "$destination/$name.resources.txt"
+        build/cket "$source_directory/$name.c" -O2 --emit-qasm "${static_profile[@]}" -o "$destination/$name.qasm"
+        build/cket "$source_directory/$name.c" -O2 --resources "${static_profile[@]}" -o "$destination/$name.resources.txt"
     fi
 done
 

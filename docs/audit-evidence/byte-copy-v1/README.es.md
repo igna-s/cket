@@ -11,9 +11,11 @@ QASM e informes de recursos. `byte_copy` compara con libc un movimiento solapado
 con historia y dos escrituras parciales de un entero, incluida una fuente CPU. Las muestras por
 semilla y la regresión nativa normal quedan en `summary.json`.
 
-La primera tentativa del ejemplo se conserva con sus fuentes y su salida real: fue rechazada por
-medir un origen antes de terminar de usar su consumidor. Se corrigió el orden de las mediciones y
-los casts de sus punteros; la restricción de dependencias sigue activa.
+Corrección de atribución de evidencia: el rechazo inicial de medición antes de su consumidor se
+observó durante el trabajo, pero la captura archivada omitió `build/gcc-version.txt` y reprodujo un
+rechazo de configuración del compilador. Esa captura conserva ese resultado real y no demuestra el
+diagnóstico de dependencias. La entrega final, sus ejecuciones y los siete contratos O2 sí
+pertenecen a sus fuentes finales y logs separados.
 
 Se actualizan siete contratos mantenidos que antes esperaban rechazos y ahora corresponden a
 operaciones implementadas. La matriz completa de memoria no se presenta como ejecutada: estados

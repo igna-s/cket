@@ -1,3 +1,7 @@
+> Estado del 23 de octubre de 2026: la implementación actual avanza sin ejecutar suites, por
+> indicación del usuario. Los informes `passed` y su manifiesto pertenecen a la última auditoría
+> archivada; no certifican el árbol nuevo. La próxima auditoría deberá regenerarlos.
+
 # Paper de C Ket
 
 Manuscritos completos en español e inglés sobre `|c>` / cket 0.4.0 experimental. El estado estudiado

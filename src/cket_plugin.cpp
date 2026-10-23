@@ -67,9 +67,12 @@ std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
 
 struct QuantumStringWrite {
     std::vector<tree> prefix, updates;
+    tree result = NULL_TREE;
 };
 
 std::map<tree, QuantumStringWrite> quantum_string_copies;
+tree decimal_space_fn = NULL_TREE;
+bool library_value_prefix = false;
 
 struct QuantumMemorySet {
     tree fill;
@@ -473,6 +476,8 @@ void finish_function(void *event, void *) {
     quantum_search_pointers.clear();
     quantum_memory_copies.clear();
     quantum_string_copies.clear();
+    decimal_space_fn = NULL_TREE;
+    library_value_prefix = false;
     quantum_memory_sets.clear();
     quantum_indexed_accesses.clear();
     indexed_expansions.clear();

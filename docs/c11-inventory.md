@@ -13,7 +13,7 @@ the classical column mean the selected compiler/library retain responsibility fo
 Any physically incompatible behavior belongs to a context, not to an entire C construction or
 header.
 
-The machine-readable index currently contains 1224 entries: 769 pending, 87 partial and 368
+The machine-readable index currently contains 1224 entries: 766 pending, 90 partial and 368
 metadata-only. `python3 scripts/inventory_c11.py --require-complete` exits unsuccessfully while
 these implementation gaps remain. It checks declared status, not behavioral correctness. The new
 [string span/search adapters](c11-string-searches.md) have deferred full qualification; their

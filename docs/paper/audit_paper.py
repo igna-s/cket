@@ -1643,6 +1643,7 @@ def main(language):
     )
     delivery_folder = ROOT / 'docs/audit-evidence' / delivery_name
     delivery = json.loads((delivery_folder / 'summary.json').read_text())
+    build_only = delivery['status'] == 'built-runtime-qualification-deferred'
     with tarfile.open(delivery_folder / 'evidence.tar.gz') as archive:
         delivery_sources = {
             name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
@@ -1653,7 +1654,9 @@ def main(language):
             hashlib.sha256(archive.extractfile('records/' + name).read()).hexdigest() == sha
             for name, sha in delivery['log_sha256'].items()
         )
-        delivery_native = archive.extractfile('records/native.log').read().decode()
+        delivery_native = (
+            '' if build_only else archive.extractfile('records/native.log').read().decode()
+        )
     check(
         'Active incremental delivery: current/archive source identity and qualification scope remain explicit',
         delivery['source_files'] == len(delivery_sources)
@@ -1662,17 +1665,33 @@ def main(language):
             hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
             for name, sha in delivery_sources.items()
         )
-        and delivery['status'] == 'built-and-examples-executed-full-qualification-deferred'
+        and delivery['status']
+        in {
+            'built-and-examples-executed-full-qualification-deferred',
+            'built-runtime-qualification-deferred',
+        }
         and all(value == 'deferred' for value in delivery['qualification'].values()),
     )
     check(
-        'Active incremental delivery: closed build/examples and native checks are distinct from deferred exhaustive campaigns',
+        'Active incremental delivery: build evidence and runtime qualification retain their actual scopes',
         delivery_exit['status'] == delivery['status']
         and all(row['exit_code'] == 0 for row in delivery_exit['commands'])
         and delivery_logs_match
-        and delivery['native_regression']['exit_code'] == 0
-        and re.search(
-            rf"^{delivery['native_regression']['checks']} passed, 0 failed ", delivery_native, re.M
+        and (
+            (
+                build_only
+                and delivery['qualification']['native_examples'] == 'deferred'
+                and delivery['qualification']['native_regression'] == 'deferred'
+            )
+            or (
+                not build_only
+                and delivery['native_regression']['exit_code'] == 0
+                and re.search(
+                    rf"^{delivery['native_regression']['checks']} passed, 0 failed ",
+                    delivery_native,
+                    re.M,
+                )
+            )
         ),
     )
     current_capsules = (

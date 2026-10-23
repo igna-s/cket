@@ -626,6 +626,20 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             return cpu_parameter(value);
         }
     }
+    if (quantum_string_copies.count(value) && quantum_string_copies.at(value).result) {
+        if (expression_frames.empty() || lazy_effect_depth) {
+            error_at(at(value), "|c>: quantum library values require a scheduled ordered consumer");
+            return "{}";
+        }
+        std::set<unsigned> parameters;
+        parameters.swap(active_cpu_parameters);
+        bool previous_library_prefix = library_value_prefix;
+        library_value_prefix = true;
+        append(expression_frames.back()->prefix, lower_node(value));
+        library_value_prefix = previous_library_prefix;
+        active_cpu_parameters.insert(parameters.begin(), parameters.end());
+        return expression(quantum_string_copies.at(value).result, deps);
+    }
     if (code == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0))) {
         if (expression_frames.empty() || lazy_effect_depth) {
             error_at(at(value), "|c>: discarded memory calls require a scheduled ordered consumer");
@@ -1898,6 +1912,11 @@ tree lower_node(tree value) {
             cleanup(&list);
         }
         tree result = build_zero_cst(TREE_TYPE(value));
+        if (operation.result && !library_value_prefix) {
+            std::set<unsigned> dependencies;
+            evaluate_expression(operation.result, dependencies, &list);
+            cleanup(&list);
+        }
         if (locals)
             return build2(COMPOUND_EXPR,
                           TREE_TYPE(value),
