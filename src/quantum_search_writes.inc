@@ -91,5 +91,5 @@ tree expand_search_byte_write(tree value, tree target, QuantumStringSearch searc
                         missing_string_terminator(unsigned_char_type_node, at(value))));
     tree result = fold_convert(
         TREE_TYPE(value), postfix ? fold_convert(type, previous) : fold_convert(type, captured));
-    return string_write_marker(value, words, defined, std::move(prefix), result);
+    return make_quantum_value_program(value, words, defined, std::move(prefix), result);
 }

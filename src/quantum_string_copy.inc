@@ -36,41 +36,6 @@ void string_word_byte(QuantumByteRange &destination,
     words.back().second = fold_build2_loc(location, BIT_IOR_EXPR, type, kept, part);
 }
 
-tree string_write_marker(tree call,
-                         const std::vector<std::pair<tree, tree>> &words,
-                         tree defined,
-                         std::vector<tree> prefix = {},
-                         tree result_value = NULL_TREE) {
-    QuantumStringWrite operation;
-    operation.prefix = std::move(prefix);
-    operation.result = result_value;
-    std::vector<tree> arguments;
-    for (tree step : operation.prefix)
-        if (TREE_CODE(step) != DECL_EXPR)
-            arguments.push_back(step);
-    for (const auto &word : words) {
-        tree type = TREE_TYPE(word.first), next = fold_convert(type, word.second);
-        if (operation.updates.empty())
-            next = fold_build3_loc(at(call),
-                                   COND_EXPR,
-                                   type,
-                                   defined,
-                                   next,
-                                   missing_string_terminator(type, at(call)));
-        tree update = build2_loc(at(call), MODIFY_EXPR, type, word.first, next);
-        operation.updates.push_back(update);
-        arguments.push_back(update);
-    }
-    if (result_value)
-        arguments.push_back(result_value);
-    tree marker =
-        build_fn_decl("__cket_string_copy", build_function_type(TREE_TYPE(call), NULL_TREE));
-    tree result =
-        build_call_expr_loc_array(at(call), marker, (int)arguments.size(), arguments.data());
-    quantum_string_copies.emplace(result, std::move(operation));
-    return result;
-}
-
 tree expand_string_copy(tree call) {
     tree fn = get_callee_fndecl(call);
     if (fndecl_built_in_p(fn, BUILT_IN_STRCAT) || fndecl_built_in_p(fn, BUILT_IN_STRNCAT) ||
@@ -161,5 +126,5 @@ tree expand_string_copy(tree call) {
         string_word_byte(destination, i, selected, words, at(call));
     }
     tree defined = !bounded || count > source_count ? terminated : boolean_true_node;
-    return string_write_marker(call, words, defined);
+    return make_quantum_value_program(call, words, defined);
 }

@@ -58,6 +58,7 @@ struct QuantumIndexedAccess {
 };
 
 std::map<tree, QuantumIndexedAccess> quantum_indexed_accesses;
+std::map<tree, QuantumIndexedAccess> quantum_coherent_accesses;
 
 struct QuantumMemoryCopy {
     std::vector<std::pair<tree, tree>> elements; // Destination, source, in read-before-write order.
@@ -65,14 +66,14 @@ struct QuantumMemoryCopy {
 
 std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
 
-struct QuantumStringWrite {
+struct QuantumValueProgram {
     std::vector<tree> prefix, updates;
     tree result = NULL_TREE;
 };
 
-std::map<tree, QuantumStringWrite> quantum_string_copies;
+std::map<tree, QuantumValueProgram> quantum_value_programs;
 tree decimal_space_fn = NULL_TREE;
-bool library_value_prefix = false;
+bool value_program_prefix = false;
 
 struct QuantumMemorySet {
     tree fill;
@@ -475,11 +476,12 @@ void finish_function(void *event, void *) {
     quantum_pointer_aliases.clear();
     quantum_search_pointers.clear();
     quantum_memory_copies.clear();
-    quantum_string_copies.clear();
+    quantum_value_programs.clear();
     decimal_space_fn = NULL_TREE;
-    library_value_prefix = false;
+    value_program_prefix = false;
     quantum_memory_sets.clear();
     quantum_indexed_accesses.clear();
+    quantum_coherent_accesses.clear();
     indexed_expansions.clear();
     readonly_quantum_borrows.clear();
     expanded_product_leaves = 0;

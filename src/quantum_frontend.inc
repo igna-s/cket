@@ -50,6 +50,14 @@ bool quantum_pure_expression(tree value) {
     // CPU byte reads. Their composed predicates remain pure captures.
     if (cpu_byte_saves.count(value))
         return true;
+    auto program = quantum_value_programs.find(value);
+    if (program != quantum_value_programs.end() && program->second.result &&
+        program->second.updates.empty()) {
+        for (tree step : program->second.prefix)
+            if (TREE_CODE(step) != DECL_EXPR && !quantum_pure_expression(TREE_OPERAND(step, 1)))
+                return false;
+        return quantum_pure_expression(program->second.result);
+    }
     if (quantum(value) || CONSTANT_CLASS_P(value) || TYPE_P(value))
         return true;
     // A quantum Boolean conversion can give an arithmetic result a volatile
@@ -1053,6 +1061,7 @@ tree expand_memory_copy(tree call, bool move) {
     return result;
 }
 
+#include "quantum_value_program.inc"
 #include "quantum_memory.inc"
 #include "quantum_byte_copy.inc"
 #include "quantum_decimal.inc"
@@ -1091,7 +1100,7 @@ bool expand_pointer_borrow(tree decl, tree &prefix) {
     }
     prefix = memory_call ? expand_quantum_program(initial) : build_empty_stmt(at(decl));
     if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix) &&
-        !quantum_string_copies.count(prefix)) {
+        !quantum_value_programs.count(prefix)) {
         // The normal adapter already emitted its storage/count/CPU-boundary diagnostic.
         return true;
     }
@@ -1202,13 +1211,12 @@ tree expand_pointer_relation(tree value) {
     return build_int_cst(TREE_TYPE(value), result);
 }
 
+#include "quantum_coherent_index.inc"
+
 tree indexed_access(tree original, const std::vector<tree> &elements, tree index, bool readonly) {
     index = expand_quantum_program(index);
     if (has_quantum(index)) {
-        error_at(
-            at(original),
-            "|c>: a quantum index needs a coherent memory-access transformation; measure explicitly for CPU selection");
-        return build_zero_cst(TREE_TYPE(original));
+        return coherent_indexed_access(original, elements, index, readonly);
     }
     tree marker = build_fn_decl(
         "__cket_indexed_storage",
@@ -1227,6 +1235,8 @@ bool readonly_quantum_access(tree value) {
         return true;
     if (quantum_indexed_accesses.count(storage))
         return quantum_indexed_accesses.at(storage).readonly;
+    if (quantum_coherent_accesses.count(storage))
+        return quantum_coherent_accesses.at(storage).readonly;
     if (TREE_CODE(storage) == INDIRECT_REF || TREE_CODE(storage) == ARRAY_REF) {
         QuantumReference reference;
         tree pointer = TREE_OPERAND(storage, 0);
@@ -1271,6 +1281,12 @@ tree dynamic_product_access(tree value) {
         tree bytes = TREE_OPERAND(pointer, 1), size = TYPE_SIZE_UNIT(reference.element_type);
         if (TREE_CODE(strip(fold(bytes))) == INTEGER_CST || !size || !tree_fits_uhwi_p(size))
             return NULL_TREE;
+        if (has_quantum(bytes)) {
+            error_at(
+                at(value),
+                "|c>: coherent pointer-byte arithmetic needs an unwrapped element-index proof; direct fixed-array quantum indexes are implemented");
+            return build_zero_cst(TREE_TYPE(value));
+        }
         tree index = fold_build2(TRUNC_DIV_EXPR,
                                  long_long_integer_type_node,
                                  fold_convert(long_long_integer_type_node, bytes),
@@ -1497,6 +1513,9 @@ tree expand_quantum_program(tree value) {
     tree search_write = expand_search_pointer_write(value);
     if (search_write)
         return search_write;
+    tree indexed_write = expand_coherent_index_write(value);
+    if (indexed_write)
+        return indexed_write;
     if (code == POINTER_DIFF_EXPR) {
         tree search = expand_search_pointer_difference(value);
         if (search)
@@ -1642,7 +1661,7 @@ tree expand_quantum_program(tree value) {
             return search;
         tree selected = dynamic_product_access(value);
         if (selected)
-            return selected;
+            return coherent_index_read(selected);
         tree element = reference_element(value);
         if (element)
             return element;
@@ -1672,7 +1691,7 @@ tree expand_quantum_program(tree value) {
         }
         tree selected = dynamic_product_access(value);
         if (selected)
-            return selected;
+            return coherent_index_read(selected);
         tree root = NULL_TREE;
         std::string path;
         if (product_path(value, root, path)) {

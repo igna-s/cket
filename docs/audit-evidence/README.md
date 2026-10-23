@@ -1,6 +1,10 @@
 # Evidence for the tested C11 subset
 
-The current [implementation advance](implementation-oct23-v1/README.es.md) adds decimal conversion
+The current [coherent-index implementation](coherent-index-implementation-v3/README.es.md) adds
+fixed-array quantum-index reads, retained writes and update values. Build evidence remains separate
+from runtime and exhaustive qualification, deferred at the user's request.
+
+The previous [implementation advance](implementation-oct23-v1/README.es.md) adds decimal conversion
 and saved search-pointer stores. It records build evidence only. Runtime and exhaustive tests are
 deferred at the user's request; previous passing campaigns retain their own source identity.
 

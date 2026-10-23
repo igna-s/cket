@@ -1,8 +1,15 @@
-# Roadmap to complete C11 quantum compatibility
+# Extended C11 roadmap and current delivery scope
 
-The final objective is a quantum semantics for **every C11 construction and standard-library
-interface**. The current integer subset is an intermediate implementation. Passing its tests does
-not complete that objective.
+**Scope clarified on October 23, 2026:** the active objective is a
+[fully usable everyday C core](perfil-c-cotidiano.es.md): common types, functions, control, arrays,
+pointers, vectors and the library operations those programs need. Implementation and acceptance
+focus on integrated programs in that profile. The informal “50% used all the time” is not a measured
+coverage target.
+
+This document retains the previous plan for every C11 construction and standard-library interface as
+an **extended technical reference**. Completing all of it is outside the current completion gate.
+Its missing implementations remain visible; narrowing the delivery scope does not turn them into
+implemented features.
 
 Implementation now ships as [usable incremental deliveries](entregas-incrementales.es.md), starting
 with a small integer/Boolean package. Delivery counts do not measure C11 coverage; the feature
@@ -48,9 +55,9 @@ or a claim that the first groups are already complete.
    ordinary arithmetic, dynamic storage and general pointer/function use. Publish precise contracts
    for classical I/O boundaries. Existing CPU floating angles for `phase` do not implement quantum
    floating registers.
-1. Address less common facilities afterward: `long double`, complex arithmetic, general bitfields
-   and unions, wide-character/locale interfaces, advanced floating environments, atomics and
-   threading. These remain in the complete objective; their lower priority does not close them.
+1. Keep less common facilities in the extended roadmap: `long double`, complex arithmetic, general
+   bitfields and unions, wide-character/locale interfaces, advanced floating environments, atomics
+   and threading. They are outside the current everyday-profile completion gate and remain pending.
 
 Cybersecurity and security-specific interfaces remain classical under the user's standing scope.
 Each implementation must have evidence for its types, effects and consuming contexts; adding a
@@ -388,7 +395,7 @@ calls, automatic per-capture static locale traces, concurrency and source proven
 folding remain P/R; invalid arguments retain the C undefined-domain contract (S). This is partial
 library coverage, not completion of M7.
 
-## Completion rule
+## Historical evidence and completion rules
 
 M4/M7 now also include bounded [`strlen` and `strcmp`](c11-strings.md), with 460 maintained checks
 per configuration and 640 separate independent compiled-circuit states across normal and ASan/UBSan.
@@ -410,7 +417,11 @@ remainder, and the historical 151-input integration adds selection views. Its 11
 include the original 97, 810 remainder and 288 selection domains. The separate broad151 campaign
 remains separate; no earlier broad result certifies those changed inputs.
 
-The project goal remains open until the inventory has implemented, validated coverage or a reasoned
-incompatible-context contract for every C11 item of the declared target. Resource limits must have
-explicit tests and alternatives; they cannot serve as a blanket reason to omit operators or library
-families. The present subset and its passing tests are evidence for M0, not completion of M9.
+The active goal closes against the [everyday-profile acceptance criteria](perfil-c-cotidiano.es.md),
+including the common features and integrated programs still missing. Resource bounds and incomplete
+runtime qualification must remain explicit. A missing implementation or an expected rejection is not
+functional support.
+
+Completing the extended M9 roadmap would additionally require implemented, validated coverage or a
+reasoned incompatible-context contract for every C11 item of the declared target. That extended
+condition is not the active delivery gate. The present subset does not complete either profile.

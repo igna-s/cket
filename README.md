@@ -16,12 +16,13 @@ OpenQASM 3 circuits, and resource reports. The current version is **0.4.0**, wit
 the reference configuration. It implements an intermediate subset, with
 [version 1.0 requirements still open](docs/v1-plan.md).
 
-The final objective is explicit quantum compatibility for **all C11 constructions and
-standard-library interfaces**. The [C11 inventory](docs/c11-inventory.md) and
-[roadmap](docs/c11-roadmap.md) separate implemented cases, missing features, resource bounds and
-justified incompatible contexts. Quantum compatibility with the entire C library is currently
-incomplete; ordinary libc support is not evidence that libc functions operate on unmeasured quantum
-data.
+The current objective is a **fully usable everyday C core**: common types, functions, control,
+arrays, pointers, vectors and the library operations those programs need. The
+[agreed scope and acceptance criteria](docs/perfil-c-cotidiano.es.md) distinguish implemented
+capabilities from pending work. The full [C11 inventory](docs/c11-inventory.md) and
+[extended roadmap](docs/c11-roadmap.md) remain technical references; completing every C11 interface
+is outside the current completion gate. Ordinary libc support is not evidence that libc functions
+operate on unmeasured quantum data.
 
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
@@ -77,7 +78,7 @@ superposition before explicit measurement. General division and complete C11 rem
 The native runtime now offers [sparse simulation](docs/simulacion-dispersa.es.md) for circuits with
 up to 128 physical wires and bounded occupied support. `bash scripts/run-block.sh 02` runs an
 `int32` quotient and a `size_t64` example that exceed the default dense limit. This is a usable
-advance within block 02; the complete integer/C11 objective remains open.
+advance within block 02; the everyday integer profile remains incomplete.
 
 The [variable-shift implementation](docs/c11-shifts.md) now selects source positions without
 retaining one full temporary word per count bit. Full 32-bit shifts that previously exceeded the
@@ -294,6 +295,11 @@ Implementation now also includes checked [`atoi`/`atol`/`atoll`](docs/c11-decima
 search-pointer character stores and value-producing increments. Runtime testing of this source state
 is deferred at the user's request. Earlier passed campaigns do not certify these additions.
 
+Fixed scalar arrays now have partial [quantum-index reads and writes](docs/c11-coherent-index.md),
+including assignment and increment values. Bounds are checked before narrowing the selector; writes
+retain previous owners. Runtime qualification is deferred. Block 04 has a compile-only source
+example; this does not close that block.
+
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
 predicates can be uncomputed automatically after their last use.
@@ -307,7 +313,7 @@ The [immutable character-profile contract](docs/c11-ctype.md) adds partial adapt
 `ctype.h` interfaces. Its 1815 checks cover three byte locales, exact masks, phases, saved cleanup,
 functions/memory/control combinations, thread locales and immutable circuit modules. Static exports
 require an explicit locale or frozen profile artifact. Wide characters, indirect calls, automatic
-locale traces, concurrency and the full C11/library objective remain open.
+locale traces and concurrency remain open in the extended C11/library roadmap.
 
 [CPU integer bindings and classical product preparation](docs/c11-bindings.md) capture values once
 and retain them for cleanup. Changing a CPU variable afterward does not change a saved inverse.

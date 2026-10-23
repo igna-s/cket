@@ -1,12 +1,13 @@
 # Version 1.0 intermediate specification and acceptance
 
-This document fixes an intermediate 1.0 release contract, not the final project scope or
-certification that the current implementation satisfies it. The final objective is explicit quantum
-semantics and compatibility for all C11 language constructs and standard-library interfaces. The
-[complete inventory](c11-inventory.md) and [full roadmap](c11-roadmap.md) classify pending
-implementations, resource bounds and justified incompatible contexts. The [README](../README.md)
-records capabilities and evidence. Exhaustively testing a small domain does not close a general
-requirement, and reaching this intermediate release does not complete the full C11 objective.
+This document fixes a bounded 1.0 release contract, not certification that the current
+implementation satisfies it. The user clarified the active project scope on October 23, 2026: a
+[fully usable everyday C core](perfil-c-cotidiano.es.md), including functions, arrays, pointers and
+vectors. This release contract is a milestone within that work; its exclusions do not remove dynamic
+vectors or common floating-point work from the broader everyday profile. The
+[complete inventory](c11-inventory.md) and [extended roadmap](c11-roadmap.md) retain the full C11
+analysis as a reference. The [README](../README.md) records capabilities and evidence. Exhaustively
+testing a small domain does not close a general requirement.
 
 ## Intermediate release subset
 
@@ -21,7 +22,7 @@ protects this contract but does not implement that construct.
 
 Outside this intermediate release: QPU execution, dynamic quantum memory, coherent addresses,
 quantum floating point, complete C11 library compatibility, general quantum recursion and general
-coherent loops. The full language work remains on the roadmap; missing implementations are not
+coherent loops. The extended language work remains on the roadmap; missing implementations are not
 physical impossibilities. CPU jumps without lifetime proofs are currently rejected. A GCC fork is
 not required; justification of the transformation boundary is.
 

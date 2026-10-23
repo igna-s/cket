@@ -33,7 +33,7 @@ tree expand_byte_copy(tree call, bool move) {
             "|c>: quantum object-byte copy exceeds the 64-byte expression synthesis bound");
     if (move && source.quantum && destination.elements == source.elements &&
         destination.stride == source.stride && destination.offset == source.offset)
-        return string_write_marker(call, {}, boolean_true_node);
+        return make_quantum_value_program(call, {}, boolean_true_node);
     std::map<tree, uint64_t> source_masks;
     if (source.quantum)
         for (uint64_t i = 0; i < count; ++i) {
@@ -81,5 +81,5 @@ tree expand_byte_copy(tree call, bool move) {
     }
     if (ordered.size() != words.size())
         return reject("|c>: cyclic quantum byte-copy dependencies need a retained snapshot");
-    return string_write_marker(call, ordered, boolean_true_node);
+    return make_quantum_value_program(call, ordered, boolean_true_node);
 }

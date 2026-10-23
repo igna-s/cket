@@ -19,26 +19,6 @@ tree string_length_expression(QuantumByteRange &range,
     return length;
 }
 
-tree quantum_value_capture(tree call,
-                           tree expression,
-                           const char *name,
-                           std::vector<tree> &prefix,
-                           tree value_type = unsigned_char_type_node) {
-    tree type = build_qualified_type(value_type, TYPE_QUAL_VOLATILE);
-    std::string identifier = std::string(name) + std::to_string(next_id);
-    tree decl = build_decl(at(call), VAR_DECL, get_identifier(identifier.c_str()), type);
-    DECL_CONTEXT(decl) = active_function;
-    DECL_ATTRIBUTES(decl) = tree_cons(get_identifier("cket_quant"), NULL_TREE, NULL_TREE);
-    TREE_THIS_VOLATILE(decl) = TREE_SIDE_EFFECTS(decl) = 1;
-    DECL_INITIAL(decl) = build_zero_cst(type);
-    // The zero preparation is separate from the circuit-domain expression,
-    // including when that expression uses only captured CPU bytes.
-    record_decl(decl, nullptr);
-    prefix.push_back(build1(DECL_EXPR, void_type_node, decl));
-    prefix.push_back(build2_loc(at(call), MODIFY_EXPR, type, decl, fold_convert(type, expression)));
-    return fold_convert(value_type, decl);
-}
-
 tree expand_string_concat(tree call) {
     tree fn = get_callee_fndecl(call);
     bool bounded = fndecl_built_in_p(fn, BUILT_IN_STRNCAT) || name_of(fn) == "strncat" ||
@@ -148,5 +128,5 @@ tree expand_string_concat(tree call) {
                                next);
         string_word_byte(destination, i, next, words, at(call));
     }
-    return string_write_marker(call, words, defined, std::move(prefix));
+    return make_quantum_value_program(call, words, defined, std::move(prefix));
 }

@@ -4,10 +4,16 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Alcance vigente:** completar el [C cotidiano funcional](perfil-c-cotidiano.es.md): tipos comunes,
+funciones, control, arrays, punteros y vectores, con las operaciones de biblioteca que necesitan. El
+usuario aclaró este alcance el 23 de octubre. El inventario completo de C11 queda como referencia
+ampliada; completar todas sus entradas deja de ser requisito para este objetivo. El núcleo cotidiano
+todavía tiene pendientes de implementación e integración, además de pruebas.
+
 **La entrega ahora avanza por bloques utilizables.** El
-[bloque 01 y el plan de diez entregas](entregas-incrementales.es.md) reúnen ocho programas pequeños,
+[bloque 01 y el registro de entregas](entregas-incrementales.es.md) reúnen ocho programas pequeños,
 un comando para compilarlos y ejecutarlos, circuitos OpenQASM e informes de recursos. “10%, 20%…”
-cuenta bloques de ese plan; no representa cobertura de C11 ni esfuerzo restante.
+identificaba bloques del plan anterior; no representa cobertura de C11 ni esfuerzo restante.
 
 **Nuevo avance del bloque 06:** se implementan `strspn` y `strcspn` sobre vistas comprobadas, y
 predicados directos `== NULL` / `!= NULL` para `memchr`, `strchr`, `strrchr`, `strpbrk` y `strstr`.
@@ -73,6 +79,11 @@ guardados de búsqueda, incluidos asignaciones e incrementos con resultado. La v
 tiene comprobaciones de compilación; sus ejecuciones, estados completos, inversas y matrices quedan
 pendientes. Los resultados anteriores conservan sus propias fuentes.
 
+**Nuevo código del bloque 04:** los arrays escalares fijos admiten índices cuánticos, lecturas y
+escrituras con historia, asignaciones y valores de incremento/decremento. El rango se comprueba
+antes de reducir el selector. La aritmética de punteros con índice cuántico sigue pendiente. Esta
+entrega tiene compilación, sin pruebas de ejecución.
+
 ## La respuesta corta
 
 El proyecto **ya compila y ejecuta programas con un subconjunto de operaciones cuánticas sobre
@@ -80,8 +91,9 @@ enteros y booleanos**. Puede preparar superposiciones, conservar entrelazamiento
 circuitos reversibles y realizar mediciones explícitas. También tiene adaptadores parciales para
 algunas funciones de la biblioteca C.
 
-**Todavía no implementa compatibilidad cuántica completa con C11 ni con toda su biblioteca.** Hay
-trabajo de implementación importante por delante, además de pruebas y documentación.
+**Todavía no completa el núcleo cotidiano acordado.** Hay trabajo de funciones, punteros, vectores
+dinámicos y combinaciones de flujo y memoria, además de validación. La compatibilidad cuántica con
+toda la biblioteca C11 también es incompleta, pero queda fuera del criterio de cierre actual.
 
 El código C clásico se ejecuta en CPU mediante GCC y libc. Las operaciones cuánticas se ejecutan
 actualmente en un simulador de estados escrito en C. **La ciberseguridad permanece clásica y queda
@@ -336,11 +348,15 @@ de `memset` ya tiene una integración dirigida; su regresión amplia sigue pendi
 tipos numéricos serán `float` y `double`, junto con sus operaciones y conversiones, antes de abordar
 `long double` y complejos.
 
-Las interfaces menos habituales quedan para más adelante, conservando el objetivo completo. La
-ciberseguridad sigue clásica. El [roadmap](c11-roadmap.md#implementation-order) detalla este orden,
-pedido el 19 de octubre de 2026; no representa una medición estadística de uso.
+Las interfaces menos habituales quedan en el roadmap ampliado. La aclaración del 23 de octubre
+prioriza cerrar programas cotidianos completos; no exige terminar todo C11. La ciberseguridad sigue
+clásica. El [perfil vigente](perfil-c-cotidiano.es.md) detalla las prioridades y el cierre; no
+representa una medición estadística de uso.
 
-## Qué falta implementar para el objetivo grande
+## Referencia de pendientes del roadmap ampliado
+
+Esta tabla incluye tanto pendientes cotidianos como ampliaciones que no condicionan el objetivo
+actual. Para distinguirlos, consultar el [perfil vigente](perfil-c-cotidiano.es.md).
 
 | Bloque                                | Trabajo pendiente principal                                                                                                                                                                       |
 | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -357,8 +373,8 @@ explícita con el programa cuántico. La medición debe aparecer donde correspon
 convertir automáticamente una escritura en disco en una puerta unitaria. **La ciberseguridad
 continúa en el lado clásico.**
 
-La [hoja de ruta](c11-roadmap.md) contiene el desglose técnico. El objetivo incluye las
-construcciones del lenguaje, no solamente los nombres de funciones del inventario.
+La [hoja de ruta ampliada](c11-roadmap.md) conserva el desglose técnico. El objetivo cotidiano
+incluye construcciones del lenguaje y su composición, además de funciones de biblioteca.
 
 ## Qué está hecho en pruebas, papers y legibilidad
 
@@ -366,8 +382,9 @@ Hay pruebas de programas C completos, amplitudes, fases, inversas, canales expl�
 errores esperados y preservación del comportamiento clásico. Las campañas separan lo integrado, lo
 probado en un candidato, lo exportado como circuito y lo simulado numéricamente.
 
-La [integración actual](audit-evidence/strings-integration-v6/integration-summary.json) identifica
-144 entradas, sus pruebas dirigidas cerradas y la regresión amplia todavía pendiente. La
+La
+[integración histórica de cadenas](audit-evidence/strings-integration-v6/integration-summary.json)
+identifica 144 entradas, sus pruebas dirigidas cerradas y la regresión amplia todavía pendiente. La
 [campaña completa anterior](audit-evidence/controlled-operands-full/summary.json) conserva sus 138
 fuentes, dos reconstrucciones, cada comando cerrado y todos los tramos de fuzzing. Las campañas de
 134 y 137 entradas también permanecen como resultados históricos. No se renombran como pruebas de
@@ -385,7 +402,8 @@ propio. Esto facilita la revisión; no constituye una prueba de ausencia de bugs
 
 ## Qué permitiría dar el objetivo por terminado
 
-No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetivo habría que:
+No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el
+[perfil cotidiano](perfil-c-cotidiano.es.md) habría que:
 
 1. Resolver los pendientes del lenguaje y la biblioteca dentro del alcance acordado, manteniendo la
    ciberseguridad clásica. Cada incompatibilidad concreta necesita una explicación y un diagnóstico
@@ -397,12 +415,12 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el objetiv
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo paso concreto es verificar la regresión amplia y el CI de las 146 entradas y continuar
-con `bool`, los enteros habituales y sus conversiones y operadores. Un prototipo separado reduce el
-espacio auxiliar de `int % 3`: pasó una matriz de 640 estados y 320 referencias C, pero todavía debe
-incorporar regresiones mantenidas y completar su integración. El diagnóstico de NUL, los punteros,
-tamaños, layouts y las demás familias conservan sus tareas pendientes. **La integración nueva no
-completa C11 cuántico ni el objetivo general.**
+El próximo trabajo prioriza integrar funciones, arrays, punteros y buffers, y después almacenamiento
+para vectores dinámicos. Las novedades de índices cuánticos, búsquedas y conversiones decimales solo
+tienen compilación comprobada en sus fuentes actuales. Por indicación del usuario, su ejecución y
+las matrices de validación quedan para el cierre. Los informes de 146 entradas y otras campañas
+anteriores son históricos y no certifican esas fuentes nuevas. **La integración actual no completa
+todavía el perfil cotidiano.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

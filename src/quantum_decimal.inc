@@ -127,5 +127,5 @@ tree expand_decimal_conversion(tree call) {
                           TYPE_MIN_VALUE(type),
                           fold_build1_loc(location, NEGATE_EXPR, type, signed_value));
     tree result = choose(negative, negated, signed_value);
-    return string_write_marker(call, {}, boolean_true_node, std::move(prefix), result);
+    return make_quantum_value_program(call, {}, boolean_true_node, std::move(prefix), result);
 }

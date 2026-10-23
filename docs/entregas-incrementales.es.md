@@ -1,12 +1,15 @@
 # Entregas cuánticas utilizables
 
-El objetivo completo sigue abierto. A partir de ahora se entrega por bloques que se puedan compilar,
-ejecutar y revisar por separado. Cada bloque incorpora código o una capacidad utilizable, ejemplos,
-instrucciones y pruebas dirigidas. La auditoría amplia y los papers conservan su propia evidencia y
-no frenan todas las entregas pequeñas.
+**Alcance actualizado el 23 de octubre de 2026:** cerrar el
+[núcleo de C cotidiano](perfil-c-cotidiano.es.md), con funciones, arrays, punteros, vectores y las
+operaciones frecuentes que necesitan. El objetivo sigue abierto y se entrega por bloques que se
+puedan compilar, ejecutar y revisar por separado. La auditoría y los papers conservan su propia
+evidencia. Las novedades actuales solo tienen comprobaciones de compilación: las pruebas de
+ejecución quedan para el cierre, por indicación del usuario.
 
-**“10%, 20%…” significa 1, 2… de los diez bloques de este plan. No mide el porcentaje de C11
-implementado ni el esfuerzo restante.** Los bloques tienen tamaños distintos. La
+El plan anterior de diez bloques se conserva abajo como referencia ampliada. **“10%, 20%…” no mide
+el porcentaje de C11 implementado ni el esfuerzo restante.** El alcance vigente se cierra por
+capacidades y programas integrados del perfil, sin exigir todas las interfaces poco habituales. La
 [matriz de cobertura](c-coverage.md) sigue siendo la referencia para cada construcción.
 
 ## Bloque 01: base entera cuántica utilizable
@@ -107,7 +110,19 @@ El [contrato](c11-string-searches.md) limita las vistas y los consumidores de pu
 completa de estados, inversas y sanitizadores queda aplazada al cierre del bloque para priorizar
 implementación. El bloque 06 sigue abierto y no cuenta como otra entrega completa.
 
-## Orden de las siguientes entregas
+## Implementación del bloque 04: índices cuánticos
+
+`bash scripts/run-block.sh 04` reúne el nuevo fuente `quantum_index`. Se implementan lecturas y
+escrituras sobre arrays escalares comprobados mediante un índice cuántico, con resultados de
+asignación e incremento. Su [contrato](c11-coherent-index.md) conserva los límites y los pendientes.
+Por indicación del usuario solo se construye en esta etapa; la ejecución y las matrices completas
+quedan para el final. El bloque 04 sigue abierto.
+
+## Referencia del plan anterior de diez bloques
+
+Los números identifican las entregas existentes. Las filas que cubren todo el inventario, complejos
+y otras interfaces poco habituales son una ampliación posible; no condicionan el cierre del perfil
+vigente. La prioridad de implementación está en el [alcance actual](perfil-c-cotidiano.es.md).
 
 | Bloque | Entrega utilizable que se debe cerrar                                                            | Estado                                           |
 | ------ | ------------------------------------------------------------------------------------------------ | ------------------------------------------------ |
@@ -124,8 +139,8 @@ implementación. El bloque 06 sigue abierto y no cuenta como otra entrega comple
 
 Las capacidades parciales de un bloque futuro siguen disponibles; solo se lo contará como entregado
 cuando tenga un alcance concreto y comprobado. En cada avance se prioriza implementar y publicar ese
-alcance antes de abrir nuevas matrices de auditoría. Se ejecutan las pruebas necesarias del cambio y
-se amplían cuando aparece un fallo o una incertidumbre concreta.
+alcance antes de abrir nuevas matrices de auditoría. En la etapa actual se compila primero y se
+difiere la validación de ejecución de las novedades hasta el cierre del alcance implementado.
 
 La ciberseguridad, criptografía y autenticación permanecen clásicas. Este plan tampoco requiere
 cambiar el aislamiento o la configuración de seguridad de Windows/WSL.

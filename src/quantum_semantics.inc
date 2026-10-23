@@ -249,8 +249,9 @@ void append(tree *list, tree value) {
 }
 
 tree quantum_use(tree *node, int *walk, void *) {
-    if (quantum_indexed_accesses.count(*node) || quantum_memory_copies.count(*node) ||
-        quantum_string_copies.count(*node) || quantum_memory_sets.count(*node))
+    if (quantum_indexed_accesses.count(*node) || quantum_coherent_accesses.count(*node) ||
+        quantum_memory_copies.count(*node) || quantum_value_programs.count(*node) ||
+        quantum_memory_sets.count(*node))
         return *node;
     if (quantum(*node))
         return *node;
@@ -503,7 +504,7 @@ bool discarded_memory_sequence(tree value) {
     if (!value)
         return false;
     if (quantum_memory_sets.count(value) || quantum_memory_copies.count(value) ||
-        quantum_string_copies.count(value))
+        quantum_value_programs.count(value))
         return true;
     return TREE_CODE(value) == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0)) &&
            discarded_memory_sequence(TREE_OPERAND(value, 1));
@@ -626,19 +627,19 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             return cpu_parameter(value);
         }
     }
-    if (quantum_string_copies.count(value) && quantum_string_copies.at(value).result) {
+    if (quantum_value_programs.count(value) && quantum_value_programs.at(value).result) {
         if (expression_frames.empty() || lazy_effect_depth) {
-            error_at(at(value), "|c>: quantum library values require a scheduled ordered consumer");
+            error_at(at(value), "|c>: quantum value programs require a scheduled ordered consumer");
             return "{}";
         }
         std::set<unsigned> parameters;
         parameters.swap(active_cpu_parameters);
-        bool previous_library_prefix = library_value_prefix;
-        library_value_prefix = true;
+        bool previous_library_prefix = value_program_prefix;
+        value_program_prefix = true;
         append(expression_frames.back()->prefix, lower_node(value));
-        library_value_prefix = previous_library_prefix;
+        value_program_prefix = previous_library_prefix;
         active_cpu_parameters.insert(parameters.begin(), parameters.end());
-        return expression(quantum_string_copies.at(value).result, deps);
+        return expression(quantum_value_programs.at(value).result, deps);
     }
     if (code == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0))) {
         if (expression_frames.empty() || lazy_effect_depth) {
@@ -1830,10 +1831,10 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
-    if (quantum_string_copies.count(value)) {
+    if (quantum_value_programs.count(value)) {
         tree list = alloc_stmt_list();
         tree locals = NULL_TREE;
-        const auto &operation = quantum_string_copies.at(value);
+        const auto &operation = quantum_value_programs.at(value);
         for (tree step : operation.prefix) {
             if (TREE_CODE(step) == DECL_EXPR) {
                 tree decl = DECL_EXPR_DECL(step);
@@ -1844,7 +1845,7 @@ tree lower_node(tree value) {
                 // computation belongs under the coherent controls.
                 tree initial = strip(DECL_INITIAL(decl));
                 if (!quantum(decl) || !initial || !integer_zerop(initial)) {
-                    error_at(at(value), "|c>: private string captures require fresh zero storage");
+                    error_at(at(value), "|c>: private quantum captures require fresh zero storage");
                     return build_zero_cst(TREE_TYPE(value));
                 }
                 auto saved_controls = std::move(controls);
@@ -1856,7 +1857,7 @@ tree lower_node(tree value) {
                 if (!capture.lowered || !capture.clean || capture.derived ||
                     dependent(capture.id)) {
                     error_at(at(value),
-                             "|c>: private string capture requires independent clean storage");
+                             "|c>: private quantum capture requires independent clean storage");
                     return build_zero_cst(TREE_TYPE(value));
                 }
                 consume(capture);
@@ -1912,7 +1913,7 @@ tree lower_node(tree value) {
             cleanup(&list);
         }
         tree result = build_zero_cst(TREE_TYPE(value));
-        if (operation.result && !library_value_prefix) {
+        if (operation.result && !value_program_prefix) {
             std::set<unsigned> dependencies;
             evaluate_expression(operation.result, dependencies, &list);
             cleanup(&list);
@@ -2144,7 +2145,7 @@ tree lower_node(tree value) {
     }
     if (CONVERT_EXPR_P(value) && TREE_TYPE(value) == void_type_node &&
         (quantum_memory_copies.count(strip(value)) || quantum_memory_sets.count(strip(value)) ||
-         quantum_string_copies.count(strip(value))))
+         quantum_value_programs.count(strip(value))))
         return lower_node(strip(value));
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
          code == POSTDECREMENT_EXPR) &&

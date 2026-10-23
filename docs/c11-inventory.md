@@ -1,10 +1,12 @@
 # C11 inventory: classical and quantum coverage
 
 This inventory indexes the C11 language, execution environment, standard headers and optional annex
-facilities against the current implementation. Its destination is
-[complete quantum compatibility](c11-roadmap.md), not the current integer subset. Clause numbers
-refer to the public [WG14 N1570 draft](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf).
-GCC/libc delegation is not a certification of all classical behavior.
+facilities against the current implementation. It retains the
+[extended C11 analysis](c11-roadmap.md). The current delivery scope is the
+[everyday C core](perfil-c-cotidiano.es.md), agreed on October 23, 2026; closing that profile does
+not require implementing every inventory entry. Clause numbers refer to the public
+[WG14 N1570 draft](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf). GCC/libc delegation
+is not a certification of all classical behavior.
 
 Quantum status: **I** = implemented for the stated cases, **Partial** = some cases implemented,
 **P** = pending. Restriction classes are **P** implementation, **R** explicit resources/bounds,
@@ -215,7 +217,7 @@ coverage; adding them cannot close a missing C11 entry.
 | Annex L analyzability                                              | Optional target facility                    | Explicit diagnostic/recovery profile and quantum ownership after failure; P, M1/M3/M7   |
 
 Optional C11 facilities remain explicit entries. A feature-test macro or an absent libc facility
-must not be described as an implemented quantum feature. The complete compatibility objective
+must not be described as an implemented quantum feature. The extended complete-compatibility roadmap
 includes a declared decision and evidence for each, and implementation where that facility is part
 of the supported target.
 
