@@ -300,6 +300,11 @@ including assignment and increment values. Bounds are checked before narrowing t
 retain previous owners. Runtime qualification is deferred. Block 04 has a compile-only source
 example; this does not close that block.
 
+Checked [buffer functions](docs/c11-buffer-functions.md) now compose those reads and retained writes
+through pointer parameters and constant-offset aliases. The compiler checks the element index before
+canonical pointer-byte scaling can wrap. Block 03 adds byte and word source examples; execution and
+full qualification remain deferred.
+
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent
 predicates can be uncomputed automatically after their last use.

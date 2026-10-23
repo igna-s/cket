@@ -1,4 +1,4 @@
-# Fixed arrays with quantum indices
+# Fixed arrays and borrowed buffers with quantum indices
 
 The frontend now implements partial coherent reads and writes for fixed scalar arrays with an
 unmeasured integer index. The source is checked quantum storage with 1–64 integer or Boolean
@@ -26,10 +26,12 @@ circuit over the array registers, without a physical quantum-RAM or speedup clai
 selector, history, gate and simulator budgets are separate costs.
 
 CPU-indexed measurement/reset, Fourier and the existing restricted updates retain their previous
-path. Quantum-index pointer-byte arithmetic still needs a proof before pointer-size wrapping and
-remains pending. Nested products, dynamic allocation/counts, address escape, general mutable pointer
-ABI, effectful indices and further loop/lifetime combinations also remain pending. Pure private
-value programs can compose as indices or assignment values; CPU side effects require sequencing.
+path. [Checked pointer borrows](c11-buffer-functions.md) now recover the element index before
+canonical pointer-byte scaling; their nonnegative index is bounded by the remaining owner range.
+General pointer arithmetic, negative indices into an offset borrow, nested products, dynamic
+allocation/counts, address escape, general mutable pointer ABI, effectful indices and further
+loop/lifetime combinations also remain pending. Pure private value programs can compose as indices
+or assignment values; CPU side effects require sequencing.
 
 [`quantum_index.c`](../examples/blocks/04/quantum_index.c) provides a source example of reads,
 assignment values and postfix updates. `bash scripts/run-block.sh 04` supplies its eventual native

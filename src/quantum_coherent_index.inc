@@ -2,6 +2,43 @@
 // checks belong to the circuit; host placeholders never supply selected data.
 tree dynamic_product_access(tree value);
 
+// Recover the element index before GCC's pointer-sized byte scaling. Dividing
+// the scaled offset would accept huge indices whose multiplication wrapped.
+// Keep the conversions on the original index: they are part of C semantics.
+tree unscaled_quantum_pointer_index(tree bytes, uint64_t stride) {
+    tree scaled = bytes;
+    while (scaled && (TREE_CODE(scaled) == NON_LVALUE_EXPR || CONVERT_EXPR_P(scaled))) {
+        tree operand = TREE_OPERAND(scaled, 0);
+        if (TREE_CODE(scaled) != NON_LVALUE_EXPR &&
+            (!INTEGRAL_TYPE_P(TREE_TYPE(operand)) || !TYPE_UNSIGNED(TREE_TYPE(scaled)) ||
+             !TYPE_UNSIGNED(TREE_TYPE(operand)) ||
+             TYPE_PRECISION(TREE_TYPE(scaled)) != TYPE_PRECISION(TREE_TYPE(operand))))
+            break;
+        scaled = operand;
+    }
+    tree type = TREE_TYPE(scaled);
+    if (!INTEGRAL_TYPE_P(type) || !TYPE_UNSIGNED(type) ||
+        TYPE_PRECISION(type) != TYPE_PRECISION(sizetype) || TYPE_PRECISION(type) > 64)
+        return NULL_TREE;
+    if (stride == 1)
+        return bytes;
+    if (TREE_CODE(scaled) == MULT_EXPR) {
+        for (unsigned side = 0; side < 2; ++side) {
+            tree factor = TREE_OPERAND(scaled, side);
+            if (TREE_CODE(factor) == INTEGER_CST && tree_fits_uhwi_p(factor) &&
+                tree_to_uhwi(factor) == stride)
+                return TREE_OPERAND(scaled, 1 - side);
+        }
+    }
+    if (TREE_CODE(scaled) == LSHIFT_EXPR) {
+        tree shift = TREE_OPERAND(scaled, 1);
+        if (TREE_CODE(shift) == INTEGER_CST && tree_fits_uhwi_p(shift) &&
+            tree_to_uhwi(shift) < 64 && (uint64_t{1} << tree_to_uhwi(shift)) == stride)
+            return TREE_OPERAND(scaled, 0);
+    }
+    return NULL_TREE;
+}
+
 tree coherent_indexed_access(tree original,
                              const std::vector<tree> &elements,
                              tree index,

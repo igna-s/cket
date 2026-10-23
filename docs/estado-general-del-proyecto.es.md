@@ -81,8 +81,14 @@ pendientes. Los resultados anteriores conservan sus propias fuentes.
 
 **Nuevo código del bloque 04:** los arrays escalares fijos admiten índices cuánticos, lecturas y
 escrituras con historia, asignaciones y valores de incremento/decremento. El rango se comprueba
-antes de reducir el selector. La aritmética de punteros con índice cuántico sigue pendiente. Esta
+antes de reducir el selector. Las formas generales de aritmética de punteros siguen pendientes. Esta
 entrega tiene compilación, sin pruebas de ejecución.
+
+**Nuevo código del bloque 03:** funciones encadenadas y préstamos de buffers admiten lecturas y
+escrituras con índice cuántico. Se recupera el índice anterior al escalado de bytes para comprobar
+su rango; también se corrige el rechazo de incrementos descartados envueltos en una conversión
+entera de GCC. Los ejemplos de bytes y palabras están compilados, sin ejecución validada. El
+[contrato de buffers](c11-buffer-functions.md) mantiene explícitos los contextos pendientes.
 
 ## La respuesta corta
 

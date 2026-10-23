@@ -2147,6 +2147,13 @@ tree lower_node(tree value) {
         (quantum_memory_copies.count(strip(value)) || quantum_memory_sets.count(strip(value)) ||
          quantum_value_programs.count(strip(value))))
         return lower_node(strip(value));
+    // GCC can retain an integer conversion around a discarded postfix value.
+    // Value consumers serialize that conversion in expression(); a statement
+    // still needs the enclosed effects and must release its unused result.
+    if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) && INTEGRAL_TYPE_P(TREE_TYPE(value)) &&
+        TYPE_PRECISION(TREE_TYPE(value)) <= 64 && quantum_value_programs.count(strip(value)) &&
+        quantum_value_programs.at(strip(value)).result)
+        return lower_node(strip(value));
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
          code == POSTDECREMENT_EXPR) &&
         selected_storage(TREE_OPERAND(value, 0))) {

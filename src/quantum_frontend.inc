@@ -1282,10 +1282,20 @@ tree dynamic_product_access(tree value) {
         if (TREE_CODE(strip(fold(bytes))) == INTEGER_CST || !size || !tree_fits_uhwi_p(size))
             return NULL_TREE;
         if (has_quantum(bytes)) {
-            error_at(
-                at(value),
-                "|c>: coherent pointer-byte arithmetic needs an unwrapped element-index proof; direct fixed-array quantum indexes are implemented");
-            return build_zero_cst(TREE_TYPE(value));
+            tree index = unscaled_quantum_pointer_index(bytes, tree_to_uhwi(size));
+            if (!index || reference.offset < 0 ||
+                reference.offset >= (int64_t)reference.elements.size()) {
+                error_at(
+                    at(value),
+                    "|c>: coherent pointer indexing requires a checked nonempty borrow and the original nonnegative element index before pointer-byte scaling");
+                return build_zero_cst(TREE_TYPE(value));
+            }
+            std::vector<tree> elements(reference.elements.begin() + reference.offset,
+                                       reference.elements.end());
+            tree selected =
+                indexed_access(value, elements, index, TYPE_READONLY(reference.element_type));
+            indexed_expansions[value] = selected;
+            return selected;
         }
         tree index = fold_build2(TRUNC_DIV_EXPR,
                                  long_long_integer_type_node,

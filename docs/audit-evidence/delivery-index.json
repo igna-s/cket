@@ -1,5 +1,5 @@
 {
-  "active": "coherent-index-implementation-v3",
+  "active": "pointer-index-implementation-v2",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -11,7 +11,9 @@
     "implementation-oct23-v1",
     "coherent-index-implementation-v1",
     "coherent-index-implementation-v2",
-    "coherent-index-implementation-v3"
+    "coherent-index-implementation-v3",
+    "pointer-index-implementation-v1",
+    "pointer-index-implementation-v2"
   ],
   "meaning": "Current source identity selects one incremental delivery. Historical artifacts retain their own sources; deferred qualification is not a passed full audit."
 }

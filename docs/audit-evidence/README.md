@@ -1,6 +1,11 @@
 # Evidence for the tested C11 subset
 
-The current [coherent-index implementation](coherent-index-implementation-v3/README.es.md) adds
+The current [pointer/buffer implementation](pointer-index-implementation-v2/README.es.md) adds
+quantum-indexed borrowed buffers, chained functions and retained writes, with an element-index check
+before canonical pointer-byte scaling. The compiler and five sources compile; no final-source
+program or suite is executed. Runtime qualification remains deferred at the user's request.
+
+The previous [coherent-index implementation](coherent-index-implementation-v3/README.es.md) adds
 fixed-array quantum-index reads, retained writes and update values. Build evidence remains separate
 from runtime and exhaustive qualification, deferred at the user's request.
 

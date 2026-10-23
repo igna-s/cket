@@ -110,6 +110,15 @@ El [contrato](c11-string-searches.md) limita las vistas y los consumidores de pu
 completa de estados, inversas y sanitizadores queda aplazada al cierre del bloque para priorizar
 implementación. El bloque 06 sigue abierto y no cuenta como otra entrega completa.
 
+## Implementación del bloque 03: funciones con buffers
+
+`bash scripts/run-block.sh 03` reúne `buffer_functions` y `buffer_words`: funciones encadenadas que
+leen un buffer con índice cuántico, préstamos de solo lectura, alias con desplazamiento constante y
+escrituras con historia. El índice se recupera antes de multiplicarlo por el tamaño del elemento. El
+[contrato](c11-buffer-functions.md) distingue estos casos de punteros y memoria dinámica generales.
+La entrega solo tiene compilación comprobada; su ejecución y el runner completo quedan para el
+cierre, por indicación del usuario. El bloque 03 sigue abierto.
+
 ## Implementación del bloque 04: índices cuánticos
 
 `bash scripts/run-block.sh 04` reúne el nuevo fuente `quantum_index`. Se implementan lecturas y

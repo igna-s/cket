@@ -3,8 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 block="${1:-01}"
-if [[ "$block" != 01 && "$block" != 02 && "$block" != 04 && "$block" != 06 || $# -gt 1 ]]; then
-    printf 'Usage: bash scripts/run-block.sh [01|02|04|06]\n' >&2
+if [[ "$block" != 01 && "$block" != 02 && "$block" != 03 && "$block" != 04 && "$block" != 06 || $# -gt 1 ]]; then
+    printf 'Usage: bash scripts/run-block.sh [01|02|03|04|06]\n' >&2
     exit 1
 fi
 
@@ -15,6 +15,10 @@ export CKET_SEED="${CKET_SEED:-7}"
 if [[ "$block" == 06 ]]; then
     names=(string_spans string_search search_positions saved_search string_copy string_concat controlled_concat byte_copy decimal_conversion search_write)
     source_directory=examples/blocks/06
+    export CKET_SIMULATOR=sparse
+elif [[ "$block" == 03 ]]; then
+    names=(buffer_functions buffer_words)
+    source_directory=examples/blocks/03
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 04 ]]; then
     names=(quantum_index)
