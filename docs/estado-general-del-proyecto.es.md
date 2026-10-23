@@ -4,6 +4,13 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
+buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos
+por funciones. La [campaña actual](audit-evidence/ownership-contracts-v1/README.es.md) separa
+ejecuciones, estados completos, fases, inversas y sanitizadores. Corrige además una suma que podía
+ocultar un desbordamiento con signo al estrechar el resultado. Los
+[contratos de no clonación](no-clonacion.es.md) explican qué significan copiar, prestar y mover.
+
 **Alcance vigente:** completar el [C cotidiano funcional](perfil-c-cotidiano.es.md): tipos comunes,
 funciones, control, arrays, punteros y vectores, con las operaciones de biblioteca que necesitan. El
 usuario aclaró este alcance el 23 de octubre. El inventario completo de C11 queda como referencia
@@ -73,22 +80,24 @@ desconocidos y añaden una ruta de bytes parciales, tamaños enteros diferentes 
 conocidas. El ejemplo `byte_copy` se ejecuta y exporta con el paquete del bloque 06; las matrices
 completas de coherencia/inversa y contextos siguen aplazadas.
 
-**Implementación en curso, pruebas aplazadas por indicación del usuario:** se añaden `atoi`, `atol`
-y `atoll` sobre cadenas cuánticas comprobadas, y escrituras de caracteres mediante punteros
-guardados de búsqueda, incluidos asignaciones e incrementos con resultado. La versión actual solo
-tiene comprobaciones de compilación; sus ejecuciones, estados completos, inversas y matrices quedan
-pendientes. Los resultados anteriores conservan sus propias fuentes.
+**Implementación parcial:** se añaden `atoi`, `atol` y `atoll` sobre cadenas cuánticas comprobadas,
+y escrituras de caracteres mediante punteros guardados de búsqueda, incluidos asignaciones e
+incrementos con resultado. La campaña de propiedad ahora ejecuta los ejemplos y comprueba estados
+completos e inversas de consumidores elegidos. Los límites generales de cadenas y dominios siguen
+pendientes; las campañas anteriores conservan sus propias fuentes.
 
 **Nuevo código del bloque 04:** los arrays escalares fijos admiten índices cuánticos, lecturas y
 escrituras con historia, asignaciones y valores de incremento/decremento. El rango se comprueba
 antes de reducir el selector. Las formas generales de aritmética de punteros siguen pendientes. Esta
-entrega tiene compilación, sin pruebas de ejecución.
+entrega tiene ejecuciones y pruebas finitas de estados e inversas, con integración general
+pendiente.
 
 **Nuevo código del bloque 03:** funciones encadenadas y préstamos de buffers admiten lecturas y
 escrituras con índice cuántico. Se recupera el índice anterior al escalado de bytes para comprobar
 su rango; también se corrige el rechazo de incrementos descartados envueltos en una conversión
-entera de GCC. Los ejemplos de bytes y palabras están compilados, sin ejecución validada. El
-[contrato de buffers](c11-buffer-functions.md) mantiene explícitos los contextos pendientes.
+entera de GCC. Los ejemplos de bytes y palabras ya ejecutan. Se agregan recorridos con índice CPU,
+acumulación y retorno de resultados. El [contrato de buffers](c11-buffer-functions.md) mantiene
+explícitos los contextos pendientes.
 
 ## La respuesta corta
 

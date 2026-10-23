@@ -292,18 +292,24 @@ independently of the branch; general user allocation and dynamic-loop lifetimes 
 restrictions. Complete state/inverse qualification remains deferred.
 
 Implementation now also includes checked [`atoi`/`atol`/`atoll`](docs/c11-decimal.md) and saved
-search-pointer character stores and value-producing increments. Runtime testing of this source state
-is deferred at the user's request. Earlier passed campaigns do not certify these additions.
+search-pointer character stores and value-producing increments. The
+[ownership campaign](docs/audit-evidence/ownership-contracts-v1/README.es.md) adds finite native,
+full-state, phase and inverse evidence; general strings, domains and consuming contexts remain open.
 
 Fixed scalar arrays now have partial [quantum-index reads and writes](docs/c11-coherent-index.md),
 including assignment and increment values. Bounds are checked before narrowing the selector; writes
-retain previous owners. Runtime qualification is deferred. Block 04 has a compile-only source
-example; this does not close that block.
+retain previous owners. The source example executes and finite coherent states/inverses are checked
+in the ownership campaign; this does not close block 04.
 
 Checked [buffer functions](docs/c11-buffer-functions.md) now compose those reads and retained writes
 through pointer parameters and constant-offset aliases. The compiler checks the element index before
-canonical pointer-byte scaling can wrap. Block 03 adds byte and word source examples; execution and
-full qualification remain deferred.
+canonical pointer-byte scaling can wrap. Block 03 also adds CPU-indexed reads, stable-owner runtime
+scans with modular sum/parity, and scalar results returned by functions. The four examples execute;
+finite state/inverse evidence remains distinct from complete integration.
+
+The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
+basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug
+that hid signed overflow. Unknown quantum states are not independently cloned.
 
 Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
 an input while a derived value still needs it for cleanup. Derived values used only as coherent

@@ -50,6 +50,9 @@ bool quantum_pure_expression(tree value) {
     // CPU byte reads. Their composed predicates remain pure captures.
     if (cpu_byte_saves.count(value))
         return true;
+    auto indexed = quantum_indexed_read_indices.find(value);
+    if (indexed != quantum_indexed_read_indices.end())
+        return indexed->second && quantum_pure_expression(indexed->second);
     auto program = quantum_value_programs.find(value);
     if (program != quantum_value_programs.end() && program->second.result &&
         program->second.updates.empty()) {
@@ -1224,6 +1227,7 @@ tree indexed_access(tree original, const std::vector<tree> &elements, tree index
     tree saved = save_expr(fold_convert(long_long_unsigned_type_node, index));
     tree result = build_call_expr_loc(at(original), marker, 1, saved);
     quantum_indexed_accesses.emplace(result, QuantumIndexedAccess{elements, saved, readonly});
+    quantum_indexed_read_indices.emplace(result, saved);
     return result;
 }
 
@@ -1307,6 +1311,35 @@ tree dynamic_product_access(tree value) {
                             build_int_cst(long_long_integer_type_node, reference.offset));
         tree selected =
             indexed_access(value, reference.elements, index, TYPE_READONLY(reference.element_type));
+        // A value read must check the element index before byte scaling could
+        // wrap. Preserve the older lvalue metadata for its existing operations.
+        tree unscaled = unscaled_quantum_pointer_index(bytes, tree_to_uhwi(size));
+        tree read_index = NULL_TREE;
+        if (unscaled && reference.offset >= 0 &&
+            reference.offset < (int64_t)reference.elements.size()) {
+            tree raw = save_expr(fold_convert(long_long_unsigned_type_node, unscaled));
+            tree valid =
+                fold_build2_loc(at(value),
+                                LT_EXPR,
+                                boolean_type_node,
+                                raw,
+                                build_int_cstu(long_long_unsigned_type_node,
+                                               reference.elements.size() - reference.offset));
+            tree absolute =
+                fold_build2_loc(at(value),
+                                PLUS_EXPR,
+                                long_long_unsigned_type_node,
+                                raw,
+                                build_int_cstu(long_long_unsigned_type_node, reference.offset));
+            read_index = save_expr(fold_build3_loc(
+                at(value),
+                COND_EXPR,
+                long_long_unsigned_type_node,
+                valid,
+                absolute,
+                build_int_cstu(long_long_unsigned_type_node, reference.elements.size())));
+        }
+        quantum_indexed_read_indices[selected] = read_index;
         indexed_expansions[value] = selected;
         return selected;
     }

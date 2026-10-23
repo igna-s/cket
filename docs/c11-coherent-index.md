@@ -26,15 +26,18 @@ circuit over the array registers, without a physical quantum-RAM or speedup clai
 selector, history, gate and simulator budgets are separate costs.
 
 CPU-indexed measurement/reset, Fourier and the existing restricted updates retain their previous
-path. [Checked pointer borrows](c11-buffer-functions.md) now recover the element index before
-canonical pointer-byte scaling; their nonnegative index is bounded by the remaining owner range.
-General pointer arithmetic, negative indices into an offset borrow, nested products, dynamic
-allocation/counts, address escape, general mutable pointer ABI, effectful indices and further
-loop/lifetime combinations also remain pending. Pure private value programs can compose as indices
-or assignment values; CPU side effects require sequencing.
+path. `measure(values[index])` with a quantum index can explicitly observe the computed selection;
+it does not measure or consume every candidate owner. Reset/Fourier of that computed selection
+remain unsupported storage operations. [Checked pointer borrows](c11-buffer-functions.md) now
+recover the element index before canonical pointer-byte scaling; their nonnegative index is bounded
+by the remaining owner range. General pointer arithmetic, negative indices into an offset borrow,
+nested products, dynamic allocation/counts, address escape, general mutable pointer ABI, effectful
+indices and further loop/lifetime combinations also remain pending. Pure private value programs can
+compose as indices or assignment values; CPU side effects require sequencing.
 
 [`quantum_index.c`](../examples/blocks/04/quantum_index.c) provides a source example of reads,
-assignment values and postfix updates. `bash scripts/run-block.sh 04` supplies its eventual native
-and export command. **This version has compilation evidence only:** execution, full joint states,
-inverses, GCC configurations, sanitizers and broad regression are deferred at the user's request.
-The example does not yet qualify those behaviors or complete block 04/C11.
+assignment values and postfix updates. `bash scripts/run-block.sh 04` supplies its native/export
+command. The [ownership campaign](audit-evidence/ownership-contracts-v1/README.es.md) now executes
+that example and checks finite coherent reads, writes, phases and inverses across compiler levels.
+It does not exhaust index widths, all update consumers, resource limits, measurement channels or
+broad integration, and does not complete block 04.

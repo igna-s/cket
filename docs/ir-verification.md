@@ -117,6 +117,15 @@ destination. `qxor_inplace` requires an operand independent of the destination, 
 typed expression or CPU value. `qfourier` accepts controls disjoint from the transformed register,
 rejects pending inverses, and discards value/uniformity proofs.
 
+`qadd_expression` adds or subtracts an independent pure expression into an unsigned destination
+wider than one bit. `expr` supplies the modular operand; `checked` retains the full typed C
+operation, including signed promotions, before the assignment conversion. Both roots have the
+destination's unsigned type. `subtract` is Boolean and `controls` follow the ordinary control
+schema. The engine proves definedness, computes private operands, updates the destination outside
+that compute plan, and reverses the exact private plan. Destination/input/control wire overlap and
+pending destination definitions are rejected. Resource and domain proofs may reject a program
+outside the supported profile. CPU buffer indices are captured through ordinary `qbind` parameters.
+
 `qprepare` with `dynamic: true` receives a C-converted value through the integer argument API. It
 requires fresh clean storage and cannot also specify static bounds. Dynamic `qphase` receives a
 finite `double` through a dedicated API, separate from integer addition, XOR, or preparation

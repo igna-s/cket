@@ -17,7 +17,7 @@ if [[ "$block" == 06 ]]; then
     source_directory=examples/blocks/06
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 03 ]]; then
-    names=(buffer_functions buffer_words)
+    names=(buffer_functions buffer_words cpu_vector_scan cpu_vector_return)
     source_directory=examples/blocks/03
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 04 ]]; then
@@ -33,10 +33,15 @@ else
     source_directory=examples
 fi
 
+exports=0
 for name in "${names[@]}"; do
     printf '\nBlock %s: %s\n' "$block" "$name"
     build/cket "$source_directory/$name.c" -O2 -o "$destination/$name"
     "$destination/$name"
+    if [[ "$name" == cpu_vector_scan || "$name" == cpu_vector_return ]]; then
+        printf 'Runtime CPU loop: native executable; static QASM export is unsupported.\n'
+        continue
+    fi
     static_profile=()
     if [[ "$name" == decimal_conversion ]]; then
         static_profile=(--ctype-locale C)
@@ -52,7 +57,8 @@ for name in "${names[@]}"; do
         build/cket "$source_directory/$name.c" -O2 --emit-qasm "${static_profile[@]}" -o "$destination/$name.qasm"
         build/cket "$source_directory/$name.c" -O2 --resources "${static_profile[@]}" -o "$destination/$name.resources.txt"
     fi
+    exports=$((exports + 1))
 done
 
-printf '\nBlock %s ready: %u executables, QASM circuits and resource reports in %s.\n' \
-    "$block" "${#names[@]}" "$destination"
+printf '\nBlock %s ready: %u executables, %u QASM circuits and resource reports in %s.\n' \
+    "$block" "${#names[@]}" "$exports" "$destination"

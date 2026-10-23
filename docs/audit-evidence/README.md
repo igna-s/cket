@@ -1,6 +1,12 @@
 # Evidence for the tested C11 subset
 
-The current [pointer/buffer implementation](pointer-index-implementation-v2/README.es.md) adds
+The current [ownership campaign](ownership-contracts-v1/README.es.md) adds CPU-indexed buffer reads,
+stable-owner scans, typed modular expression updates and directed state/phase/inverse qualification.
+It preserves failed attempts, fixes signed-promotion overflow and keeps full everyday-profile
+integration and the new paper audit open. Historical compilation-only artifacts keep their original
+status; the user subsequently requested this directed validation.
+
+The previous [pointer/buffer implementation](pointer-index-implementation-v2/README.es.md) adds
 quantum-indexed borrowed buffers, chained functions and retained writes, with an element-index check
 before canonical pointer-byte scaling. The compiler and five sources compile; no final-source
 program or suite is executed. Runtime qualification remains deferred at the user's request.

@@ -24,6 +24,15 @@ static void lazy_constant_contracts(void) {
                 ++qc_lookup(c, 0)->epoch;
             if (profile == 3)
                 qc_lookup(c, 1)->definition_mask = QC_WIRE(qc_lookup(c, 0)->wires[0]);
+            if (profile >= 2) {
+                // Exercise the canonical-definition proof without an independent
+                // value certificate. Changing definition metadata alone does not
+                // invalidate the already proven physical output's support.
+                qc_register *predicate = qc_lookup(c, 1);
+                predicate->basis_known = 0;
+                predicate->zero_mask = 0;
+                predicate->support_interval = 0;
+            }
             const char *compute =
                 "{\"op\":\"qcompute\",\"id\":2,\"expr\":{\"op\":\"select\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":1,\"bits\":1,\"signed\":false},{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"div\",\"bits\":8,\"signed\":false,\"args\":[{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1},{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":0}]}]},{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":1}]}}";
             uint64_t gates = c->ngates;

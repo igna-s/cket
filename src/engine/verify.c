@@ -365,6 +365,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         "op", "id", "value", "argument", "dynamic", "controls", NULL};
     static const char *const register_addition[] = {
         "op", "id", "source", "subtract", "controls", NULL};
+    static const char *const expression_addition[] = {
+        "op", "id", "expr", "checked", "subtract", "controls", NULL};
     static const char *const xor_update[] = {
         "op", "id", "expr", "value", "dynamic", "controls", NULL};
     static const char *const phase[] = {"op", "angle", "angle_expr", "dynamic", "controls", NULL};
@@ -437,6 +439,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         allowed = addition;
     else if (cj_equal(d, op, "qadd_register"))
         allowed = register_addition;
+    else if (cj_equal(d, op, "qadd_expression"))
+        allowed = expression_addition;
     else if (cj_equal(d, op, "qxor_inplace"))
         allowed = xor_update;
     else if (cj_equal(d, op, "qphase"))
@@ -558,6 +562,18 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 r->width == 1)
                 return qc_fail(
                     c, "register addition requires separate explicitly unsigned integer storage");
+        } else if (allowed == expression_addition) {
+            int expr = cj_get(d, inst, "expr"), checked = cj_get(d, inst, "checked");
+            uint64_t bits, checked_bits;
+            if (!boolean_field(c, d, inst, "subtract", 1) || r->signed_type != 0 || r->width == 1 ||
+                !expression(c, d, expr) || !expression(c, d, checked) ||
+                !unsigned_field(c, d, expr, "bits", &bits) || bits != r->width ||
+                cj_bool(d, cj_get(d, expr, "signed")) ||
+                !unsigned_field(c, d, checked, "bits", &checked_bits) || checked_bits != r->width ||
+                cj_bool(d, cj_get(d, checked, "signed")))
+                return qc_fail(
+                    c,
+                    "modular expression addition requires explicitly unsigned target-type operands");
         } else if (allowed == xor_update) {
             int expr = cj_get(d, inst, "expr"), v = cj_get(d, inst, "value");
             uint64_t value, bits;

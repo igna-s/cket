@@ -32,8 +32,10 @@ history/control combinations and indirect quantum calls remain pending.
 [`decimal_conversion.c`](../examples/blocks/06/decimal_conversion.c) converts a superposed two-digit
 string with all three functions and compares the observations with libc. `atoi` uses an actual
 32-bit result; the `atol`/`atoll` results are explicitly narrowed to an 8-bit consumer. That finite
-example does not prove all 64-bit boundaries. Full coherent states, inverses, GCC contexts,
-sanitizers, locale combinations and overflow boundaries remain deferred to block closure.
+example does not prove all 64-bit boundaries. The
+[ownership campaign](audit-evidence/ownership-contracts-v1/README.es.md) now checks finite complete
+states, phases and cleanup for these consumers across five GCC levels and a separate instrumented
+configuration. General locale combinations, overflow boundaries and larger strings remain pending.
 
 This advances partial library compatibility; it does not complete C11 or claim physical QPU
 execution, independent state cloning or acceleration over CPU.

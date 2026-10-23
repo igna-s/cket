@@ -40,14 +40,29 @@ the conversion through the expression path. Floating conversions are not added b
 The maintained sources are [`buffer_functions.c`](../examples/blocks/03/buffer_functions.c), with
 chained functions, a constant-offset alias and retained byte updates, and
 [`buffer_words.c`](../examples/blocks/03/buffer_words.c), with a multi-byte element type.
-`bash scripts/run-block.sh 03` supplies their native/export runner.
+`bash scripts/run-block.sh 03` supplies their native/export runner. It also includes
+[`cpu_vector_scan.c`](../examples/blocks/03/cpu_vector_scan.c) and
+[`cpu_vector_return.c`](../examples/blocks/03/cpu_vector_return.c): runtime CPU loops over fixed
+buffers, modular accumulation/parity, a returned scalar owner, and subtraction back to zero.
 
-**Qualification is compilation-only.** No final-source example or suite has been executed for this
-delivery. Joint states, phases, inverses, resource exhaustion, sanitizers, compiler configurations
-and the complete runner still require validation. Their expected results do not establish that they
-run within the simulator budget. The failed first compilation and corrected source snapshot have
-separate evidence.
+Pure CPU-indexed reads now serialize a bounds-checked finite multiplexer. The runtime captures the
+original unscaled index, including for typed pointer suffixes, without allocating another quantum
+selector register. Changing the CPU variable later cannot change a saved inverse. Effectful indices,
+unrecognized pointer scaling and negative indices before an offset view remain outside this path.
+Reads conservatively borrow all candidate elements while their result is live.
 
-General CPU-indexed quantum reads, dynamic extents/allocation, pointer rebinding/escape, arbitrary
+Unsigned destinations wider than one bit accept `+=` and `-=` with independent pure quantum
+expressions. The engine checks the complete promoted C operation, computes the modular operand,
+updates the destination and uncomputes private workspace. This allows stable-owner scans in CPU
+loops. It does not enable per-iteration allocation/history or quantum-condition loops.
+
+The [ownership campaign](audit-evidence/ownership-contracts-v1/README.es.md) executes the four block
+03 examples and compares selected full joint states, phases and inverses at five GCC levels, with
+two synthesis policies and a separate instrumented configuration. The earlier compilation-only
+snapshots retain their original status. The runner exports the two static buffer examples; the two
+CPU-loop scans produce native executables, since dynamic CPU loops cannot be flattened into QASM.
+Arbitrary extents, exhaustive resource boundaries and broader integration remain open.
+
+General CPU address expressions, dynamic extents/allocation, pointer rebinding/escape, arbitrary
 layouts, general function ABI, loop lifetimes and coherent external I/O remain incomplete. This
 advance does not close the [everyday C profile](perfil-c-cotidiano.es.md).

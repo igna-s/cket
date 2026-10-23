@@ -45,6 +45,8 @@ tree lower_node(tree value);
 bool gcc_quantum_sanitizer_guard(tree value);
 bool quantum_pure_expression(tree value);
 std::string standard_ctype(tree call);
+std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
+tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings);
 
 tree selected_storage(tree value) {
     value = strip(value);
@@ -364,6 +366,12 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             result.reads.insert(current);
             continue;
         }
+        if (quantum_indexed_accesses.count(current)) {
+            const auto &access = quantum_indexed_accesses.at(current);
+            result.reads.insert(access.elements.begin(), access.elements.end());
+            pending.push_back(access.index);
+            continue;
+        }
         if (quantum_memory_sets.count(current)) {
             const auto &operation = quantum_memory_sets.at(current);
             pending.push_back(operation.fill);
@@ -385,10 +393,16 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
         tree target = update ? strip(TREE_OPERAND(current, 0)) : NULL_TREE;
         if (target && quantum(target))
             result.writes.insert(target);
+        tree indexed_target = target ? selected_storage(target) : NULL_TREE;
+        if (indexed_target) {
+            const auto &elements = quantum_indexed_accesses.at(indexed_target).elements;
+            result.writes.insert(elements.begin(), elements.end());
+        }
         for (int i = 0; i < TREE_OPERAND_LENGTH(current); ++i) {
             // Assignment's lvalue occurrence is not a value read. Its RHS
             // contains the actual read for compound assignments.
-            if (!i && (code == MODIFY_EXPR || code == INIT_EXPR) && quantum(target))
+            if (!i && (code == MODIFY_EXPR || code == INIT_EXPR) &&
+                (quantum(target) || indexed_target))
                 continue;
             pending.push_back(TREE_OPERAND(current, i));
         }
@@ -572,6 +586,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
     auto code = TREE_CODE(value);
+    if (quantum_indexed_accesses.count(value))
+        return cpu_indexed_expression(value, deps);
     // CPU arithmetic in every controlled consumer must remain lazy.
     bool coherent = coherent_expression_depth || !controls.empty();
     if (coherent && code == CALL_EXPR && call_expr_nargs(value) == 1 &&
@@ -1109,6 +1125,78 @@ bool references_storage(tree value, tree storage) {
         return NULL_TREE;
     };
     return value && walk_tree(&value, inspect, storage, nullptr);
+}
+
+tree usual_integer_type(tree left, tree right) {
+    tree a = TYPE_MAIN_VARIANT(TREE_TYPE(left)), b = TYPE_MAIN_VARIANT(TREE_TYPE(right));
+    if (TYPE_PRECISION(a) < TYPE_PRECISION(integer_type_node))
+        a = integer_type_node;
+    if (TYPE_PRECISION(b) < TYPE_PRECISION(integer_type_node))
+        b = integer_type_node;
+    if (TYPE_UNSIGNED(a) == TYPE_UNSIGNED(b))
+        return TYPE_PRECISION(a) >= TYPE_PRECISION(b) ? a : b;
+    tree u = TYPE_UNSIGNED(a) ? a : b, s = TYPE_UNSIGNED(a) ? b : a;
+    return TYPE_PRECISION(u) >= TYPE_PRECISION(s) ? u : s;
+}
+
+bool narrowed_integer_arithmetic(tree value) {
+    if (TYPE_PRECISION(TREE_TYPE(value)) < TYPE_PRECISION(integer_type_node))
+        return true; // C binary arithmetic cannot have an unpromoted byte type.
+    for (unsigned side = 0; side < 2; ++side) {
+        tree operand = TREE_OPERAND(value, side);
+        if (CONVERT_EXPR_P(operand) && CONVERT_EXPR_P(TREE_OPERAND(operand, 0)) &&
+            TYPE_PRECISION(TREE_TYPE(operand)) == TYPE_PRECISION(TREE_TYPE(value)) &&
+            TYPE_PRECISION(TREE_TYPE(TREE_OPERAND(operand, 0))) > TYPE_PRECISION(TREE_TYPE(value)))
+            return true;
+    }
+    return false;
+}
+
+tree before_integer_narrowing(tree operand, tree type) {
+    return CONVERT_EXPR_P(operand) &&
+                   TYPE_MAIN_VARIANT(TREE_TYPE(operand)) == TYPE_MAIN_VARIANT(type)
+               ? TREE_OPERAND(operand, 0)
+               : operand;
+}
+
+// GCC distributes an assignment's narrowing over +, - and *. Its extra
+// operand conversion encloses the original promotion or explicit C cast.
+// Restore the promoted operation without folding away that domain again.
+tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
+    if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
+        quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
+        quantum_value_programs.count(value))
+        return value;
+    auto found = memo.find(value);
+    if (found != memo.end())
+        return found->second;
+    if (depth > 128) {
+        error_at(at(value), "|c>: promoted arithmetic exceeds its checked tree depth");
+        return value;
+    }
+    auto code = TREE_CODE(value);
+    tree result = copy_node(value);
+    if ((code == PLUS_EXPR || code == MINUS_EXPR || code == MULT_EXPR) &&
+        INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+        bool narrowed = narrowed_integer_arithmetic(value);
+        tree a = TREE_OPERAND(value, 0), b = TREE_OPERAND(value, 1);
+        if (narrowed) {
+            a = before_integer_narrowing(a, TREE_TYPE(value));
+            b = before_integer_narrowing(b, TREE_TYPE(value));
+        }
+        a = restore_integer_arithmetic(a, memo, depth + 1);
+        b = restore_integer_arithmetic(b, memo, depth + 1);
+        tree type = usual_integer_type(a, b);
+        result = build2_loc(at(value), code, type, fold_convert(type, a), fold_convert(type, b));
+    } else if (EXPR_P(value)) {
+        for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
+            TREE_OPERAND(result, i) =
+                restore_integer_arithmetic(TREE_OPERAND(value, i), memo, depth + 1);
+        if (code == SAVE_EXPR)
+            TREE_TYPE(result) = TREE_TYPE(TREE_OPERAND(result, 0));
+    }
+    memo.emplace(value, result);
+    return result;
 }
 
 std::string select_controls(std::string value,
@@ -2540,7 +2628,6 @@ tree lower_node(tree value) {
             else if (TREE_CODE(simple) == PLUS_EXPR && strip(TREE_OPERAND(simple, 1)) == var.decl)
                 addend = TREE_OPERAND(simple, 0);
         }
-        tree quantum_addend = addend ? strip(addend) : NULL_TREE;
         tree xor_operand = NULL_TREE;
         if (TREE_CODE(simple) == BIT_XOR_EXPR && var.width > 1) {
             if (strip(TREE_OPERAND(simple, 0)) == var.decl)
@@ -2596,21 +2683,50 @@ tree lower_node(tree value) {
                                        at(value),
                                        operand));
             }
-        } else if (quantum(quantum_addend) && !var.is_signed && var.width > 1 &&
-                   !variables.at(quantum_addend).is_signed && quantum_addend != var.decl) {
-            auto &source = variables.at(quantum_addend);
-            if (!source.lowered || source.moved || source.released) {
-                error_at(at(value),
-                         "|c>: quantum addition requires available borrowed source storage");
+        } else if (addend && has_quantum(addend) && quantum_pure_expression(addend) &&
+                   !references_storage(addend, var.decl) && !var.is_signed && var.width > 1) {
+            std::map<tree, tree> promoted;
+            tree input = narrowed_integer_arithmetic(simple)
+                             ? before_integer_narrowing(addend, TREE_TYPE(simple))
+                             : addend;
+            input = restore_integer_arithmetic(input, promoted);
+            tree promoted_rhs = restore_integer_arithmetic(rhs, promoted);
+            std::set<unsigned> deps;
+            std::string raw = evaluate_expression(input, deps, &list);
+            std::string operand =
+                select_controls(cast_result(raw, var),
+                                "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
+                                    ",\"signed\":false,\"value\":0}",
+                                var.width,
+                                false,
+                                deps);
+            if (deps.count(var.id)) {
+                error_at(
+                    at(value),
+                    "|c>: modular expression addition requires a source independent of its destination");
                 return list;
             }
-            consume(var);
-            consume(source);
-            taint_uniform(source.id);
+            // Check the complete C operation, including signed promotions,
+            // before modular lowering. Reuse the serialized operand so its
+            // reads and captured CPU index are evaluated and consumed once.
+            tree saved = build1(SAVE_EXPR, TREE_TYPE(input), input);
+            expression_saves.emplace(saved, SavedExpression{raw, deps, active_cpu_parameters});
+            std::map<tree, tree> bindings{{input, saved}};
+            tree checked_rhs = clone_quantum_tree(promoted_rhs, bindings);
+            std::set<unsigned> checked_deps;
+            std::string checked = select_controls(
+                cast_result(evaluate_expression(checked_rhs, checked_deps, &list), var),
+                "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
+                    ",\"signed\":false,\"value\":0}",
+                var.width,
+                false,
+                checked_deps);
+            for (unsigned source : deps)
+                taint_uniform(source);
             append(&list,
                    emit_operation(
-                       "{\"op\":\"qadd_register\",\"id\":" + std::to_string(var.id) +
-                           ",\"source\":" + std::to_string(source.id) +
+                       "{\"op\":\"qadd_expression\",\"id\":" + std::to_string(var.id) +
+                           ",\"expr\":" + operand + ",\"checked\":" + checked +
                            ",\"subtract\":" + (TREE_CODE(simple) == MINUS_EXPR ? "true" : "false") +
                            control_json() + '}',
                        at(value)));

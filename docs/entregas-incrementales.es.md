@@ -4,8 +4,9 @@
 [núcleo de C cotidiano](perfil-c-cotidiano.es.md), con funciones, arrays, punteros, vectores y las
 operaciones frecuentes que necesitan. El objetivo sigue abierto y se entrega por bloques que se
 puedan compilar, ejecutar y revisar por separado. La auditoría y los papers conservan su propia
-evidencia. Las novedades actuales solo tienen comprobaciones de compilación: las pruebas de
-ejecución quedan para el cierre, por indicación del usuario.
+evidencia. El usuario abrió ahora la validación de propiedad y copia: la
+[campaña dirigida](audit-evidence/ownership-contracts-v1/README.es.md) añade ejecuciones, estados,
+fases e inversas de las novedades. Sigue pendiente cerrar la integración completa del perfil.
 
 El plan anterior de diez bloques se conserva abajo como referencia ampliada. **“10%, 20%…” no mide
 el porcentaje de C11 implementado ni el esfuerzo restante.** El alcance vigente se cierra por
@@ -116,16 +117,20 @@ implementación. El bloque 06 sigue abierto y no cuenta como otra entrega comple
 leen un buffer con índice cuántico, préstamos de solo lectura, alias con desplazamiento constante y
 escrituras con historia. El índice se recupera antes de multiplicarlo por el tamaño del elemento. El
 [contrato](c11-buffer-functions.md) distingue estos casos de punteros y memoria dinámica generales.
-La entrega solo tiene compilación comprobada; su ejecución y el runner completo quedan para el
-cierre, por indicación del usuario. El bloque 03 sigue abierto.
+Se añaden `cpu_vector_scan` y `cpu_vector_return`: recorridos con índices CPU sobre buffers fijos,
+suma/resta y paridad en dueños estables, y resultados escalares devueltos por funciones. Los cuatro
+ejemplos ejecutan y la campaña de propiedad comprueba estados e inversas de casos elegidos. El
+runner exporta los dos ejemplos estáticos; los dos recorridos CPU generan ejecutables nativos,
+porque esos bucles no se exportan a QASM. La integración general sigue pendiente; el bloque 03 sigue
+abierto.
 
 ## Implementación del bloque 04: índices cuánticos
 
 `bash scripts/run-block.sh 04` reúne el nuevo fuente `quantum_index`. Se implementan lecturas y
 escrituras sobre arrays escalares comprobados mediante un índice cuántico, con resultados de
 asignación e incremento. Su [contrato](c11-coherent-index.md) conserva los límites y los pendientes.
-Por indicación del usuario solo se construye en esta etapa; la ejecución y las matrices completas
-quedan para el final. El bloque 04 sigue abierto.
+Su ejemplo ya ejecuta y hay pruebas finitas de estados, fases e inversas en la campaña de propiedad.
+La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04 sigue abierto.
 
 ## Referencia del plan anterior de diez bloques
 
@@ -148,8 +153,8 @@ vigente. La prioridad de implementación está en el [alcance actual](perfil-c-c
 
 Las capacidades parciales de un bloque futuro siguen disponibles; solo se lo contará como entregado
 cuando tenga un alcance concreto y comprobado. En cada avance se prioriza implementar y publicar ese
-alcance antes de abrir nuevas matrices de auditoría. En la etapa actual se compila primero y se
-difiere la validación de ejecución de las novedades hasta el cierre del alcance implementado.
+alcance antes de abrir nuevas matrices de auditoría. La validación actual de propiedad y copia fue
+solicitada después por el usuario y conserva su alcance y resultados por separado.
 
 La ciberseguridad, criptografía y autenticación permanecen clásicas. Este plan tampoco requiere
 cambiar el aislamiento o la configuración de seguridad de Windows/WSL.

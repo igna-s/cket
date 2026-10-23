@@ -35,8 +35,16 @@ Fixed scalar arrays and their borrows support `a[i]` with a CPU index for unsign
 addition/subtraction and XOR with CPU operands, increments, `measure`, `reset`, and Fourier/inverse
 Fourier. The index is evaluated once and checked against bounds; selection does not measure the
 register. These operations may run in CPU loops without allocating new registers. Measuring or
-resetting an unknown element does not prove that every owner was consumed or cleaned. Coherent
-access with a quantum index and general quantum expressions over selected elements remain pending.
+resetting an unknown element does not prove that every owner was consumed or cleaned.
+
+Pure CPU-indexed reads now produce checked quantum expressions with a captured CPU index. Fixed
+buffers also support [coherent quantum-index selection](c11-coherent-index.md) and retained writes.
+[`qadd_expression`](ir-verification.md) supports independent pure quantum operands for unsigned
+modular addition/subtraction, with full promoted arithmetic checks and private inverse cleanup;
+stable-owner CPU loops can therefore scan buffers. General addresses, dynamic allocation/history and
+quantum-condition loops retain their restrictions. The
+[ownership/copy contracts](no-clonacion.es.md) distinguish correlated results from independent
+clones.
 
 CPU initialization, such as `quant uint8_t x = read_value();`, evaluates the value once, preserves
 its C conversion, and prepares a new basis state. It does not read another register without explicit

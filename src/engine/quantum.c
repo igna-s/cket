@@ -989,6 +989,8 @@ add_constant(qc_context *c, qc_register *r, uint64_t value, qc_mask outer, qc_ma
     return ok;
 }
 
+#include "expression_add.inc"
+
 static int swap_edge(
     qc_context *c, qc_register *r, uint64_t left, uint64_t right, qc_mask outer, qc_mask state) {
     unsigned target = (unsigned)__builtin_ctzll(left ^ right);
@@ -1880,6 +1882,44 @@ int qc_apply_token(qc_context *c,
         r->basis_value = 0;
         r->zero_mask = bits_mask(r->width);
         return release(c, r);
+    }
+    if (cj_equal(d, op, "qadd_expression")) {
+        int expr = cj_get(d, inst, "expr");
+        domain dom;
+        if (!collect_domain(c, d, expr, &dom))
+            return 0;
+        qc_mask inputs = 0, outputs = 0;
+        for (unsigned j = 0; j < dom.count; ++j) {
+            qc_register *source = reg(c, dom.sources[j].id);
+            for (unsigned b = 0; b < source->width; ++b)
+                inputs |= QC_WIRE(source->wires[b]);
+        }
+        for (unsigned b = 0; b < r->width; ++b)
+            outputs |= QC_WIRE(r->wires[b]);
+        if (outputs & (inputs | mask))
+            return qc_fail(c,
+                           "modular expression addition requires disjoint destination and inputs");
+        if (r->definition)
+            return qc_fail(c, "updating a computed value would invalidate its inverse");
+        if (!c->structural && !impossible &&
+            !add_expression(c,
+                            d,
+                            expr,
+                            cj_get(d, inst, "checked"),
+                            r,
+                            cj_bool(d, cj_get(d, inst, "subtract")),
+                            mask,
+                            pattern))
+            return 0;
+        r = reg(c, (uint32_t)id);
+        qc_mask seen = 0;
+        for (unsigned j = 0; j < dom.count; ++j)
+            taint_uniform(c, dom.sources[j].id, &seen);
+        taint_controls(c, mask);
+        unknown_support(r);
+        r->clean = 0;
+        ++r->epoch;
+        return 1;
     }
     if (cj_equal(d, op, "qadd_inplace") || cj_equal(d, op, "qadd_register") ||
         cj_equal(d, op, "qinplace")) {

@@ -119,6 +119,38 @@ tree coherent_index_read(tree selection) {
     return make_quantum_value_program(selection, {}, boolean_true_node, std::move(prefix), result);
 }
 
+std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps) {
+    const auto &access = quantum_indexed_accesses.at(selection);
+    auto proof = quantum_indexed_read_indices.find(selection);
+    if (access.elements.empty() || access.elements.size() > 64 ||
+        proof == quantum_indexed_read_indices.end() || !proof->second ||
+        !quantum_pure_expression(proof->second)) {
+        error_at(
+            at(selection),
+            "|c>: indexed quantum reads require 1..64 scalar elements and a pure CPU element index with checked pointer-byte scaling");
+        return "{}";
+    }
+    tree index = proof->second;
+    tree valid = fold_build2_loc(at(selection),
+                                 LT_EXPR,
+                                 boolean_type_node,
+                                 index,
+                                 build_int_cstu(TREE_TYPE(index), access.elements.size()));
+    tree type = TYPE_MAIN_VARIANT(TREE_TYPE(selection));
+    tree guarded = fold_build3_loc(at(selection),
+                                   COND_EXPR,
+                                   type,
+                                   valid,
+                                   selected_coherent_value(selection, access, index),
+                                   missing_string_terminator(type, at(selection)));
+    // Domain checks and inactive arithmetic belong to typed synthesis. Only
+    // actual CPU parameter values are captured; no quantum selector is needed.
+    ++coherent_expression_depth;
+    std::string result = expression(guarded, deps);
+    --coherent_expression_depth;
+    return result;
+}
+
 tree expand_coherent_index_write(tree value) {
     enum tree_code code = TREE_CODE(value);
     bool increment = code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
