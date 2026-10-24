@@ -31,6 +31,14 @@ int qc_sparse_entry(const qc_context *context,
                     uint64_t *high,
                     double complex *amplitude);
 void qc_allow_tables(qc_context *context, int allowed);
+/* Classical extents own dynamically allocated quantum registers. Resizing
+ * transports register identities; retiring unknown values retains joint outputs.
+ * Zero/over-budget allocations return handle zero without changing the heap. */
+uint64_t qc_heap_allocate(qc_context *context, size_t count, unsigned width, int sign);
+int qc_heap_resize(qc_context *context, uint64_t handle, size_t count);
+int qc_heap_free(qc_context *context, uint64_t handle);
+int qc_heap_element(qc_context *context, uint64_t handle, size_t index, uint32_t *id);
+size_t qc_heap_count(const qc_context *context, uint64_t handle);
 /* Native execution captures the effective thread locale at ctype_capture.
  * Static synthesis instead requires an explicitly named immutable locale. */
 void qc_ctype_runtime(qc_context *context);

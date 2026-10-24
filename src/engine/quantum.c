@@ -88,6 +88,12 @@ void qc_allow_tables(qc_context *c, int allowed) {
 void qc_destroy(qc_context *c) {
     if (!c)
         return;
+    while (c->heaps) {
+        qc_heap *heap = c->heaps;
+        c->heaps = heap->next;
+        free(heap->ids);
+        free(heap);
+    }
     for (unsigned i = 0; i < 14; ++i)
         free(c->ctype_snapshots[i]);
     for (size_t i = 0; i < c->nregisters; ++i)
@@ -1380,6 +1386,8 @@ failed:
     return 0;
 }
 
+#include "heap.inc"
+
 // Relabel saved register references, preserving the JSON shape and all other
 // operands. This is ownership transport, not a copy of a quantum state.
 static char *relabel_definition(qc_context *c, const char *text, uint32_t from, uint32_t to) {
@@ -1509,6 +1517,14 @@ int qc_apply_token(qc_context *c,
     if (!collect_disposed(c))
         return 0;
     *result = 0;
+    if (cj_equal(d, op, "cheap"))
+        return (c->validation && c->structural) ||
+               qc_fail(
+                   c,
+                   "dynamic quantum heap requires native execution; static export is unsupported");
+    if (cj_equal(d, op, "qheap_store") || cj_equal(d, op, "qheap_measure") ||
+        cj_equal(d, op, "qheap_reset"))
+        return heap_action(c, d, inst, result);
     uint64_t id = 0;
     if (cj_equal(d, op, "qphi")) {
         int sources = cj_get(d, inst, "sources"), condition = cj_get(d, inst, "condition");
@@ -2179,6 +2195,7 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
     if (ok && validation)
         for (int t = instructions + 1; t < d.tokens[instructions].next; t = d.tokens[t].next) {
             c->structural |= cj_equal(&d, cj_get(&d, t, "op"), "qbind");
+            c->structural |= cj_equal(&d, cj_get(&d, t, "op"), "cheap");
             c->structural |=
                 !c->ctype_snapshots[0] && cj_equal(&d, cj_get(&d, t, "op"), "ctype_capture");
             int instruction =

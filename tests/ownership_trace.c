@@ -86,13 +86,24 @@ void ownership_checkpoint(const char *tag) {
         const qc_register *r = &observed->registers[i];
         if (!r->alive)
             continue;
-        printf("%s{\"id\":%u,\"name\":%s,\"history\":%d,\"wires\":[",
+        printf("%s{\"id\":%u,\"name\":%s,\"history\":%d,\"known\":%d,\"known_value\":%" PRIu64
+               ",\"wires\":[",
                count++ ? "," : "",
                r->id,
                r->id < 4096 && owner_names[r->id] ? owner_names[r->id] : "null",
-               r->history);
+               r->history,
+               r->basis_known,
+               r->basis_value);
         for (unsigned bit = 0; bit < r->width; ++bit)
             printf("%s%u", bit ? "," : "", r->wires[bit]);
+        fputs("]}", stdout);
+    }
+    fputs("],\"heaps\":[", stdout);
+    count = 0;
+    for (const qc_heap *heap = observed->heaps; heap; heap = heap->next) {
+        printf("%s{\"handle\":%" PRIu64 ",\"ids\":[", count++ ? "," : "", heap->handle);
+        for (size_t slot = 0; slot < heap->count; ++slot)
+            printf("%s%u", slot ? "," : "", heap->ids[slot]);
         fputs("]}", stdout);
     }
     fputs("],\"state\":[", stdout);

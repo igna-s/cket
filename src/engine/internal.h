@@ -62,6 +62,15 @@ typedef struct qc_module_cache {
     struct qc_module_cache *next;
 } qc_module_cache;
 
+typedef struct qc_heap {
+    uint64_t handle;
+    size_t count;
+    unsigned width;
+    int sign;
+    uint32_t *ids;
+    struct qc_heap *next;
+} qc_heap;
+
 struct qc_context {
     int simulate, validation, structural, ignore_measurements, allow_tables, cpu_versions,
         collecting;
@@ -73,6 +82,9 @@ struct qc_context {
     qc_parsed_cache *parsed;
     qc_plan_cache *plans;
     qc_module_cache *modules;
+    qc_heap *heaps;
+    uint64_t heap_serial;
+    uint32_t heap_register;
     size_t parsed_bytes, plan_bytes, module_bytes;
     uint64_t json_parses, synthesis_runs, plan_hits;
     char error[512];

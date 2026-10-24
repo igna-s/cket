@@ -1,5 +1,5 @@
 {
-  "active": "ownership-contracts-v1",
+  "active": "dynamic-heap-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -14,7 +14,8 @@
     "coherent-index-implementation-v3",
     "pointer-index-implementation-v1",
     "pointer-index-implementation-v2",
-    "ownership-contracts-v1"
+    "ownership-contracts-v1",
+    "dynamic-heap-v1"
   ],
-  "meaning": "Current source identity selects a finite directed ownership campaign; historical artifacts keep their own inputs and results. Full everyday C integration and paper audit remain open."
+  "meaning": "Current source identity selects a finite native dynamic-heap campaign; historical artifacts retain their own sources/results. Full everyday C integration and paper re-audit remain open."
 }

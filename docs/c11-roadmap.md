@@ -218,10 +218,13 @@ profile. Pointer-to-integer conversions cannot expose amplitudes as CPU bits.
 `malloc`, `calloc`, `realloc` and `aligned_alloc` with classical sizes manage quantum ownership
 through a quantum allocation interface. Their C-compatible surface and failure behavior must be
 specified and implemented; applying ordinary libc allocation to placeholder bytes does not allocate
-qubits. `calloc` initializes basis zero. Growth preserves existing state; shrink/free requires clean
-released regions or an explicit destruction channel. A coherent size reserves a bounded maximum and
-retains its allocation/length metadata; it cannot change the Hilbert-space dimension invisibly
-between branches.
+qubits. The [partial native scalar heap](c11-heap.md) implements classical capacities for `malloc`,
+`calloc`, `realloc` and `free`; `aligned_alloc` remains pending. Fresh quantum elements start in
+basis zero. Growth preserves existing state; shrink/free retires the public access path, retains
+unknown states as joint outputs and reclaims known states after saved borrows end. Physically
+reclaiming an unknown state needs a further explicit channel or a proven inverse. A coherent size
+reserves a bounded maximum and retains its allocation/length metadata; it cannot change the
+Hilbert-space dimension invisibly between branches.
 
 Globals, static storage, TLS and `extern` owners need initialization, synchronization,
 interprocedural lifetime tracking and explicit shutdown. `volatile`, `_Atomic` and `restrict` need

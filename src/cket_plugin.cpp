@@ -62,6 +62,22 @@ std::map<tree, QuantumIndexedAccess> quantum_coherent_accesses;
 // Value reads retain an index proof separate from the existing CPU lvalue path.
 std::map<tree, tree> quantum_indexed_read_indices;
 
+struct QuantumHeapAccess {
+    tree pointer, index, type;
+    bool readonly;
+};
+
+struct QuantumHeapUpdate {
+    QuantumHeapAccess target;
+    tree value;
+};
+
+std::map<tree, tree> quantum_heap_pointers;
+std::map<tree, QuantumHeapAccess> quantum_heap_accesses;
+std::map<tree, QuantumHeapUpdate> quantum_heap_updates;
+std::set<tree> quantum_heap_borrows;
+std::set<tree> quantum_heap_queries;
+
 struct QuantumMemoryCopy {
     std::vector<std::pair<tree, tree>> elements; // Destination, source, in read-before-write order.
 };
@@ -485,6 +501,11 @@ void finish_function(void *event, void *) {
     quantum_indexed_accesses.clear();
     quantum_coherent_accesses.clear();
     quantum_indexed_read_indices.clear();
+    quantum_heap_pointers.clear();
+    quantum_heap_accesses.clear();
+    quantum_heap_updates.clear();
+    quantum_heap_borrows.clear();
+    quantum_heap_queries.clear();
     indexed_expansions.clear();
     readonly_quantum_borrows.clear();
     expanded_product_leaves = 0;

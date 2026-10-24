@@ -76,10 +76,164 @@ static int binding_write(qc_binding_writer *writer, const char *text, size_t len
     return 1;
 }
 
+static int binding_token(qc_binding_writer *writer, int token, unsigned depth);
+
+static int binding_heap_value(qc_binding_writer *writer, int token, uint64_t *value) {
+    const cj_doc *d = writer->doc;
+    int op = cj_get(d, token, "op");
+    uint64_t width;
+    int signedness = cj_get(d, token, "signed");
+    if (!cj_u64(d, cj_get(d, token, "bits"), &width) || width != 64 || signedness < 0 ||
+        d->tokens[signedness].kind != 'f')
+        return qc_fail(writer->context, "heap address bindings require uint64 values");
+    if (cj_equal(d, op, "const")) {
+        static const char *const fields[] = {"op", "bits", "signed", "value", NULL};
+        int number = cj_get(d, token, "value");
+        return binding_fields(writer->context, d, token, fields) && number >= 0 &&
+               d->tokens[number].kind != '-' && cj_u64(d, number, value);
+    }
+    static const char *const fields[] = {"op", "id", "bits", "signed", NULL};
+    uint32_t id;
+    unsigned bits;
+    int sign;
+    if (!cj_equal(d, op, "parameter") || !binding_fields(writer->context, d, token, fields) ||
+        !binding_type(writer->context, d, token, &id, &bits, &sign))
+        return qc_fail(writer->context, "heap address requires a declared CPU binding");
+    for (size_t i = 0; i < writer->count; ++i)
+        if (writer->bindings[i].id == id && writer->bindings[i].bits == 64 &&
+            !writer->bindings[i].sign) {
+            writer->bindings[i].used = 1;
+            *value = writer->bindings[i].value;
+            return 1;
+        }
+    return qc_fail(writer->context, "heap address binding is missing or mistyped");
+}
+
+static int binding_heap_read(qc_binding_writer *writer, int token, unsigned depth) {
+    const cj_doc *d = writer->doc;
+    qc_context *c = writer->context;
+    static const char *const fields[] = {"op", "bits", "signed", "heap", "offset", "index", NULL};
+    uint64_t width, handle, offset;
+    int signedness = cj_get(d, token, "signed"), index = cj_get(d, token, "index");
+    if (!binding_fields(c, d, token, fields) || !cj_u64(d, cj_get(d, token, "bits"), &width) ||
+        !width || width > 64 || signedness < 0 ||
+        (d->tokens[signedness].kind != 't' && d->tokens[signedness].kind != 'f') ||
+        (width == 1 && cj_bool(d, signedness)) || index < 0 ||
+        !binding_heap_value(writer, cj_get(d, token, "heap"), &handle) ||
+        !binding_heap_value(writer, cj_get(d, token, "offset"), &offset))
+        return qc_fail(c, "invalid typed quantum heap read");
+    size_t begin = writer->length;
+    if (!binding_token(writer, index, depth + 1))
+        return 0;
+    size_t length = writer->length - begin;
+    char *selected = malloc(length + 1);
+    if (!selected)
+        return qc_fail(c, "cannot capture heap selector expression");
+    memcpy(selected, writer->text + begin, length);
+    selected[length] = 0;
+    writer->length = begin;
+    writer->text[begin] = 0;
+    qc_heap *heap = heap_lookup(c, handle);
+    int sign = cj_bool(d, signedness);
+    const char *signed_text = sign ? "true" : "false";
+    char text[512];
+    int ok = 1, closings = 0;
+#define HEAP_WRITE(format, ...) \
+    (snprintf(text, sizeof text, format, __VA_ARGS__), binding_write(writer, text, strlen(text)))
+    if (!c->structural && heap && (heap->width != width || heap->sign != sign)) {
+        free(selected);
+        return qc_fail(c, "heap read changes its allocated C element type");
+    }
+    // A captured CPU index needs only its selected register. Including every
+    // other heap slot would create false inverse borrows and synthesis costs.
+    uint64_t index_width, fixed_index;
+    int index_sign = cj_get(d, index, "signed");
+    int fixed = !c->structural && cj_u64(d, cj_get(d, index, "bits"), &index_width) &&
+                index_width == 64 && index_sign >= 0 && d->tokens[index_sign].kind == 'f' &&
+                (cj_equal(d, cj_get(d, index, "op"), "parameter") ||
+                 cj_equal(d, cj_get(d, index, "op"), "const"));
+    if (fixed && !binding_heap_value(writer, index, &fixed_index)) {
+        free(selected);
+        return 0;
+    }
+    if (fixed && heap && offset < heap->count && fixed_index < heap->count - offset) {
+        ok = HEAP_WRITE("{\"op\":\"sequence\",\"bits\":%u,\"signed\":%s,\"args\":[",
+                        (unsigned)width,
+                        signed_text) &&
+             binding_write(writer, selected, length) &&
+             HEAP_WRITE(",{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u}]}",
+                        (unsigned)width,
+                        signed_text,
+                        heap->ids[offset + fixed_index]);
+        free(selected);
+        return ok;
+    }
+    if (fixed)
+        heap = NULL; // Keep the invalid-address sentinel lazy in its consumer.
+    if (c->structural || !heap || offset >= heap->count) {
+        ok = HEAP_WRITE("{\"op\":\"sequence\",\"bits\":%u,\"signed\":%s,\"args\":[",
+                        (unsigned)width,
+                        signed_text) &&
+             binding_write(writer, selected, length) && binding_write(writer, ",", 1);
+        if (ok && c->structural)
+            ok = HEAP_WRITE("{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
+                            (unsigned)width,
+                            signed_text);
+    } else {
+        ok =
+            HEAP_WRITE(
+                "{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"lt\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":64,\"signed\":false,\"args\":[",
+                (unsigned)width,
+                signed_text) &&
+            binding_write(writer, selected, length) &&
+            HEAP_WRITE("]},{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu}]},",
+                       heap->count - (size_t)offset);
+        for (size_t i = (size_t)offset; i < heap->count && ok; ++i) {
+            ok =
+                HEAP_WRITE(
+                    "{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"eq\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":64,\"signed\":false,\"args\":[",
+                    (unsigned)width,
+                    signed_text) &&
+                binding_write(writer, selected, length) &&
+                HEAP_WRITE(
+                    "]},{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu}]},{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u},",
+                    i - (size_t)offset,
+                    (unsigned)width,
+                    signed_text,
+                    heap->ids[i]);
+            ++closings;
+        }
+        if (ok)
+            ok = HEAP_WRITE("{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
+                            (unsigned)width,
+                            signed_text);
+        while (closings-- && ok)
+            ok = binding_write(writer, "]}", 2);
+        if (ok)
+            ok = binding_write(writer, ",", 1);
+    }
+    if (ok && !c->structural)
+        ok = HEAP_WRITE(
+            "{\"op\":\"div\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":1},{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}]}",
+            (unsigned)width,
+            signed_text,
+            (unsigned)width,
+            signed_text,
+            (unsigned)width,
+            signed_text);
+    if (ok)
+        ok = binding_write(writer, "]}", 2);
+#undef HEAP_WRITE
+    free(selected);
+    return ok;
+}
+
 static int binding_token(qc_binding_writer *writer, int token, unsigned depth) {
     const cj_doc *d = writer->doc;
     if (depth > 128)
         return qc_fail(writer->context, "CPU binding nesting budget exceeded");
+    if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "heap_read"))
+        return binding_heap_read(writer, token, depth);
     if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "parameter")) {
         static const char *const names[] = {"op", "id", "bits", "signed", NULL};
         uint32_t id;

@@ -58,6 +58,7 @@ STRING_COPIES = {"strcpy", "strncpy"}
 STRING_CONCATENATIONS = {"strcat", "strncat"}
 STRING_SEARCHES = {"memchr", "strchr", "strrchr", "strpbrk", "strstr"}
 MEMORY_COPY = {"memcpy", "memmove"}
+HEAP = {"malloc", "calloc", "realloc", "free"}
 DIVISION = {"div", "ldiv", "lldiv", "imaxdiv"}
 DIVISION_PRODUCTS = {"div_t", "ldiv_t", "lldiv_t", "imaxdiv_t"}
 FAMILY_CONTRACTS = {
@@ -252,6 +253,30 @@ def semantics(header, name, kind, optional):
             "general layouts/ABI and further lifetime contexts remain pending; explicit gate, "
             "history and expression budgets apply. Full coherent/inverse, sanitizer and GCC "
             "qualification is deferred; delivery examples are finite evidence only.",
+        )
+    if header == "stdlib.h" and name in HEAP:
+        return (
+            "partial",
+            ["P", "R"],
+            "M4/M7",
+            [
+                "tests/validate_heap.c",
+                "scripts/validate-heap.py",
+                "examples/blocks/05/dynamic_heap.c",
+            ],
+            "Native runtime-sized heaps for padding-free scalar integers/Booleans, with classical "
+            "capacity/address metadata and owned quantum register payloads. Fresh elements, including "
+            "malloc and realloc growth, start in zero under the quantum contract. At most 64 elements "
+            "per allocation, subject to physical-wire, history and simulator budgets. calloc checks "
+            "product overflow; resource preflight failures return NULL without changing an old heap. "
+            "realloc preserves register identities and saved inverse borrows; zero size frees and "
+            "returns NULL. Shrink/free retain unknown states as joint outputs; known states are "
+            "reversibly reclaimed after borrows end, with no implicit measure/reset. Typed local "
+            "aliases, suffix function borrows, pure CPU-indexed stores and CPU/quantum-indexed reads "
+            "are partial. Borrowed parameters cannot free/reallocate. Quantum-indexed writes, "
+            "value-producing heap updates, general ABI/layouts, byte/string adapters over heaps and "
+            "static QASM export remain pending. Finite directed states/inverses and native diagnostics "
+            "do not certify general dynamic memory or complete C11. Security stays classical.",
         )
     if header == "string.h" and name in STRING_COPIES:
         return (

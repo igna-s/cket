@@ -302,7 +302,58 @@ int qc_verify_document(qc_context *c, const cj_doc *d) {
 
 #include "phase_verify.inc"
 
+static int heap_address_literal(qc_context *c, const cj_doc *d, int node) {
+    uint64_t bits, value;
+    int number = cj_get(d, node, "value");
+    return expression(c, d, node) && cj_equal(d, cj_get(d, node, "op"), "const") &&
+           unsigned_field(c, d, node, "bits", &bits) && bits == 64 &&
+           !cj_bool(d, cj_get(d, node, "signed")) && number >= 0 && d->tokens[number].kind != '-' &&
+           cj_u64(d, number, &value);
+}
+
+static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
+    int store = cj_equal(d, cj_get(d, inst, "op"), "qheap_store");
+    static const char *const write[] = {
+        "op", "heap", "offset", "index", "width", "signed", "expr", "controls", NULL};
+    static const char *const channel[] = {"op", "heap", "offset", "index", "width", "signed", NULL};
+    uint64_t width, expr_width;
+    if (!fields(c, d, inst, store ? write : channel) ||
+        !unsigned_field(c, d, inst, "width", &width) || !width || width > 64 ||
+        !boolean_field(c, d, inst, "signed", 0) ||
+        (width == 1 && cj_bool(d, cj_get(d, inst, "signed"))) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "heap")) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "offset")) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "index")))
+        return qc_fail(c, "heap operation requires a typed element and bound CPU addresses");
+    if (!store)
+        return 1;
+    int expr = cj_get(d, inst, "expr"), controls = cj_get(d, inst, "controls");
+    if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &expr_width) ||
+        expr_width != width ||
+        cj_bool(d, cj_get(d, expr, "signed")) != cj_bool(d, cj_get(d, inst, "signed")))
+        return qc_fail(c, "heap store expression must match its C element type");
+    if (controls >= 0) {
+        static const char *const row[] = {"id", "value", NULL};
+        if (d->tokens[controls].kind != '[' || d->tokens[controls].children > QC_MAX_PHYSICAL)
+            return qc_fail(c, "invalid heap control list");
+        for (int t = controls + 1; t < d->tokens[controls].next; t = d->tokens[t].next) {
+            uint64_t id, value;
+            if (!fields(c, d, t, row) || !unsigned_field(c, d, t, "id", &id) ||
+                !unsigned_field(c, d, t, "value", &value) || id > UINT32_MAX || value > 1)
+                return qc_fail(c, "invalid heap control");
+            qc_register *r = qc_lookup(c, (uint32_t)id);
+            if (!r || !r->alive || r->width != 1)
+                return qc_fail(c, "heap control requires live Boolean storage");
+        }
+    }
+    return 1;
+}
+
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
+    int heap_op = cj_get(d, inst, "op");
+    if (cj_equal(d, heap_op, "qheap_store") || cj_equal(d, heap_op, "qheap_measure") ||
+        cj_equal(d, heap_op, "qheap_reset"))
+        return heap_instruction(c, d, inst);
     if (cj_equal(d, cj_get(d, inst, "op"), "qphi")) {
         static const char *const phi[] = {
             "op", "id", "width", "signed", "sources", "condition", NULL};
@@ -462,7 +513,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     else if (cj_equal(d, op, "cloop_begin") || cj_equal(d, op, "cloop_end") ||
              cj_equal(d, op, "ccontrol_begin") || cj_equal(d, op, "ccontrol_end") ||
              cj_equal(d, op, "ccontrol_else") || cj_equal(d, op, "ctype_require") ||
-             cj_equal(d, op, "ctype_capture"))
+             cj_equal(d, op, "ctype_capture") || cj_equal(d, op, "cheap"))
         allowed = marker;
     else
         return qc_fail(c, "unsupported quantum instruction");

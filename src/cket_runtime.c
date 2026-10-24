@@ -10,8 +10,10 @@
 
 /* The native program owns the quantum context; no subprocess or SDK. */
 static qc_context *engine;
+static void shutdown_heap(void);
 
 static void shutdown_engine(void) {
+    shutdown_heap();
     qc_destroy(engine);
     engine = NULL;
 }
@@ -65,6 +67,8 @@ static void start_engine(void) {
         exit(EXIT_FAILURE);
     }
 }
+
+#include "heap_runtime.inc"
 
 unsigned long long __cket_controls_possible(const char *envelope) {
     int possible;

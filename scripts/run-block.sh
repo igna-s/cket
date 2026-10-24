@@ -3,8 +3,8 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 block="${1:-01}"
-if [[ "$block" != 01 && "$block" != 02 && "$block" != 03 && "$block" != 04 && "$block" != 06 || $# -gt 1 ]]; then
-    printf 'Usage: bash scripts/run-block.sh [01|02|03|04|06]\n' >&2
+if [[ "$block" != 01 && "$block" != 02 && "$block" != 03 && "$block" != 04 && "$block" != 05 && "$block" != 06 || $# -gt 1 ]]; then
+    printf 'Usage: bash scripts/run-block.sh [01|02|03|04|05|06]\n' >&2
     exit 1
 fi
 
@@ -19,6 +19,10 @@ if [[ "$block" == 06 ]]; then
 elif [[ "$block" == 03 ]]; then
     names=(buffer_functions buffer_words cpu_vector_scan cpu_vector_return)
     source_directory=examples/blocks/03
+    export CKET_SIMULATOR=sparse
+elif [[ "$block" == 05 ]]; then
+    names=(dynamic_heap)
+    source_directory=examples/blocks/05
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 04 ]]; then
     names=(quantum_index)
@@ -38,8 +42,8 @@ for name in "${names[@]}"; do
     printf '\nBlock %s: %s\n' "$block" "$name"
     build/cket "$source_directory/$name.c" -O2 -o "$destination/$name"
     "$destination/$name"
-    if [[ "$name" == cpu_vector_scan || "$name" == cpu_vector_return ]]; then
-        printf 'Runtime CPU loop: native executable; static QASM export is unsupported.\n'
+    if [[ "$name" == cpu_vector_scan || "$name" == cpu_vector_return || "$name" == dynamic_heap ]]; then
+        printf 'Runtime CPU loop/heap: native executable; static QASM export is unsupported.\n'
         continue
     fi
     static_profile=()

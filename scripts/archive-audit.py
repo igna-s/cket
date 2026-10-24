@@ -67,7 +67,7 @@ def main():
     content = log.read_text(encoding='utf-8')
     # Each result must occur once in the normal run and once with sanitizers.
     patterns = {
-        'native': r'^393 passed, 0 failed \(native C tests, no external quantum SDK\)$',
+        'native': r'^395 passed, 0 failed \(native C tests, no external quantum SDK\)$',
         'examples': r'^1509 checks passed across 37 examples, five optimization levels and CLI/input contracts$',
         'classical': r'^5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete\.$',
         'frontend': r'^665 generated frontend compilations passed; seed=20261012 \(C generator, SplitMix64\)$',
@@ -92,6 +92,7 @@ def main():
         'division': r'^990 division checks passed; full-state validation, explicit channels and wide generation have separate scopes\.$',
         'bindings': r'^519 CPU binding checks passed; structural templates and bound circuit correctness have separate scopes\.$',
         'history': r'^2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
+        'heap': r'^16711 heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes\.$',
         'ctype': r'^1815 ctype checks passed; immutable byte-locale coverage is distinct from wide-character, concurrency and source-folding contracts\.$',
         'profiles': r'^96 immutable profile proof checks passed; distinct locale functions cannot share branch facts\.$',
         'numeric_locale': r'^70 numeric locale checks passed; JSON phases and QASM decimals preserve global/thread locales\.$',
@@ -150,7 +151,7 @@ def main():
         'command': 'CC=gcc-11 CXX=g++-11 CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh',
         'configurations': ['normal', 'ASan/UBSan'],
         'counts_per_configuration': {
-            'native': 393,
+            'native': 395,
             'example_checks': 1509,
             'examples': 37,
             'classical_header_integration': 5,
@@ -161,6 +162,7 @@ def main():
             'expression_checks': 3505,
             'inplace_checks': 271,
             'memory_copy_checks': 414,
+            'quantum_heap_checks': 16711,
             'memory_compare_checks': 302,
             'string_compare_checks': 246,
             'cpu_byte_snapshot_checks': 650,

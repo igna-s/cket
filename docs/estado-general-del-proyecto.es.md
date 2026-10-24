@@ -4,6 +4,14 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Avance del bloque 05:** se implementan heaps cuánticos nativos con `malloc`, `calloc`, `realloc` y
+`free`. El nuevo [programa dinámico](../examples/blocks/05/dynamic_heap.c) recibe la capacidad por
+`argv`, reserva, crece, recorre mediante una función y libera. La carga sigue en registros
+cuánticos; los punteros y capacidades son clásicos. Crecer conserva los registros; liberar no mide
+ni borra estados desconocidos. El [contrato](c11-heap.md) detalla recursos y contextos pendientes.
+La [campaña del heap](audit-evidence/dynamic-heap-v1/README.es.md) conserva los estados completos y
+las inversas comprobadas. Es un avance parcial del núcleo cotidiano.
+
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
 buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos
 por funciones. La [campaña actual](audit-evidence/ownership-contracts-v1/README.es.md) separa
@@ -277,7 +285,11 @@ La [matriz técnica de cobertura](c-coverage.md) detalla las restricciones de ca
 | Copia de cadenas                         | `strcpy`, `strncpy`.                                                                                                                                       | Destino cuántico comprobado, cola preservada, padding e historia reversible; calificación exhaustiva pendiente.                                                                                                                                           |
 | Concatenación                            | `strcat`, `strncat`.                                                                                                                                       | Longitudes originales capturadas antes de escribir, terminación y cola preservada; calificación exhaustiva pendiente.                                                                                                                                     |
 
-Son **43 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
+Los heaps añaden `malloc`, `calloc`, `realloc` y `free` con adaptación parcial para capacidades CPU,
+registros escalares y vida comprobada. Las operaciones de bytes/cadenas sobre esos heaps siguen
+pendientes.
+
+Son **47 nombres de funciones con adaptación parcial**. Cada una conserva las restricciones de su
 contrato; esta lista no dice que estén implementadas para todos los programas C válidos.
 
 Que `printf`, `malloc` u otra función funcionen en la parte clásica de un programa no significa que
@@ -290,13 +302,13 @@ de cabeceras**, con esta clasificación:
 
 | Clasificación  | Entradas | Qué significa                                                                                                 |
 | -------------- | -------: | ------------------------------------------------------------------------------------------------------------- |
-| Pendientes     |      766 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
-| Parciales      |       90 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
+| Pendientes     |      762 | Falta implementar o completar el análisis de su compatibilidad cuántica.                                      |
+| Parciales      |       94 | Hay soporte para determinados casos, con restricciones y trabajo pendiente. Incluye funciones, tipos y alias. |
 | Solo metadatos |      368 | Constantes, macros u otras facilidades que no representan una operación cuántica de ejecución.                |
 
-El inventario no registra entradas como completamente implementadas. Las 90 parciales incluyen los
-43 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
-de una cabecera. **No son 90 funciones completas.** El estado parcial registra código disponible; no
+El inventario no registra entradas como completamente implementadas. Las 94 parciales incluyen los
+47 nombres de funciones anteriores y 47 entradas de tipos y alias; algunos nombres aparecen en más
+de una cabecera. **No son 94 funciones completas.** El estado parcial registra código disponible; no
 certifica las pruebas aplazadas del nuevo bloque de cadenas.
 
 Estos números tampoco permiten calcular un porcentaje fiable del trabajo terminado: implementar un
@@ -430,12 +442,12 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el
 1. Dejar documentación y papers consistentes con la implementación y con las pruebas efectivamente
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
-El próximo trabajo prioriza integrar funciones, arrays, punteros y buffers, y después almacenamiento
-para vectores dinámicos. Las novedades de índices cuánticos, búsquedas y conversiones decimales solo
-tienen compilación comprobada en sus fuentes actuales. Por indicación del usuario, su ejecución y
-las matrices de validación quedan para el cierre. Los informes de 146 entradas y otras campañas
-anteriores son históricos y no certifican esas fuentes nuevas. **La integración actual no completa
-todavía el perfil cotidiano.**
+El próximo trabajo completa las combinaciones habituales de funciones, punteros, flujo y memoria.
+Los vectores dinámicos ya tienen un contrato nativo parcial; faltan sus consumidores con resultado,
+escrituras con índice cuántico y adaptadores de bytes/cadenas. También siguen pendientes los tipos
+cuánticos `float` y `double`, la integración general del perfil y la revisión final de los papers.
+Las campañas dirigidas de propiedad y heap conservan sus propias fuentes, ejecuciones y pruebas de
+estados e inversas. **El perfil cotidiano todavía no está completo.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

@@ -307,13 +307,20 @@ canonical pointer-byte scaling can wrap. Block 03 also adds CPU-indexed reads, s
 scans with modular sum/parity, and scalar results returned by functions. The four examples execute;
 finite state/inverse evidence remains distinct from complete integration.
 
+Runtime-sized scalar quantum heaps now support native `malloc`, `calloc`, `realloc` and `free` with
+classical capacity/address metadata and retained unknown outputs. See the
+[heap contract](docs/c11-heap.md) and run `bash scripts/run-block.sh 05` for a vector that actually
+grows. The [directed heap campaign](docs/audit-evidence/dynamic-heap-v1/README.es.md) checks finite
+joint states, phases and saved inverses. General heap consumers and static export remain pending.
+
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug
 that hid signed overflow. Unknown quantum states are not independently cloned.
 
-Temporary expressions retain dependencies needed for their inverse. Do not change, reset, or measure
-an input while a derived value still needs it for cleanup. Derived values used only as coherent
-predicates can be uncomputed automatically after their last use.
+Temporary expressions retain the concrete input versions needed for their inverse. Checked
+overwrites preserve those versions; resizing or freeing a heap retires its public access path while
+saved borrows remain valid. Measurements/resets that invalidate a pending inverse are diagnosed.
+Derived values used only as coherent predicates can be uncomputed after their last use.
 
 `div`, `ldiv`, `lldiv` and `imaxdiv` have [partial quantum product adapters](docs/c11-division.md)
 for pure quantum arguments, captured CPU arguments and fresh quotient/remainder results. Constant
@@ -759,7 +766,7 @@ normal importer capacity failure, its correction and subsequent normal/ASan/UBSa
 
 For an optional machine-readable inventory check, run `python3 scripts/inventory_c11.py`. Its
 `--require-complete` mode deliberately fails while any interface remains pending or partial. The
-current index contains 1224 interfaces: 766 pending, 90 partial and 368 metadata facilities. The
+current index contains 1224 interfaces: 762 pending, 94 partial and 368 metadata facilities. The
 index covers the named C11 profile, including optional facilities; it is not an implementation or a
 test result for each entry.
 

@@ -76,3 +76,12 @@ Quedan combinaciones generales de funciones, punteros, alias y flujo; almacenami
 vectores dinámicos; operadores y recursos fuera del dominio actual; `float`/`double` cuánticos;
 integración del perfil completo y una nueva auditoría de los papers. La ciberseguridad permanece
 clásica. El [perfil acordado](perfil-c-cotidiano.es.md) define el cierre, sin exigir todo C11.
+
+## Memoria dinámica y no clonación
+
+Los [heaps nativos](c11-heap.md) separan la dirección clásica del estado almacenado. `realloc`
+conserva identidades de registros, sin copiar amplitudes. Una escritura puede conservar una versión
+anterior para los resultados todavía vivos. `free` retira el acceso público y conserva los estados
+desconocidos como salidas conjuntas; los conocidos se limpian reversiblemente cuando terminan sus
+préstamos. No equivale a reset ni a medir. El programa debe presupuestar también esa historia
+retenida.

@@ -24,6 +24,7 @@ std::map<tree, tree> quantum_pointer_aliases;
 std::set<tree> quantum_division_products;
 bool resolve_quantum_reference(tree value, QuantumReference &reference);
 tree reference_element(tree value);
+#include "quantum_heap.inc"
 
 bool gcc_quantum_sanitizer_guard(tree value) {
     if (!value || TREE_CODE(value) != COND_EXPR)
@@ -42,6 +43,9 @@ bool quantum_pure_expression(tree value) {
     if (!value)
         return true;
     auto code = TREE_CODE(value);
+    auto heap = quantum_heap_accesses.find(value);
+    if (heap != quantum_heap_accesses.end())
+        return quantum_pure_expression(heap->second.index);
     // GCC marks sanitizer wrappers as effectful/volatile. Judge the actual
     // deferred operand first; genuine volatile reads still fail below.
     if (code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)))
@@ -361,11 +365,13 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     }
     auto previous_readonly = readonly_quantum_borrows;
     auto previous_pointer_aliases = quantum_pointer_aliases;
+    auto previous_heap_borrows = quantum_heap_borrows;
     std::map<tree, tree> bindings;
     std::set<tree> borrowed;
     tree prefix = alloc_stmt_list();
     unsigned index = 0;
     bool valid = true;
+    std::vector<std::pair<tree, bool>> heap_arguments;
     for (tree param = DECL_ARGUMENTS(function.decl); param; param = DECL_CHAIN(param), ++index) {
         if (index >= (unsigned)call_expr_nargs(call)) {
             valid = false;
@@ -374,6 +380,35 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
         tree argument = CALL_EXPR_ARG(call, index);
         if (lookup_attribute("cket_quant", DECL_ATTRIBUTES(param)) &&
             TREE_CODE(TREE_TYPE(param)) == POINTER_TYPE) {
+            tree heap_type = NULL_TREE;
+            bool heap_readonly = false;
+            if (heap_pointer(argument, heap_type, heap_readonly)) {
+                tree expected = TREE_TYPE(TREE_TYPE(param));
+                if (TYPE_MAIN_VARIANT(heap_type) != TYPE_MAIN_VARIANT(expected) ||
+                    (heap_readonly && !TYPE_READONLY(expected)) ||
+                    !quantum_pure_expression(argument)) {
+                    error_at(
+                        at(call),
+                        "|c>: heap parameter requires a pure compatible pointer and preserved const borrow");
+                    valid = false;
+                    break;
+                }
+                bool mutates =
+                    (!function.result || function.owned_result) && !TYPE_READONLY(expected);
+                tree saved = fold_convert(TREE_TYPE(param), save_expr(argument));
+                for (const auto &prior : heap_arguments)
+                    if (mutates || prior.second)
+                        append(&prefix,
+                               heap_runtime_call("__cket_heap_borrow_check",
+                                                 void_type_node,
+                                                 {prior.first, saved},
+                                                 {const_ptr_type_node, const_ptr_type_node},
+                                                 at(call)));
+                heap_arguments.emplace_back(saved, mutates);
+                quantum_heap_borrows.insert(saved);
+                bindings[param] = saved;
+                continue;
+            }
             QuantumReference reference;
             if (!resolve_quantum_reference(argument, reference) ||
                 TYPE_MAIN_VARIANT(TREE_TYPE(TREE_TYPE(param))) !=
@@ -571,6 +606,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     expanding_functions.erase(name_of(fn));
     readonly_quantum_borrows = previous_readonly;
     quantum_pointer_aliases = previous_pointer_aliases;
+    quantum_heap_borrows = previous_heap_borrows;
     return result;
 }
 
@@ -1234,6 +1270,9 @@ tree indexed_access(tree original, const std::vector<tree> &elements, tree index
 bool readonly_quantum_access(tree value) {
     if (!value)
         return false;
+    QuantumHeapAccess heap;
+    if (heap_access(value, heap))
+        return heap.readonly;
     tree storage = strip(value);
     if (readonly_quantum_borrows.count(storage))
         return true;
@@ -1473,6 +1512,8 @@ tree expand_static_for_block(tree block) {
 tree expand_quantum_program(tree value) {
     if (!value)
         return value;
+    if (quantum_heap_accesses.count(value) || quantum_heap_updates.count(value))
+        return value;
     auto code = TREE_CODE(value);
     if (code == BIND_EXPR) {
         tree unrolled = expand_static_for_block(value);
@@ -1490,6 +1531,8 @@ tree expand_quantum_program(tree value) {
     if (code == DECL_EXPR) {
         tree decl = DECL_EXPR_DECL(value), type = TREE_TYPE(decl);
         tree init = strip(DECL_INITIAL(decl));
+        if (expand_heap_declaration(decl))
+            return value;
         if (quantum(decl) && init && TREE_CODE(init) == CALL_EXPR) {
             tree fn = get_callee_fndecl(init);
             auto found = fn ? quantum_functions.find(name_of(fn)) : quantum_functions.end();
@@ -1553,6 +1596,17 @@ tree expand_quantum_program(tree value) {
             DECL_INITIAL(decl) = expand_quantum_program(DECL_INITIAL(decl));
         return value;
     }
+    tree heap_update = expand_heap_write(value);
+    if (heap_update)
+        return heap_update;
+    tree heap_pointer_update = expand_heap_pointer_update(value);
+    if (heap_pointer_update)
+        return heap_pointer_update;
+    if (TREE_CODE_CLASS(code) == tcc_comparison || code == POINTER_DIFF_EXPR) {
+        tree heap_pointer = expand_heap_pointer_relation(value);
+        if (heap_pointer)
+            return heap_pointer;
+    }
     tree search_write = expand_search_pointer_write(value);
     if (search_write)
         return search_write;
@@ -1583,6 +1637,9 @@ tree expand_quantum_program(tree value) {
     }
     if (code == CALL_EXPR) {
         tree fn = get_callee_fndecl(value);
+        tree heap_call = expand_heap_call(value);
+        if (heap_call)
+            return heap_call;
         if (!standard_string_search(fn).empty()) {
             QuantumByteRange string, pattern;
             bool quantum_input =
@@ -1699,6 +1756,9 @@ tree expand_quantum_program(tree value) {
         return value;
     }
     if (code == INDIRECT_REF) {
+        tree heap = expand_heap_read(value);
+        if (heap)
+            return heap;
         tree search = expand_search_pointer_read(value);
         if (search)
             return search;
@@ -1710,6 +1770,9 @@ tree expand_quantum_program(tree value) {
             return element;
     }
     if (code == ARRAY_REF || code == COMPONENT_REF) {
+        tree heap = expand_heap_read(value);
+        if (heap)
+            return heap;
         if (code == ARRAY_REF) {
             tree search = expand_search_pointer_read(value);
             if (search)
@@ -1758,7 +1821,7 @@ tree expand_quantum_program(tree value) {
             "|c>: quantum products cannot decay to CPU pointers or be read as a whole; access their elements");
     if (code == VAR_DECL &&
         (quantum_references.count(value) || quantum_pointer_aliases.count(value) ||
-         quantum_search_pointers.count(value)))
+         quantum_search_pointers.count(value) || quantum_heap_pointers.count(value)))
         error_at(
             at(value),
             "|c>: quantum reference cannot escape to CPU memory or be rebound without a checked borrow");

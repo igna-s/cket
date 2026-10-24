@@ -46,6 +46,9 @@ bool gcc_quantum_sanitizer_guard(tree value);
 bool quantum_pure_expression(tree value);
 std::string standard_ctype(tree call);
 std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
+std::string heap_expression(tree selection, std::set<unsigned> &deps);
+tree lower_heap_effect(tree marker);
+tree lower_heap_channel(tree call);
 tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings);
 
 tree selected_storage(tree value) {
@@ -251,7 +254,8 @@ void append(tree *list, tree value) {
 }
 
 tree quantum_use(tree *node, int *walk, void *) {
-    if (quantum_indexed_accesses.count(*node) || quantum_coherent_accesses.count(*node) ||
+    if (quantum_heap_accesses.count(*node) || quantum_heap_updates.count(*node) ||
+        quantum_indexed_accesses.count(*node) || quantum_coherent_accesses.count(*node) ||
         quantum_memory_copies.count(*node) || quantum_value_programs.count(*node) ||
         quantum_memory_sets.count(*node))
         return *node;
@@ -586,6 +590,13 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
     auto code = TREE_CODE(value);
+    if (quantum_heap_accesses.count(value))
+        return heap_expression(value, deps);
+    if (quantum_heap_updates.count(value)) {
+        error_at(at(value),
+                 "|c>: quantum heap update values require a supported sequenced consumer");
+        return "{}";
+    }
     if (quantum_indexed_accesses.count(value))
         return cpu_indexed_expression(value, deps);
     // CPU arithmetic in every controlled consumer must remain lazy.
@@ -1164,8 +1175,8 @@ tree before_integer_narrowing(tree operand, tree type) {
 // Restore the promoted operation without folding away that domain again.
 tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
     if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
-        quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
-        quantum_value_programs.count(value))
+        quantum_heap_accesses.count(value) || quantum_indexed_accesses.count(value) ||
+        quantum_coherent_accesses.count(value) || quantum_value_programs.count(value))
         return value;
     auto found = memo.find(value);
     if (found != memo.end())
@@ -1610,7 +1621,17 @@ tree lower_quantum_decl(Variable &var) {
     if (var.expression_init) {
         var.creation =
             cast_result(evaluate_expression(var.original_init, var.dependencies, &list), var);
-        if (var.dependencies.empty())
+        // Heap register identities are resolved by qbind at execution time.
+        // Their saved inverse still borrows the resolved engine registers.
+        tree probe = var.original_init;
+        auto heap_read = [](tree *node, int *walk, void *) -> tree {
+            if (quantum_heap_accesses.count(*node))
+                return *node;
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        if (var.dependencies.empty() && !walk_tree_without_duplicates(&probe, heap_read, nullptr))
             error_at(
                 at(var.decl),
                 "|c>: quantum initializer must be constant, superposition, or a supported quantum expression");
@@ -1919,6 +1940,16 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
+    if (quantum_heap_updates.count(value))
+        return lower_heap_effect(value);
+    if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&
+        quantum_heap_updates.count(strip(value)))
+        return lower_heap_effect(strip(value));
+    if (code == CALL_EXPR && (intrinsic(value) == "measure" || intrinsic(value) == "reset")) {
+        tree lowered = lower_heap_channel(value);
+        if (lowered)
+            return lowered;
+    }
     if (quantum_value_programs.count(value)) {
         tree list = alloc_stmt_list();
         tree locals = NULL_TREE;
@@ -3047,6 +3078,8 @@ tree lower_node(tree value) {
             error_at(at(value), "|c>: preparation/find is only valid as a quant initializer");
             return constant(0);
         }
+        if (quantum_heap_queries.count(get_callee_fndecl(value)))
+            return value;
         if (!controls.empty()) {
             error_at(at(value),
                      "|c>: classical calls and I/O cannot execute coherently inside a quantum if");
