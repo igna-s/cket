@@ -1,5 +1,5 @@
 {
-  "active": "heap-effects-v1",
+  "active": "heap-memory-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -16,7 +16,8 @@
     "pointer-index-implementation-v2",
     "ownership-contracts-v1",
     "dynamic-heap-v1",
-    "heap-effects-v1"
+    "heap-effects-v1",
+    "heap-memory-v1"
   ],
-  "meaning": "Current source identity selects finite native coherent-heap and update-value validation. Historical artifacts retain their own inputs/results; full everyday C integration and paper audit remain open."
+  "meaning": "Current source identity selects finite native heap byte-memory validation. Historical artifacts retain their own inputs/results; full everyday C integration and paper audit remain open."
 }

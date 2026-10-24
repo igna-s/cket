@@ -169,11 +169,15 @@ static void malformed_effects(void) {
     }
 }
 
+#include "heap_memory_state.inc"
+
 int main(void) {
     resize_states();
     borrowed_inverse();
     resources();
     malformed_effects();
+    byte_memory_states();
+    malformed_byte_memory();
     printf(
         "%u heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes.\n",
         checks);

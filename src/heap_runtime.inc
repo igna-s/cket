@@ -41,6 +41,28 @@ uint64_t __cket_heap_offset(const void *address) {
     return heap ? ((uintptr_t)address - (uintptr_t)heap->address) / heap->stride : 0;
 }
 
+/* Byte views include unaligned addresses and the one-past address. Only the
+ * engine checks the requested extent; these queries never read the payload. */
+static native_heap *native_heap_byte_at(const void *address) {
+    uintptr_t value = (uintptr_t)address;
+    for (native_heap *heap = native_heaps; heap; heap = heap->next) {
+        uintptr_t base = (uintptr_t)heap->address;
+        if (value >= base && value - base <= heap->bytes)
+            return heap;
+    }
+    return NULL;
+}
+
+uint64_t __cket_heap_byte_identity(const void *address) {
+    native_heap *heap = native_heap_byte_at(address);
+    return heap ? heap->handle : 0;
+}
+
+uint64_t __cket_heap_byte_offset(const void *address) {
+    native_heap *heap = native_heap_byte_at(address);
+    return heap ? (uintptr_t)address - (uintptr_t)heap->address : 0;
+}
+
 void __cket_heap_borrow_check(const void *left, const void *right) {
     native_heap *a = native_heap_at(left, 1), *b = native_heap_at(right, 1);
     if (!a || !b || a == b) {

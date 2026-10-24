@@ -311,6 +311,54 @@ static int heap_address_literal(qc_context *c, const cj_doc *d, int node) {
            cj_u64(d, number, &value);
 }
 
+static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
+    int set = cj_equal(d, cj_get(d, inst, "mode"), "set");
+    static const char *const fill[] = {
+        "op", "mode", "heap", "heap_offset", "count", "expr", "big_endian", "controls", NULL};
+    static const char *const copy[] = {"op",
+                                       "mode",
+                                       "heap",
+                                       "heap_offset",
+                                       "count",
+                                       "source",
+                                       "source_offset",
+                                       "big_endian",
+                                       "controls",
+                                       NULL};
+    if ((!set && !cj_equal(d, cj_get(d, inst, "mode"), "copy") &&
+         !cj_equal(d, cj_get(d, inst, "mode"), "move")) ||
+        !fields(c, d, inst, set ? fill : copy) || !boolean_field(c, d, inst, "big_endian", 0) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "heap")) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "heap_offset")) ||
+        !heap_address_literal(c, d, cj_get(d, inst, "count")))
+        return qc_fail(c, "invalid heap byte operation schema");
+    if (set) {
+        int expr = cj_get(d, inst, "expr");
+        uint64_t bits;
+        if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits) || bits != 8 ||
+            cj_bool(d, cj_get(d, expr, "signed")))
+            return qc_fail(c, "heap memset requires an unsigned byte expression");
+    } else if (!heap_address_literal(c, d, cj_get(d, inst, "source")) ||
+               !heap_address_literal(c, d, cj_get(d, inst, "source_offset")))
+        return qc_fail(c, "heap byte copy requires bound source addresses");
+    int controls = cj_get(d, inst, "controls");
+    if (controls >= 0) {
+        static const char *const row[] = {"id", "value", NULL};
+        if (d->tokens[controls].kind != '[' || d->tokens[controls].children > QC_MAX_PHYSICAL)
+            return qc_fail(c, "invalid heap byte control list");
+        for (int t = controls + 1; t < d->tokens[controls].next; t = d->tokens[t].next) {
+            uint64_t id, value;
+            if (!fields(c, d, t, row) || !unsigned_field(c, d, t, "id", &id) ||
+                !unsigned_field(c, d, t, "value", &value) || id > UINT32_MAX || value > 1)
+                return qc_fail(c, "invalid heap byte control");
+            qc_register *r = qc_lookup(c, (uint32_t)id);
+            if (!r || !r->alive || r->width != 1)
+                return qc_fail(c, "heap byte control requires live Boolean storage");
+        }
+    }
+    return 1;
+}
+
 static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
     int scatter = cj_equal(d, cj_get(d, inst, "op"), "qheap_scatter");
     int store = scatter || cj_equal(d, cj_get(d, inst, "op"), "qheap_store");
@@ -377,6 +425,8 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
+    if (cj_equal(d, heap_op, "qheap_memory"))
+        return heap_memory_instruction(c, d, inst);
     if (cj_equal(d, heap_op, "qheap_store") || cj_equal(d, heap_op, "qheap_scatter") ||
         cj_equal(d, heap_op, "qheap_measure") || cj_equal(d, heap_op, "qheap_reset"))
         return heap_instruction(c, d, inst);

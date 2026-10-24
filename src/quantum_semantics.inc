@@ -48,6 +48,7 @@ std::string standard_ctype(tree call);
 std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_expression(tree selection, std::set<unsigned> &deps);
 tree lower_heap_effect(tree marker);
+tree lower_heap_memory(tree marker);
 std::string heap_effect_expression(tree marker, std::set<unsigned> &deps);
 tree lower_heap_channel(tree call);
 tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings);
@@ -255,6 +256,12 @@ void append(tree *list, tree value) {
 }
 
 tree quantum_use(tree *node, int *walk, void *) {
+    if (quantum_heap_memory.count(*node)) {
+        // The effect changes quantum storage, but its result is the classical
+        // destination address. Do not classify that address as a quantum bit.
+        *walk = 0;
+        return NULL_TREE;
+    }
     if (quantum_heap_accesses.count(*node) || quantum_heap_updates.count(*node) ||
         quantum_indexed_accesses.count(*node) || quantum_coherent_accesses.count(*node) ||
         quantum_memory_copies.count(*node) || quantum_value_programs.count(*node) ||
@@ -383,6 +390,15 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             result.writes.insert(get_identifier("__cket_heap_payload"));
             pending.push_back(update.target.index);
             pending.push_back(update.value);
+            continue;
+        }
+        if (quantum_heap_memory.count(current)) {
+            const auto &memory = quantum_heap_memory.at(current);
+            result.writes.insert(get_identifier("__cket_heap_payload"));
+            if (memory.mode != "set")
+                result.reads.insert(get_identifier("__cket_heap_payload"));
+            else
+                pending.push_back(memory.source);
             continue;
         }
         if (quantum_indexed_accesses.count(current)) {
@@ -542,8 +558,9 @@ bool discarded_memory_sequence(tree value) {
     value = strip(value);
     if (!value)
         return false;
-    if (quantum_heap_updates.count(value) || quantum_memory_sets.count(value) ||
-        quantum_memory_copies.count(value) || quantum_value_programs.count(value))
+    if (quantum_heap_updates.count(value) || quantum_heap_memory.count(value) ||
+        quantum_memory_sets.count(value) || quantum_memory_copies.count(value) ||
+        quantum_value_programs.count(value))
         return true;
     return TREE_CODE(value) == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0)) &&
            discarded_memory_sequence(TREE_OPERAND(value, 1));
@@ -1963,6 +1980,20 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
+    if (quantum_heap_memory.count(value))
+        return lower_heap_memory(value);
+    if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&
+        quantum_heap_memory.count(strip(value)))
+        return fold_convert(TREE_TYPE(value), lower_heap_memory(strip(value)));
+    if ((code == MODIFY_EXPR || code == INIT_EXPR) &&
+        quantum_heap_pointers.count(strip(TREE_OPERAND(value, 0)))) {
+        if (!controls.empty()) {
+            error_at(at(value), "|c>: a classical heap pointer cannot be assigned coherently");
+            return value;
+        }
+        TREE_OPERAND(value, 1) = lower_node(TREE_OPERAND(value, 1));
+        return value;
+    }
     if (quantum_heap_updates.count(value))
         return lower_heap_effect(value);
     if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&

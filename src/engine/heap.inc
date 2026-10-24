@@ -486,3 +486,5 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
         heap_retire(c, old);
     return collect_disposed(c);
 }
+
+#include "heap_memory.inc"

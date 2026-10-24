@@ -76,6 +76,13 @@ struct QuantumHeapUpdate {
 std::map<tree, tree> quantum_heap_pointers;
 std::map<tree, QuantumHeapAccess> quantum_heap_accesses;
 std::map<tree, QuantumHeapUpdate> quantum_heap_updates;
+
+struct QuantumHeapMemory {
+    tree destination, source, count;
+    std::string mode;
+};
+
+std::map<tree, QuantumHeapMemory> quantum_heap_memory;
 std::set<tree> quantum_heap_borrows;
 std::set<tree> quantum_heap_queries;
 
@@ -505,6 +512,7 @@ void finish_function(void *event, void *) {
     quantum_heap_pointers.clear();
     quantum_heap_accesses.clear();
     quantum_heap_updates.clear();
+    quantum_heap_memory.clear();
     quantum_heap_borrows.clear();
     quantum_heap_queries.clear();
     indexed_expansions.clear();

@@ -1,6 +1,6 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 23 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 24 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
@@ -13,6 +13,16 @@ La [campaña del heap](audit-evidence/heap-effects-v1/README.es.md) conserva los
 las inversas comprobadas. Se añaden escrituras con índice cuántico y resultados de asignación e
 incremento que conservan sus versiones anteriores, incluso después de `free`. Es un avance parcial
 del núcleo cotidiano.
+
+**Nuevo bloque de memoria del heap:** `memcpy` y `memmove` entre heaps, y `memset` sobre heaps,
+aceptan tamaños CPU de ejecución y vistas de bytes parciales. El nuevo
+[ejemplo](../examples/blocks/05/heap_bytes.c) copia valores en superposición, mueve regiones
+solapadas y rellena con un valor cuántico capturado. Se conservan las versiones originales y las
+fases; los retornos son direcciones clásicas con alias comprobados. El [contrato](c11-heap.md)
+mantiene explícitos los límites. La mezcla entre heap y buffers fijos, las cadenas sobre heap y los
+flotantes cuánticos siguen pendientes.
+La [evidencia de este bloque](audit-evidence/heap-memory-v1/README.es.md) conserva 256 puntos de
+estado completo, 64 inversiones completas de puertas y las comprobaciones con ASan/UBSan.
 
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
 buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos

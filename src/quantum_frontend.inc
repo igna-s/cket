@@ -9,6 +9,7 @@ bool standard_string_span(tree fn);
 bool standard_string_copy(tree fn);
 std::string standard_string_search(tree fn);
 bool standard_memory_set(tree fn);
+bool standard_memory_copy(tree fn, bool &move);
 std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
 
@@ -1512,7 +1513,8 @@ tree expand_static_for_block(tree block) {
 tree expand_quantum_program(tree value) {
     if (!value)
         return value;
-    if (quantum_heap_accesses.count(value) || quantum_heap_updates.count(value))
+    if (quantum_heap_accesses.count(value) || quantum_heap_updates.count(value) ||
+        quantum_heap_memory.count(value))
         return value;
     auto code = TREE_CODE(value);
     if (code == BIND_EXPR) {

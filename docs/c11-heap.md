@@ -98,12 +98,26 @@ expressions. An inactive arm keeps the heap unchanged and contributes a zero pri
 enclosing expression selects its ordinary C result. No measurement is introduced to choose an
 address or obtain an update value.
 
+Native heap-to-heap `memcpy` and `memmove`, and heap `memset`, accept pure classical byte addresses
+and runtime byte lengths, including unaligned byte views, partial integer words and different source
+and destination widths. The limit is 64 bytes per operation, in addition to the physical/history
+budgets. `memcpy` rejects overlapping nonempty ranges before writing; `memmove` pins the original
+source versions before its first write. `memset` captures its converted unsigned-byte fill once,
+including a quantum fill that reads the destination. Byte order follows the GCC target. Coherent
+controls do not introduce a measurement. Copies produce basis correlations with their source.
+
+The returned destination is a classical address: local typed/`void *`/byte-view aliases, assignment,
+equality and null comparisons are supported. Those aliases retain the original allocation type and
+read-only/borrow restrictions. Direct byte scalar loads/stores through a cast of a wider heap remain
+pending. Empty ranges allow a live allocation's one-past address; null or dead allocations remain
+invalid even at zero length. A provably inactive quantum operation skips its range checks.
+
 Value-producing heap updates inside runtime CPU loops, unrestricted pointer arithmetic/ABI, general
-aggregates, byte/string libc adapters over these heaps, quantum floating-point storage, atomics and
-concurrency remain pending. Quantum allocation under coherent control is unsupported. Runtime CPU
-control and heap allocation are native-only: static QASM/resource export rejects that profile.
-Structural template validation does not execute allocations or prove the resulting circuit. There is
-no physical-QPU or speedup claim.
+aggregates, heap/fixed-buffer byte interchange, string adapters over heaps, quantum floating-point
+storage, atomics and concurrency remain pending. Quantum allocation under coherent control is
+unsupported. Runtime CPU control and heap allocation are native-only: static QASM/resource export
+rejects that profile. Structural template validation does not execute allocations or prove the
+resulting circuit. There is no physical-QPU or speedup claim.
 
 ## Reproduce the usable block and directed validation
 
@@ -112,8 +126,10 @@ CC=gcc-11 CXX=g++-11 bash scripts/build.sh
 bash scripts/run-block.sh 05
 CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4
 CKET_SIMULATOR=sparse build/blocks/05/coherent_heap
+CKET_SIMULATOR=sparse build/blocks/05/heap_bytes
 build/validate_heap
 python3 scripts/validate-heap.py --output build/heap-proof --levels O0 O1 O2 O3 Os
+python3 scripts/validate-heap-memory.py --output build/heap-byte-proof --levels O0 O2 Os
 ```
 
 [`dynamic_heap.c`](../examples/blocks/05/dynamic_heap.c) takes an initial capacity of 2, 3 or 4 from
@@ -130,3 +146,10 @@ freeing the public buffer. Unsequenced heap operands currently require an explic
 contract that has not been implemented; sequence their accesses with comma or separate statements.
 The compiler diagnoses that missing proof without classifying every such C program as undefined.
 These finite checks do not certify all pointer contexts or the historical papers.
+
+[`heap_bytes.c`](../examples/blocks/05/heap_bytes.c) combines source-preserving copy, overlapping
+move and captured quantum fill, then compares explicit observations with a formula. The byte
+validator checks independent complex joint-state formulas, phases, saved inverses after freeing both
+buffers, full gate reversal, returned aliases and runtime CPU loops. The engine separately checks
+both byte orders and malformed schemas before synthesis. Its native execution evidence is recorded
+separately from earlier heap campaigns.

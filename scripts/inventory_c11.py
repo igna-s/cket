@@ -414,6 +414,8 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memset.c",
+                "scripts/validate-heap-memory.py",
+                "tests/heap_memory_state.inc",
                 "tests/memset_state.inc",
                 "tests/memset_effects.inc",
                 "tests/validate_memory_returns.c",
@@ -432,13 +434,17 @@ def semantics(header, name, kind, optional):
             "measurement/reset. Zero length still evaluates the argument and checks reachable "
             "arithmetic definedness. Destination returns support local typed/void checked borrows, "
             "constant byte views and supported address relations without exposing CPU placeholders. "
-            "General returned-pointer consumers/indirect ABI, runtime counts, dynamic "
-            "memory, general layouts, volatile/atomic access and CPU-loop history remain pending. "
+            "For this fixed-storage route, general returned-pointer consumers/indirect ABI, runtime counts, "
+            "general layouts, volatile/atomic access and CPU-loop history remain pending. "
             "Dense state/inverse checks, complete labeled controlled paths, native integrations, "
             "diagnostics, independent exports and wide generation have separate proof scopes. "
             "Expression, gate, physical-wire and simulator budgets apply separately. "
             "Ordinary CPU calls retain classical libc behavior; security-specific interfaces "
-            "remain classical and are not adapted by this rule.",
+            "remain classical and are not adapted by this rule. Native whole-byte integer heaps "
+            "also accept checked CPU byte offsets/lengths, partial words, captured quantum fill "
+            "and coherent controls, with at most 64 bytes and separate physical/history budgets. "
+            "The returned destination address supports local aliases, assignment and equality. "
+            "Heap Boolean layouts, byte scalar dereferences after word casts and general pointer ABI remain pending.",
         )
     if header == "string.h" and name in MEMORY_COPY:
         return (
@@ -447,6 +453,8 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memcopy.c",
+                "scripts/validate-heap-memory.py",
+                "tests/heap_memory_state.inc",
                 "tests/validate_memory_returns.c",
                 "tests/memory_return_state.inc",
                 "tests/validate_memory_sequences.c",
@@ -459,14 +467,20 @@ def semantics(header, name, kind, optional):
             "byte route supports partial words, different integer element sizes and known nonvolatile "
             "CPU source objects, with at most 64 copied bytes and retained overwrite history. "
             "A read-before-write word dependency order preserves memmove source bytes; unsupported "
-            "cycles require a retained snapshot. Byte order follows the target. Padding, dynamic "
-            "extents, quantum-to-CPU writes and general returned-pointer consumers remain pending. "
+            "cycles require a retained snapshot. Byte order follows the target. For this fixed-storage route, "
+            "padding, dynamic extents, quantum-to-CPU writes and general returned-pointer consumers remain pending. "
             "Local typed/void destination-return borrows and supported address relations are "
             "implemented. Only the original known-basis whole-element path has the linear, "
             "table-free copy-gate contract. Full new state/inverse, sanitizer and GCC-context "
             "qualification is deferred; historical tests do not certify the extension. "
             "Exact universal tensor-product cloning of an arbitrary unknown state is the incompatible context, "
-            "not copying basis values or the whole library interface.",
+            "not copying basis values or the whole library interface. A native heap-to-heap byte "
+            "route accepts runtime CPU lengths and byte offsets, partial/mixed integer words, "
+            "coherent controls and overlapping memmove via saved original versions. It rejects "
+            "memcpy overlap before writes and preserves sources and overwrite history. Local "
+            "destination-return aliases, assignment and equality are supported. The finite heap "
+            "state/inverse campaign qualifies that route only; heap/fixed-buffer interchange and "
+            "general ABI remain pending.",
         )
     if kind == "profile-macro" or name in ("NDEBUG", "static_assert"):
         return (

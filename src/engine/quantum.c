@@ -1522,6 +1522,8 @@ int qc_apply_token(qc_context *c,
                qc_fail(
                    c,
                    "dynamic quantum heap requires native execution; static export is unsupported");
+    if (cj_equal(d, op, "qheap_memory"))
+        return heap_memory_action(c, d, inst);
     if (cj_equal(d, op, "qheap_store") || cj_equal(d, op, "qheap_scatter") ||
         cj_equal(d, op, "qheap_measure") || cj_equal(d, op, "qheap_reset"))
         return heap_action(c, d, inst, result);

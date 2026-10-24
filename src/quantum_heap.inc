@@ -32,6 +32,15 @@ bool heap_pointer(tree value, tree &element, bool &readonly) {
         return heap_pointer(TREE_OPERAND(value, 0), element, readonly);
     if (TREE_CODE(value) == POINTER_PLUS_EXPR && !has_quantum(TREE_OPERAND(value, 1)))
         return heap_pointer(TREE_OPERAND(value, 0), element, readonly);
+    if (TREE_CODE(value) == COMPOUND_EXPR)
+        return heap_pointer(TREE_OPERAND(value, 1), element, readonly);
+    if (quantum_heap_memory.count(value))
+        return heap_pointer(quantum_heap_memory.at(value).destination, element, readonly);
+    bool move = false;
+    if (TREE_CODE(value) == CALL_EXPR && call_expr_nargs(value) == 3 &&
+        (standard_memory_set(get_callee_fndecl(value)) ||
+         standard_memory_copy(get_callee_fndecl(value), move)))
+        return heap_pointer(CALL_EXPR_ARG(value, 0), element, readonly);
     return false;
 }
 
@@ -39,6 +48,11 @@ bool heap_pointer(tree value) {
     tree element = NULL_TREE;
     bool readonly = false;
     return heap_pointer(value, element, readonly);
+}
+
+bool heap_byte_layout(tree element) {
+    return element && INTEGRAL_TYPE_P(element) && CHAR_BIT == 8 && TYPE_PRECISION(element) &&
+           TYPE_PRECISION(element) % CHAR_BIT == 0;
 }
 
 bool heap_borrowed_pointer(tree value) {
@@ -49,6 +63,15 @@ bool heap_borrowed_pointer(tree value) {
     if (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR ||
         TREE_CODE(value) == SAVE_EXPR || TREE_CODE(value) == POINTER_PLUS_EXPR)
         return heap_borrowed_pointer(TREE_OPERAND(value, 0));
+    if (TREE_CODE(value) == COMPOUND_EXPR)
+        return heap_borrowed_pointer(TREE_OPERAND(value, 1));
+    if (quantum_heap_memory.count(value))
+        return heap_borrowed_pointer(quantum_heap_memory.at(value).destination);
+    bool move = false;
+    if (TREE_CODE(value) == CALL_EXPR && call_expr_nargs(value) == 3 &&
+        (standard_memory_set(get_callee_fndecl(value)) ||
+         standard_memory_copy(get_callee_fndecl(value), move)))
+        return heap_borrowed_pointer(CALL_EXPR_ARG(value, 0));
     return false;
 }
 
@@ -63,7 +86,9 @@ tree heap_runtime_call(const char *name,
     tree fn = build_fn_decl(name, build_function_type(result, signature));
     TREE_PUBLIC(fn) = DECL_EXTERNAL(fn) = DECL_ARTIFICIAL(fn) = 1;
     if (std::string(name) == "__cket_heap_identity" || std::string(name) == "__cket_heap_offset" ||
-        std::string(name) == "__cket_heap_borrow_check")
+        std::string(name) == "__cket_heap_borrow_check" ||
+        std::string(name) == "__cket_heap_byte_identity" ||
+        std::string(name) == "__cket_heap_byte_offset")
         quantum_heap_queries.insert(fn);
     std::vector<tree> values;
     for (size_t i = 0; i < arguments.size(); ++i)
@@ -122,7 +147,7 @@ tree heap_allocate_call(tree call, tree pointer_type) {
 
 bool expand_heap_declaration(tree decl) {
     tree type = TREE_TYPE(decl), initial = DECL_INITIAL(decl), init = strip(initial);
-    if (TREE_CODE(type) != POINTER_TYPE || !INTEGRAL_TYPE_P(TREE_TYPE(type)))
+    if (TREE_CODE(type) != POINTER_TYPE)
         return false;
     bool annotated = lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl));
     bool borrowed = heap_pointer(initial);
@@ -140,7 +165,7 @@ bool expand_heap_declaration(tree decl) {
             return true;
         }
     }
-    if (init && integer_zerop(init) && annotated) {
+    if (init && integer_zerop(init) && annotated && INTEGRAL_TYPE_P(element)) {
         quantum_heap_pointers[decl] = element;
         instructions.push_back("{\"op\":\"cheap\"}");
         return true;
@@ -149,15 +174,21 @@ bool expand_heap_declaration(tree decl) {
     bool readonly = false;
     if (!borrowed || !heap_pointer(initial, source_type, readonly))
         return false;
-    if (TYPE_MAIN_VARIANT(source_type) != TYPE_MAIN_VARIANT(element) ||
+    bool byte_view =
+        VOID_TYPE_P(element) || (INTEGRAL_TYPE_P(element) && TYPE_PRECISION(element) == CHAR_BIT);
+    if ((!byte_view && TYPE_MAIN_VARIANT(source_type) != TYPE_MAIN_VARIANT(element)) ||
         (readonly && !TYPE_READONLY(element))) {
         error_at(at(decl), "|c>: quantum heap alias must preserve its C type and read-only borrow");
         return true;
     }
     quantum_heap_pointers[decl] =
-        readonly ? build_qualified_type(element, TYPE_QUAL_CONST) : element;
+        readonly ? build_qualified_type(source_type, TYPE_QUAL_CONST) : source_type;
     if (heap_borrowed_pointer(initial))
         quantum_heap_borrows.insert(decl);
+    // A returned memory pointer carries an effect. Expand it exactly once;
+    // ordinary address aliases deliberately bypass scalar escape expansion.
+    if (init && (TREE_CODE(init) == CALL_EXPR || TREE_CODE(init) == COMPOUND_EXPR))
+        DECL_INITIAL(decl) = expand_quantum_program(initial);
     return true;
 }
 
@@ -177,15 +208,18 @@ tree expand_heap_pointer_update(tree value) {
     }
     tree element = NULL_TREE;
     bool readonly = false;
-    if (!integer_zerop(rhs) && (!heap_pointer(rhs, element, readonly) ||
-                                TYPE_MAIN_VARIANT(element) != TYPE_MAIN_VARIANT(TREE_TYPE(type)) ||
-                                (readonly && !TYPE_READONLY(TREE_TYPE(type))))) {
+    if (!integer_zerop(rhs) &&
+        (!heap_pointer(rhs, element, readonly) ||
+         TYPE_MAIN_VARIANT(element) != TYPE_MAIN_VARIANT(quantum_heap_pointers.at(target)) ||
+         (readonly && !TYPE_READONLY(TREE_TYPE(type))))) {
         error_at(at(value),
                  "|c>: quantum heap pointer assignment requires a compatible heap or null");
         return value;
     }
     if (heap_borrowed_pointer(rhs))
         quantum_heap_borrows.insert(target);
+    if (rhs && (TREE_CODE(rhs) == CALL_EXPR || TREE_CODE(rhs) == COMPOUND_EXPR))
+        TREE_OPERAND(value, 1) = expand_quantum_program(TREE_OPERAND(value, 1));
     return value;
 }
 
@@ -194,8 +228,16 @@ tree expand_heap_pointer_relation(tree value) {
         (!heap_pointer(TREE_OPERAND(value, 0)) && !heap_pointer(TREE_OPERAND(value, 1))))
         return NULL_TREE;
     if (TREE_CODE(value) == EQ_EXPR || TREE_CODE(value) == NE_EXPR ||
-        TREE_CODE(value) == POINTER_DIFF_EXPR)
+        TREE_CODE(value) == POINTER_DIFF_EXPR) {
+        // Calls returning an address still perform their memory effect once.
+        for (int i = 0; i < 2; ++i) {
+            tree operand = TREE_OPERAND(value, i), call = strip(operand);
+            if (call && TREE_CODE(call) == CALL_EXPR && heap_pointer(call))
+                TREE_OPERAND(value, i) =
+                    fold_convert(TREE_TYPE(operand), expand_quantum_program(call));
+        }
         return value; // These classical addresses expose no quantum data.
+    }
     error_at(at(value),
              "|c>: ordered quantum heap pointer relations need checked common-object provenance");
     return build_zero_cst(TREE_TYPE(value));
@@ -319,6 +361,49 @@ tree expand_heap_write(tree value) {
 tree expand_heap_call(tree call) {
     tree fn = get_callee_fndecl(call);
     std::string operation = heap_allocator(fn);
+    bool move = false;
+    bool set = standard_memory_set(fn), copy = standard_memory_copy(fn, move);
+    if ((set || copy) && call_expr_nargs(call) == 3 &&
+        (heap_pointer(CALL_EXPR_ARG(call, 0)) || (copy && heap_pointer(CALL_EXPR_ARG(call, 1))))) {
+        tree destination = CALL_EXPR_ARG(call, 0), source = CALL_EXPR_ARG(call, 1),
+             count = CALL_EXPR_ARG(call, 2), element = NULL_TREE;
+        bool readonly = false;
+        if (!heap_pointer(destination, element, readonly) || readonly ||
+            (!set && !heap_pointer(source))) {
+            error_at(
+                at(call),
+                "|c>: heap byte copy currently requires two heap views and a mutable destination");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        tree source_type = NULL_TREE;
+        bool source_readonly = false;
+        if (!set)
+            heap_pointer(source, source_type, source_readonly);
+        if (!heap_byte_layout(element) || (!set && !heap_byte_layout(source_type))) {
+            error_at(at(call), "|c>: heap byte operations require whole-byte integer layouts");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        if (has_quantum(count) || !quantum_pure_expression(count) ||
+            !quantum_pure_expression(destination) || (!set && !quantum_pure_expression(source))) {
+            error_at(at(call),
+                     "|c>: heap byte addresses and length require pure classical expressions");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        if (set)
+            source = expand_quantum_program(source);
+        tree marker =
+            build_fn_decl("__cket_heap_memory",
+                          build_function_type_list(TREE_TYPE(call), TREE_TYPE(source), NULL_TREE));
+        tree result = build_call_expr_loc(at(call), marker, 1, source);
+        quantum_heap_memory.emplace(result,
+                                    QuantumHeapMemory{save_expr(destination),
+                                                      source,
+                                                      count,
+                                                      set    ? "set"
+                                                      : move ? "move"
+                                                             : "copy"});
+        return result;
+    }
     if (operation == "free" && call_expr_nargs(call) == 1 && heap_pointer(CALL_EXPR_ARG(call, 0))) {
         if (heap_borrowed_pointer(CALL_EXPR_ARG(call, 0))) {
             error_at(at(call), "|c>: a borrowed quantum heap cannot be freed by its callee");
@@ -418,6 +503,43 @@ tree lower_heap_effect_capture(tree marker,
 
 tree lower_heap_effect(tree marker) {
     return lower_heap_effect_capture(marker, 0, false);
+}
+
+tree lower_heap_memory(tree marker) {
+    const auto &memory = quantum_heap_memory.at(marker);
+    tree ull = long_long_unsigned_type_node, list = alloc_stmt_list();
+    auto address = [&](tree pointer, const char *field) {
+        return std::string(",\"") + field + "\":" +
+               cpu_parameter(heap_runtime_call("__cket_heap_byte_identity",
+                                               ull,
+                                               {pointer},
+                                               {const_ptr_type_node},
+                                               at(marker))) +
+               ",\"" + field + "_offset\":" +
+               cpu_parameter(heap_runtime_call(
+                   "__cket_heap_byte_offset", ull, {pointer}, {const_ptr_type_node}, at(marker)));
+    };
+    std::set<unsigned> deps;
+    std::string source;
+    if (memory.mode == "set") {
+        std::map<tree, tree> promoted;
+        tree value = restore_integer_arithmetic(memory.source, promoted);
+        source = ",\"expr\":{\"op\":\"cast\",\"bits\":8,\"signed\":false,\"args\":[" +
+                 evaluate_expression(value, deps, &list) + "]}";
+    } else
+        source = address(save_expr(memory.source), "source");
+    std::string destination = address(memory.destination, "heap");
+    std::string count = cpu_parameter(fold_convert(ull, memory.count));
+    append(&list,
+           emit_operation("{\"op\":\"qheap_memory\",\"mode\":" + json(memory.mode) + destination +
+                              source + ",\"count\":" + count + ",\"big_endian\":" +
+                              (BYTES_BIG_ENDIAN ? "true" : "false") + control_json() + '}',
+                          at(marker)));
+    for (unsigned id : deps)
+        taint_uniform(id);
+    for (const auto &control : controls)
+        taint_uniform(control.first);
+    return prefixed_value(list, fold_convert(TREE_TYPE(marker), memory.destination));
 }
 
 std::string heap_effect_expression(tree marker, std::set<unsigned> &deps) {
