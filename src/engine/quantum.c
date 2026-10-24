@@ -1424,6 +1424,9 @@ static char *relabel_definition(qc_context *c, const char *text, uint32_t from, 
 }
 
 static int transfer_owner(qc_context *c, uint32_t from, uint32_t to) {
+    qc_register *existing = reg(c, to);
+    if (from == to || !reg(c, from) || !reg(c, from)->alive || (existing && existing->alive))
+        return qc_fail(c, "owner transfer requires live source and available destination");
     char **definitions = calloc(c->nregisters, sizeof *definitions);
     if (!definitions)
         return qc_fail(c, "cannot allocate CPU owner transfer");
@@ -1437,7 +1440,7 @@ static int transfer_owner(qc_context *c, uint32_t from, uint32_t to) {
                 return 0;
             }
         }
-    if (c->nregisters == c->register_capacity) {
+    if (!existing && c->nregisters == c->register_capacity) {
         size_t capacity = c->register_capacity ? c->register_capacity * 2 : 16;
         qc_register *registers = realloc(c->registers, capacity * sizeof *registers);
         if (!registers) {
@@ -1460,7 +1463,9 @@ static int transfer_owner(qc_context *c, uint32_t from, uint32_t to) {
                 r->deps[j] = to;
     }
     free(definitions);
-    qc_register *source = reg(c, from), *target = &c->registers[c->nregisters++];
+    qc_register *source = reg(c, from), *target = reg(c, to);
+    if (!target)
+        target = &c->registers[c->nregisters++];
     *target = *source;
     target->id = to;
     target->history = target->finished = 0;
@@ -1469,6 +1474,8 @@ static int transfer_owner(qc_context *c, uint32_t from, uint32_t to) {
     source->ndeps = 0;
     return 1;
 }
+
+#include "runtime_versions.inc"
 
 int qc_apply_token(qc_context *c,
                    const cj_doc *d,
@@ -1517,6 +1524,8 @@ int qc_apply_token(qc_context *c,
     if (!collect_disposed(c))
         return 0;
     *result = 0;
+    if (cj_equal(d, op, "qassign") || cj_equal(d, op, "qslot"))
+        return runtime_version(c, d, inst);
     if (cj_equal(d, op, "cheap"))
         return (c->validation && c->structural) ||
                qc_fail(
@@ -2202,7 +2211,10 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
                 !c->ctype_snapshots[0] && cj_equal(&d, cj_get(&d, t, "op"), "ctype_capture");
             int instruction =
                 cj_equal(&d, cj_get(&d, t, "op"), "qbind") ? cj_get(&d, t, "instruction") : t;
-            c->cpu_versions |= cj_equal(&d, cj_get(&d, instruction, "op"), "qphi");
+            int operation = cj_get(&d, instruction, "op");
+            c->cpu_versions |= cj_equal(&d, operation, "qphi") ||
+                               cj_equal(&d, operation, "qassign") ||
+                               cj_equal(&d, operation, "qslot");
         }
     if (c->structural && c->simulate) {
         cj_free(&d);

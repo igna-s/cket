@@ -23,8 +23,9 @@ static void trace_transfer_names(const char *operation) {
     int inst = cj_equal(&d, cj_get(&d, 0, "op"), "qbind") ? cj_get(&d, 0, "instruction") : 0;
     uint64_t allocated;
     int name = cj_get(&d, inst, "name");
-    if (cj_equal(&d, cj_get(&d, inst, "op"), "qalloc") && name >= 0 &&
-        cj_u64(&d, cj_get(&d, inst, "id"), &allocated) && allocated < 4096) {
+    if ((cj_equal(&d, cj_get(&d, inst, "op"), "qalloc") ||
+         cj_equal(&d, cj_get(&d, inst, "op"), "qslot")) &&
+        name >= 0 && cj_u64(&d, cj_get(&d, inst, "id"), &allocated) && allocated < 4096) {
         free(public_names[allocated]);
         public_names[allocated] = cj_copy(&d, name);
     }

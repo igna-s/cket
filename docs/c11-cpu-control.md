@@ -45,11 +45,11 @@ logical owners only on their executed path. Those owners are retained there; the
 before they exist. Fixed scalar array/field/pointer aliases and same-unit mutable scalar procedures
 continue to name the joined source-level owner.
 
-Both arms' fresh storage is currently reserved and prepared cleanly before the outer CPU dispatch.
-This keeps allocation identities consistent but incurs the sum of reserved branch storage, rather
-than just the executed arm's peak. Unused storage is cleanly released. More selective reservation is
-pending implementation; exceeding the 128-qubit circuit or 24-qubit native simulation budgets is an
-explicit resource failure. The join itself has zero physical storage cost.
+In the loop-free branch route, both arms' fresh storage is reserved and prepared cleanly before the
+outer CPU dispatch. This keeps allocation identities consistent but incurs the sum of reserved
+branch storage, rather than just the executed arm's peak. Unused storage is cleanly released. More
+selective reservation is pending implementation; exceeding the 128-qubit circuit or 24-qubit native
+simulation budgets is an explicit resource failure. The join itself has zero physical storage cost.
 
 ## Cleanup and information lifetime
 
@@ -112,8 +112,9 @@ build/validate_qasm
 ```
 
 Completed campaign counts and hashes are recorded in the
-[evidence archive](audit-evidence/README.md). Runtime loop history, declarations inside controlled
-flow, products, dynamic indexed overwrites, `switch`, jumps, early returns, general memory and
-separate-compilation ABI remain P/R obligations. CPU effects inside coherent control retain their
-distinct semantic/effect requirements. Passing this finite stage does not complete M3 or the full
-C11 objective.
+[evidence archive](audit-evidence/README.md). Structured iterations now have a
+[native history contract](c11-runtime-history.md). Declarations inside controlled flow, products,
+dynamic indexed overwrites, `switch`, jumps, early returns, general memory and separate-compilation
+ABI remain P/R obligations. CPU effects inside coherent control retain their distinct
+semantic/effect requirements. Passing this finite stage does not complete M3 or the full C11
+objective.

@@ -162,6 +162,8 @@ tree guarded_cpu_binding(tree value, location_t loc, bool lower = true) {
 }
 
 tree emit_operation(std::string operation, location_t loc, tree argument = NULL_TREE) {
+    if (dynamic_depth > cpu_branches.size() && operation.compare(0, 14, "{\"op\":\"qalloc\"") == 0)
+        operation.replace(7, 6, "qslot");
     if (!active_cpu_parameters.empty()) {
         std::set<unsigned> parameters;
         parameters.swap(active_cpu_parameters);
@@ -1224,10 +1226,10 @@ tree before_integer_narrowing(tree operand, tree type) {
 // Restore the promoted operation without folding away that domain again.
 tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
     if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
-        cpu_byte_saves.count(value) || quantum_heap_accesses.count(value) ||
-        quantum_heap_byte_reads.count(value) || quantum_heap_updates.count(value) ||
-        quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
-        quantum_value_programs.count(value))
+        cpu_byte_saves.count(value) || expression_saves.count(value) ||
+        quantum_heap_accesses.count(value) || quantum_heap_byte_reads.count(value) ||
+        quantum_heap_updates.count(value) || quantum_indexed_accesses.count(value) ||
+        quantum_coherent_accesses.count(value) || quantum_value_programs.count(value))
         return value;
     auto found = memo.find(value);
     if (found != memo.end())
@@ -1363,9 +1365,25 @@ void versioned_assignment(Variable &var,
                           location_t loc,
                           tree *list) {
     if (dynamic_depth > cpu_branches.size()) {
-        error_at(
-            loc,
-            "|c>: versioned assignment needs implemented CPU branch merges or a static per-iteration expansion; CPU-loop history is pending");
+        std::set<unsigned> sources = deps;
+        std::string value =
+            select_controls(expr, register_expression(var), var.width, var.is_signed, sources);
+        append(list,
+               emit_operation("{\"op\":\"qassign\",\"id\":" + std::to_string(var.id) +
+                                  ",\"expr\":" + value + '}',
+                              loc));
+        // The previous owner now has a private runtime identity. Existing
+        // recipes must use their concrete saved definitions after relabeling.
+        for (auto &entry : variables)
+            if (entry.second.lowered && !entry.second.moved)
+                entry.second.optional_definition = true;
+        sources.erase(var.id);
+        var.dependencies = sources;
+        var.creation.clear();
+        var.derived = var.runtime_history = true;
+        var.measured = var.clean = var.basis_known = var.pristine_uniform = false;
+        var.range_max = var.width == 64 ? UINT64_MAX : ((uint64_t{1} << var.width) - 1);
+        ++var.epoch;
         return;
     }
     unsigned old_id = var.id, new_id = next_id++;
@@ -1438,9 +1456,19 @@ void merge_cpu_paths(const std::map<tree, Variable> &left,
             continue;
         }
         const auto &b = other->second;
+        bool runtime = a.runtime_history || b.runtime_history;
         if (a.id != b.id || a.lowered != b.lowered || a.moved != b.moved ||
-            a.released != b.released || a.derived != b.derived || a.dependencies != b.dependencies)
+            a.released != b.released ||
+            (!runtime && (a.derived != b.derived || a.dependencies != b.dependencies)))
             error_at(loc, "|c>: CPU paths disagree on quantum ownership or inverse dependencies");
+        if (runtime) {
+            a.runtime_history = true;
+            a.derived |= b.derived;
+            a.dependencies.insert(b.dependencies.begin(), b.dependencies.end());
+            a.dependencies.erase(a.id);
+            a.creation.clear();
+        }
+        a.optional_definition |= b.optional_definition;
         a.measured = a.measured && b.measured;
         a.clean = a.clean && b.clean;
         a.basis_known = a.basis_known && b.basis_known && a.lower == b.lower;
@@ -1487,11 +1515,20 @@ void merge_cpu_versions(const std::map<tree, Variable> &incoming,
         }
         auto &merged = entry.second;
         if (a.id == b.id) {
-            if (a.derived != b.derived || a.dependencies != b.dependencies) {
+            bool runtime = a.runtime_history || b.runtime_history;
+            if (!runtime && (a.derived != b.derived || a.dependencies != b.dependencies)) {
                 error_at(loc, "|c>: CPU paths disagree on inverse dependencies");
                 continue;
             }
             merged = a;
+            if (runtime) {
+                merged.runtime_history = merged.optional_definition = true;
+                merged.derived |= b.derived;
+                merged.dependencies.insert(b.dependencies.begin(), b.dependencies.end());
+                merged.dependencies.erase(merged.id);
+                merged.creation.clear();
+            }
+            merged.optional_definition |= b.optional_definition;
             merged.measured &= b.measured;
             merged.clean &= b.clean;
             merged.basis_known &= b.basis_known && a.lower == b.lower;
@@ -2418,6 +2455,21 @@ tree lower_node(tree value) {
     }
     if (code == COMPOUND_EXPR) {
         tree update = strip(TREE_OPERAND(value, 1));
+        tree saved_operand = TREE_OPERAND(value, 0);
+        if (TREE_CODE(saved_operand) == SAVE_EXPR && has_quantum(saved_operand) &&
+            TREE_CODE(update) == MODIFY_EXPR && quantum(strip(TREE_OPERAND(update, 0))) &&
+            references_storage(update, saved_operand)) {
+            // GCC sequences a shared compound-assignment operand before its
+            // update. Capture a quantum effect once and pin it until consumed.
+            tree list = alloc_stmt_list();
+            ExpressionFrame frame{&list, {}};
+            expression_frames.push_back(&frame);
+            std::set<unsigned> deps;
+            expression(saved_operand, deps);
+            append(&list, lower_node(update));
+            expression_frames.pop_back();
+            return list;
+        }
         if (TREE_CODE(update) == MODIFY_EXPR &&
             (quantum(strip(TREE_OPERAND(update, 0))) ||
              selected_storage(TREE_OPERAND(update, 0))) &&
@@ -2672,7 +2724,16 @@ tree lower_node(tree value) {
         merge_cpu_paths(incoming, back_edge, at(value));
         --dynamic_depth;
         instructions.push_back("{\"op\":\"cloop_end\"}");
-        return value;
+        tree result = alloc_stmt_list();
+        append(&result, value);
+        for (const auto &entry : back_edge)
+            if (!incoming.count(entry.first) && entry.second.lowered && !entry.second.released &&
+                !entry.second.moved)
+                append(&result,
+                       emit_operation(
+                           "{\"op\":\"qdispose\",\"id\":" + std::to_string(entry.second.id) + '}',
+                           at(value)));
+        return result;
     }
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
          code == POSTDECREMENT_EXPR) &&
@@ -2779,7 +2840,8 @@ tree lower_node(tree value) {
                                        at(value),
                                        operand));
             }
-        } else if (addend && has_quantum(addend) && quantum_pure_expression(addend) &&
+        } else if (addend && has_quantum(addend) &&
+                   (quantum_pure_expression(addend) || expression_saves.count(strip(addend))) &&
                    !references_storage(addend, var.decl) && !var.is_signed && var.width > 1) {
             std::map<tree, tree> promoted;
             tree input = narrowed_integer_arithmetic(simple)

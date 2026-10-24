@@ -17,6 +17,7 @@ struct QuantumReference {
     std::vector<tree> elements;
     int64_t offset = 0;
     tree element_type = NULL_TREE;
+    tree address = NULL_TREE;
 };
 
 std::map<tree, QuantumReference> quantum_references;
@@ -343,6 +344,24 @@ void capture_quantum_function(tree fn) {
     DECL_SAVED_TREE(fn) = build1(RETURN_EXPR, void_type_node, operand);
 }
 
+tree modified_value_parameter(tree *node, int *walk, void *data) {
+    tree parameter = static_cast<tree>(data), value = *node;
+    auto code = TREE_CODE(value);
+    if (code == DECL_EXPR) {
+        *walk = 0;
+        tree initial = DECL_INITIAL(DECL_EXPR_DECL(value));
+        return initial ? walk_tree(&initial, modified_value_parameter, data, nullptr) : NULL_TREE;
+    }
+    if ((code == MODIFY_EXPR || code == INIT_EXPR || code == PREINCREMENT_EXPR ||
+         code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR ||
+         code == ADDR_EXPR) &&
+        references_storage(TREE_OPERAND(value, 0), parameter))
+        return value;
+    if (DECL_P(value) || TYPE_P(value))
+        *walk = 0;
+    return NULL_TREE;
+}
+
 tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     tree fn = get_callee_fndecl(call);
     auto found = quantum_functions.find(name_of(fn));
@@ -370,6 +389,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     std::map<tree, tree> bindings;
     std::set<tree> borrowed;
     tree prefix = alloc_stmt_list();
+    tree argument_locals = NULL_TREE;
     unsigned index = 0;
     bool valid = true;
     std::vector<std::pair<tree, bool>> heap_arguments;
@@ -444,6 +464,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                     readonly_quantum_borrows.insert(storage);
             }
             reference.element_type = TREE_TYPE(TREE_TYPE(param));
+            reference.address = argument;
             tree marker = build_decl(
                 at(call), VAR_DECL, get_identifier("__cket_reference"), TREE_TYPE(param));
             DECL_CONTEXT(marker) = active_function;
@@ -486,7 +507,28 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                 valid = false;
                 break;
             }
-            if (TREE_CODE(strip(argument)) == INTEGER_CST)
+            tree body = function.body;
+            bool local_value = TREE_THIS_VOLATILE(param) ||
+                               walk_tree(&body, modified_value_parameter, param, nullptr);
+            if ((!function.result || function.owned_result) && local_value) {
+                // A C value parameter is local storage. Mutating it must not
+                // update a caller's SAVE_EXPR or turn a literal into an lvalue.
+                tree local =
+                    build_decl(at(call),
+                               VAR_DECL,
+                               get_identifier(("__cket_argument_" + name_of(param)).c_str()),
+                               TREE_TYPE(param));
+                DECL_CONTEXT(local) = active_function;
+                DECL_ARTIFICIAL(local) = 1;
+                TREE_READONLY(local) = TREE_READONLY(param);
+                TREE_THIS_VOLATILE(local) = TREE_THIS_VOLATILE(param);
+                TREE_SIDE_EFFECTS(local) = TREE_SIDE_EFFECTS(param);
+                DECL_INITIAL(local) = fold_convert(TREE_TYPE(param), argument);
+                DECL_CHAIN(local) = argument_locals;
+                argument_locals = local;
+                bindings[param] = local;
+                append(&prefix, build1_loc(at(call), DECL_EXPR, void_type_node, local));
+            } else if (TREE_CODE(strip(argument)) == INTEGER_CST)
                 bindings[param] = argument;
             else {
                 tree saved = save_expr(argument);
@@ -604,6 +646,8 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
         }
     } else
         error_at(at(call), "|c>: invalid quantum function arguments");
+    if (argument_locals && valid)
+        result = build3(BIND_EXPR, void_type_node, argument_locals, result, NULL_TREE);
     expanding_functions.erase(name_of(fn));
     readonly_quantum_borrows = previous_readonly;
     quantum_pointer_aliases = previous_pointer_aliases;

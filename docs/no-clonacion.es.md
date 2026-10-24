@@ -35,6 +35,11 @@ inversa exacta del cálculo privado. No necesita conservar una historia nueva po
 esa actualización. Las operaciones que sobrescriben información siguen sujetas a sus contratos de
 historia y vida.
 
+Las [versiones por iteración](c11-runtime-history.md) permiten además sobrescrituras escalares,
+resultados de incremento del heap y copias heap→fijo dentro de bucles CPU. Cada captura conserva su
+inversa concreta. El cambio de dueño es transporte de identidad; el nuevo valor se calcula con
+puertas y conserva la información anterior. La historia puede agotar el presupuesto de qubits.
+
 ## Qué comprueba la validación
 
 [`validate-ownership.py`](../scripts/validate-ownership.py) enlaza el runtime real mediante un

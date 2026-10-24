@@ -1,8 +1,14 @@
 > Revisión del 24 de octubre de 2026: se corrige el umbral de enumeración en ambos idiomas y se
 > distinguen los límites del prototipo histórico de la prioridad actual de C cotidiano. La auditoría
-> también comprueba la [evidencia finita actual](../audit-evidence/heap-transfer-v1/README.es.md),
-> con su identidad de fuentes. Esto no certifica todo el compilador ni completa C11. Los
+> también comprueba la
+> [evidencia finita de esa revisión](../audit-evidence/heap-transfer-v1/README.es.md), con su
+> identidad de fuentes. Esto no certifica todo el compilador ni completa C11. Los
 > [hallazgos y límites](re-audit-2026-10-24.md) explican el alcance de la revisión.
+
+El compilador continúa con [historial de bucles nativos](../c11-runtime-history.md). Ese bloque
+tiene su propia validación y cambia las entradas del compilador; la revisión publicada del paper
+conserva las 210 entradas de su predecesor. Integrar los cambios nuevos en esa revisión sigue
+pendiente. Los resultados históricos del manuscrito permanecen fijados a su revisión original.
 
 # Paper de C Ket
 

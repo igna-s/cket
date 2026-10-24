@@ -31,8 +31,8 @@ this reader is not advertised as a strict JSON lexical-conformance validator.
   result.
 - Controls require available Boolean registers. Contradictory controls and control/target aliases
   are rejected.
-- `qmeasure`, `qobserve`, `qreset`, `qprepare`, `qalloc`, `qrelease`, `qretain` and `qhistory_end`
-  do not accept a coherent control field.
+- `qmeasure`, `qobserve`, `qreset`, `qprepare`, `qalloc`, `qslot`, `qassign`, `qrelease`, `qretain`
+  and `qhistory_end` do not accept a coherent control field.
 - Phase angles must be representable finite numbers.
 - The fourteen `ctype_*` unary operators require signed 32-bit `int` operands and results. Reachable
   arguments require EOF or the unsigned-char domain of the declared C-locale profile.
@@ -55,6 +55,15 @@ retained outputs. Both have strict schemas, and borrowed unitary modules reject 
 with version joins receive structural/type checks; selected native executions retain the physical
 inverse checks. Unbound control cannot be exported as a flat circuit. See the
 [CPU join contract](c11-cpu-control.md) for precise lifetime and validation boundaries.
+
+For native CPU iterations, `qassign` accepts only `op`, `id` and `expr`; its prepared live target
+and expression must agree in width and signedness. It computes the new value before retiring the old
+owner. `qslot` accepts only `op`, `id`, `width`, `signed`, `ancilla` and optional `name`, with
+explicit Boolean type flags and an available or representation-compatible live owner. It retires an
+old capture before allocating clean storage. Both relabel saved inverse dependencies and preserve
+unknown roots. They reject coherent controls and the borrowed unitary-module ABI. Templates receive
+structural checks; concrete native execution checks actual saved dependencies. See the
+[iteration contract](c11-runtime-history.md) for resource limits and finite evidence.
 
 Structural branch checking does not force its arithmetic to execute. Domain evaluation preserves C
 short-circuit semantics: division in an unselected branch is not executed.

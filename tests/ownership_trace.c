@@ -43,7 +43,7 @@ uint64_t __wrap___cket_apply(const char *operation) {
         fail_trace("invalid native operation");
     int op = cj_get(&d, 0, "op");
     if (cj_u64(&d, cj_get(&d, 0, "id"), &id) && id < 4096) {
-        if (cj_equal(&d, op, "qalloc")) {
+        if (cj_equal(&d, op, "qalloc") || cj_equal(&d, op, "qslot")) {
             int name = cj_get(&d, 0, "name");
             free(owner_names[id]);
             owner_names[id] = name < 0 ? NULL : cj_copy(&d, name);

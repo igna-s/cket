@@ -45,6 +45,7 @@ struct Variable {
     bool basis_known = false;
     bool history = false;
     bool optional_definition = false;
+    bool runtime_history = false;
     bool pending_destruction = false;
     bool pristine_uniform = false;
 };

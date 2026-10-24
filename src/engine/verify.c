@@ -452,6 +452,33 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
+    if (cj_equal(d, heap_op, "qassign") || cj_equal(d, heap_op, "qslot")) {
+        static const char *const assignment[] = {"op", "id", "expr", NULL};
+        static const char *const slot[] = {"op", "id", "width", "signed", "ancilla", "name", NULL};
+        int allocation = cj_equal(d, heap_op, "qslot");
+        uint64_t id, width;
+        if (!fields(c, d, inst, allocation ? slot : assignment) ||
+            !unsigned_field(c, d, inst, "id", &id) || id > UINT32_MAX)
+            return qc_fail(c, "runtime version requires a valid storage identity");
+        qc_register *r = qc_lookup(c, (uint32_t)id);
+        if (allocation) {
+            if (!unsigned_field(c, d, inst, "width", &width) || !width || width > 64 ||
+                !boolean_field(c, d, inst, "signed", 0) ||
+                !boolean_field(c, d, inst, "ancilla", 0) || !string_field(c, d, inst, "name", 1) ||
+                (width == 1 && cj_bool(d, cj_get(d, inst, "signed"))) ||
+                (r && r->alive &&
+                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")))))
+                return qc_fail(c, "runtime slot requires a compatible explicit C representation");
+        } else {
+            int expr = cj_get(d, inst, "expr");
+            if (!r || !r->alive || !r->prepared || r->finished || !expression(c, d, expr) ||
+                !unsigned_field(c, d, expr, "bits", &width) || width != r->width ||
+                cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type)
+                return qc_fail(c,
+                               "runtime assignment requires prepared storage and its exact C type");
+        }
+        return 1;
+    }
     if (cj_equal(d, heap_op, "qheap_memory"))
         return heap_memory_instruction(c, d, inst);
     if (cj_equal(d, heap_op, "qheap_store") || cj_equal(d, heap_op, "qheap_scatter") ||

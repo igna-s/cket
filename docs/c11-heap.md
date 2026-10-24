@@ -113,8 +113,9 @@ range and fixed extent are checked before destination writes. Only bytes below t
 from CPU storage. Words outside the length keep their existing owner/wires, including the whole
 destination for a zero-length copy. Heap-to-fixed writes use the compiler's versioned owners and CPU
 joins, so saved inverses retain actual source registers after heap overwrite or disposal.
-Heap-to-fixed writes inside runtime CPU loops still need per-iteration history support;
-CPU-object-to-heap and heap-to-heap loops have separate finite execution tests.
+Heap-to-fixed writes inside runtime CPU loops now use
+[per-iteration owners](c11-runtime-history.md), as do scheduled assignment and increment results.
+CPU-object-to-heap and heap-to-heap loops retain their separate finite execution tests.
 
 The returned destination is a classical address: local typed/`void *`/byte-view aliases, assignment,
 equality and null comparisons are supported. Those aliases retain the original allocation type and
@@ -122,12 +123,11 @@ read-only/borrow restrictions. Direct byte scalar loads/stores through a cast of
 pending. Empty ranges allow a live allocation's one-past address; null or dead allocations remain
 invalid even at zero length. A provably inactive quantum operation skips its range checks.
 
-Value-producing heap updates inside runtime CPU loops, unrestricted pointer arithmetic/ABI, general
-aggregates, general returned-pointer consumers, string adapters over heaps, quantum floating-point
-storage, atomics and concurrency remain pending. Quantum allocation under coherent control is
-unsupported. Runtime CPU control and heap allocation are native-only: static QASM/resource export
-rejects that profile. Structural template validation does not execute allocations or prove the
-resulting circuit. There is no physical-QPU or speedup claim.
+Unrestricted pointer arithmetic/ABI, general aggregates, general returned-pointer consumers, string
+adapters over heaps, quantum floating-point storage, atomics and concurrency remain pending. Quantum
+allocation under coherent control is unsupported. Runtime CPU control and heap allocation are
+native-only: static QASM/resource export rejects that profile. Structural template validation does
+not execute allocations or prove the resulting circuit. There is no physical-QPU or speedup claim.
 
 ## Reproduce the usable block and directed validation
 
@@ -138,7 +138,9 @@ CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4
 CKET_SIMULATOR=sparse build/blocks/05/coherent_heap
 CKET_SIMULATOR=sparse build/blocks/05/heap_bytes
 CKET_SIMULATOR=sparse build/blocks/05/heap_transfer
+CKET_SIMULATOR=sparse build/blocks/05/heap_iterations 3
 build/validate_heap
+build/validate_runtime_versions
 python3 scripts/validate-heap.py --output build/heap-proof --levels O0 O1 O2 O3 Os
 python3 scripts/validate-heap-memory.py --output build/heap-byte-proof --levels O0 O2 Os
 python3 scripts/validate-heap-transfer.py --output build/heap-transfer-proof --levels O0 O2 Os

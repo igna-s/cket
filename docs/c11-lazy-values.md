@@ -57,10 +57,11 @@ chains require further analysis P.
 
 Versions, decisions, synthesis workspace and the 128-qubit backend/24-qubit native simulator limits
 have explicit resource costs R. Static loop expansion and supported same-unit procedures compose
-with these expressions. Runtime loop history, general indexed reads/products, effectful return ABI,
-floating/complex encodings and full source-level GCC sequencing remain P/R. Undefined operations on
-a reachable branch have no defined C result; conservative rejection of an unproved inactive branch
-must remain distinct from that semantic incompatibility.
+with these expressions. Native runtime iterations now use the
+[per-iteration history contract](c11-runtime-history.md). General indexed reads/products, effectful
+return ABI, floating/complex encodings and full source-level GCC sequencing remain P/R. Undefined
+operations on a reachable branch have no defined C result; conservative rejection of an unproved
+inactive branch must remain distinct from that semantic incompatibility.
 
 ## Finite evidence
 
@@ -71,7 +72,8 @@ must remain distinct from that semantic incompatibility.
   control, static loops, inactive arithmetic, signed/unsigned words and explicit observation.
 - 160 complete phased joint states at five GCC levels and both synthesis policies, including
   original retained roots, selected outputs, exact source channels and zero private garbage.
-- 20 diagnostics for reachable undefined operations, pending loop history and volatile CPU effects.
+- 15 diagnostics for reachable undefined operations and volatile CPU effects, plus five native
+  executions checking supported lazy results inside runtime CPU loops.
 - Eight direct fixed-predicate contracts, including stale epochs, partial controls, phase-preserving
   inverses and rejection before state/gate mutation.
 

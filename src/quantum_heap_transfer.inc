@@ -8,6 +8,30 @@ tree heap_byte_read_marker(tree pointer, uint64_t index, location_t loc) {
     return result;
 }
 
+tree heap_transfer_address(tree value, unsigned depth = 0) {
+    if (!value)
+        return value;
+    if (depth > 128) {
+        error_at(at(value), "|c>: heap transfer address exceeds its checked alias depth");
+        return build_zero_cst(TREE_TYPE(value));
+    }
+    tree key = strip(value);
+    auto alias = quantum_pointer_aliases.find(key);
+    if (alias != quantum_pointer_aliases.end())
+        return fold_convert(TREE_TYPE(value), heap_transfer_address(alias->second, depth + 1));
+    auto reference = quantum_references.find(key);
+    if (reference != quantum_references.end() && reference->second.address)
+        return fold_convert(TREE_TYPE(value),
+                            heap_transfer_address(reference->second.address, depth + 1));
+    if (DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value))
+        return value;
+    tree result = copy_node(value);
+    if (EXPR_P(value))
+        for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
+            TREE_OPERAND(result, i) = heap_transfer_address(TREE_OPERAND(value, i), depth + 1);
+    return result;
+}
+
 tree expand_heap_transfer(tree call, bool move) {
     tree destination = CALL_EXPR_ARG(call, 0), source = CALL_EXPR_ARG(call, 1),
          count = CALL_EXPR_ARG(call, 2), ull = long_long_unsigned_type_node;
@@ -38,8 +62,10 @@ tree expand_heap_transfer(tree call, bool move) {
         return reject("|c>: heap byte transfer requires mutable fixed destination storage");
     uint64_t capacity = std::min<uint64_t>(64, fixed.size() - fixed.offset);
     tree length = save_expr(fold_convert(ull, count));
-    QuantumHeapMemory operation{
-        save_expr(destination), save_expr(source), length, to_heap ? "bytes" : "check"};
+    QuantumHeapMemory operation{save_expr(heap_transfer_address(destination)),
+                                save_expr(source),
+                                length,
+                                to_heap ? "bytes" : "check"};
     operation.limit = capacity;
     std::vector<tree> arguments;
     if (to_heap) {

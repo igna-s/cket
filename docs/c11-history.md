@@ -67,9 +67,10 @@ Structured coherent branch versions follow the [selected-value contract](c11-con
 escaping predicate lifetimes. [Structured CPU scalar joins](c11-cpu-control.md) transfer the
 selected owner without physical copying and clean actual saved inverses when their dependents
 finish. General CFG and runtime loop iterations still need compatible versions and history
-ownership. They remain **P/R**, with specific diagnostics; these are not semantic prohibitions on C
-conditionals or loops. Full aliases, dynamic allocation, escaped pointers, unions and byte layouts
-remain separate M4/M5 obligations.
+ownership. Structured runtime iterations now have a
+[native version contract](c11-runtime-history.md); general CFG edges remain **P/R** with specific
+diagnostics. These are not semantic prohibitions on C conditionals or loops. Full aliases, dynamic
+allocation, escaped pointers, unions and byte layouts remain separate M4/M5 obligations.
 
 ## Measurement ordering regression
 
@@ -116,9 +117,9 @@ The history suite separates:
 - 46 CPU owner contracts, 55 compiled CPU branch programs, 120 native paths and 240 complete
   selected-trace states. Their scope, eight-bit basis restrictions and structural/native validation
   distinction are in [c11-cpu-control.md](c11-cpu-control.md).
-- 20 specific pending-contract rejections for controlled declarations/runtime iteration versions,
-  CPU branches under coherent control and erased multiplication promotions. Infrastructure faults
-  cannot count as semantic rejections.
+- 20 specific pending-contract rejections for controlled declarations/quantum loop conditions, CPU
+  branches under coherent control and erased multiplication promotions. Infrastructure faults cannot
+  count as semantic rejections.
 
 ```bash
 export CC=gcc-11 CXX=g++-11

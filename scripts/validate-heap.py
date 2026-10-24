@@ -148,6 +148,7 @@ EFFECT_PROFILES = {
 PROFILES.update(EFFECT_PROFILES)
 
 VALID = {
+    'heap_loop_values': '''int main(void){quant uint8_t *p=calloc(1,sizeof *p);if(!p)return 2;quant uint8_t sum=0;size_t count=2;for(size_t i=0;i<count;++i)sum+=p[0]++;unsigned result=measure(sum),last=measure(p[0]);free((void*)p);return result!=1||last!=2;}''',
     'allocation_failure': '''int main(void){size_t n=2;quant uint8_t *p=calloc(n,sizeof *p);if(!p)return 2;p[0]=7;p[1]=9;quant uint8_t *q=realloc((void*)p,65*sizeof *p);unsigned a=measure(p[0]),b=measure(p[1]);free((void*)p);return q!=NULL||a!=7||b!=9;}''',
     'calloc_overflow': '''int main(void){size_t n=SIZE_MAX;quant uint8_t *p=calloc(n,2);return p!=NULL;}''',
     'null_realloc': '''int main(void){quant uint8_t *p=NULL;p=realloc((void*)p,2*sizeof *p);if(!p)return 2;p[0]=5;unsigned x=measure(p[0]);free((void*)p);return x!=5;}''',
@@ -236,10 +237,6 @@ INVALID.update(
         'heap_unsequenced_payload': (
             'int main(void){quant uint8_t *p=calloc(2,sizeof *p);p[0]=1;quant uint8_t x=p[0]++ +p[0];measure(x);free((void*)p);}',
             ('unsequenced',),
-        ),
-        'heap_loop_values': (
-            'int main(void){quant uint8_t *p=calloc(1,sizeof *p);quant uint8_t sum=0;size_t count=2;for(size_t i=0;i<count;++i)sum+=p[0]++;measure(sum);free((void*)p);}',
-            ('outside runtime loops', 'cannot consume an unmeasured quantum result'),
         ),
     }
 )

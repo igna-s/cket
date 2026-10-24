@@ -24,12 +24,12 @@ static int heap_room(qc_context *c, size_t count, unsigned width) {
            count <= (c->nfree + limit - c->physical) / width;
 }
 
-static int heap_new_register(qc_context *c, unsigned width, int sign, int ancillary, uint32_t *id) {
+static int heap_register_identity(qc_context *c, uint32_t *id) {
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive && r->id >= QC_HEAP_FIRST_REGISTER && r->id <= QC_HEAP_LAST_REGISTER) {
             *id = r->id;
-            goto allocate_register;
+            return 1;
         }
     }
     if (c->heap_register < QC_HEAP_FIRST_REGISTER)
@@ -39,7 +39,12 @@ static int heap_new_register(qc_context *c, unsigned width, int sign, int ancill
     if (c->heap_register > QC_HEAP_LAST_REGISTER)
         return qc_fail(c, "quantum heap identity budget exceeded");
     *id = c->heap_register++;
-allocate_register:
+    return 1;
+}
+
+static int heap_new_register(qc_context *c, unsigned width, int sign, int ancillary, uint32_t *id) {
+    if (!heap_register_identity(c, id))
+        return 0;
     if (!allocate(c, *id, width, ancillary, sign))
         return 0;
     reg(c, *id)->prepared = 1;

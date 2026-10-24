@@ -261,6 +261,8 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_heap.c",
+                "tests/validate_runtime_versions.c",
+                "scripts/validate-runtime-versions.py",
                 "scripts/validate-heap.py",
                 "examples/blocks/05/dynamic_heap.c",
                 "examples/blocks/05/coherent_heap.c",
@@ -275,9 +277,10 @@ def semantics(header, name, kind, optional):
             "reversibly reclaimed after borrows end, with no implicit measure/reset. Typed local "
             "aliases, suffix function borrows, pure CPU/quantum-indexed reads and coherent stores "
             "are partial. Typed assignment and prefix/postfix values work in scheduled consumers "
-            "outside runtime CPU loops, including arithmetic, measurement and supported lazy arms. "
-            "Borrowed parameters cannot free/reallocate. Loop update values, disjoint-address proofs "
-            "for unsequenced heap operands, general ABI/layouts, byte/string adapters over heaps and "
+            "including runtime CPU iterations, arithmetic, measurement and supported lazy arms. "
+            "Each repeated capture has its own saved inverse and retained dependencies. "
+            "Borrowed parameters cannot free/reallocate. Disjoint-address proofs "
+            "for unsequenced heap operands, general ABI/layouts, general byte/string adapters over heaps and "
             "static QASM export remain pending. Finite directed states/inverses and native diagnostics "
             "do not certify general dynamic memory or complete C11. Security stays classical.",
         )
@@ -453,6 +456,7 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memcopy.c",
+                "scripts/validate-runtime-versions.py",
                 "scripts/validate-heap-transfer.py",
                 "tests/heap_transfer_trace.c",
                 "scripts/validate-heap-memory.py",
@@ -485,8 +489,8 @@ def semantics(header, name, kind, optional):
             "checked fixed quantum buffers work in both directions, with pure CPU lengths and "
             "static fixed addresses. Known nonvolatile CPU objects may supply captured bytes to "
             "a heap. Preflight checks both extents; unused fixed words keep their wires, including "
-            "zero-length identity. CPU-to-heap loops have finite executions; heap-to-fixed loops "
-            "still need per-iteration history. General ABI and heap string adapters remain pending.",
+            "zero-length identity. CPU-to-heap and heap-to-fixed runtime CPU loops retain "
+            "per-iteration owners and concrete inverses. General ABI and heap string adapters remain pending.",
         )
     if kind == "profile-macro" or name in ("NDEBUG", "static_assert"):
         return (

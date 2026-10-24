@@ -576,9 +576,8 @@ tree lower_heap_memory(tree marker) {
 }
 
 std::string heap_effect_expression(tree marker, std::set<unsigned> &deps) {
-    if (expression_frames.empty() || dynamic_depth) {
-        error_at(at(marker),
-                 "|c>: heap update values require a scheduled consumer outside runtime loops");
+    if (expression_frames.empty()) {
+        error_at(at(marker), "|c>: heap update values require a scheduled consumer");
         return "{}";
     }
     const auto &access = quantum_heap_updates.at(marker).target;
@@ -592,7 +591,7 @@ std::string heap_effect_expression(tree marker, std::set<unsigned> &deps) {
     temporary.decl =
         build_decl(at(marker), VAR_DECL, get_identifier(temporary.name.c_str()), access.type);
     temporary.lowered = temporary.derived = true;
-    temporary.optional_definition = !cpu_branches.empty();
+    temporary.optional_definition = dynamic_depth != 0;
     temporary.range_max = temporary.width == 64 ? UINT64_MAX : (uint64_t{1} << temporary.width) - 1;
     // The engine resolves heap identities and keeps the exact saved recipe.
     // An empty creation requests that recipe during compiler cleanup.

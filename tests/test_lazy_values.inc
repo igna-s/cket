@@ -339,16 +339,16 @@ static void lazy_value_states(validation *v) {
         count);
 }
 
-static void lazy_value_rejections(validation *v) {
+static void lazy_value_contracts(validation *v) {
     const char *bodies[] = {
         "quant bool c=superposition(0,1),x=false;quant bool y=c?(x+++x):false;measure(y);measure(x);measure(c);",
         "int zero=0;quant bool c=superposition(0,1),x=true;quant bool y=c?(x/=zero):false;measure(y);measure(x);measure(c);",
-        "int limit=3;quant bool c=true,x=false,y=false;for(int i=0;i<limit;++i)y=c?x++:x--;measure(y);measure(x);measure(c);",
+        "int limit=3;quant bool c=true,x=false,y=false;for(int i=0;i<limit;++i)y=c?x++:x--;unsigned a=measure(y),b=measure(x),d=measure(c);return a!=1||b!=1||d!=1;",
         "volatile int flag=1;quant bool c=superposition(0,1),x=false;quant bool y=c?(x=flag):x++;measure(y);measure(x);measure(c);",
     };
     const char *messages[] = {"unsequenced quantum modification",
                               "division/remainder by zero",
-                              "CPU-loop history is pending",
+                              NULL,
                               "CPU effects in quantum expressions require once-only capture"};
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
     unsigned count = 0;
@@ -367,7 +367,7 @@ static void lazy_value_rejections(validation *v) {
                 compiler, source, "--run", (char *)levels[level], "-o", executable, NULL};
             int status = validation_run(v, command, NULL, 60);
             char *log = validation_read(v->log);
-            if (!validation_rejected(status, log, messages[profile]))
+            if (profile == 2 ? status != 0 : !validation_rejected(status, log, messages[profile]))
                 validation_fail(
                     "lazy diagnostic failed profile=%u level=%s\n%s", profile, levels[level], log);
             free(log);
@@ -375,6 +375,6 @@ static void lazy_value_rejections(validation *v) {
         }
     checks += count;
     printf(
-        "PASS %u lazy diagnostics: reachable undefined operations, pending loop history and volatile CPU effects; five GCC levels\n",
+        "PASS %u lazy contracts: 15 undefined/volatile diagnostics and 5 runtime-loop result executions; five GCC levels\n",
         count);
 }

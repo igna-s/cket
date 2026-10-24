@@ -4,6 +4,16 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Nuevo cierre de bucles y funciones:** los resultados de `p[i]++`, las asignaciones escalares y las
+copias heap→buffer fijo conservan ahora sus versiones en cada iteración CPU. También se corrige el
+fallo interno al copiar a un parámetro de buffer dentro de una función con `while(n--)`; sus
+argumentos CPU modificables tienen copias locales. El
+[ejemplo de iteraciones](../examples/blocks/05/heap_iterations.c) combina incremento, acumulación y
+copia. La [campaña de este bloque](audit-evidence/runtime-history-v1/README.es.md) registra 300
+puntos de estado complejo completo, 90 inversas completas y 32 ejecuciones adicionales de contextos
+nativos, con construcciones normales y ASan/UBSan. Son casos finitos; siguen pendientes la propiedad
+en flujos generales, más consumidores de punteros, cadenas sobre heap y flotantes.
+
 **Avance del bloque 05:** se implementan heaps cuánticos nativos con `malloc`, `calloc`, `realloc` y
 `free`. El nuevo [programa dinámico](../examples/blocks/05/dynamic_heap.c) recibe la capacidad por
 `argv`, reserva, crece, recorre mediante una función y libera. La carga sigue en registros
@@ -27,14 +37,16 @@ estado completo, 64 inversiones completas de puertas y las comprobaciones con AS
 longitudes CPU y vistas fijas comprobadas. También se capturan bytes actuales de objetos CPU
 conocidos hacia el heap. El [ejemplo](../examples/blocks/05/heap_transfer.c) conserva los resultados
 después de cambiar el origen y liberar el heap. Las palabras fuera de la longitud conservan sus
-qubits, incluida una copia de longitud cero. Las escrituras heap→fijo dentro de bucles CPU todavía
-requieren historia por iteración; los usos generales de punteros y ABI siguen abiertos. La
-[evidencia de integración](audit-evidence/heap-transfer-v1/README.es.md) registra 224 puntos de
-estado completo y 56 inversas, incluidas las construcciones con ASan/UBSan.
+qubits, incluida una copia de longitud cero. Las escrituras heap→fijo y los resultados de incremento
+del heap añaden ahora [historia por iteración](c11-runtime-history.md). El nuevo
+[ejemplo](../examples/blocks/05/heap_iterations.c) combina acumulación de postfix y copia dentro de
+un bucle con longitud CPU, incluida longitud cero. Los usos generales de punteros y ABI siguen
+abiertos. La [evidencia de integración](audit-evidence/heap-transfer-v1/README.es.md) registra 224
+puntos de estado completo y 56 inversas, incluidas las construcciones con ASan/UBSan.
 
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
 buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos
-por funciones. La [campaña actual](audit-evidence/ownership-contracts-v1/README.es.md) separa
+por funciones. La [campaña de propiedad](audit-evidence/ownership-contracts-v1/README.es.md) separa
 ejecuciones, estados completos, fases, inversas y sanitizadores. Corrige además una suma que podía
 ocultar un desbordamiento con signo al estrechar el resultado. Los
 [contratos de no clonación](no-clonacion.es.md) explican qué significan copiar, prestar y mover.
@@ -467,12 +479,13 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
 El próximo trabajo completa las combinaciones habituales de funciones, punteros, flujo y memoria.
-Los vectores dinámicos ya tienen un contrato nativo parcial; faltan los resultados de actualización
-dentro de bucles CPU, las pruebas de direcciones disjuntas y los adaptadores de bytes/cadenas.
-También siguen pendientes los tipos cuánticos `float` y `double` y la integración general del
-perfil. Los papers deberán actualizarse si cambian los resultados que describen. Las campañas
-dirigidas de propiedad y heap conservan sus propias fuentes, ejecuciones y pruebas de estados e
-inversas. **El perfil cotidiano todavía no está completo.**
+Los vectores dinámicos ya tienen un contrato nativo parcial, incluidos resultados de actualización y
+copias heap→fijo dentro de bucles CPU. Faltan pruebas generales de direcciones disjuntas,
+adaptadores de cadenas sobre heaps y más combinaciones de memoria y vida. También siguen pendientes
+los tipos cuánticos `float` y `double` y la integración general del perfil. Los papers deberán
+actualizarse si cambian los resultados que describen. Las campañas dirigidas de propiedad y heap
+conservan sus propias fuentes, ejecuciones y pruebas de estados e inversas. **El perfil cotidiano
+todavía no está completo.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

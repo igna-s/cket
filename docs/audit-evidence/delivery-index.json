@@ -1,5 +1,5 @@
 {
-  "active": "heap-transfer-v1",
+  "active": "runtime-history-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -18,7 +18,8 @@
     "dynamic-heap-v1",
     "heap-effects-v1",
     "heap-memory-v1",
-    "heap-transfer-v1"
+    "heap-transfer-v1",
+    "runtime-history-v1"
   ],
-  "meaning": "Current source identity selects finite fixed/heap transfer validation. Historical artifacts retain their own inputs/results; full everyday C integration and paper audit remain open."
+  "meaning": "Current source identity selects finite native runtime-history validation. Prior deliveries and paper captures retain their own inputs; everyday C integration and qualification of new compiler changes in the papers remain open."
 }

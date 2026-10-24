@@ -49,6 +49,7 @@ compile_circuit(const char *ir, char *error, size_t size, int allow_tables, unsi
                 cj_equal(&d, op, "qreset") || cj_equal(&d, op, "qfind") ||
                 cj_equal(&d, op, "qsearch") || cj_equal(&d, op, "qindexed") ||
                 cj_equal(&d, op, "qphi") || cj_equal(&d, op, "qdispose") ||
+                cj_equal(&d, op, "qassign") || cj_equal(&d, op, "qslot") ||
                 cj_equal(&d, op, "cloop_begin") || cj_equal(&d, op, "cloop_end") ||
                 cj_equal(&d, op, "ccontrol_begin") || cj_equal(&d, op, "ccontrol_end") ||
                 cj_equal(&d, op, "ccontrol_else") || cj_equal(&d, op, "ctype_require") ||

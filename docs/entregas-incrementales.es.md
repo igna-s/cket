@@ -134,10 +134,10 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
-`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes` y
-`heap_transfer`. En el primero, la capacidad inicial es un dato CPU recibido por `argv`:
-`CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`, llena,
-modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
+`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes`,
+`heap_transfer` y `heap_iterations`. En el primero, la capacidad inicial es un dato CPU recibido por
+`argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`,
+llena, modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
 explícitamente y libera. Compara la suma con los elementos observados y una fórmula C ordinaria.
 Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un circuito
 QASM estático.
@@ -146,10 +146,12 @@ El [contrato de heap](c11-heap.md) explica la identidad de los registros, los pr
 resultados derivados que siguen vivos al redimensionar/liberar y los límites de recursos. No hay
 mediciones ni reset implícitos. Se añade `coherent_heap`, con incremento mediante un índice cuántico
 y captura de su valor anterior. También se implementan resultados de asignación e incremento en
-consumidores programados fuera de bucles CPU. Faltan esos resultados dentro de bucles CPU, pruebas
-de direcciones disjuntas, escrituras heap→fijo en bucles CPU y adaptadores de cadenas. `heap_bytes`
-combina `memcpy`, `memmove` solapado y `memset` con datos cuánticos. Estas operaciones aceptan
-tamaños CPU y vistas de bytes parciales; no introducen mediciones. El bloque 05 sigue abierto.
+consumidores programados, incluidos bucles CPU con [historia por iteración](c11-runtime-history.md).
+`heap_iterations` suma valores postfix y copia heap→fijo en el mismo bucle; cero iteraciones
+conservan los valores iniciales. Faltan pruebas generales de direcciones disjuntas, más contextos de
+memoria/ABI y adaptadores de cadenas. `heap_bytes` combina `memcpy`, `memmove` solapado y `memset`
+con datos cuánticos. Estas operaciones aceptan tamaños CPU y vistas de bytes parciales; no
+introducen mediciones. El bloque 05 sigue abierto.
 
 `heap_transfer` copia buffers fijos al heap y de vuelta, conserva valores después de cambiar el
 origen y liberar la reserva, y observa los resultados explícitamente. Las direcciones fijas son

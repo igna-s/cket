@@ -421,7 +421,7 @@ static void documents(validation *v) {
 static void rejections(validation *v) {
     const char *bodies[] = {
         "quant uint8_t x=superposition(0,3);volatile int c=1;if(c){quant bool local=false;measure(local);}measure(x);",
-        "quant uint8_t x=superposition(0,3);volatile int count=2;while(count--)x%=2;measure(x);",
+        "quant uint8_t x=superposition(0,3);while(x)x%=2;measure(x);",
         "volatile int flag=1;quant bool c=superposition(0,1);quant uint8_t x=superposition(0,3);if(c){if(flag)x%=2;}measure(x);measure(c);",
         "quant bool n=superposition(0,1);quant uint8_t x=(unsigned)n+3;int factor=2;x*=factor;measure(x);measure(n);"};
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
@@ -441,7 +441,7 @@ static void rejections(validation *v) {
             const char *diagnostic = i == 0   ? "quantum allocation inside a controlled branch"
                                      : i == 3 ? "GCC narrowed a multiplication"
                                      : i == 2 ? "classical branch inside quantum control"
-                                              : "versioned assignment";
+                                              : "finite reversible iteration bound";
             if (!validation_rejected(status, log, diagnostic))
                 validation_fail("history contract rejection failed case=%u level=%s\n%s",
                                 i,
@@ -451,7 +451,7 @@ static void rejections(validation *v) {
             ++checks;
         }
     puts(
-        "PASS 20 pending-contract diagnostics: controlled declarations, runtime iterations, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels");
+        "PASS 20 pending-contract diagnostics: controlled declarations, quantum loop conditions, CPU branches under coherent control and lost signed multiplication promotions at five GCC levels");
 }
 
 int main(int argc, char **argv) {
@@ -479,7 +479,7 @@ int main(int argc, char **argv) {
     lazy_value_programs(&v);
     lazy_value_combinations(&v);
     lazy_value_states(&v);
-    lazy_value_rejections(&v);
+    lazy_value_contracts(&v);
     rejections(&v);
     validation_cleanup(&v);
     printf(

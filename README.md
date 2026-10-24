@@ -311,8 +311,8 @@ Runtime-sized scalar quantum heaps now support native `malloc`, `calloc`, `reall
 classical capacity/address metadata and retained unknown outputs. See the
 [heap contract](docs/c11-heap.md) and run `bash scripts/run-block.sh 05` for a vector that actually
 grows. The runner also includes `coherent_heap`, with a quantum-indexed postfix increment and its
-previous value. Scheduled consumers accept assignment and prefix/postfix values outside runtime CPU
-loops; saved recipes preserve their phases and lifetimes. The
+previous value. Scheduled consumers accept assignment and prefix/postfix values, including runtime
+CPU iterations; saved recipes preserve their phases and lifetimes. The
 [directed heap campaign](docs/audit-evidence/heap-effects-v1/README.es.md) checks finite joint
 states, phases and saved inverses. General heap consumers and static export remain pending.
 
@@ -323,8 +323,10 @@ Returned destinations retain checked classical address aliases. The
 states, independent gate inverses and actual ASan/UBSan builds. The runner now also includes
 `heap_transfer`, which copies between fixed quantum buffers and heaps in both directions. Known
 nonvolatile CPU objects can supply captured source bytes to heaps. Fixed addresses are checked
-statically and lengths may be CPU runtime values. Heap-to-fixed writes in CPU loops, general
-pointer/ABI contexts and string adapters on heaps remain pending.
+statically and lengths may be CPU runtime values. `heap_iterations` combines postfix accumulation
+and heap-to-fixed copies inside a CPU loop with a runtime iteration count, including zero
+iterations. Its [history contract](docs/c11-runtime-history.md) retains actual previous owners and
+inverses. General pointer/ABI contexts and string adapters on heaps remain pending.
 
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug

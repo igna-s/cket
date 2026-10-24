@@ -102,6 +102,7 @@ PROFILES = {
     ),
 }
 VALID = {
+    'fixed_cpu_loop': '''int main(int argc,char **argv){quant uint8_t *p=calloc(1,1);if(!p)return 2;p[0]=3;quant uint8_t out=7;for(int i=0;i<argc;++i)memcpy((void*)&out,(const void*)p,1);unsigned result=measure(out);free((void*)p);return result!=3||argv==0;}''',
     'cpu_loop': '''int main(void){quant uint8_t *p=calloc(2,1);if(!p)return 2;unsigned char input[2]={3,5};size_t rounds=3;for(size_t i=0;i<rounds;++i){input[0]=(unsigned char)(i+3);memcpy((void*)p,input,2);}unsigned reads=heap_transfer_read_count(),a=measure(p[0]),b=measure(p[1]);free((void*)p);return reads!=6||a!=5||b!=5;}''',
     'cpu_reads': '''int main(void){quant uint8_t *p=calloc(4,1);if(!p)return 2;unsigned char input[4]={3,5,7,9};size_t n=2;memcpy((void*)p,input,n);quant bool inactive=0;if(inactive)memcpy((void*)p,input,n);unsigned reads=heap_transfer_read_count();unsigned a=measure(p[0]),b=measure(p[1]),c=measure(p[2]);measure(inactive);free((void*)p);return reads!=2||a!=3||b!=5||c!=0;}''',
     'returned_fixed_alias': '''int main(void){quant uint8_t *p=calloc(2,1);if(!p)return 2;p[0]=3;p[1]=9;quant uint8_t out[2]={0,0};void *alias=memcpy((void*)out,(const void*)p,2);memset(alias,7,1);unsigned a=measure(out[0]),b=measure(out[1]);free((void*)p);return a!=7||b!=9;}''',
@@ -109,10 +110,6 @@ VALID = {
     'runtime_prefix': '''int main(void){quant uint8_t *p=calloc(2,1);if(!p)return 2;p[0]=3;p[1]=9;quant uint8_t out[2]={7,11};size_t n=1;memcpy((void*)out,(const void*)p,n);unsigned a=measure(out[0]),b=measure(out[1]);free((void*)p);return a!=3||b!=11;}''',
 }
 INVALID = {
-    'fixed_cpu_loop_pending': (
-        'int main(int argc,char **argv){quant uint8_t *p=calloc(1,1);quant uint8_t out=7;for(int i=0;i<argc;++i)memcpy((void*)&out,(const void*)p,1);measure(out);free((void*)p);return argv==0;}',
-        'CPU-loop history',
-    ),
     'fixed_source_bounds': (
         'int main(void){quant uint8_t *p=calloc(2,1);quant uint8_t a=7;size_t n=2;memcpy((void*)p,(const void*)&a,n);measure(a);free((void*)p);}',
         'fixed source bounds',
