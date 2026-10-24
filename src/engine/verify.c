@@ -312,9 +312,10 @@ static int heap_address_literal(qc_context *c, const cj_doc *d, int node) {
 }
 
 static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
-    int store = cj_equal(d, cj_get(d, inst, "op"), "qheap_store");
+    int scatter = cj_equal(d, cj_get(d, inst, "op"), "qheap_scatter");
+    int store = scatter || cj_equal(d, cj_get(d, inst, "op"), "qheap_store");
     static const char *const write[] = {
-        "op", "heap", "offset", "index", "width", "signed", "expr", "controls", NULL};
+        "op", "heap", "offset", "index", "width", "signed", "expr", "controls", "capture", NULL};
     static const char *const channel[] = {"op", "heap", "offset", "index", "width", "signed", NULL};
     uint64_t width, expr_width;
     if (!fields(c, d, inst, store ? write : channel) ||
@@ -323,15 +324,40 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
         (width == 1 && cj_bool(d, cj_get(d, inst, "signed"))) ||
         !heap_address_literal(c, d, cj_get(d, inst, "heap")) ||
         !heap_address_literal(c, d, cj_get(d, inst, "offset")) ||
-        !heap_address_literal(c, d, cj_get(d, inst, "index")))
+        !(scatter ? expression(c, d, cj_get(d, inst, "index"))
+                  : heap_address_literal(c, d, cj_get(d, inst, "index"))))
         return qc_fail(c, "heap operation requires a typed element and bound CPU addresses");
     if (!store)
         return 1;
+    uint64_t index_bits;
+    int index = cj_get(d, inst, "index");
+    if (scatter && (!unsigned_field(c, d, index, "bits", &index_bits) || index_bits != 64 ||
+                    cj_bool(d, cj_get(d, index, "signed"))))
+        return qc_fail(c, "quantum heap selector requires an unsigned full-width index");
     int expr = cj_get(d, inst, "expr"), controls = cj_get(d, inst, "controls");
     if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &expr_width) ||
         expr_width != width ||
         cj_bool(d, cj_get(d, expr, "signed")) != cj_bool(d, cj_get(d, inst, "signed")))
         return qc_fail(c, "heap store expression must match its C element type");
+    int capture = cj_get(d, inst, "capture");
+    if (capture >= 0) {
+        static const char *const row[] = {"id", "expr", NULL};
+        uint64_t id, result_bits;
+        int result_expr = cj_get(d, capture, "expr");
+        if (!fields(c, d, capture, row) || !unsigned_field(c, d, capture, "id", &id) ||
+            id > UINT32_MAX || !expression(c, d, result_expr) ||
+            !unsigned_field(c, d, result_expr, "bits", &result_bits) || result_bits != width ||
+            cj_bool(d, cj_get(d, result_expr, "signed")) != cj_bool(d, cj_get(d, inst, "signed")))
+            return qc_fail(c, "invalid typed heap value capture");
+        qc_register *r = qc_lookup(c, (uint32_t)id);
+        if (!r || !r->alive || !r->clean || r->definition || r->width != width ||
+            r->signed_type != cj_bool(d, cj_get(d, inst, "signed")))
+            return qc_fail(c, "heap value capture requires separate clean storage");
+        for (qc_heap *heap = c->heaps; heap; heap = heap->next)
+            for (size_t slot = 0; slot < heap->count; ++slot)
+                if (heap->ids[slot] == id)
+                    return qc_fail(c, "heap result capture aliases public storage");
+    }
     if (controls >= 0) {
         static const char *const row[] = {"id", "value", NULL};
         if (d->tokens[controls].kind != '[' || d->tokens[controls].children > QC_MAX_PHYSICAL)
@@ -351,8 +377,8 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
-    if (cj_equal(d, heap_op, "qheap_store") || cj_equal(d, heap_op, "qheap_measure") ||
-        cj_equal(d, heap_op, "qheap_reset"))
+    if (cj_equal(d, heap_op, "qheap_store") || cj_equal(d, heap_op, "qheap_scatter") ||
+        cj_equal(d, heap_op, "qheap_measure") || cj_equal(d, heap_op, "qheap_reset"))
         return heap_instruction(c, d, inst);
     if (cj_equal(d, cj_get(d, inst, "op"), "qphi")) {
         static const char *const phi[] = {

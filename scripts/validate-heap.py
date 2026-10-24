@@ -67,6 +67,86 @@ PROFILES = {
         measure(coin);return 0;
     }''',
 }
+EFFECT_PROFILES = {
+    'payload_write': '''int main(void) {
+        quant uint8_t *p=calloc(2,sizeof *p);
+        if(!p)return 2;
+        quant bool coin=superposition(0,1),pick=superposition(0,1);
+        p[0]=3;p[1]=coin?9:5;
+        if(coin)phase(.31);
+        if(pick)phase(.13);
+        ownership_checkpoint("prepared");
+        quant uint8_t saved=p[pick]++;
+        ownership_checkpoint("written");
+        if(saved==9)phase(.17);
+        ownership_checkpoint("inverse");
+        free((void*)p);
+        ownership_checkpoint("freed");
+        measure(pick);measure(coin);return 0;
+    }''',
+    'lazy_update_value': '''int main(void) {
+        quant uint8_t *p=calloc(2,sizeof *p);
+        if(!p)return 2;
+        p[0]=3;p[1]=9;
+        quant bool coin=superposition(0,1);
+        if(coin)phase(.31);
+        ownership_checkpoint("prepared");
+        quant uint8_t saved=coin?p[coin]++:5;
+        ownership_checkpoint("written");
+        if(saved==9)phase(.17);
+        ownership_checkpoint("inverse");
+        free((void*)p);
+        ownership_checkpoint("freed");
+        measure(coin);return 0;
+    }''',
+    'postfix_saved': '''int main(void) {
+        quant uint8_t *p=calloc(2,sizeof *p);
+        if(!p)return 2;
+        p[0]=3;p[1]=9;
+        quant bool coin=superposition(0,1);
+        if(coin)phase(.31);
+        ownership_checkpoint("prepared");
+        quant uint8_t saved=p[coin]++;
+        ownership_checkpoint("written");
+        free((void*)p);
+        ownership_checkpoint("retired");
+        if(saved==9)phase(.17);
+        ownership_checkpoint("inverse");
+        measure(coin);return 0;
+    }''',
+    'assigned_value': '''int main(void) {
+        quant uint8_t *p=calloc(2,sizeof *p);
+        if(!p)return 2;
+        p[0]=3;p[1]=9;
+        quant bool coin=superposition(0,1);
+        if(coin)phase(.31);
+        ownership_checkpoint("prepared");
+        quant uint8_t saved=(p[coin]=coin?7:5);
+        ownership_checkpoint("written");
+        if(saved==7)phase(.17);
+        ownership_checkpoint("inverse");
+        free((void*)p);
+        ownership_checkpoint("freed");
+        measure(coin);return 0;
+    }''',
+    'controlled_write': '''int main(void) {
+        quant uint8_t *p=calloc(2,sizeof *p);
+        if(!p)return 2;
+        p[0]=3;p[1]=9;
+        quant bool coin=superposition(0,1);
+        if(coin)phase(.31);
+        ownership_checkpoint("prepared");
+        if(!coin)p[coin]=7;
+        ownership_checkpoint("written");
+        if(p[0]==7)phase(.17);
+        ownership_checkpoint("inverse");
+        free((void*)p);
+        ownership_checkpoint("freed");
+        measure(coin);return 0;
+    }''',
+}
+PROFILES.update(EFFECT_PROFILES)
+
 VALID = {
     'allocation_failure': '''int main(void){size_t n=2;quant uint8_t *p=calloc(n,sizeof *p);if(!p)return 2;p[0]=7;p[1]=9;quant uint8_t *q=realloc((void*)p,65*sizeof *p);unsigned a=measure(p[0]),b=measure(p[1]);free((void*)p);return q!=NULL||a!=7||b!=9;}''',
     'calloc_overflow': '''int main(void){size_t n=SIZE_MAX;quant uint8_t *p=calloc(n,2);return p!=NULL;}''',
@@ -127,6 +207,149 @@ INVALID = {
         ('overflow', 'structured synthesis'),
     ),
 }
+
+VALID.update(
+    {
+        'heap_prefix': 'int main(void){quant uint8_t *p=calloc(2,sizeof *p);p[0]=3;p[1]=9;quant bool i=superposition(0,1);quant uint8_t x=++p[i];unsigned got=measure(x),j=measure(i),a=measure(p[0]),b=measure(p[1]);free((void*)p);return got!=(j?10u:4u)||a!=(j?3u:4u)||b!=(j?10u:9u);}',
+        'heap_cpu_postfix': 'int main(void){quant uint8_t *p=calloc(2,sizeof *p);size_t i=1;p[0]=3;p[1]=9;quant uint8_t x=p[i]++;unsigned got=measure(x),a=measure(p[0]),b=measure(p[1]);free((void*)p);return got!=9||a!=3||b!=10;}',
+        'heap_inactive_value': 'int main(void){quant uint8_t *p=NULL;quant bool b=0;quant uint8_t x=b?p[0]++:5;unsigned got=measure(x);measure(b);return got!=5;}',
+        'heap_comma': 'int main(void){quant uint8_t *p=calloc(1,sizeof *p);p[0]=3;quant uint8_t x=(p[0]++,p[0]);unsigned a=measure(x),b=measure(p[0]);free((void*)p);return a!=4||b!=4;}',
+        'heap_arithmetic': 'int main(void){quant uint8_t *p=calloc(1,sizeof *p);p[0]=3;int add=2;quant uint8_t x=add+p[0]++;unsigned a=measure(x),b=measure(p[0]);free((void*)p);return a!=5||b!=4;}',
+        'heap_function_store': 'void f(quant uint8_t *p,quant bool i){p[i]=7;}int main(void){quant uint8_t *p=calloc(2,sizeof *p);p[0]=3;p[1]=9;quant bool i=superposition(0,1);f(p,i);unsigned j=measure(i),a=measure(p[0]),b=measure(p[1]);free((void*)p);return a!=(j?3u:7u)||b!=(j?7u:9u);}',
+        'heap_measure_postfix': 'int main(void){quant uint8_t *p=calloc(2,sizeof *p);p[0]=3;p[1]=9;quant bool i=superposition(0,1);unsigned got=measure(p[i]++),j=measure(i),a=measure(p[0]),b=measure(p[1]);free((void*)p);return got!=(j?9u:3u)||a!=(j?3u:4u)||b!=(j?10u:9u);}',
+    }
+)
+INVALID.update(
+    {
+        'quantum_write_bounds': (
+            'int main(void){quant uint8_t *p=calloc(2,sizeof *p);quant uint8_t i=superposition(0,3);p[i]=7;measure(i);free((void*)p);}',
+            ('division',),
+        ),
+        'quantum_write_wrap': (
+            'int main(void){quant uint16_t *p=calloc(2,sizeof *p);quant uint64_t i=(uint64_t)1<<63;p[i]=7;measure(i);free((void*)p);}',
+            ('division',),
+        ),
+        'heap_unsequenced_index': (
+            'int main(void){quant uint8_t *p=calloc(2,sizeof *p);quant uint8_t i=superposition(0,1);p[i]=i++;measure(i);free((void*)p);}',
+            ('unsequenced',),
+        ),
+        'heap_unsequenced_payload': (
+            'int main(void){quant uint8_t *p=calloc(2,sizeof *p);p[0]=1;quant uint8_t x=p[0]++ +p[0];measure(x);free((void*)p);}',
+            ('unsequenced',),
+        ),
+        'heap_loop_values': (
+            'int main(void){quant uint8_t *p=calloc(1,sizeof *p);quant uint8_t sum=0;size_t count=2;for(size_t i=0;i<count;++i)sum+=p[0]++;measure(sum);free((void*)p);}',
+            ('outside runtime loops', 'cannot consume an unmeasured quantum result'),
+        ),
+    }
+)
+
+
+def payload_expected(point: dict, context: dict) -> dict[int, complex]:
+    registers = {r['id']: r for r in point['registers']}
+    named = {r['name']: r for r in point['registers'] if r['name'] is not None}
+    current = point['heaps'][0]['ids'] if point['heaps'] else []
+    if point['tag'] == 'prepared':
+        context['initial'] = current
+    elif point['tag'] == 'written':
+        context['written'] = current
+    answer = {}
+    for coin in (0, 1):
+        for pick in (0, 1):
+            old = 9 if coin else 5
+            terms = {named['coin']['id']: coin, named['pick']['id']: pick}
+            prepared = point['tag'] == 'prepared'
+            ids = context['initial'] if prepared else context['written']
+            values = (3, old) if prepared else (3 if pick else 4, old + pick)
+            for identity, value in zip(ids, values):
+                if identity in registers:
+                    terms[identity] = value
+            for identity, value in zip(context['initial'], (3, old)):
+                if identity in registers and identity not in terms:
+                    terms[identity] = value
+            if point['tag'] == 'written':
+                saved = old if pick else 3
+                terms[named['saved']['id']] = saved
+                captures = [
+                    r
+                    for r in point['registers']
+                    if r['name'] and r['name'].startswith('__cket_heap_value_')
+                ]
+                assert len(captures) == 1
+                terms[captures[0]['id']] = saved
+            basis = 0
+            for identity, value in terms.items():
+                for bit, wire in enumerate(registers[identity]['wires']):
+                    basis |= ((value >> bit) & 1) << wire
+            angle = (0.31 if coin else 0) + (0.13 if pick else 0)
+            if point['tag'] in ('inverse', 'freed') and coin and pick:
+                angle += 0.17
+            answer[basis] = cmath.exp(1j * angle) * 0.5
+    return answer
+
+
+def effect_expected(profile: str, point: dict, context: dict) -> dict[int, complex]:
+    if profile == 'payload_write':
+        return payload_expected(point, context)
+    registers = {r['id']: r for r in point['registers']}
+    named = {r['name']: r for r in point['registers'] if r['name'] is not None}
+    current = point['heaps'][0]['ids'] if point['heaps'] else []
+    if point['tag'] == 'prepared':
+        context['initial'] = dict(zip(current, (3, 9)))
+    elif point['tag'] == 'written':
+        context['written'] = current
+    answer = {}
+    for coin in (0, 1):
+        terms = {named['coin']['id']: coin}
+        prepared = point['tag'] == 'prepared'
+        output_ids = current if prepared else context['written']
+        if prepared:
+            values = (3, 9)
+        elif profile == 'postfix_saved':
+            values = (3 if coin else 4, 10 if coin else 9)
+        elif profile == 'assigned_value':
+            values = (3 if coin else 5, 7 if coin else 9)
+        elif profile == 'lazy_update_value':
+            values = (3, 10 if coin else 9)
+        else:
+            values = (3 if coin else 7, 9)
+        for identity, value in zip(output_ids, values):
+            if identity in registers:
+                terms[identity] = value
+        for identity, value in context['initial'].items():
+            if identity in registers and identity not in terms:
+                terms[identity] = value
+        retained = point['tag'] in ('written', 'retired')
+        if retained and profile != 'controlled_write':
+            saved = (
+                (9 if coin else 3)
+                if profile == 'postfix_saved'
+                else (9 if coin else 5) if profile == 'lazy_update_value' else (7 if coin else 5)
+            )
+            terms[named['saved']['id']] = saved
+            captures = [
+                r
+                for r in point['registers']
+                if r['name'] and r['name'].startswith('__cket_heap_value_')
+            ]
+            assert len(captures) == 1
+            terms[captures[0]['id']] = (
+                (9 if coin else 0) if profile == 'lazy_update_value' else saved
+            )
+            if profile == 'lazy_update_value':
+                guards = [r for r in point['registers'] if r['name'] is None and r['id'] < 4096]
+                assert len(guards) == 1
+                terms[guards[0]['id']] = coin
+        basis = 0
+        for identity, value in terms.items():
+            for bit, wire in enumerate(registers[identity]['wires']):
+                basis |= ((value >> bit) & 1) << wire
+        phased = point['tag'] in ('inverse', 'freed')
+        angle = (0.31 if coin else 0) + (
+            0.17 if phased and (not coin if profile == 'controlled_write' else coin) else 0
+        )
+        answer[basis] = cmath.exp(1j * angle) / math.sqrt(2)
+    return answer
 
 
 def expected(profile: str, point: dict) -> dict[int, complex]:
@@ -260,7 +483,8 @@ def main() -> None:
                 snapshots = [
                     json.loads(line) for line in result.stdout.splitlines() if line.startswith('{')
                 ]
-                assert len(snapshots) == 3
+                assert len(snapshots) == (4 if profile in EFFECT_PROFILES else 3)
+                context = {}
                 for point in snapshots:
                     assert not point['measurements'] and not point['resets']
                     state = REFERENCE['evolve'](state, point['gates'])
@@ -268,7 +492,12 @@ def main() -> None:
                         int(basis, 0): complex(real, imag) for basis, real, imag in point['state']
                     }
                     REFERENCE['equal_states'](native, state)
-                    REFERENCE['equal_states'](native, expected(profile, point))
+                    formula = (
+                        effect_expected(profile, point, context)
+                        if profile in EFFECT_PROFILES
+                        else expected(profile, point)
+                    )
+                    REFERENCE['equal_states'](native, formula)
                     points += 1
                 print(f'PASS {profile} {level} tables={tables}', flush=True)
         for name, body in VALID.items():
@@ -317,7 +546,7 @@ def main() -> None:
         'sanitizer_scope': (
             'plugin, driver, engine, runtime, fixture and adapter' if args.sanitized else 'none'
         ),
-        'scope': 'Independent joint-state formulas and gate evolution for growing/shrinking heaps, retained roots, captured CPU indices and inverses; finite native/domain cases.',
+        'scope': 'Independent joint-state formulas and gate evolution for growing/shrinking heaps, coherent selected writes, old/new update values, live results across free, captured indices and saved inverses; finite native/domain cases.',
     }
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary), flush=True)

@@ -9,8 +9,10 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 `argv`, reserva, crece, recorre mediante una función y libera. La carga sigue en registros
 cuánticos; los punteros y capacidades son clásicos. Crecer conserva los registros; liberar no mide
 ni borra estados desconocidos. El [contrato](c11-heap.md) detalla recursos y contextos pendientes.
-La [campaña del heap](audit-evidence/dynamic-heap-v1/README.es.md) conserva los estados completos y
-las inversas comprobadas. Es un avance parcial del núcleo cotidiano.
+La [campaña del heap](audit-evidence/heap-effects-v1/README.es.md) conserva los estados completos y
+las inversas comprobadas. Se añaden escrituras con índice cuántico y resultados de asignación e
+incremento que conservan sus versiones anteriores, incluso después de `free`. Es un avance parcial
+del núcleo cotidiano.
 
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
 buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos
@@ -443,11 +445,12 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el
    realizadas, distinguiendo resultados actuales de experimentos históricos.
 
 El próximo trabajo completa las combinaciones habituales de funciones, punteros, flujo y memoria.
-Los vectores dinámicos ya tienen un contrato nativo parcial; faltan sus consumidores con resultado,
-escrituras con índice cuántico y adaptadores de bytes/cadenas. También siguen pendientes los tipos
-cuánticos `float` y `double`, la integración general del perfil y la revisión final de los papers.
-Las campañas dirigidas de propiedad y heap conservan sus propias fuentes, ejecuciones y pruebas de
-estados e inversas. **El perfil cotidiano todavía no está completo.**
+Los vectores dinámicos ya tienen un contrato nativo parcial; faltan los resultados de actualización
+dentro de bucles CPU, las pruebas de direcciones disjuntas y los adaptadores de bytes/cadenas.
+También siguen pendientes los tipos cuánticos `float` y `double`, la integración general del perfil
+y la revisión final de los papers. Las campañas dirigidas de propiedad y heap conservan sus propias
+fuentes, ejecuciones y pruebas de estados e inversas. **El perfil cotidiano todavía no está
+completo.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia

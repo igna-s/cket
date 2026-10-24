@@ -69,11 +69,13 @@ read computes a correlated result in fresh storage with a saved inverse, followi
 
 ## Supported accesses and explicit limits
 
-CPU-indexed reads, statement assignments and discarded increments/decrements are implemented. Reads
-can also use a pure quantum index; the selected range is checked before narrowing it. Arithmetic on
-stored values retains the ordinary integer promotion and definedness checks. `measure` and `reset`
-are explicit channels and require mutable access and classical control/index for direct element
-channels.
+CPU/quantum-indexed reads, statement assignments and increments/decrements are implemented. A pure
+quantum index selects writes coherently, with its original range checked before narrowing it. The
+index and assigned value are captured before writing the candidate slots; their private caches are
+uncomputed against the retained original registers. Selection visits the candidate slots, so its
+circuit cost grows with the heap extent. Arithmetic on stored values retains the ordinary integer
+promotion and definedness checks. `measure` and `reset` are explicit channels and require mutable
+access and classical control/index for direct element channels.
 
 Compatible local aliases and aligned pointer suffixes can be passed to expanded same-unit functions.
 `const` borrows remain read-only even after a cast. A borrowed parameter, including an alias reached
@@ -88,12 +90,20 @@ temporary/history requirements. Dense execution has a 24-wire limit. Sparse exec
 128 wires with a bounded occupied support. Repeated overwrites of unknown data can exhaust the
 retained history budget; `free` does not make that history vanish.
 
-Value-producing heap assignments/increments, quantum-indexed writes, unrestricted pointer
-arithmetic/ABI, general aggregates, byte/string libc adapters over these heaps, quantum
-floating-point storage, atomics and concurrency remain pending. Quantum allocation under coherent
-control is unsupported. Runtime CPU control and heap allocation are native-only: static
-QASM/resource export rejects that profile. Structural template validation does not execute
-allocations or prove the resulting circuit. There is no physical-QPU or speedup claim.
+Assignments and prefix/postfix increments also return typed quantum values to scheduled consumers
+outside runtime CPU loops. `p[i]++` preserves the previous value; `++p[i]` and assignments return
+the converted assigned value. Returned values retain their exact input versions across later stores
+or `free`, and can be used in arithmetic, explicit measurement and supported lazy quantum
+expressions. An inactive arm keeps the heap unchanged and contributes a zero private capture; the
+enclosing expression selects its ordinary C result. No measurement is introduced to choose an
+address or obtain an update value.
+
+Value-producing heap updates inside runtime CPU loops, unrestricted pointer arithmetic/ABI, general
+aggregates, byte/string libc adapters over these heaps, quantum floating-point storage, atomics and
+concurrency remain pending. Quantum allocation under coherent control is unsupported. Runtime CPU
+control and heap allocation are native-only: static QASM/resource export rejects that profile.
+Structural template validation does not execute allocations or prove the resulting circuit. There is
+no physical-QPU or speedup claim.
 
 ## Reproduce the usable block and directed validation
 
@@ -101,6 +111,7 @@ allocations or prove the resulting circuit. There is no physical-QPU or speedup 
 CC=gcc-11 CXX=g++-11 bash scripts/build.sh
 bash scripts/run-block.sh 05
 CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4
+CKET_SIMULATOR=sparse build/blocks/05/coherent_heap
 build/validate_heap
 python3 scripts/validate-heap.py --output build/heap-proof --levels O0 O1 O2 O3 Os
 ```
@@ -114,4 +125,8 @@ The directed validator compares independent joint-state formulas and independent
 before and after saved inverses, resize and disposal. It also checks selected valid programs and
 semantic rejections. The C engine validator covers small complete states, resource failures and
 register/wire reuse; its check count is a mixture of assertions, not a count of independent quantum
-states. These finite checks do not certify all pointer contexts or the historical papers.
+states. It also checks selected writes, old/new return values, lazy activation and inverses after
+freeing the public buffer. Unsequenced heap operands currently require an explicit disjoint-address
+contract that has not been implemented; sequence their accesses with comma or separate statements.
+The compiler diagnoses that missing proof without classifying every such C program as undefined.
+These finite checks do not certify all pointer contexts or the historical papers.

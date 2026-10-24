@@ -263,6 +263,7 @@ def semantics(header, name, kind, optional):
                 "tests/validate_heap.c",
                 "scripts/validate-heap.py",
                 "examples/blocks/05/dynamic_heap.c",
+                "examples/blocks/05/coherent_heap.c",
             ],
             "Native runtime-sized heaps for padding-free scalar integers/Booleans, with classical "
             "capacity/address metadata and owned quantum register payloads. Fresh elements, including "
@@ -272,9 +273,11 @@ def semantics(header, name, kind, optional):
             "realloc preserves register identities and saved inverse borrows; zero size frees and "
             "returns NULL. Shrink/free retain unknown states as joint outputs; known states are "
             "reversibly reclaimed after borrows end, with no implicit measure/reset. Typed local "
-            "aliases, suffix function borrows, pure CPU-indexed stores and CPU/quantum-indexed reads "
-            "are partial. Borrowed parameters cannot free/reallocate. Quantum-indexed writes, "
-            "value-producing heap updates, general ABI/layouts, byte/string adapters over heaps and "
+            "aliases, suffix function borrows, pure CPU/quantum-indexed reads and coherent stores "
+            "are partial. Typed assignment and prefix/postfix values work in scheduled consumers "
+            "outside runtime CPU loops, including arithmetic, measurement and supported lazy arms. "
+            "Borrowed parameters cannot free/reallocate. Loop update values, disjoint-address proofs "
+            "for unsequenced heap operands, general ABI/layouts, byte/string adapters over heaps and "
             "static QASM export remain pending. Finite directed states/inverses and native diagnostics "
             "do not certify general dynamic memory or complete C11. Security stays classical.",
         )

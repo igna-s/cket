@@ -125,10 +125,55 @@ static void resources(void) {
     qc_destroy(c);
 }
 
+static void malformed_effects(void) {
+    const char *indices[] = {"{\"op\":\"const\",\"bits\":32,\"signed\":false,\"value\":0}",
+                             "{\"op\":\"const\",\"bits\":64,\"signed\":true,\"value\":0}",
+                             "{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0}"};
+    const char *captures[] = {
+        "",
+        "",
+        ",\"capture\":{\"id\":2147483648,\"expr\":{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":7}}",
+        ",\"capture\":{\"id\":123,\"expr\":{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":7}}",
+        ",\"capture\":{\"id\":7,\"extra\":0,\"expr\":{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":7}}",
+        ",\"capture\":{\"id\":7,\"expr\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":7}}"};
+    const char *diagnostics[] = {"full-width index",
+                                 "full-width index",
+                                 "aliases public storage",
+                                 "separate clean storage",
+                                 "unknown",
+                                 "typed heap value capture"};
+    for (unsigned test = 0; test < 6; ++test) {
+        qc_context *c = qc_create(1, 7);
+        uint64_t handle = c ? qc_heap_allocate(c, 2, 4, 0) : 0;
+        require(
+            handle &&
+                qc_apply(
+                    c,
+                    "{\"op\":\"qalloc\",\"id\":7,\"width\":4,\"signed\":false,\"ancilla\":true}",
+                    NULL),
+            "effect schema setup");
+        unsigned physical = c->physical;
+        char text[1200];
+        snprintf(
+            text,
+            sizeof text,
+            "{\"op\":\"qheap_scatter\",\"heap\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":1},\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},\"index\":%s,\"width\":4,\"signed\":false,\"expr\":{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":7}%s}",
+            indices[test < 2 ? test : 2],
+            captures[test]);
+        require(!qc_apply(c, text, NULL) && strstr(qc_error(c), diagnostics[test]),
+                "malformed heap effect must have its semantic diagnostic");
+        require(!c->ngates && c->physical == physical && qc_heap_count(c, handle) == 2 &&
+                    !c->measure && !c->reset,
+                "malformed heap effect must reject before gates or allocation changes");
+        qc_destroy(c);
+    }
+}
+
 int main(void) {
     resize_states();
     borrowed_inverse();
     resources();
+    malformed_effects();
     printf(
         "%u heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes.\n",
         checks);

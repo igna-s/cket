@@ -310,8 +310,11 @@ finite state/inverse evidence remains distinct from complete integration.
 Runtime-sized scalar quantum heaps now support native `malloc`, `calloc`, `realloc` and `free` with
 classical capacity/address metadata and retained unknown outputs. See the
 [heap contract](docs/c11-heap.md) and run `bash scripts/run-block.sh 05` for a vector that actually
-grows. The [directed heap campaign](docs/audit-evidence/dynamic-heap-v1/README.es.md) checks finite
-joint states, phases and saved inverses. General heap consumers and static export remain pending.
+grows. The runner also includes `coherent_heap`, with a quantum-indexed postfix increment and its
+previous value. Scheduled consumers accept assignment and prefix/postfix values outside runtime CPU
+loops; saved recipes preserve their phases and lifetimes. The
+[directed heap campaign](docs/audit-evidence/heap-effects-v1/README.es.md) checks finite joint
+states, phases and saved inverses. General heap consumers and static export remain pending.
 
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug

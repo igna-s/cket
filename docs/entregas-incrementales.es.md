@@ -134,18 +134,20 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
-`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`. La capacidad inicial es un dato CPU
-recibido por `argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con
-`calloc`, llena, modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una
-función, mide explícitamente y libera. Compara la suma con los elementos observados y una fórmula C
-ordinaria. Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un
-circuito QASM estático.
+`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap` y `coherent_heap`. En el primero, la
+capacidad inicial es un dato CPU recibido por `argv`:
+`CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`, llena,
+modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
+explícitamente y libera. Compara la suma con los elementos observados y una fórmula C ordinaria.
+Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un circuito
+QASM estático.
 
 El [contrato de heap](c11-heap.md) explica la identidad de los registros, los préstamos, los
 resultados derivados que siguen vivos al redimensionar/liberar y los límites de recursos. No hay
-mediciones ni reset implícitos. Permanecen pendientes escrituras con índice cuántico en el heap,
-efectos con resultado y adaptadores de bytes/cadenas sobre estas asignaciones. El bloque 05 sigue
-abierto.
+mediciones ni reset implícitos. Se añade `coherent_heap`, con incremento mediante un índice cuántico
+y captura de su valor anterior. También se implementan resultados de asignación e incremento en
+consumidores programados fuera de bucles CPU. Faltan esos resultados dentro de bucles CPU, pruebas
+de direcciones disjuntas y adaptadores de bytes/cadenas. El bloque 05 sigue abierto.
 
 ## Referencia del plan anterior de diez bloques
 

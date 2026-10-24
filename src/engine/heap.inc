@@ -24,7 +24,7 @@ static int heap_room(qc_context *c, size_t count, unsigned width) {
            count <= (c->nfree + limit - c->physical) / width;
 }
 
-static int heap_new_register(qc_context *c, unsigned width, int sign, uint32_t *id) {
+static int heap_new_register(qc_context *c, unsigned width, int sign, int ancillary, uint32_t *id) {
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive && r->id >= QC_HEAP_FIRST_REGISTER && r->id <= QC_HEAP_LAST_REGISTER) {
@@ -40,7 +40,7 @@ static int heap_new_register(qc_context *c, unsigned width, int sign, uint32_t *
         return qc_fail(c, "quantum heap identity budget exceeded");
     *id = c->heap_register++;
 allocate_register:
-    if (!allocate(c, *id, width, 0, sign))
+    if (!allocate(c, *id, width, ancillary, sign))
         return 0;
     reg(c, *id)->prepared = 1;
     return 1;
@@ -63,7 +63,7 @@ uint64_t qc_heap_allocate(qc_context *c, size_t count, unsigned width, int sign)
         return 0;
     }
     size_t made = 0;
-    while (made < count && heap_new_register(c, width, sign, &ids[made]))
+    while (made < count && heap_new_register(c, width, sign, 0, &ids[made]))
         ++made;
     if (made != count) {
         // Fresh zero registers have no borrowers, even if a later allocation
@@ -126,7 +126,7 @@ int qc_heap_resize(qc_context *c, uint64_t handle, size_t count) {
     size_t keep = count < old_count ? count : old_count;
     memcpy(ids, heap->ids, keep * sizeof *ids);
     size_t made = keep;
-    while (made < count && heap_new_register(c, heap->width, heap->sign, &ids[made]))
+    while (made < count && heap_new_register(c, heap->width, heap->sign, 0, &ids[made]))
         ++made;
     if (made != count) {
         for (size_t i = keep; i < made; ++i)
@@ -177,9 +177,186 @@ static int heap_borrowed(qc_context *c, uint32_t id) {
     return 0;
 }
 
-static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result) {
-    if (c->structural)
+static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result);
+
+static int heap_compute(qc_context *c, uint32_t destination, const char *expression) {
+    size_t length = strlen(expression);
+    if (length > 64u * 1024u * 1024u)
+        return qc_fail(c, "heap expression text budget exceeded");
+    char *operation = malloc(length + 120);
+    if (!operation)
+        return qc_fail(c, "cannot allocate heap computation");
+    snprintf(operation,
+             length + 120,
+             "{\"op\":\"qcompute\",\"id\":%u,\"expr\":%s}",
+             destination,
+             expression);
+    int ok = qc_apply(c, operation, NULL);
+    free(operation);
+    return ok;
+}
+
+static char *heap_guard_expression(
+    qc_context *c, const cj_doc *d, int inst, unsigned width, int sign, char *expression) {
+    int controls_node = cj_get(d, inst, "controls");
+    if (!expression)
+        return NULL;
+    if (controls_node < 0)
+        return expression;
+    for (int t = controls_node + 1; t < d->tokens[controls_node].next; t = d->tokens[t].next) {
+        uint64_t id, value;
+        cj_u64(d, cj_get(d, t, "id"), &id);
+        cj_u64(d, cj_get(d, t, "value"), &value);
+        size_t capacity = strlen(expression) + 512;
+        if (capacity > 64u * 1024u * 1024u) {
+            free(expression);
+            qc_fail(c, "controlled heap expression text budget exceeded");
+            return NULL;
+        }
+        char *selected = malloc(capacity);
+        if (!selected) {
+            free(expression);
+            qc_fail(c, "cannot allocate guarded heap expression");
+            return NULL;
+        }
+        char zero[100];
+        snprintf(zero,
+                 sizeof zero,
+                 "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
+                 width,
+                 sign ? "true" : "false");
+        snprintf(
+            selected,
+            capacity,
+            "{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"reg\",\"bits\":1,\"signed\":false,\"id\":%u},%s,%s]}",
+            width,
+            sign ? "true" : "false",
+            (uint32_t)id,
+            value ? expression : zero,
+            value ? zero : expression);
+        free(expression);
+        expression = selected;
+    }
+    return expression;
+}
+
+static int heap_capture(qc_context *c, const cj_doc *d, int inst, unsigned width, int sign) {
+    int capture = cj_get(d, inst, "capture");
+    if (capture < 0)
         return 1;
+    uint64_t id;
+    cj_u64(d, cj_get(d, capture, "id"), &id);
+    char *expression =
+        heap_guard_expression(c, d, inst, width, sign, cj_copy(d, cj_get(d, capture, "expr")));
+    if (!expression)
+        return qc_fail(c, "cannot allocate heap result capture");
+    int ok = heap_compute(c, (uint32_t)id, expression);
+    free(expression);
+    return ok;
+}
+
+static int heap_scatter(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, size_t offset) {
+    size_t count = heap->count - offset;
+    unsigned selector_bits = 1;
+    while ((UINT64_C(1) << selector_bits) <= count)
+        ++selector_bits;
+    char *index = cj_copy(d, cj_get(d, inst, "index"));
+    if (!index)
+        return qc_fail(c, "cannot capture heap index");
+    size_t capacity = strlen(index) * 2 + 1024;
+    if (capacity > 64u * 1024u * 1024u) {
+        free(index);
+        return qc_fail(c, "heap selector text budget exceeded");
+    }
+    char *checked = malloc(capacity);
+    if (!checked) {
+        free(index);
+        return qc_fail(c, "cannot allocate checked heap selector");
+    }
+    // Zero denotes an inactive operation. Active indices use 1..count, and
+    // the original full-width range is checked before any narrowing or write.
+    snprintf(
+        checked,
+        capacity,
+        "{\"op\":\"select\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"lt\",\"bits\":1,\"signed\":false,\"args\":[%s,{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu}]},{\"op\":\"add\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":%u,\"signed\":false,\"args\":[%s]},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":1}]},{\"op\":\"div\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":1},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":0}]}]}",
+        selector_bits,
+        index,
+        count,
+        selector_bits,
+        selector_bits,
+        index,
+        selector_bits,
+        selector_bits,
+        selector_bits,
+        selector_bits);
+    free(index);
+    checked = heap_guard_expression(c, d, inst, selector_bits, 0, checked);
+    if (!checked)
+        return 0;
+    uint32_t selector, value;
+    int ok =
+        heap_new_register(c, selector_bits, 0, 1, &selector) && heap_compute(c, selector, checked);
+    free(checked);
+    if (!ok)
+        return 0;
+    char *expression = heap_guard_expression(
+        c, d, inst, heap->width, heap->sign, cj_copy(d, cj_get(d, inst, "expr")));
+    if (!expression)
+        return qc_fail(c, "cannot capture heap store value");
+    ok = heap_new_register(c, heap->width, heap->sign, 1, &value) &&
+         heap_compute(c, value, expression);
+    free(expression);
+    if (!ok || !heap_capture(c, d, inst, heap->width, heap->sign))
+        return 0;
+    // All reads above resolve against the original registers. Their saved
+    // recipes keep those versions alive throughout every selected write.
+    for (size_t slot = 0; slot < count; ++slot) {
+        char operation[1400];
+        snprintf(
+            operation,
+            sizeof operation,
+            "{\"op\":\"qheap_store\",\"heap\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%" PRIu64
+            "},\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu},\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},\"width\":%u,\"signed\":%s,\"expr\":{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"eq\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"bits\":%u,\"signed\":false,\"id\":%u},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%zu}]},{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u},{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u}]}}",
+            heap->handle,
+            offset + slot,
+            heap->width,
+            heap->sign ? "true" : "false",
+            heap->width,
+            heap->sign ? "true" : "false",
+            selector_bits,
+            selector,
+            selector_bits,
+            slot + 1,
+            heap->width,
+            heap->sign ? "true" : "false",
+            value,
+            heap->width,
+            heap->sign ? "true" : "false",
+            heap->ids[offset + slot]);
+        if (!qc_apply(c, operation, NULL))
+            return 0;
+    }
+    uint32_t temporaries[] = {value, selector};
+    for (unsigned i = 0; i < 2; ++i) {
+        char inverse[100];
+        snprintf(inverse,
+                 sizeof inverse,
+                 "{\"op\":\"quncompute\",\"id\":%u,\"saved\":true}",
+                 temporaries[i]);
+        if (!qc_apply(c, inverse, NULL) || !release(c, reg(c, temporaries[i])))
+            return 0;
+    }
+    return collect_disposed(c);
+}
+
+static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result) {
+    if (c->structural) {
+        uint64_t width;
+        cj_u64(d, cj_get(d, inst, "width"), &width);
+        // Structural validation still needs a saved capture recipe so that
+        // subsequent cleanup can validate its lifetime. It does not run a heap.
+        return heap_capture(c, d, inst, (unsigned)width, cj_bool(d, cj_get(d, inst, "signed")));
+    }
     int guards = cj_get(d, inst, "controls");
     if (guards >= 0) {
         ar_builder proof = {.c = c, .d = d};
@@ -189,16 +366,22 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
             cj_u64(d, cj_get(d, t, "id"), &id);
             cj_u64(d, cj_get(d, t, "value"), &wanted);
             if (ar_register_boolean_constant(&proof, (uint32_t)id, &fixed, 0) &&
-                fixed != (int)wanted)
-                return 1;
+                fixed != (int)wanted) {
+                uint64_t width;
+                cj_u64(d, cj_get(d, inst, "width"), &width);
+                return heap_capture(
+                    c, d, inst, (unsigned)width, cj_bool(d, cj_get(d, inst, "signed")));
+            }
             if (*c->error)
                 return 0;
         }
     }
-    uint64_t handle, offset, index;
+    uint64_t handle, offset, index = 0;
     cj_u64(d, cj_get(d, cj_get(d, inst, "heap"), "value"), &handle);
     cj_u64(d, cj_get(d, cj_get(d, inst, "offset"), "value"), &offset);
-    cj_u64(d, cj_get(d, cj_get(d, inst, "index"), "value"), &index);
+    int scatter = cj_equal(d, cj_get(d, inst, "op"), "qheap_scatter");
+    if (!scatter)
+        cj_u64(d, cj_get(d, cj_get(d, inst, "index"), "value"), &index);
     qc_heap *heap = heap_lookup(c, handle);
     uint64_t width;
     cj_u64(d, cj_get(d, inst, "width"), &width);
@@ -206,6 +389,8 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
         return qc_fail(c, "quantum heap index is outside live storage");
     if (heap->width != width || heap->sign != cj_bool(d, cj_get(d, inst, "signed")))
         return qc_fail(c, "quantum heap access changes its allocated C element type");
+    if (scatter)
+        return heap_scatter(c, d, inst, heap, (size_t)offset);
     size_t slot = (size_t)(offset + index);
     uint32_t old;
     if (!qc_heap_element(c, handle, slot, &old))
@@ -227,6 +412,8 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
         }
         return 1;
     }
+    if (!heap_capture(c, d, inst, heap->width, heap->sign))
+        return 0;
     int expr_node = cj_get(d, inst, "expr");
     domain inputs;
     if (!collect_domain(c, d, expr_node, &inputs))
@@ -238,7 +425,7 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
     int controlled = controls_node >= 0 && d->tokens[controls_node].children;
     int reuse = reg(c, old)->clean && !heap_borrowed(c, old) && !aliases && !controlled;
     uint32_t destination = old;
-    if (!reuse && !heap_new_register(c, heap->width, heap->sign, &destination))
+    if (!reuse && !heap_new_register(c, heap->width, heap->sign, 0, &destination))
         return 0;
     char *expr = cj_copy(d, expr_node);
     if (!expr)

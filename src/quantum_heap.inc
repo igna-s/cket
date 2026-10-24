@@ -276,8 +276,8 @@ tree expand_heap_write(tree value) {
         error_at(at(value), "|c>: quantum heap store requires a mutable borrow");
         return build_zero_cst(TREE_TYPE(value));
     }
-    if (has_quantum(access.index) || !quantum_pure_expression(access.index)) {
-        error_at(at(value), "|c>: quantum heap writes require a pure classical element index");
+    if (!quantum_pure_expression(access.index)) {
+        error_at(at(value), "|c>: quantum heap writes require a pure element index");
         return build_zero_cst(TREE_TYPE(value));
     }
     tree rhs;
@@ -292,14 +292,27 @@ tree expand_heap_write(tree value) {
                          promoted,
                          fold_convert(promoted, read),
                          build_int_cst(promoted, 1));
-    } else
+    } else {
         rhs = expand_quantum_program(TREE_OPERAND(value, 1));
+        auto index_accesses = quantum_accesses(access.index, true);
+        auto assigned_accesses = quantum_accesses(rhs, true);
+        if (conflicting_accesses(index_accesses, assigned_accesses)) {
+            error_at(
+                at(value),
+                ambiguous_heap_accesses(index_accesses, assigned_accesses)
+                    ? "|c>: unsequenced heap index/value accesses require a proven disjoint-address contract"
+                    : "|c>: unsequenced quantum heap index and assigned value have no defined C11 result");
+            return build_zero_cst(TREE_TYPE(value));
+        }
+    }
     tree marker =
         build_fn_decl("__cket_heap_store",
                       build_function_type_list(
                           TREE_TYPE(value), TREE_TYPE(access.index), TREE_TYPE(rhs), NULL_TREE));
     tree result = build_call_expr_loc(at(value), marker, 2, access.index, rhs);
-    quantum_heap_updates.emplace(result, QuantumHeapUpdate{access, rhs});
+    quantum_heap_updates.emplace(
+        result,
+        QuantumHeapUpdate{access, rhs, code == POSTINCREMENT_EXPR || code == POSTDECREMENT_EXPR});
     return result;
 }
 
@@ -352,7 +365,10 @@ std::string heap_expression(tree selection, std::set<unsigned> &deps) {
     return "{\"op\":\"heap_read\"" + type_json(access.type) + address + ",\"index\":" + index + '}';
 }
 
-tree lower_heap_effect(tree marker) {
+tree lower_heap_effect_capture(tree marker,
+                               unsigned capture,
+                               bool returns_value,
+                               std::set<unsigned> *capture_dependencies = nullptr) {
     const auto &update = quantum_heap_updates.at(marker);
     const auto &access = update.target;
     tree list = alloc_stmt_list();
@@ -362,16 +378,84 @@ tree lower_heap_effect(tree marker) {
     std::string expr = evaluate_expression(value, deps, &list);
     expr = "{\"op\":\"cast\"" + type_json(access.type) + ",\"args\":[" + expr + "]}";
     std::string address = heap_address(access);
-    std::string index = cpu_parameter(fold_convert(long_long_unsigned_type_node, access.index));
+    bool coherent_index = has_quantum(access.index);
+    std::string index;
+    if (coherent_index) {
+        ++coherent_expression_depth;
+        index = expression(fold_convert(long_long_unsigned_type_node, access.index), deps);
+        --coherent_expression_depth;
+    } else
+        index = cpu_parameter(fold_convert(long_long_unsigned_type_node, access.index));
+    std::string saved_value;
+    if (returns_value) {
+        std::string result_expr = expr;
+        if (update.postfix) {
+            ++coherent_expression_depth;
+            std::string selected = expression(access.index, deps);
+            --coherent_expression_depth;
+            result_expr = "{\"op\":\"heap_read\"" + type_json(access.type) + address +
+                          ",\"index\":" + selected + '}';
+        }
+        saved_value =
+            ",\"capture\":{\"id\":" + std::to_string(capture) + ",\"expr\":" + result_expr + '}';
+    }
     append(&list,
            emit_operation(
-               "{\"op\":\"qheap_store\",\"width\":" + std::to_string(TYPE_PRECISION(access.type)) +
+               "{\"op\":\"" + std::string(coherent_index ? "qheap_scatter" : "qheap_store") +
+                   "\",\"width\":" + std::to_string(TYPE_PRECISION(access.type)) +
                    ",\"signed\":" + (TYPE_UNSIGNED(access.type) ? "false" : "true") + address +
-                   ",\"index\":" + index + ",\"expr\":" + expr + control_json() + '}',
+                   ",\"index\":" + index + ",\"expr\":" + expr + saved_value + control_json() + '}',
                at(marker)));
     for (unsigned source : deps)
         taint_uniform(source);
+    if (capture_dependencies) {
+        *capture_dependencies = deps;
+        for (const auto &control : controls)
+            capture_dependencies->insert(control.first);
+    }
     return list;
+}
+
+tree lower_heap_effect(tree marker) {
+    return lower_heap_effect_capture(marker, 0, false);
+}
+
+std::string heap_effect_expression(tree marker, std::set<unsigned> &deps) {
+    if (expression_frames.empty() || dynamic_depth) {
+        error_at(at(marker),
+                 "|c>: heap update values require a scheduled consumer outside runtime loops");
+        return "{}";
+    }
+    const auto &access = quantum_heap_updates.at(marker).target;
+    std::set<unsigned> previous_parameters;
+    previous_parameters.swap(active_cpu_parameters);
+    Variable temporary{};
+    temporary.id = next_id++;
+    temporary.width = TYPE_PRECISION(access.type);
+    temporary.is_signed = !TYPE_UNSIGNED(access.type);
+    temporary.name = "__cket_heap_value_" + std::to_string(temporary.id);
+    temporary.decl =
+        build_decl(at(marker), VAR_DECL, get_identifier(temporary.name.c_str()), access.type);
+    temporary.lowered = temporary.derived = true;
+    temporary.optional_definition = !cpu_branches.empty();
+    temporary.range_max = temporary.width == 64 ? UINT64_MAX : (uint64_t{1} << temporary.width) - 1;
+    // The engine resolves heap identities and keeps the exact saved recipe.
+    // An empty creation requests that recipe during compiler cleanup.
+    variables.emplace(temporary.decl, temporary);
+    tree *prefix = expression_frames.back()->prefix;
+    append(prefix,
+           emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(temporary.id) +
+                              ",\"name\":" + json(temporary.name) +
+                              ",\"width\":" + std::to_string(temporary.width) + ",\"signed\":" +
+                              (temporary.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                          at(marker)));
+    append(prefix,
+           lower_heap_effect_capture(
+               marker, temporary.id, true, &variables.at(temporary.decl).dependencies));
+    active_cpu_parameters.insert(previous_parameters.begin(), previous_parameters.end());
+    deps.insert(temporary.id);
+    expression_frames.back()->reads.insert(temporary.id);
+    return register_expression(variables.at(temporary.decl));
 }
 
 tree lower_heap_channel(tree call) {

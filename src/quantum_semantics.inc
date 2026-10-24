@@ -48,6 +48,7 @@ std::string standard_ctype(tree call);
 std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_expression(tree selection, std::set<unsigned> &deps);
 tree lower_heap_effect(tree marker);
+std::string heap_effect_expression(tree marker, std::set<unsigned> &deps);
 tree lower_heap_channel(tree call);
 tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings);
 
@@ -370,6 +371,20 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             result.reads.insert(current);
             continue;
         }
+        if (quantum_heap_accesses.count(current)) {
+            // Runtime aliases can share a heap. Until two accesses have a
+            // proven disjoint-address contract, treat their payload as shared.
+            result.reads.insert(get_identifier("__cket_heap_payload"));
+            pending.push_back(quantum_heap_accesses.at(current).index);
+            continue;
+        }
+        if (quantum_heap_updates.count(current)) {
+            const auto &update = quantum_heap_updates.at(current);
+            result.writes.insert(get_identifier("__cket_heap_payload"));
+            pending.push_back(update.target.index);
+            pending.push_back(update.value);
+            continue;
+        }
         if (quantum_indexed_accesses.count(current)) {
             const auto &access = quantum_indexed_accesses.at(current);
             result.reads.insert(access.elements.begin(), access.elements.end());
@@ -422,6 +437,12 @@ bool conflicting_accesses(const QuantumAccesses &a, const QuantumAccesses &b) {
         if (a.reads.count(target))
             return true;
     return false;
+}
+
+bool ambiguous_heap_accesses(const QuantumAccesses &a, const QuantumAccesses &b) {
+    tree key = get_identifier("__cket_heap_payload");
+    return (a.writes.count(key) && (b.reads.count(key) || b.writes.count(key))) ||
+           (b.writes.count(key) && a.reads.count(key));
 }
 
 tree collect_quantum_snapshots(tree *node, int *walk, void *data) {
@@ -521,8 +542,8 @@ bool discarded_memory_sequence(tree value) {
     value = strip(value);
     if (!value)
         return false;
-    if (quantum_memory_sets.count(value) || quantum_memory_copies.count(value) ||
-        quantum_value_programs.count(value))
+    if (quantum_heap_updates.count(value) || quantum_memory_sets.count(value) ||
+        quantum_memory_copies.count(value) || quantum_value_programs.count(value))
         return true;
     return TREE_CODE(value) == COMPOUND_EXPR && discarded_memory_sequence(TREE_OPERAND(value, 0)) &&
            discarded_memory_sequence(TREE_OPERAND(value, 1));
@@ -592,11 +613,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     auto code = TREE_CODE(value);
     if (quantum_heap_accesses.count(value))
         return heap_expression(value, deps);
-    if (quantum_heap_updates.count(value)) {
-        error_at(at(value),
-                 "|c>: quantum heap update values require a supported sequenced consumer");
-        return "{}";
-    }
+    if (quantum_heap_updates.count(value))
+        return heap_effect_expression(value, deps);
     if (quantum_indexed_accesses.count(value))
         return cpu_indexed_expression(value, deps);
     // CPU arithmetic in every controlled consumer must remain lazy.
@@ -778,10 +796,14 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     }
     if ((TREE_CODE_CLASS(code) == tcc_binary || TREE_CODE_CLASS(code) == tcc_comparison) &&
         code != TRUTH_ANDIF_EXPR && code != TRUTH_ORIF_EXPR && code != COMPOUND_EXPR) {
-        if (conflicting_accesses(quantum_accesses(TREE_OPERAND(value, 0), true),
-                                 quantum_accesses(TREE_OPERAND(value, 1), true))) {
-            error_at(at(value),
-                     "|c>: unsequenced quantum modification and access have no defined C11 result");
+        auto left_accesses = quantum_accesses(TREE_OPERAND(value, 0), true);
+        auto right_accesses = quantum_accesses(TREE_OPERAND(value, 1), true);
+        if (conflicting_accesses(left_accesses, right_accesses)) {
+            error_at(
+                at(value),
+                ambiguous_heap_accesses(left_accesses, right_accesses)
+                    ? "|c>: unsequenced heap accesses require a proven disjoint-address contract; sequence them explicitly"
+                    : "|c>: unsequenced quantum modification and access have no defined C11 result");
             return "{}";
         }
     }
@@ -937,7 +959,7 @@ std::string evaluate_expression(tree value, std::set<unsigned> &deps, tree *pref
 
 std::string inverse_operation(unsigned id, const std::string &expression) {
     return "{\"op\":\"quncompute\",\"id\":" + std::to_string(id) +
-           (expression.find("\"op\":\"parameter\"") != std::string::npos
+           (expression.empty() || expression.find("\"op\":\"parameter\"") != std::string::npos
                 ? ",\"saved\":true}"
                 : ",\"expr\":" + expression + '}');
 }
@@ -1175,8 +1197,9 @@ tree before_integer_narrowing(tree operand, tree type) {
 // Restore the promoted operation without folding away that domain again.
 tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
     if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
-        quantum_heap_accesses.count(value) || quantum_indexed_accesses.count(value) ||
-        quantum_coherent_accesses.count(value) || quantum_value_programs.count(value))
+        quantum_heap_accesses.count(value) || quantum_heap_updates.count(value) ||
+        quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
+        quantum_value_programs.count(value))
         return value;
     auto found = memo.find(value);
     if (found != memo.end())

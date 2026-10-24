@@ -70,6 +70,7 @@ struct QuantumHeapAccess {
 struct QuantumHeapUpdate {
     QuantumHeapAccess target;
     tree value;
+    bool postfix;
 };
 
 std::map<tree, tree> quantum_heap_pointers;
