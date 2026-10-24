@@ -417,6 +417,7 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memset.c",
+                "scripts/validate-fixed-memory-loops.py",
                 "scripts/validate-heap-memory.py",
                 "tests/heap_memory_state.inc",
                 "tests/memset_state.inc",
@@ -438,7 +439,9 @@ def semantics(header, name, kind, optional):
             "arithmetic definedness. Destination returns support local typed/void checked borrows, "
             "constant byte views and supported address relations without exposing CPU placeholders. "
             "For this fixed-storage route, general returned-pointer consumers/indirect ABI, runtime counts, "
-            "general layouts, volatile/atomic access and CPU-loop history remain pending. "
+            "general layouts and volatile/atomic access remain pending. Fixed-buffer CPU loops "
+            "retain per-iteration owners; a fill that reads its destination is captured before "
+            "any word changes. Finite loop states/phases/inverses have their own evidence. "
             "Dense state/inverse checks, complete labeled controlled paths, native integrations, "
             "diagnostics, independent exports and wide generation have separate proof scopes. "
             "Expression, gate, physical-wire and simulator budgets apply separately. "
@@ -456,6 +459,7 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memcopy.c",
+                "scripts/validate-fixed-memory-loops.py",
                 "scripts/validate-runtime-versions.py",
                 "scripts/validate-heap-transfer.py",
                 "tests/heap_transfer_trace.c",
@@ -477,8 +481,9 @@ def semantics(header, name, kind, optional):
             "padding, dynamic extents, quantum-to-CPU writes and general returned-pointer consumers remain pending. "
             "Local typed/void destination-return borrows and supported address relations are "
             "implemented. Only the original known-basis whole-element path has the linear, "
-            "table-free copy-gate contract. Full new state/inverse, sanitizer and GCC-context "
-            "qualification is deferred; historical tests do not certify the extension. "
+            "table-free copy-gate contract. Fixed-buffer CPU loops use retained per-iteration "
+            "owners, including read-before-write overlap and partial object bytes. Finite "
+            "loop state/inverse and sanitizer checks do not qualify every GCC context. "
             "Exact universal tensor-product cloning of an arbitrary unknown state is the incompatible context, "
             "not copying basis values or the whole library interface. A native heap-to-heap byte "
             "route accepts runtime CPU lengths and byte offsets, partial/mixed integer words, "

@@ -96,8 +96,8 @@ until the quantum context ends. [Structured coherent joins](c11-control.md) pres
 inactive amplitudes and retain needed predicates. [Structured CPU scalar joins](c11-cpu-control.md)
 transfer selected owners and their actual saved inverse dependencies.
 [Runtime iteration history](c11-runtime-history.md) extends scalar assignments, heap effect values
-and heap-to-fixed transfers across structured CPU loops. General CFG ownership, controlled local
-declarations and further memory-loop contexts remain pending.
+and fixed/heap memory operations across structured CPU loops. General CFG ownership, controlled
+local declarations and further memory-loop contexts remain pending.
 
 An effectful CPU operand, such as `x += measure(y)` or `x += ++n`, is evaluated once before updating
 x. The plugin preserves GCC's shared `SAVE_EXPR` and emits explicit measurement before addition in
@@ -114,9 +114,11 @@ Standard [memory-copy adapters](c11-memcopy.md) accept checked fixed integer ran
 byte counts. Known-basis destinations retain translation/XOR copy gates; unknown overwrites retain
 previous owners. A separate route supports up to 64 object bytes, partial words, different integer
 sizes and known CPU sources. Exact memmove aliases are identity and supported overlap uses
-read-before-write ordering. Checked local destination returns are supported. CPU-loop history,
-padding, dynamic extents, quantum-to-CPU writes and general pointer ABI remain pending. Full
-state/inverse and compiler-context qualification of the extension is deferred.
+read-before-write ordering. Checked local destination returns and retained writes in CPU loops are
+supported. Padding, runtime counts/addresses on the fixed-only route, quantum-to-CPU writes and
+general pointer ABI remain pending. Finite loop states, inverses and sanitizers have their own
+[evidence](audit-evidence/fixed-memory-loops-v1/README.es.md); general compiler-context
+qualification remains open.
 
 In-place [bit permutations and affine word transformations](c11-inplace.md) have scalable
 certificates without truth tables or private qubits. An affine coefficient must be odd on the

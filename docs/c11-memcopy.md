@@ -2,8 +2,11 @@
 
 `memcpy` and `memmove` have partial adapters for checked integer storage. They now support retained
 overwrites, partial object bytes, different integer element sizes and known CPU sources. The new
-extension has delivery examples; complete coherent/inverse, sanitizer and compiler-context
-qualification remains deferred. Earlier campaigns certify their own frozen implementations.
+extension has delivery examples. Structured CPU loops now retain each overwritten owner, including
+whole-element copies and partial object-byte updates. The
+[fixed-loop campaign](audit-evidence/fixed-memory-loops-v1/README.es.md) records finite complete
+states, phases, inverses and sanitizer checks; general compiler-context qualification remains open.
+Earlier campaigns certify their own frozen implementations.
 
 The C reference is N1570 [7.24.2.1–2](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf).
 `memcpy` requires nonoverlapping ranges. `memmove` reads original source bytes even when ranges
@@ -74,11 +77,15 @@ operations. Classical calls still link to libc, standard function addresses reta
 private user definitions are not adapted merely because their names match. Fortified system
 declarations retain the existing identity check.
 
-Nonidentity copies in dynamic CPU loops still require per-iteration history/lifetime handling.
-Checked static expansions remain available. Dynamic counts/addresses, padding and `_Bool` object
-padding, general aggregate layouts, general pointer returns and arbitrary aliasing functions remain
-pending. Simulator, physical representation, expression and history budgets apply separately from
-the frontend byte bound. The sparse simulator permits bounded occupied support; it does not make
+Nonidentity copies in structured CPU loops use the
+[per-iteration history contract](c11-runtime-history.md). They always compute a retained version,
+even if the destination was initially known: a later iteration cannot reuse that initial basis
+proof. Read-before-write ordering preserves original `memmove` bytes in either direction. Exact
+same-range identity and zero-length copies keep their existing no-write path. Checked static
+expansions remain available. Dynamic counts/addresses, padding and `_Bool` object padding, general
+aggregate layouts, general pointer returns and arbitrary aliasing functions remain pending.
+Simulator, physical representation, expression and history budgets apply separately from the
+frontend byte bound. The sparse simulator permits bounded occupied support; it does not make
 arbitrary 128-qubit states tractable.
 
 ## Evidence
@@ -91,10 +98,12 @@ QASM/resources. These finite observations do not replace complete coherent/inver
 Historical campaigns ran 414 memory-copy checks on their recorded sources, including complete phased
 states/inverses, native C contracts and wide generation. Those results do not qualify the new
 extension. The maintained validator moves seven obsolete rejection cases into positive native
-contracts and uses sparse simulation for those executions. Its 414 planned checks include 120
-complete phased states/inverses, four overlapping states, 180 native contracts, 80 rejections and 30
-wide exports; the updated full matrix remains deferred until block closure. The normal native core
-regression and delivery results are recorded separately in the current evidence capsule.
+contracts and uses sparse simulation for those executions. The runtime loop case is now a positive
+native contract with consumers observed before their sources. The 414 checks include 120 complete
+phased states/inverses, four overlapping states, 190 native contracts, 70 rejections and 30 wide
+exports. The fixed-loop delivery separately records new runtime states and the maintained suite on
+its own sources. The normal native core regression and delivery results are recorded separately in
+the current evidence capsule.
 
 The [C11 inventory](c11-inventory.md) and [interface index](c11-library.json) keep these interfaces
 partial. Broad integration, sanitizers, complete states/inverses and all GCC contexts remain open.

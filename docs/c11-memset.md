@@ -93,10 +93,16 @@ explicitly; the adapter itself does not observe the input.
 pointers, void pointers, constant byte views and supported address relations. General pointer
 consumers and escapes, quantum indirect calls and separately compiled library ABIs remain pending.
 
-Runtime counts, general pointers and aliasing, dynamic memory, general aggregates, padding, `_Bool`
-object-byte writes, floating objects, volatile/atomic accesses and CPU-loop history require further
-implementation. Static loop expansion and the supported CPU branch contexts have finite integration
-tests; they do not imply arbitrary control-flow support.
+Structured CPU loops now use [per-iteration history](c11-runtime-history.md). If a fill expression
+reads its destination, the compiler captures its byte once before changing any word. This preserves
+`memset(a, a[0] + 1, sizeof a)` across repeated iterations. Runtime loop writes retain old owners
+instead of reusing an initial known-basis proof. The
+[fixed-loop campaign](audit-evidence/fixed-memory-loops-v1/README.es.md) records finite evidence.
+
+Runtime counts on this fixed-storage route, general pointers and aliasing, general aggregates,
+padding, `_Bool` object-byte writes, floating objects and volatile/atomic accesses require further
+implementation. The [heap route](c11-heap.md) has its separate CPU count/offset contract. Static
+loop expansion and supported CPU branches do not imply arbitrary control-flow support.
 
 Unsequenced modifications and accesses retain their C11 undefined-behavior diagnostic. CPU side
 effects under coherent control are rejected. A quantum value cannot silently be written into a CPU

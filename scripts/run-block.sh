@@ -21,7 +21,7 @@ elif [[ "$block" == 03 ]]; then
     source_directory=examples/blocks/03
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 05 ]]; then
-    names=(dynamic_heap coherent_heap heap_bytes heap_transfer heap_iterations)
+    names=(dynamic_heap coherent_heap heap_bytes heap_transfer heap_iterations fixed_buffers)
     source_directory=examples/blocks/05
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 04 ]]; then
@@ -42,7 +42,7 @@ for name in "${names[@]}"; do
     printf '\nBlock %s: %s\n' "$block" "$name"
     build/cket "$source_directory/$name.c" -O2 -o "$destination/$name"
     "$destination/$name"
-    if [[ "$name" == cpu_vector_scan || "$name" == cpu_vector_return || "$name" == dynamic_heap || "$name" == coherent_heap || "$name" == heap_bytes || "$name" == heap_transfer || "$name" == heap_iterations ]]; then
+    if [[ "$name" == cpu_vector_scan || "$name" == cpu_vector_return || "$name" == dynamic_heap || "$name" == coherent_heap || "$name" == heap_bytes || "$name" == heap_transfer || "$name" == heap_iterations || "$name" == fixed_buffers ]]; then
         printf 'Runtime CPU loop/heap: native executable; static QASM export is unsupported.\n'
         continue
     fi

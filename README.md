@@ -231,8 +231,7 @@ In-place bit permutations and affine word updates also have
 [table-free certificates](docs/c11-inplace.md). These include fixed rotations, complement, defined
 negation and multiplication by an odd constant, with no private qubits. Boolean updates retain C
 truth conversion. `--no-tables` also applies to the remaining in-place fallback. General CFG joins,
-runtime iteration history, general memory overwrites and remaining expression effect contexts remain
-pending.
+general memory/exit lifetimes and remaining expression effect contexts remain pending.
 
 [Ordered scalar expression effects](docs/c11-effect-values.md) now preserve postfix old values,
 return prefix/assignment new values and sequence comma operands with retained history. Mixed CPU
@@ -327,6 +326,12 @@ statically and lengths may be CPU runtime values. `heap_iterations` combines pos
 and heap-to-fixed copies inside a CPU loop with a runtime iteration count, including zero
 iterations. Its [history contract](docs/c11-runtime-history.md) retains actual previous owners and
 inverses. General pointer/ABI contexts and string adapters on heaps remain pending.
+
+`fixed_buffers` adds a fixed array passed to a function with overlapping `memmove` and `memset`
+inside a CPU loop. Its self-dependent fill is captured once before any destination word changes. The
+[fixed-buffer loop evidence](docs/audit-evidence/fixed-memory-loops-v1/README.es.md) separates
+complete complex states, gate inversion, native contexts and sanitizer checks. Counts and addresses
+on this fixed-only route are still checked constants.
 
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug

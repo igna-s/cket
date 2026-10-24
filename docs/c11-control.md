@@ -3,8 +3,9 @@
 This advances M2/M3/M4 toward full C11 coverage. Structured coherent `if` statements can update
 supported scalar owners, including fixed array/field/pointer aliases and mutable same-unit quantum
 procedures. [Structured CPU scalar versions](c11-cpu-control.md) have a separate ownership transport
-contract. General CFG, runtime iteration history, dynamic memory, ABI, floating/complex and library
-contracts remain required.
+contract. [Runtime iteration history](c11-runtime-history.md) and [native heaps](c11-heap.md) now
+cover selected integer/memory paths. General CFG ownership, further dynamic-memory/ABI integration,
+floating/complex values and wider library contracts remain required.
 
 ## Selected values and preserved branch decisions
 

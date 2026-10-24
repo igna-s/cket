@@ -2158,11 +2158,7 @@ tree lower_node(tree value) {
                 return build_zero_cst(TREE_TYPE(value));
             }
         }
-        if (!operation.elements.empty() && dynamic_depth > cpu_branches.size()) {
-            error_at(at(value),
-                     "|c>: quantum memset in a CPU loop needs bounded per-iteration history");
-            return build_zero_cst(TREE_TYPE(value));
-        }
+        bool runtime_iteration = dynamic_depth > cpu_branches.size();
         cleanup(&list);
         if (operation.elements.empty() && !has_quantum(operation.fill) && controls.empty()) {
             // Even a zero-length C call evaluates its value argument once.
@@ -2183,6 +2179,42 @@ tree lower_node(tree value) {
                                        false,
                                        fill_dependencies);
             std::set<unsigned> fill_parameters = active_cpu_parameters;
+            bool aliases_fill = false;
+            for (const auto &entry : operation.elements)
+                aliases_fill |= fill_dependencies.count(variables.at(entry.first).id) != 0;
+            if (runtime_iteration && aliases_fill) {
+                // Runtime assignments reuse public identities. Capture the
+                // once-evaluated fill before the first word replaces an input.
+                Variable capture{};
+                capture.id = next_id++;
+                capture.width = 8;
+                capture.name = "__cket_memset_fill_" + std::to_string(capture.id);
+                capture.decl = build_decl(at(value),
+                                          VAR_DECL,
+                                          get_identifier(capture.name.c_str()),
+                                          unsigned_char_type_node);
+                capture.lowered = capture.derived = capture.optional_definition = true;
+                capture.range_max = 255;
+                capture.dependencies = fill_dependencies;
+                capture.creation = byte;
+                variables.emplace(capture.decl, capture);
+                remaining[capture.id] = 0;
+                active_cpu_parameters.clear();
+                append(
+                    &list,
+                    emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(capture.id) +
+                                       ",\"width\":8,\"signed\":false,\"ancilla\":true,\"name\":" +
+                                       json(capture.name) + '}',
+                                   at(value)));
+                active_cpu_parameters = fill_parameters;
+                append(&list,
+                       emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(capture.id) +
+                                          ",\"expr\":" + byte + '}',
+                                      at(value)));
+                byte = register_expression(capture);
+                fill_dependencies = {capture.id};
+                fill_parameters.clear();
+            }
             if (operation.elements.empty()) {
                 // Evaluate a quantum argument's definedness even for n=0,
                 // then invert its private temporary without an observation.
@@ -2220,8 +2252,9 @@ tree lower_node(tree value) {
                     taint_uniform(source);
                 for (const auto &control : controls)
                     taint_uniform(control.first);
-                bool reuse_basis = (target.clean || target.basis_known) && !target.derived &&
-                                   !dependent(target.id) && !fill_dependencies.count(target.id);
+                bool reuse_basis = !runtime_iteration && (target.clean || target.basis_known) &&
+                                   !target.derived && !dependent(target.id) &&
+                                   !fill_dependencies.count(target.id);
                 for (const auto &control : controls)
                     if (control.first == target.id)
                         reuse_basis = false;
@@ -2311,12 +2344,6 @@ tree lower_node(tree value) {
             }
             if (pair.first == pair.second)
                 continue; // Exact memmove aliases preserve arbitrary states.
-            if (dynamic_depth) {
-                error_at(
-                    at(value),
-                    "|c>: quantum memory copy in a CPU loop needs a per-iteration basis/history proof; use a proved static expansion or explicit storage management");
-                return build_zero_cst(TREE_TYPE(value));
-            }
             for (const auto &control : controls)
                 if (target.id == control.first) {
                     error_at(at(value), "|c>: quantum memory copy destination aliases its control");
@@ -2332,7 +2359,8 @@ tree lower_node(tree value) {
             }
             std::set<unsigned> dependencies;
             std::string expr = cast_result(expression(pair.second, dependencies), target);
-            if ((!target.clean && !target.basis_known) || target.derived || dependent(target.id)) {
+            if (dynamic_depth > cpu_branches.size() || (!target.clean && !target.basis_known) ||
+                target.derived || dependent(target.id)) {
                 taint_uniform(source.id);
                 versioned_assignment(target, expr, dependencies, at(value), &list);
                 continue;

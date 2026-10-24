@@ -1,0 +1,24 @@
+{
+  "normal": {
+    "cket_plugin.so": "2219ebb96321c4c543634cb307f60637fac52299b8c20a53b1c6b8304943c77d",
+    "json.o": "bbc7f02f75690f901297174ac592f337145688aae4026a0454678560e5f3ecdd",
+    "quantum.o": "e2774769328a50f0f72952134a1e8d547ae0b59683a92cda1b1a114761cbfc3b",
+    "verify.o": "55dfd991a42e6ed1d36a646fa857da0fcda1c16ab00e8a472f3f5a6327feea9d",
+    "simulator.o": "550b9d3ea51d3700196a54090d1c0c829905f75a77f38b32585dc7d138e57722",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e",
+    "cket": "5e451a6c9578908df4c1e72bc428d29c9a41858131a04de464daf0c8f3adc9d8",
+    "validate_memcopy": "5bd380314f20a8d6b197fea8eb8deffa56bf65741f9e73cd2b6a063f49cb044d",
+    "validate_memset": "6df3228a20f35f22c5f7de836348b3847fe7c97dd016844a566e24386599a5ab"
+  },
+  "sanitized": {
+    "cket_plugin.so": "4147f39a9473f94e46610d5535450cd0f560ffd64bf5f2bbbb5ac05169ecbb5f",
+    "json.o": "553dfa7f68fa20c235accd9812ba87fa69c68fd606b02874602f6de9ed443168",
+    "quantum.o": "5c6f6ff200dff82b84bfb844dc0d7254fc0c458772cb829fb6ebc35fff40aaf2",
+    "verify.o": "0ca1f0280f63e310031feafd2cc55ce3816b9e33012b13a1139b48a5b0e91339",
+    "simulator.o": "878764e87a7795f1c9d86aa6dfeb5c13d28bb25bf3f5226f21206c1c2741b4fc",
+    "cket_runtime.o": "ada3ad4ec78b3f4e17d93766cb090c547fe63bda4faf2079c85522bda6a870a9",
+    "cket": "bc77ee92b0f94987a3945816330dddf3e45f74ec3d0f2c2514f0cec18c1ab74c",
+    "validate_memcopy": "0e531f178e576fe9a35318a9d97d9c85a144490df9b2b60e048a99d4e79f1e19",
+    "validate_memset": "a7bc834d94a41aad7147ca6bc51cf1ef52c9dc3851ee55ae2754a5f287ca5388"
+  }
+}

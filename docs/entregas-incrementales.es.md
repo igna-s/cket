@@ -135,12 +135,12 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
 `bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes`,
-`heap_transfer` y `heap_iterations`. En el primero, la capacidad inicial es un dato CPU recibido por
-`argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`,
-llena, modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
-explícitamente y libera. Compara la suma con los elementos observados y una fórmula C ordinaria.
-Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un circuito
-QASM estático.
+`heap_transfer`, `heap_iterations` y `fixed_buffers`. En el primero, la capacidad inicial es un dato
+CPU recibido por `argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva
+con `calloc`, llena, modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una
+función, mide explícitamente y libera. Compara la suma con los elementos observados y una fórmula C
+ordinaria. Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un
+circuito QASM estático.
 
 El [contrato de heap](c11-heap.md) explica la identidad de los registros, los préstamos, los
 resultados derivados que siguen vivos al redimensionar/liberar y los límites de recursos. No hay
@@ -152,6 +152,12 @@ conservan los valores iniciales. Faltan pruebas generales de direcciones disjunt
 memoria/ABI y adaptadores de cadenas. `heap_bytes` combina `memcpy`, `memmove` solapado y `memset`
 con datos cuánticos. Estas operaciones aceptan tamaños CPU y vistas de bytes parciales; no
 introducen mediciones. El bloque 05 sigue abierto.
+
+`fixed_buffers` pasa un array fijo a una función que combina `memmove` solapado y `memset` dentro de
+`while(rounds--)`. Los parámetros CPU modificados son copias locales; el llenado usa el valor
+anterior al primer cambio. Admite 0 a 3 iteraciones dentro de su presupuesto de historia:
+`CKET_SIMULATOR=sparse build/blocks/05/fixed_buffers 3`. La
+[campaña de memoria fija](audit-evidence/fixed-memory-loops-v1/README.es.md) conserva su evidencia.
 
 `heap_transfer` copia buffers fijos al heap y de vuelta, conserva valores después de cambiar el
 origen y liberar la reserva, y observa los resultados explícitamente. Las direcciones fijas son

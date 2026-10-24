@@ -35,6 +35,12 @@ conserva sus qubits fuera de la longitud solicitada. Sus escrituras dentro de bu
 resultados de incremento del heap añaden historia por iteración. Las cadenas sobre heap siguen
 pendientes; el [contrato](c11-heap.md) detalla los contextos y recursos.
 
+Las copias, movimientos solapados y rellenos entre buffers fijos también conservan versiones dentro
+de bucles CPU. [fixed_buffers.c](../examples/blocks/05/fixed_buffers.c) combina esas operaciones en
+una función con contador por valor. La
+[evidencia finita](audit-evidence/fixed-memory-loops-v1/README.es.md) no completa los
+tamaños/direcciones generales, retornos ni flujos arbitrarios de propiedad.
+
 ## Orden de trabajo
 
 1. Integrar los enteros y sus consumidores con funciones, arrays y structs básicos.

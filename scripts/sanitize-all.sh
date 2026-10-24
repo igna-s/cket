@@ -102,6 +102,9 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_history"
 "$san_root/build/validate_heap"
 "$san_root/build/validate_runtime_versions"
+fixed_memory_proof="$(mktemp -d "$san_root/build/fixed-memory-proof.XXXXXX")"
+python3 scripts/validate-fixed-memory-loops.py --compiler-root "$san_root" \
+    --output "$fixed_memory_proof/sanitized" --levels O1 --sanitized
 LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-locale.lsan:print_suppressions=0" \
     "$san_root/build/validate_ctype"
 "$san_root/build/validate_profiles"

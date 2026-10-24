@@ -4,6 +4,15 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Memoria fija dentro de bucles:** `memcpy`, `memmove` solapado y `memset` usan ahora historial por
+iteración también entre buffers fijos. Un relleno que lee el destino se captura antes de modificar
+la primera palabra. El [nuevo ejemplo](../examples/blocks/05/fixed_buffers.c) pasa un array a una
+función y combina movimiento y relleno dentro de `while(rounds--)`, con 0 a 3 iteraciones. La
+[campaña de memoria fija](audit-evidence/fixed-memory-loops-v1/README.es.md) registra 300 puntos de
+estado completo, 90 inversas, 32 ejecuciones adicionales y las regresiones de copia/relleno, en
+construcciones normales y ASan/UBSan. Los tamaños y direcciones de esta ruta fija siguen siendo
+constantes comprobadas; sus tamaños CPU generales todavía requieren implementación.
+
 **Nuevo cierre de bucles y funciones:** los resultados de `p[i]++`, las asignaciones escalares y las
 copias heap→buffer fijo conservan ahora sus versiones en cada iteración CPU. También se corrige el
 fallo interno al copiar a un parámetro de buffer dentro de una función con `while(n--)`; sus

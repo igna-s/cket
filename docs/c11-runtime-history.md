@@ -56,11 +56,16 @@ workspace. The backend represents at most 128 physical wires; dense native simul
 with a separate bounded sparse mode. Reaching a budget fails explicitly rather than dropping old
 states. Repeated self-dependent versions can exhaust that budget even when the C loop is finite.
 
+Fixed-to-fixed `memcpy`, `memmove` and `memset` now share this history path in structured CPU loops,
+with checked constant addresses/counts. A self-dependent fill byte is captured before any word
+changes. Their [finite evidence](audit-evidence/fixed-memory-loops-v1/README.es.md) is separate from
+the earlier heap-loop campaign.
+
 Quantum declarations inside controlled branches or CPU loops, general quantum loop conditions, early
-returns with live owners, arbitrary jumps, general indexed overwrites, fixed-to-fixed memory loops
-and heap strings retain separate pending contracts. Runtime iteration history and heap access
-require native execution; flat QASM export and the borrowed unitary-module ABI reject this profile.
-Cybersecurity, cryptography and authentication remain classical.
+returns with live owners, arbitrary jumps, general indexed overwrites and heap strings retain
+separate pending contracts. Runtime iteration history and heap access require native execution; flat
+QASM export and the borrowed unitary-module ABI reject this profile. Cybersecurity, cryptography and
+authentication remain classical.
 
 ```sh
 CC=gcc-11 CXX=g++-11 bash scripts/build.sh
