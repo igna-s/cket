@@ -1,0 +1,7 @@
+{
+  "revision": "1ebb2e308e61bed5632798ded5beecf77b6b9a9c",
+  "header_path": "src/engine/internal.h",
+  "header_git_blob": "daf8b08b2e15b16123feb47f37676d75920f3cf5",
+  "header_sha256": "60a52046beef23c4758b1cdbc80dfff3d8ac8e117c28d191a49b4692e9b57819",
+  "scope": "Constants from the historical study, independent of later compiler limits."
+}

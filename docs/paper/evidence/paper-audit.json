@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "language": "es",
-  "checks": 444,
+  "checks": 1122,
   "pages": 8,
   "figures": 7,
   "references": 10,
@@ -326,6 +326,16 @@
       "check": "Bits relevantes lt 16",
       "passed": true,
       "detail": ""
+    },
+    {
+      "check": "Historical model constants retain their exact study revision and Git blob",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Enumeration: only measured widths strictly above the threshold exceed it",
+      "passed": true,
+      "detail": "{'relevant_bits': [8, 16, 24, 32], 'limit': 12, 'above_limit': [16, 24, 32], 'not_above_limit': [8], 'table_policy': '--no-tables'}"
     },
     {
       "check": "Diez referencias identificadas y citadas",
@@ -728,6 +738,51 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/blocks/03/buffer_functions.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/03/buffer_words.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/03/cpu_vector_return.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/03/cpu_vector_scan.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/04/quantum_index.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/05/coherent_heap.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/05/dynamic_heap.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/05/heap_bytes.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/05/heap_transfer.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/blocks/06/byte_copy.c",
       "passed": true,
       "detail": ""
@@ -738,12 +793,22 @@
       "detail": ""
     },
     {
+      "check": "Fuente local examples/blocks/06/decimal_conversion.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local examples/blocks/06/saved_search.c",
       "passed": true,
       "detail": ""
     },
     {
       "check": "Fuente local examples/blocks/06/search_positions.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local examples/blocks/06/search_write.c",
       "passed": true,
       "detail": ""
     },
@@ -978,6 +1043,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local include/stdlib.h",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local include/string.h",
       "passed": true,
       "detail": ""
@@ -1073,6 +1143,26 @@
       "detail": ""
     },
     {
+      "check": "Fuente local scripts/validate-heap-memory.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/validate-heap-transfer.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/validate-heap.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local scripts/validate-ownership.py",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local scripts/verify.sh",
       "passed": true,
       "detail": ""
@@ -1114,6 +1204,21 @@
     },
     {
       "check": "Fuente local src/engine/ctype.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/expression_add.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/heap.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/engine/heap_memory.inc",
       "passed": true,
       "detail": ""
     },
@@ -1198,12 +1303,37 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/heap_runtime.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/quantum_byte_copy.inc",
       "passed": true,
       "detail": ""
     },
     {
+      "check": "Fuente local src/quantum_coherent_index.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_decimal.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/quantum_frontend.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_heap.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_heap_transfer.inc",
       "passed": true,
       "detail": ""
     },
@@ -1233,6 +1363,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local src/quantum_search_writes.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local src/quantum_semantics.inc",
       "passed": true,
       "detail": ""
@@ -1254,6 +1389,11 @@
     },
     {
       "check": "Fuente local src/quantum_string_span.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local src/quantum_value_program.inc",
       "passed": true,
       "detail": ""
     },
@@ -1288,6 +1428,16 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/heap_memory_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/heap_transfer_trace.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/locale_fixture.h",
       "passed": true,
       "detail": ""
@@ -1314,6 +1464,11 @@
     },
     {
       "check": "Fuente local tests/memset_state.inc",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Fuente local tests/ownership_trace.c",
       "passed": true,
       "detail": ""
     },
@@ -1493,6 +1648,11 @@
       "detail": ""
     },
     {
+      "check": "Fuente local tests/validate_heap.c",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Fuente local tests/validate_history.c",
       "passed": true,
       "detail": ""
@@ -1653,12 +1813,42 @@
       "detail": ""
     },
     {
+      "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/es/paper_bell.c --emit-ir",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Ejemplo: --state /tmp/quantum-audit-isolated-20261017/tmp/pdfs/es/paper-bell-current.ir.json",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Current exact Bell fragment: complete complex state and clean private workspace",
+      "passed": true,
+      "detail": ""
+    },
+    {
       "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/es/paper_find.c --run",
       "passed": true,
       "detail": "Código de salida 0"
     },
     {
       "check": "Fragmento exacto find compila y cumple el resultado con semilla 7",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Ejemplo: /tmp/quantum-audit-isolated-20261017/tmp/pdfs/es/paper_find.c --emit-ir",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Ejemplo: --state /tmp/quantum-audit-isolated-20261017/tmp/pdfs/es/paper-find-current.ir.json",
+      "passed": true,
+      "detail": "Código de salida 0"
+    },
+    {
+      "check": "Current exact Grover fragment: all amplitudes match the formula up to one common phase",
       "passed": true,
       "detail": ""
     },
@@ -1684,6 +1874,16 @@
     },
     {
       "check": "Tamaño Letter del documento de referencia",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF carries the corrected enumeration claim, not just the editable source",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "PDF and source distinguish historical limits and the current everyday-C priority",
       "passed": true,
       "detail": ""
     },
@@ -2203,12 +2403,3202 @@
       "detail": ""
     },
     {
-      "check": "Active incremental delivery: current/archive source identity and qualification scope remain explicit",
+      "check": "Active native delivery: supported explicit evidence schema",
       "passed": true,
       "detail": ""
     },
     {
-      "check": "Active incremental delivery: closed build/examples and native checks are distinct from deferred exhaustive campaigns",
+      "check": "Active native delivery: artifact bytes match their hashes",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Active native delivery: archived and current compiler/test inputs match",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required campaign steps are present exactly once",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command transfer-matrix has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command heap-engine has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command byte-regression has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command heap-regression has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command native-core has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command block05 has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command static-export has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: recorded command inventory has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix has the recorded finite scope and instrumentation mode",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_cpu_loop_pendingO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_cpu_loop_pendingO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_source_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_source_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_destination_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_destination_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: heap_source_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: heap_source_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: cpu_destinationO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: cpu_destinationO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: unknown_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: unknown_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: volatile_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: volatile_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_cpu_loop_pendingO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_cpu_loop_pendingO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_source_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_source_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_destination_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_destination_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: heap_source_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: heap_source_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: cpu_destinationO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: cpu_destinationO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: unknown_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: unknown_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: volatile_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: volatile_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_loopOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: cpu_readsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: returned_fixed_aliasOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: scalar_round_tripOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required positive program command completed: runtime_prefixOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_cpu_loop_pendingOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_cpu_loop_pendingOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_source_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_source_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: fixed_destination_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: fixed_destination_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: heap_source_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: heap_source_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: cpu_destinationOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: cpu_destinationOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: unknown_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: unknown_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: required negative fixture compiled or was rejected: volatile_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: negative fixture has its semantic outcome: volatile_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: all finite fixtures and logs are accounted for once",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: adapters and traced programs compiled successfully",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: trace-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO0-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO0-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_cpu_loop_pendingO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO0-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_destinationO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: unknown_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: volatile_cpu_sourceO0-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO2-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO2-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_cpu_loop_pendingO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO2-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_destinationO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: unknown_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: volatile_cpu_sourceO2-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: partial_wordOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityOs-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: empty_identityOs-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_cpu_loop_pendingOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsOs-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: cpu_destinationOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: unknown_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: matrix command has no signal/infrastructure/sanitizer failure: volatile_cpu_sourceOs-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "normal: counted states and full gate inverses match the summary",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required campaign steps are present exactly once",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command transfer-matrix has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command heap-engine has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command byte-regression has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command heap-regression has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command example-compile has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: recorded command example-run has its required outcome",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix has the recorded finite scope and instrumentation mode",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: cpu_loopO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: cpu_loopO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: cpu_readsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: cpu_readsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: returned_fixed_aliasO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: returned_fixed_aliasO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: scalar_round_tripO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: scalar_round_tripO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: runtime_prefixO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required positive program command completed: runtime_prefixO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: fixed_cpu_loop_pendingO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: fixed_cpu_loop_pendingO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: fixed_source_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: fixed_source_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: fixed_destination_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: fixed_destination_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: heap_source_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: heap_source_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: cpu_destinationO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: cpu_destinationO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: unknown_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: unknown_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: required negative fixture compiled or was rejected: volatile_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: negative fixture has its semantic outcome: volatile_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: cket_plugin.so",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: json.o",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: quantum.o",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: verify.o",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: simulator.o",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: cket_runtime.o",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Sanitizer instrumentation: cket",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: all finite fixtures and logs are accounted for once",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: adapters and traced programs compiled successfully",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-cket_plugin.so.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-json.o.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-quantum.o.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-verify.o.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-simulator.o.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-cket_runtime.o.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: instrumentation-cket.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: trace-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_to_heapO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: heap_to_fixedO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: partial_wordO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_to_fixedO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: controlled_from_fixedO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_snapshotO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO1-tables0.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: empty_identityO1-tables1.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: traced program completed",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: four state checkpoints retain their order",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: no hidden measurement/reset before the checkpoint",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_loopO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_readsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: returned_fixed_aliasO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: scalar_round_tripO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: runtime_prefixO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_cpu_loop_pendingO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_source_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: fixed_destination_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: heap_source_boundsO1-run.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: cpu_destinationO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: unknown_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: matrix command has no signal/infrastructure/sanitizer failure: volatile_cpu_sourceO1-compile.log",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "sanitized: counted states and full gate inverses match the summary",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Active native delivery: repeated finite totals are not broader coverage",
       "passed": true,
       "detail": ""
     },
@@ -2229,11 +5619,22 @@
     }
   ],
   "audit_checkout": {
-    "head": "86e55c89113840e2fe8d55aa19fd73107318a94b",
+    "head": "7d192b00271c31a8e6ca2f28290c122e0f96d2df",
     "uncommitted_changes": true,
-    "source_files_in_manifest": 227
+    "source_files_in_manifest": 257
   },
   "evidence_scope": "Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.",
+  "active_delivery_evidence": {
+    "status": "finite-fixed-heap-transfer-qualified",
+    "source_files": 210,
+    "totals": {
+      "full_state_checkpoints": 224,
+      "complete_gate_inverses": 56,
+      "native_program_executions": 20,
+      "semantic_rejections": 28
+    },
+    "scope": "Archived states rechecked against the existing finite formulas and independent gate interpreter; no new broad compiler campaign."
+  },
   "visual_review": "See audit.md: manual review of the latest rendered pages is also required.",
   "external_availability_scope": "See docs/re-audit-2026-10-14.md: the historical software URL returned HTTP 404 without authentication. PDF/bibliographic checks do not certify public source availability."
 }

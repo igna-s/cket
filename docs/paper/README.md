@@ -1,8 +1,8 @@
-> Estado del 23 de octubre de 2026: el usuario abrió la validación de propiedad, copias, fases e
-> inversas. La [campaña dirigida](../audit-evidence/ownership-contracts-v1/README.es.md) tiene su
-> propia identidad de fuentes. Los informes `passed` de los papers y su manifiesto pertenecen a la
-> última auditoría archivada; no certifican el árbol nuevo. La próxima auditoría deberá
-> regenerarlos.
+> Revisión del 24 de octubre de 2026: se corrige el umbral de enumeración en ambos idiomas y se
+> distinguen los límites del prototipo histórico de la prioridad actual de C cotidiano. La auditoría
+> también comprueba la [evidencia finita actual](../audit-evidence/heap-transfer-v1/README.es.md),
+> con su identidad de fuentes. Esto no certifica todo el compilador ni completa C11. Los
+> [hallazgos y límites](re-audit-2026-10-24.md) explican el alcance de la revisión.
 
 # Paper de C Ket
 
@@ -45,8 +45,8 @@ limitaciones científicas. La fuente anterior, más extensa, queda preservada en
 Usar Linux o WSL con GCC 11 y sus headers de plugin compatibles. Este comando reconstruye el
 proyecto y renueva los logs de evidencia; la primera construcción de QuEST puede necesitar acceso a
 Internet. Ejecutarlo en el commit indicado, preferentemente en un checkout separado. El checkout
-actual incluye ejemplos posteriores: sus 36 programas no son los 16 del estudio fijado, y sus
-resultados no deben sobrescribir la evidencia de esta revisión del paper.
+actual incluye ejemplos posteriores a los 16 del estudio fijado, y sus resultados no deben
+sobrescribir la evidencia de esta revisión del paper.
 
 También se puede reproducir esa revisión desde el checkout actual sin cambiar los logs publicados.
 El siguiente script crea un archivo separado del código histórico, reconstruye sus binarios y
@@ -57,8 +57,10 @@ bash scripts/reproduce-paper-baseline.sh
 ```
 
 El snapshot y sus resultados quedan en `build/audit/paper-baseline/`. El script requiere que ese
-destino no exista y no lo borra automáticamente. `audit_project.sh` rechaza una revisión distinta o
-cambios en el compilador; así se evita sobrescribir evidencia histórica con la campaña actual.
+destino no exista y no lo borra automáticamente. `audit_project.sh` y `capture_examples.sh` rechazan
+una revisión distinta o cambios en el compilador; la campaña histórica exige GCC/G++ 11.4.0 y
+registra los ejecutables seleccionados. Así se evita sobrescribir esa evidencia con la campaña
+actual.
 
 ```bash
 export CC=gcc-11

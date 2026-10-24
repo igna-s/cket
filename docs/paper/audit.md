@@ -2,8 +2,8 @@
 
 **Resultado:** aprobado dentro del alcance descrito. Se entregan dos ediciones completas, en español
 y en inglés. **Cada una tiene 8 páginas en total, 7 figuras originales, 4 tablas y 10 referencias**.
-Revisión documental: 12 de octubre de 2026. El informe
-[`paper-audit.json`](evidence/paper-audit.json) para español y
+Revisión documental: 24 de octubre de 2026. Las campañas científicas conservan su revisión
+histórica. El informe [`paper-audit.json`](evidence/paper-audit.json) para español y
 [`paper-audit-en.json`](evidence/paper-audit-en.json) para inglés registran **más de 200
 comprobaciones automáticas aprobadas por idioma**; el recuento exacto queda registrado en cada JSON.
 Se revisaron además las 16 páginas renderizadas de las dos ediciones finales.
@@ -145,8 +145,37 @@ demostración formal ni cobertura exhaustiva del compilador. No incorpora nuevas
 tiempos, consumo físico, ruido o ventaja computacional. Las conclusiones y los contratos
 probabilísticos mantienen esas limitaciones.
 
-Las conclusiones de ambas ediciones explicitan que el objetivo final incluye todas las
-construcciones e interfaces de C11. La evaluación de 0.4.0 sigue describiendo un subconjunto
-histórico; no certifica la cobertura final ni la implementación cuántica de toda libc. El
-[inventario](../c11-inventory.md) y la [hoja de ruta](../c11-roadmap.md) clasifican las
+Las conclusiones de ambas ediciones priorizan el núcleo cotidiano de C11 con contratos cuánticos
+explícitos; la biblioteca completa queda como ampliación. La evaluación de 0.4.0 sigue describiendo
+un subconjunto histórico; no certifica la cobertura final ni la implementación cuántica de toda
+libc. El [inventario](../c11-inventory.md) y la [hoja de ruta](../c11-roadmap.md) clasifican las
 restricciones pendientes.
+
+## Revisión del 24 de octubre de 2026
+
+Se corrigió en ambas fuentes y PDF una afirmación falsa: 8 bits relevantes no superan un umbral de
+12\. Solo las cargas de 16, 24 y 32 bits lo superan; la de 8 se ejecutó con `--no-tables` por
+elección del benchmark. El verificador consulta las constantes del objeto Git de la revisión
+estudiada y comprueba la frase tanto en la fuente como en el PDF. Cuatro regresiones incluyen las
+dos frases originales incorrectas y el caso de igualdad con el límite.
+
+La auditoría ya interpreta la entrega nativa actual: verifica fuentes y artefactos, presencia y
+resultados de los comandos, instrumentación, estados complejos y las inversiones completas de
+puertas archivadas. Sus 224 puntos y 56 inversas conservan el alcance finito de esa campaña; no son
+una nueva ejecución de toda la suite. Los tres ejemplos exactos del paper se ejecutan además con el
+compilador actual, y Bell y Grover contrastan todos sus estados complejos con fórmulas.
+
+Las cifras, tablas, figuras y once artefactos científicos del estudio histórico se conservan. Los
+scripts rechazan capturas en la revisión actual antes de escribirlos. La campaña histórica registra
+ahora el GCC/G++ seleccionado y exige su versión documentada. Los límites del resumen y las
+restricciones se atribuyen expresamente al prototipo evaluado.
+
+La [revisión de afirmaciones y referencias](re-audit-2026-10-24.md) conserva también las
+limitaciones de disponibilidad pública y consulta de fuentes. Los informes actualizados y el
+manifiesto identifican los documentos entregados y la revisión del código; no son revisión por pares
+ni una prueba de corrección universal.
+
+La comprobación de bytes de Git detectó además un AST temporal ignorado y una copia de un informe
+histórico desactualizada en el entorno de auditoría. Se excluye el temporal según `.gitignore` y se
+usa el informe publicado, que registra correctamente su fallo de construcción. Los resultados
+previos y la discrepancia quedan conservados; el manifiesto final se contrasta con los objetos Git.

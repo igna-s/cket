@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-24",
+  "status": "editorial-examples-and-finite-evidence-rechecked",
+  "historical_revision": "1ebb2e308e61bed5632798ded5beecf77b6b9a9c",
+  "compiler_revision": "7d192b00271c31a8e6ca2f28290c122e0f96d2df",
+  "audit_checkout_head": "7d192b00271c31a8e6ca2f28290c122e0f96d2df",
+  "uncommitted_editorial_changes": true,
+  "source_files": 28,
+  "source_sha256": {
+    "docs/paper/audit_paper.py": "35085514470b352cc15b70ef5c841f00cd4eab7dd99feceaec9395a13b5495a3",
+    "docs/paper/paper_capsules.py": "1c1bcdddc9d64cd7a8b117bb7c10a4f365c4f000f170414a148f8136b9d5cd27",
+    "docs/paper/paper_claims.py": "48803223dc1a5253865983ef2333671b66b7d7347cf2cbdaedcfcedebbfbdfe2",
+    "docs/paper/test_paper_claims.py": "fea854bfc6622e65c1c104a0e4aef78d2d945a629601cf06be620fab661055f0",
+    "docs/paper/README.md": "25ea8903e15c424e1ba65b43402d11af9accd18ccdd352d2fffb26c3bc0c8ba4",
+    "docs/paper/audit.md": "e746cbbb5bb67ac9b264d404a78ef1d9c03f253d1c45a44b844d1a8e5a553d51",
+    "docs/paper/re-audit-2026-10-24.md": "4524a1a2d0b05b1d4620cb9d9ec56dfe2fe9b4b0bf94ce2484d2adcc9c6bd1d9",
+    "docs/paper/audit_project.sh": "c78a359f076ae34c46622e3d589e3e10c33a03abb840ab378e257706c7bfab40",
+    "docs/paper/capture_examples.sh": "aa35cfb0dba8d8040b1cedfe67f385007df7b2ad260afc374c09bb9ca3d66f05",
+    "docs/paper/c_ket_paper.md": "2d4def47348374e32c464cee7ad41dcfc8b7baecd96731b088ab036d92286a43",
+    "docs/paper/c_ket_paper_en.md": "861d9728cc6091bfac71ba3a3c7b33a56d74e7344285d5e1fef1cec1775ce97c",
+    "docs/estado-general-del-proyecto.es.md": "e4cbc92b34f8dcf9df19319a7a92d0d041b17b4784007562ae4ab6f62c65f919",
+    ".gitignore": "3d45a90a2d7b0dc5a317420def137ddda2d2bfcba4f3348f4d54fb64cfb62788",
+    ".gitattributes": "37d3cd48296e5ecb4a3c01f0689c1108c20f08467a0a2ba25a58009722dbc54a",
+    "output/pdf/c_ket_paper.pdf": "156a7026e6b0c113208b474c81c69e67a4c9f197116bd5afb1eae852aaa9e6e9",
+    "output/pdf/c_ket_paper_en.pdf": "366adc000b818485da9ceca8eb97e9d7255ae3330f95e532785d0d0c2fa50967",
+    "docs/paper/evidence/current-implementation.json": "713a212a2077d0df7024b19d558a68cbd56de046cf3e64d5e86b2e217cde53ec",
+    "docs/paper/evidence/historical-model.json": "f247146f10494b43f84a5d04dee4e66df7aabf0f38ed43da24bd71be5844887b",
+    "docs/paper/evidence/historical-internal.h.txt": "60a52046beef23c4758b1cdbc80dfff3d8ac8e117c28d191a49b4692e9b57819",
+    "docs/paper/evidence/paper-audit.json": "403c12e784b54b493f1d1b64793c1de8339ac31825ba4d44f40363773a0b3fc5",
+    "docs/paper/evidence/paper-audit-en.json": "ef1a8692cc4e00b03219c3b4b605ade124cab5e40fed01814760237978f6e53a",
+    "docs/paper/evidence/sha256-manifest.json": "3e0d087ff32eaf0c12323581cd50a36cc9e7602bade3ae41479b83f78440dc69",
+    "docs/paper/evidence/editorial-toolchain.json": "ae50817c883b5d38663557208c8ed35b1006a3c96b38195b5c3af56b16bdfb53",
+    "docs/paper/evidence/layout-reference.json": "05c2132db5f1267b86da8ee95e1cb918063f619fc33ddfe53ef262e4b8a0fd46",
+    "docs/paper/evidence/current-examples-en-bell.json": "02970512882421e86f61ae5a0d4c7d3c882729157b996c438dc7328a63a63a9d",
+    "docs/paper/evidence/current-examples-en-find.json": "2643033798d6fecb32fcf3819bb21ceecbde52cc8f77591734be1d35496afc69",
+    "docs/paper/evidence/current-examples-es-bell.json": "02970512882421e86f61ae5a0d4c7d3c882729157b996c438dc7328a63a63a9d",
+    "docs/paper/evidence/current-examples-es-find.json": "2643033798d6fecb32fcf3819bb21ceecbde52cc8f77591734be1d35496afc69"
+  },
+  "current_compiler_inputs": 210,
+  "compiler_evidence": "../heap-transfer-v1/summary.json",
+  "current_tool_sha256": {
+    "cket": "2f8cf46c074463b4170008ac6e7c3c01054a7ba9097ca754c24e14606aa502b4",
+    "cket_backend": "93f0af97db27386fd1c5eb5516cf3c49218a466b45a5369bcc5aab9838374ae6",
+    "cket_plugin.so": "c58c2a7e7ff764f3349a35d8acd3e13b550f30f53c57133c76b521dfb59e43d8",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e"
+  },
+  "checks_per_language": {
+    "es": 1122,
+    "en": 1122
+  },
+  "semantic_regression_tests": 4,
+  "visually_reviewed_pages": 16,
+  "archived_finite_states_rechecked": 224,
+  "archived_complete_gate_inverses_rechecked": 56,
+  "historical_artifacts_preserved": 11,
+  "artifact_sha256": {
+    "before.tar.gz": "b289c94fe319660adddcdd0ee5db154389c6e76ac6d56b9cff2191fcf83ae090",
+    "evidence.tar.gz": "333f0132bae1493b7af0b501906ac8229a7e8afe38c2968c73de116449030724"
+  },
+  "limitations": [
+    "Historical measurements retain the fixed baseline; no new broad compiler campaign.",
+    "Archived finite states and inverses are repeated configurations, not arbitrary-state proof.",
+    "Bibliographic review has explicit access limits; the complete Bennett article was not reconsulted.",
+    "Public software availability remains unverified after an unauthenticated HTTP 404.",
+    "No complete everyday-C, C11, absence-of-bugs, physical-QPU or speedup claim."
+  ]
+}

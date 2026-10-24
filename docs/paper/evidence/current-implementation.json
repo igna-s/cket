@@ -215,6 +215,7 @@
     "tests/validation.h": "cb745670df18c14a90c49f8e55ed04a150d1366f9a68911eeb9505a0d15fd3a7"
   },
   "directed_evidence": "../../audit-evidence/heap-transfer-v1/summary.json",
-  "paper_audit": "pending",
-  "meaning": "Directed fixed/heap transfer validation does not regenerate or certify historical paper reports."
+  "paper_audit": "editorial-examples-and-finite-evidence-rechecked",
+  "paper_audit_reports": ["paper-audit.json", "paper-audit-en.json"],
+  "meaning": "Historical scientific results retain their baseline revision. Current exact examples and archived finite heap-transfer evidence are checked separately; this is not full compiler or C11 qualification."
 }

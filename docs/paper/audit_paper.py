@@ -17,6 +17,8 @@ from pathlib import Path
 import pymupdf as fitz
 from PIL import Image
 from pypdf import PdfReader
+from paper_claims import enumeration_claim
+from paper_capsules import deferred_delivery, finite_native_delivery
 
 BASE = Path(__file__).resolve().parent
 ROOT = BASE.parent.parent
@@ -202,6 +204,26 @@ def main(language):
             "Bits relevantes " + r['operator'] + ' ' + r['width'],
             int(r['relevant_bits']) == 2 * int(r['width']),
         )
+    historical = json.loads((EVIDENCE / 'historical-model.json').read_text())
+    historical_header = (EVIDENCE / 'historical-internal.h.txt').read_bytes()
+    check(
+        'Historical model constants retain their exact study revision and Git blob',
+        historical['revision'] == '1ebb2e308e61bed5632798ded5beecf77b6b9a9c'
+        and hashlib.sha256(historical_header).hexdigest() == historical['header_sha256']
+        and hashlib.sha1(
+            b'blob ' + str(len(historical_header)).encode() + b'\0' + historical_header
+        ).hexdigest()
+        == historical['header_git_blob'],
+    )
+    threshold = re.search(r'^#define QC_MAX_INPUT (\d+)', historical_header.decode(), re.M)
+    claim = enumeration_claim(
+        source, language, {int(r['relevant_bits']) for r in data}, int(threshold[1])
+    )
+    check(
+        'Enumeration: only measured widths strictly above the threshold exceed it',
+        claim['above_limit'] == [16, 24, 32] and claim['not_above_limit'] == [8],
+        str(claim),
+    )
 
     refs = {int(n) for n in re.findall(r'^\[(\d+)\]', source, re.M)}
     body = source.split(references_heading)[0]
@@ -398,6 +420,37 @@ def main(language):
             "Fragmento exacto " + name + " compila y cumple el resultado con semilla 7",
             output_check(result),
         )
+        current_ir = tmp / f'paper-{name}-current.ir.json'
+        run([ROOT / 'build/cket', path, '--emit-ir', '-o', current_ir])
+        current_state = json.loads(run([ROOT / 'build/cket_backend', '--state', current_ir]))
+        amplitudes = {
+            int(row['index']): complex(row['real'], row['imag'])
+            for row in current_state['amplitudes']
+        }
+        if name == 'bell':
+            expected_state = {0: 1 / math.sqrt(2), 3: 1 / math.sqrt(2)}
+            check(
+                'Current exact Bell fragment: complete complex state and clean private workspace',
+                set(amplitudes) == set(expected_state)
+                and all(abs(amplitudes[k] - value) < 1e-10 for k, value in expected_state.items()),
+            )
+        else:
+            theta = math.asin(1 / 4)
+            expected_state = {
+                k: math.sin(7 * theta) if k == 3 else math.cos(7 * theta) / math.sqrt(15)
+                for k in range(16)
+            }
+            phase = amplitudes.get(3, 0j) / expected_state[3]
+            check(
+                'Current exact Grover fragment: all amplitudes match the formula up to one common phase',
+                set(amplitudes) == set(expected_state)
+                and abs(abs(phase) - 1) < 1e-10
+                and all(
+                    abs(amplitudes[k] - phase * value) < 1e-10
+                    for k, value in expected_state.items()
+                ),
+            )
+        write_json(EVIDENCE / f'current-examples-{language}-{name}.json', current_state)
     ir_instruction = json.loads(re.search(r'```json\n(.*?)```', source, re.S)[1])
     doc = {
         'format': 'cket.qir',
@@ -433,6 +486,21 @@ def main(language):
     )
     text = '\n'.join(page.get_text() for page in pdf)
     normalized_text = re.sub(r'\s+', ' ', text)
+    pdf_claim = enumeration_claim(
+        normalized_text, language, {int(r['relevant_bits']) for r in data}, int(threshold[1])
+    )
+    check(
+        'PDF carries the corrected enumeration claim, not just the editable source',
+        pdf_claim == claim,
+    )
+    scope_markers = {
+        'es': ('El prototipo evaluado', 'núcleo cotidiano de C11'),
+        'en': ('The evaluated prototype', 'everyday C11 core'),
+    }[language]
+    check(
+        'PDF and source distinguish historical limits and the current everyday-C priority',
+        all(marker in source and marker in normalized_text for marker in scope_markers),
+    )
     check("PDF sin notas internas de edición", not INTERNAL_EDITORIAL.search(normalized_text))
     compact_pages = [re.sub(r'\s+', '', page.get_text()) for page in pdf]
     code_blocks = re.findall(r'```(?:c|json)\n(.*?)```', source, re.S)
@@ -614,8 +682,7 @@ def main(language):
             )
         )
         and bool(re.search(rf'\b{partial_types} entradas de tipos y alias\b', overview))
-        and 'Todavía no implementa compatibilidad cuántica completa con C11'
-        in re.sub(r'\s+', ' ', overview),
+        and 'Todavía no completa el núcleo cotidiano acordado' in re.sub(r'\s+', ' ', overview),
     )
     previous_integration = json.loads(
         (
@@ -916,6 +983,10 @@ def main(language):
         ),
     )
     current_index = json.loads((ROOT / 'docs/c11-library.json').read_text())
+    active_index = json.loads((ROOT / 'docs/audit-evidence/delivery-index.json').read_text())
+    active_inventory = json.loads(
+        (ROOT / 'docs/audit-evidence' / active_index['active'] / 'summary.json').read_text()
+    )['inventory']
     check(
         'Historical144 inventory remains unchanged; current string adapters remain partial without claiming complete C11',
         string_integration['inventory']
@@ -929,8 +1000,11 @@ def main(language):
             'complete': 0,
         }
         and len(current_index['interfaces']) == 1224
-        and sum(row['quantum'] == 'pending' for row in current_index['interfaces']) == 769
-        and sum(row['quantum'] == 'partial' for row in current_index['interfaces']) == 87
+        and {
+            status: sum(row['quantum'] == status for row in current_index['interfaces'])
+            for status in {row['quantum'] for row in current_index['interfaces']}
+        }
+        == active_inventory
         and all(
             row['quantum'] == 'partial'
             for row in current_index['interfaces']
@@ -1643,57 +1717,10 @@ def main(language):
     )
     delivery_folder = ROOT / 'docs/audit-evidence' / delivery_name
     delivery = json.loads((delivery_folder / 'summary.json').read_text())
-    build_only = delivery['status'] == 'built-runtime-qualification-deferred'
-    with tarfile.open(delivery_folder / 'evidence.tar.gz') as archive:
-        delivery_sources = {
-            name: hashlib.sha256(archive.extractfile('sources/' + name).read()).hexdigest()
-            for name in delivery['source_sha256']
-        }
-        delivery_exit = json.load(archive.extractfile('records/exit.json'))
-        delivery_logs_match = all(
-            hashlib.sha256(archive.extractfile('records/' + name).read()).hexdigest() == sha
-            for name, sha in delivery['log_sha256'].items()
-        )
-        delivery_native = (
-            '' if build_only else archive.extractfile('records/native.log').read().decode()
-        )
-    check(
-        'Active incremental delivery: current/archive source identity and qualification scope remain explicit',
-        delivery['source_files'] == len(delivery_sources)
-        and delivery_sources == delivery['source_sha256']
-        and all(
-            hashlib.sha256((ROOT / name).read_bytes()).hexdigest() == sha
-            for name, sha in delivery_sources.items()
-        )
-        and delivery['status']
-        in {
-            'built-and-examples-executed-full-qualification-deferred',
-            'built-runtime-qualification-deferred',
-        }
-        and all(value == 'deferred' for value in delivery['qualification'].values()),
+    inspect_delivery = (
+        finite_native_delivery if delivery['status'].startswith('finite-') else deferred_delivery
     )
-    check(
-        'Active incremental delivery: build evidence and runtime qualification retain their actual scopes',
-        delivery_exit['status'] == delivery['status']
-        and all(row['exit_code'] == 0 for row in delivery_exit['commands'])
-        and delivery_logs_match
-        and (
-            (
-                build_only
-                and delivery['qualification']['native_examples'] == 'deferred'
-                and delivery['qualification']['native_regression'] == 'deferred'
-            )
-            or (
-                not build_only
-                and delivery['native_regression']['exit_code'] == 0
-                and re.search(
-                    rf"^{delivery['native_regression']['checks']} passed, 0 failed ",
-                    delivery_native,
-                    re.M,
-                )
-            )
-        ),
-    )
+    active_delivery_evidence = inspect_delivery(ROOT, delivery_folder, delivery, check)
     current_capsules = (
         ('controlled-operands-integration', current_integration),
         ('controlled-operands-full', current_full),
@@ -1743,6 +1770,8 @@ def main(language):
         *sorted((BASE / 'figures').rglob('*.png')),
         *sorted((BASE / 'figures').rglob('*.svg')),
         *[ROOT / p for p in local_paths],
+        ROOT / '.gitignore',
+        ROOT / '.gitattributes',
         ROOT / 'docs/audit-evidence/delivery-index.json',
         *sorted(EVIDENCE.glob('*.log')),
         ROOT / 'docs/audit-evidence/verify.log',
@@ -1817,6 +1846,10 @@ def main(language):
         EVIDENCE / 'editorial-toolchain.json',
         EVIDENCE / 'layout-reference.json',
         EVIDENCE / 'manuscript-before-format.md',
+        EVIDENCE / 'historical-model.json',
+        EVIDENCE / 'historical-internal.h.txt',
+        EVIDENCE / 'current-implementation.json',
+        *sorted(EVIDENCE.glob('current-examples-*.json')),
         EVIDENCE / 'entanglement.state.json',
         EVIDENCE / 'find.state.json',
         EVIDENCE / 'entanglement.qir.txt',
@@ -1833,9 +1866,25 @@ def main(language):
                 'requirements-paper.txt',
                 'setup_pdf.sh',
                 'inspect_reference.py',
+                'paper_claims.py',
+                'paper_capsules.py',
+                'test_paper_claims.py',
+                're-audit-2026-10-24.md',
             )
         ],
     ]
+    # Globbed historical folders may contain ignored compiler scratch files.
+    # Keep those out of the published manifest, using the repository's own rules.
+    ignored_result = subprocess.run(
+        ['git', 'check-ignore', '-z', '--stdin'],
+        cwd=ROOT,
+        input=b'\0'.join(str(p.relative_to(ROOT)).encode() for p in targets) + b'\0',
+        capture_output=True,
+    )
+    if ignored_result.returncode not in (0, 1):
+        raise RuntimeError(ignored_result.stderr.decode())
+    ignored = set(ignored_result.stdout.decode().split('\0'))
+    targets = [p for p in targets if p.relative_to(ROOT).as_posix() not in ignored]
     evidence_paths = sorted(
         {
             str(path.relative_to(ROOT))
@@ -1886,6 +1935,7 @@ def main(language):
             'source_files_in_manifest': len(local_paths),
         },
         'evidence_scope': 'Baseline campaign logs from the fixed revision; editorial and exact examples checked in the current checkout.',
+        'active_delivery_evidence': active_delivery_evidence,
         'visual_review': 'See audit.md: manual review of the latest rendered pages is also required.',
         'external_availability_scope': 'See docs/re-audit-2026-10-14.md: the historical software URL returned HTTP 404 without authentication. PDF/bibliographic checks do not certify public source availability.',
     }

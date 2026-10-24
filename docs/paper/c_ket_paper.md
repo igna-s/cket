@@ -7,7 +7,7 @@
 
 ## Resumen
 
-Presentamos C Ket, un sistema experimental de programación cuántica integrado en C11 mediante un plugin de GCC. El sistema combina expresiones enteras y control coherente con ejecución clásica nativa. Su arquitectura comprende análisis de propiedad, una representación intermedia JSON, síntesis reversible y exportación OpenQASM 3. La conservación explícita de dependencias permite descomputar registros temporales y distingue transferencia de propiedad, préstamo y medición. La evaluación comprende 354 pruebas nativas, 426 comprobaciones de 16 programas, 145 compilaciones diferenciales, 24 circuitos sintetizados sin tablas y 11 validaciones independientes con QuEST. Analizamos el número de puertas y los registros auxiliares de seis operadores con anchos entre 4 y 16 bits. La representación de circuitos admite 128 qubits y la simulación local hasta 24. Los resultados caracterizan la implementación y muestran que el costo de los auxiliares limita la simulación de circuitos que sí pueden sintetizarse.
+Presentamos C Ket, un sistema experimental de programación cuántica integrado en C11 mediante un plugin de GCC. El sistema combina expresiones enteras y control coherente con ejecución clásica nativa. Su arquitectura comprende análisis de propiedad, una representación intermedia JSON, síntesis reversible y exportación OpenQASM 3. La conservación explícita de dependencias permite descomputar registros temporales y distingue transferencia de propiedad, préstamo y medición. La evaluación comprende 354 pruebas nativas, 426 comprobaciones de 16 programas, 145 compilaciones diferenciales, 24 circuitos sintetizados sin tablas y 11 validaciones independientes con QuEST. Analizamos el número de puertas y los registros auxiliares de seis operadores con anchos entre 4 y 16 bits. El prototipo evaluado representa 128 qubits y simula localmente hasta 24. Los resultados caracterizan la implementación y muestran que el costo de los auxiliares limita la simulación de circuitos que sí pueden sintetizarse.
 
 ## 1 Introducción
 
@@ -187,13 +187,13 @@ A 16 bits, la comparación requiere 193 puertas y el resto 7632. Cada MCX se cue
 
 Las dos entradas y el resultado de suma, resta y multiplicación ocupan 48 qubits; los auxiliares elevan el pico a 64. El resto alcanza 114. Los circuitos de 50 a 114 qubits se analizan por síntesis y contabilización. La profundidad mide dependencias lógicas. Su diferencia entre suma y resta, con igual número de puertas, refleja diferencias de paralelismo.
 
-Con 8, 16, 24 y 32 bits relevantes, las cargas superan el límite de enumeración de 12 bits. La representación de enteros de 64 bits no garantiza síntesis dentro del presupuesto disponible: la división de ese ancho requiere más auxiliares de los admitidos.
+Las cargas con 16, 24 y 32 bits relevantes superan el límite de enumeración de 12 bits; la de 8 usa `--no-tables`. Representar enteros de 64 bits no garantiza síntesis: dividir ese ancho excede el presupuesto de auxiliares.
 
 ### 6.4 Amenazas a la validez y restricciones
 
 La evaluación utiliza una versión de GCC y cargas finitas. La simulación emplea punto flotante sin cota global del error acumulado. Compartir el motor de ejecución y exportación puede correlacionar errores. QuEST reduce esa dependencia en los casos contrastados, sin constituir una demostración formal.
 
-El análisis de flujo no cubre todos los caminos de C. Se restringen recursión, llamadas indirectas, composición entre unidades y retornos de productos. No se admiten flotantes cuánticos generales, VLAs, unions, bitfields ni asignación dinámica cuántica. Los módulos unitarios requieren préstamos tipados y auxiliares restaurados, sin constituir una ABI general.
+El prototipo evaluado restringe recursión, llamadas indirectas, composición entre unidades y retornos de productos. No admite flotantes cuánticos generales, VLAs, unions, bitfields ni asignación dinámica cuántica. Los módulos unitarios requieren préstamos tipados y auxiliares restaurados, sin constituir una ABI general.
 
 Se estudian circuitos ideales, sin ejecución en procesadores cuánticos, ruido, corrección de errores ni conectividad física. El acceso a amplitudes completas sirve para validación en simulación y no es una operación de hardware [1].
 
@@ -205,7 +205,7 @@ C Ket integra declaraciones cuánticas, cálculo reversible y control clásico e
 
 El análisis de recursos muestra que la expresividad de los operadores debe evaluarse conjuntamente con sus necesidades de auxiliares. División y resto presentan los mayores costos de las familias estudiadas, y varios circuitos sintetizables exceden la capacidad del simulador. La distinción entre representación, síntesis y simulación es, por ello, esencial para interpretar el alcance del sistema.
 
-El objetivo a largo plazo es una semántica cuántica explícita para todas las construcciones de C11 e interfaces de su biblioteca estándar. El trabajo futuro distingue implementaciones pendientes, cotas de recursos e incompatibilidades semánticas justificadas. Flujo, memoria, tipos numéricos y composición entre unidades requieren validación por etapas. La estabilidad de GCC, la descomposición física y las comparaciones con cargas y tiempos equivalentes complementarían los recursos lógicos presentados.
+El trabajo futuro prioriza un núcleo cotidiano de C11 con contratos cuánticos explícitos para funciones, flujo, tipos y memoria. Cubrir todas las interfaces de la biblioteca es una ampliación, no un resultado de esta evaluación. Las implementaciones pendientes, las cotas de recursos y las incompatibilidades justificadas requieren validación por etapas. La estabilidad de GCC, la descomposición física y comparaciones con cargas y tiempos equivalentes completarían el estudio.
 
 
 ## Referencias

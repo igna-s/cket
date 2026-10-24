@@ -7,7 +7,7 @@
 
 ## Abstract
 
-We present C Ket, an experimental quantum programming system integrated into C11 through a GCC plugin. The system combines integer expressions and coherent control with native classical execution. Its architecture comprises ownership analysis, a JSON intermediate representation, reversible synthesis, and OpenQASM 3 export. Explicit dependency preservation enables the uncomputation of temporary registers and distinguishes ownership transfer, borrowing, and measurement. The evaluation comprises 354 native tests, 426 checks across 16 programs, 145 differential compilations, 24 circuits synthesized without tables, and 11 independent validations with QuEST. We analyze gate counts and auxiliary registers for six operators with widths from 4 to 16 bits. Circuit representation supports 128 qubits and local simulation up to 24. The results characterize the implementation and show that auxiliary costs limit the simulation of circuits that can nonetheless be synthesized.
+We present C Ket, an experimental quantum programming system integrated into C11 through a GCC plugin. The system combines integer expressions and coherent control with native classical execution. Its architecture comprises ownership analysis, a JSON intermediate representation, reversible synthesis, and OpenQASM 3 export. Explicit dependency preservation enables the uncomputation of temporary registers and distinguishes ownership transfer, borrowing, and measurement. The evaluation comprises 354 native tests, 426 checks across 16 programs, 145 differential compilations, 24 circuits synthesized without tables, and 11 independent validations with QuEST. We analyze gate counts and auxiliary registers for six operators with widths from 4 to 16 bits. The evaluated prototype represents 128 qubits and simulates up to 24 locally. The results characterize the implementation and show that auxiliary costs limit the simulation of circuits that can nonetheless be synthesized.
 
 ## 1 Introduction
 
@@ -187,13 +187,13 @@ At 16 bits, comparison requires 193 gates and remainder 7632. Each MCX counts as
 
 The two inputs and result of addition, subtraction, and multiplication occupy 48 qubits; auxiliaries raise the peak to 64. Remainder reaches 114. Circuits with 50 to 114 qubits are analyzed through synthesis and accounting. Depth measures logical dependencies. Its difference between addition and subtraction, despite equal gate counts, reflects differences in parallelism.
 
-With 8, 16, 24, and 32 relevant bits, the workloads exceed the 12-bit enumeration limit. Representing 64-bit integers does not guarantee synthesis within the available budget: division at that width requires more auxiliaries than supported.
+Workloads with 16, 24, and 32 relevant bits exceed the 12-bit enumeration limit; the 8-bit workload uses `--no-tables`. Representing 64-bit integers does not guarantee synthesis: division at that width exceeds the ancillary budget.
 
 ### 6.4 Threats to Validity and Restrictions
 
 The evaluation uses one GCC version and finite workloads. Simulation employs floating point without a global bound on accumulated error. Sharing the execution and export engine may correlate errors. QuEST reduces this dependence in the compared cases, without constituting a formal proof.
 
-Flow analysis does not cover every C path. Recursion, indirect calls, composition across translation units, and product returns are restricted. General quantum floating-point values, VLAs, unions, bitfields, and quantum dynamic allocation are unsupported. Unitary modules require typed borrows and restored auxiliaries, without constituting a general ABI.
+The evaluated prototype restricts recursion, indirect calls, cross-unit composition, and product returns. General quantum floating-point values, VLAs, unions, bitfields, and quantum dynamic allocation are unsupported. Unitary modules require typed borrows and restored auxiliaries, without constituting a general ABI.
 
 The study considers ideal circuits, without quantum processor execution, noise, error correction, or physical connectivity. Complete amplitude access supports simulation validation and is not a hardware operation [1].
 
@@ -205,7 +205,7 @@ C Ket integrates quantum declarations, reversible computation, and classical con
 
 The resource analysis shows that operator expressiveness must be assessed together with auxiliary requirements. Division and remainder incur the highest costs among the studied families, and several synthesizable circuits exceed simulator capacity. Distinguishing representation, synthesis, and simulation is therefore essential to interpreting the system's scope.
 
-The long-term objective is explicit quantum semantics for all C11 constructs and standard-library interfaces. Future work therefore distinguishes missing implementations, resource bounds, and justified semantic incompatibilities. Flow analysis, memory, numeric types, and cross-unit composition require staged validation. GCC stability, physical decomposition, and comparisons using equivalent workloads and execution times would complement the logical resources presented here.
+Future work prioritizes an everyday C11 core with explicit quantum contracts for functions, control flow, types, and memory. Covering every standard-library interface is an extension, rather than a result of this evaluation. Missing implementations, resource bounds, and justified incompatibilities require staged validation. GCC stability, physical decomposition, and comparisons using equivalent workloads and execution times would complement the study.
 
 
 ## References

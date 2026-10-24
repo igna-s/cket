@@ -8,14 +8,20 @@ if [[ "$(git rev-parse HEAD)" != "$baseline" ]] ||
     printf '%s\n' "Paper baseline evidence requires the clean revision $baseline; use a separate checkout. Current verification belongs in build/audit/." >&2
     exit 1
 fi
+
+export CC="${CC:-gcc-11}" CXX="${CXX:-g++-11}"
+if [[ "$("$CC" -dumpfullversion)" != 11.4.0 ]] || [[ "$("$CXX" -dumpfullversion)" != 11.4.0 ]]; then
+    printf '%s\n' 'The historical paper campaign requires GCC/G++ 11.4.0.' >&2
+    exit 1
+fi
 evidence=docs/paper/evidence
 mkdir -p "$evidence"
 {
     date -u +'%Y-%m-%dT%H:%M:%SZ'
     git rev-parse HEAD
     uname -srmo
-    gcc --version | head -n 1
-    g++ --version | head -n 1
+    "$CC" --version | head -n 1
+    "$CXX" --version | head -n 1
     python3 --version
     python3 - <<'PY'
 import importlib.util

@@ -28,8 +28,8 @@ longitudes CPU y vistas fijas comprobadas. También se capturan bytes actuales d
 conocidos hacia el heap. El [ejemplo](../examples/blocks/05/heap_transfer.c) conserva los resultados
 después de cambiar el origen y liberar el heap. Las palabras fuera de la longitud conservan sus
 qubits, incluida una copia de longitud cero. Las escrituras heap→fijo dentro de bucles CPU todavía
-requieren historia por iteración; los usos generales de punteros y ABI siguen abiertos.
-La [evidencia de integración](audit-evidence/heap-transfer-v1/README.es.md) registra 224 puntos de
+requieren historia por iteración; los usos generales de punteros y ABI siguen abiertos. La
+[evidencia de integración](audit-evidence/heap-transfer-v1/README.es.md) registra 224 puntos de
 estado completo y 56 inversas, incluidas las construcciones con ASan/UBSan.
 
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
@@ -441,7 +441,11 @@ conservan sus propias reconstrucciones y sus interrupciones, con sus alcances de
 Los [informes de auditoría de los papers](paper/evidence/paper-audit.json) registran verificaciones
 automáticas por idioma, con 8 páginas, 7 figuras y 10 referencias por versión. Sus manifiestos
 vinculan los documentos, las fuentes y la evidencia comprobada. Los experimentos históricos del
-paper conservan su revisión original y no se renombran como resultados del compilador nuevo.
+paper conservan su revisión original y no se renombran como resultados del compilador nuevo. La
+[revisión del 24 de octubre](paper/re-audit-2026-10-24.md) corrige una afirmación falsa sobre el
+umbral de enumeración, protege las capturas históricas y comprueba Bell y Grover con estados
+complejos completos. También vuelve a contrastar los estados e inversas archivados del heap. Este
+cierre documental no equivale a terminar la implementación del perfil cotidiano.
 
 Se mejoraron la indentación y el formato del código y la documentación. Las fuentes integradas
 conservan el formato comprobado antes de congelarlas y los documentos actuales tienen su control
@@ -465,10 +469,10 @@ No alcanza con que pase el subconjunto actual de pruebas. Para cerrar el
 El próximo trabajo completa las combinaciones habituales de funciones, punteros, flujo y memoria.
 Los vectores dinámicos ya tienen un contrato nativo parcial; faltan los resultados de actualización
 dentro de bucles CPU, las pruebas de direcciones disjuntas y los adaptadores de bytes/cadenas.
-También siguen pendientes los tipos cuánticos `float` y `double`, la integración general del perfil
-y la revisión final de los papers. Las campañas dirigidas de propiedad y heap conservan sus propias
-fuentes, ejecuciones y pruebas de estados e inversas. **El perfil cotidiano todavía no está
-completo.**
+También siguen pendientes los tipos cuánticos `float` y `double` y la integración general del
+perfil. Los papers deberán actualizarse si cambian los resultados que describen. Las campañas
+dirigidas de propiedad y heap conservan sus propias fuentes, ejecuciones y pruebas de estados e
+inversas. **El perfil cotidiano todavía no está completo.**
 
 La [evidencia histórica de distancias](audit-evidence/pointer-differences/README.es.md) conserva sus
 fuentes y resultados originales. La integración posterior añade el uso positivo de una distancia
