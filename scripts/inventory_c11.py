@@ -453,6 +453,8 @@ def semantics(header, name, kind, optional):
             "M4/M7",
             [
                 "tests/validate_memcopy.c",
+                "scripts/validate-heap-transfer.py",
+                "tests/heap_transfer_trace.c",
                 "scripts/validate-heap-memory.py",
                 "tests/heap_memory_state.inc",
                 "tests/validate_memory_returns.c",
@@ -479,8 +481,12 @@ def semantics(header, name, kind, optional):
             "coherent controls and overlapping memmove via saved original versions. It rejects "
             "memcpy overlap before writes and preserves sources and overwrite history. Local "
             "destination-return aliases, assignment and equality are supported. The finite heap "
-            "state/inverse campaign qualifies that route only; heap/fixed-buffer interchange and "
-            "general ABI remain pending.",
+            "state/inverse campaign qualifies that route only. Byte transfers between heaps and "
+            "checked fixed quantum buffers work in both directions, with pure CPU lengths and "
+            "static fixed addresses. Known nonvolatile CPU objects may supply captured bytes to "
+            "a heap. Preflight checks both extents; unused fixed words keep their wires, including "
+            "zero-length identity. CPU-to-heap loops have finite executions; heap-to-fixed loops "
+            "still need per-iteration history. General ABI and heap string adapters remain pending.",
         )
     if kind == "profile-macro" or name in ("NDEBUG", "static_assert"):
         return (

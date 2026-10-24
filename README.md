@@ -316,12 +316,15 @@ loops; saved recipes preserve their phases and lifetimes. The
 [directed heap campaign](docs/audit-evidence/heap-effects-v1/README.es.md) checks finite joint
 states, phases and saved inverses. General heap consumers and static export remain pending.
 
-Block 05 also includes `heap_bytes`: native heap-to-heap `memcpy`/`memmove` and heap `memset`,
-with runtime CPU byte lengths, partial/mixed integer words, overlapping moves and captured quantum
-fill. Returned destinations retain checked classical address aliases. The
+Block 05 also includes `heap_bytes`: native heap-to-heap `memcpy`/`memmove` and heap `memset`, with
+runtime CPU byte lengths, partial/mixed integer words, overlapping moves and captured quantum fill.
+Returned destinations retain checked classical address aliases. The
 [heap byte-memory evidence](docs/audit-evidence/heap-memory-v1/README.es.md) records finite complex
-states, independent gate inverses and actual ASan/UBSan builds. Heap/fixed-buffer interchange and
-string adapters on heaps remain pending.
+states, independent gate inverses and actual ASan/UBSan builds. The runner now also includes
+`heap_transfer`, which copies between fixed quantum buffers and heaps in both directions. Known
+nonvolatile CPU objects can supply captured source bytes to heaps. Fixed addresses are checked
+statically and lengths may be CPU runtime values. Heap-to-fixed writes in CPU loops, general
+pointer/ABI contexts and string adapters on heaps remain pending.
 
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug

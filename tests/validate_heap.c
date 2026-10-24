@@ -178,6 +178,8 @@ int main(void) {
     malformed_effects();
     byte_memory_states();
     malformed_byte_memory();
+    bound_heap_byte_states();
+    malformed_transfer_memory();
     printf(
         "%u heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes.\n",
         checks);

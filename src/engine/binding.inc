@@ -228,12 +228,58 @@ static int binding_heap_read(qc_binding_writer *writer, int token, unsigned dept
     return ok;
 }
 
+static int binding_heap_byte_read(qc_binding_writer *writer, int token) {
+    const cj_doc *d = writer->doc;
+    qc_context *c = writer->context;
+    static const char *const fields[] = {
+        "op", "bits", "signed", "heap", "offset", "index", "big_endian", NULL};
+    uint64_t width, handle, offset, index;
+    int sign = cj_get(d, token, "signed"), endian = cj_get(d, token, "big_endian");
+    if (!binding_fields(c, d, token, fields) || !cj_u64(d, cj_get(d, token, "bits"), &width) ||
+        width != 8 || sign < 0 || d->tokens[sign].kind != 'f' || endian < 0 ||
+        (d->tokens[endian].kind != 't' && d->tokens[endian].kind != 'f') ||
+        !binding_heap_value(writer, cj_get(d, token, "heap"), &handle) ||
+        !binding_heap_value(writer, cj_get(d, token, "offset"), &offset) ||
+        !binding_heap_value(writer, cj_get(d, token, "index"), &index))
+        return qc_fail(c, "invalid typed heap byte read");
+    qc_heap *heap = heap_lookup(c, handle);
+    char *text = NULL;
+    if (c->structural)
+        text = heap_memory_leaf(c, "const", 8, 0);
+    else if (heap && heap->width % 8 == 0 && offset <= heap->count * (heap->width / 8) &&
+             index < heap->count * (heap->width / 8) - offset) {
+        size_t stride = heap->width / 8, position = (size_t)(offset + index);
+        uint32_t id;
+        if (!qc_heap_element(c, handle, position / stride, &id))
+            return 0;
+        unsigned byte = (unsigned)(position % stride);
+        unsigned shift = 8 * (cj_bool(d, endian) ? (unsigned)stride - 1 - byte : byte);
+        text = heap_memory_cast(
+            c,
+            8,
+            0,
+            heap_memory_binary(c,
+                               "shr",
+                               heap->width,
+                               heap_memory_cast(c, heap->width, 0, heap_memory_register(c, id)),
+                               heap_memory_leaf(c, "const", 8, shift)));
+    } else
+        text = heap_memory_binary(
+            c, "div", 8, heap_memory_leaf(c, "const", 8, 1), heap_memory_leaf(c, "const", 8, 0));
+    // Invalid addresses stay lazy in inactive/count-excluded expression arms.
+    int ok = text && binding_write(writer, text, strlen(text));
+    free(text);
+    return ok;
+}
+
 static int binding_token(qc_binding_writer *writer, int token, unsigned depth) {
     const cj_doc *d = writer->doc;
     if (depth > 128)
         return qc_fail(writer->context, "CPU binding nesting budget exceeded");
     if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "heap_read"))
         return binding_heap_read(writer, token, depth);
+    if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "heap_byte_read"))
+        return binding_heap_byte_read(writer, token);
     if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "parameter")) {
         static const char *const names[] = {"op", "id", "bits", "signed", NULL};
         uint32_t id;

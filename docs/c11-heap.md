@@ -106,6 +106,16 @@ source versions before its first write. `memset` captures its converted unsigned
 including a quantum fill that reads the destination. Byte order follows the GCC target. Coherent
 controls do not introduce a measurement. Copies produce basis correlations with their source.
 
+Byte copies also cross between heaps and checked fixed quantum buffers in both directions. Known
+nonvolatile CPU objects may supply once-only current byte snapshots to a heap. The fixed view
+retains a checked static address; its byte length can be a pure CPU runtime value. The entire heap
+range and fixed extent are checked before destination writes. Only bytes below that length are read
+from CPU storage. Words outside the length keep their existing owner/wires, including the whole
+destination for a zero-length copy. Heap-to-fixed writes use the compiler's versioned owners and CPU
+joins, so saved inverses retain actual source registers after heap overwrite or disposal.
+Heap-to-fixed writes inside runtime CPU loops still need per-iteration history support;
+CPU-object-to-heap and heap-to-heap loops have separate finite execution tests.
+
 The returned destination is a classical address: local typed/`void *`/byte-view aliases, assignment,
 equality and null comparisons are supported. Those aliases retain the original allocation type and
 read-only/borrow restrictions. Direct byte scalar loads/stores through a cast of a wider heap remain
@@ -113,7 +123,7 @@ pending. Empty ranges allow a live allocation's one-past address; null or dead a
 invalid even at zero length. A provably inactive quantum operation skips its range checks.
 
 Value-producing heap updates inside runtime CPU loops, unrestricted pointer arithmetic/ABI, general
-aggregates, heap/fixed-buffer byte interchange, string adapters over heaps, quantum floating-point
+aggregates, general returned-pointer consumers, string adapters over heaps, quantum floating-point
 storage, atomics and concurrency remain pending. Quantum allocation under coherent control is
 unsupported. Runtime CPU control and heap allocation are native-only: static QASM/resource export
 rejects that profile. Structural template validation does not execute allocations or prove the
@@ -127,9 +137,11 @@ bash scripts/run-block.sh 05
 CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4
 CKET_SIMULATOR=sparse build/blocks/05/coherent_heap
 CKET_SIMULATOR=sparse build/blocks/05/heap_bytes
+CKET_SIMULATOR=sparse build/blocks/05/heap_transfer
 build/validate_heap
 python3 scripts/validate-heap.py --output build/heap-proof --levels O0 O1 O2 O3 Os
 python3 scripts/validate-heap-memory.py --output build/heap-byte-proof --levels O0 O2 Os
+python3 scripts/validate-heap-transfer.py --output build/heap-transfer-proof --levels O0 O2 Os
 ```
 
 [`dynamic_heap.c`](../examples/blocks/05/dynamic_heap.c) takes an initial capacity of 2, 3 or 4 from

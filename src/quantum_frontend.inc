@@ -1104,6 +1104,7 @@ tree expand_memory_copy(tree call, bool move) {
 #include "quantum_value_program.inc"
 #include "quantum_memory.inc"
 #include "quantum_byte_copy.inc"
+#include "quantum_heap_transfer.inc"
 #include "quantum_decimal.inc"
 #include "quantum_search_writes.inc"
 
@@ -1140,7 +1141,7 @@ bool expand_pointer_borrow(tree decl, tree &prefix) {
     }
     prefix = memory_call ? expand_quantum_program(initial) : build_empty_stmt(at(decl));
     if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix) &&
-        !quantum_value_programs.count(prefix)) {
+        !quantum_value_programs.count(prefix) && !quantum_heap_memory.count(prefix)) {
         // The normal adapter already emitted its storage/count/CPU-boundary diagnostic.
         return true;
     }
@@ -1513,8 +1514,8 @@ tree expand_static_for_block(tree block) {
 tree expand_quantum_program(tree value) {
     if (!value)
         return value;
-    if (quantum_heap_accesses.count(value) || quantum_heap_updates.count(value) ||
-        quantum_heap_memory.count(value))
+    if (quantum_heap_accesses.count(value) || quantum_heap_byte_reads.count(value) ||
+        quantum_heap_updates.count(value) || quantum_heap_memory.count(value))
         return value;
     auto code = TREE_CODE(value);
     if (code == BIND_EXPR) {

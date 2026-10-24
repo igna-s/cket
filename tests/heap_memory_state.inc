@@ -87,3 +87,82 @@ static void malformed_byte_memory(void) {
 #undef BYTE_HEADER
 #undef BYTE_U64
 }
+
+static void bound_heap_byte_states(void) {
+    for (int big = 0; big < 2; ++big) {
+        qc_context *c = qc_create_sparse(7, 1024);
+        uint64_t heap = c ? qc_heap_allocate(c, 1, 16, 0) : 0;
+        uint32_t source;
+        require(heap && qc_heap_element(c, heap, 0, &source), "bound byte source");
+        prepare(c, source, 0, 1);
+        unsigned wire = qc_lookup(c, source)->wires[0];
+        require(qc_emit(c, QC_PHASE, 0, QC_WIRE(wire), QC_WIRE(wire), .31), "bound byte phase");
+        operation(c, "{\"op\":\"qalloc\",\"id\":7,\"width\":8,\"signed\":false,\"ancilla\":true}");
+        char text[1100];
+        snprintf(
+            text,
+            sizeof text,
+            "{\"op\":\"qbind\",\"instruction\":{\"op\":\"qcompute\",\"id\":7,\"expr\":{"
+            "\"op\":\"heap_byte_read\",\"bits\":8,\"signed\":false,"
+            "\"heap\":{\"op\":\"parameter\",\"id\":1,\"bits\":64,\"signed\":false},"
+            "\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},"
+            "\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},\"big_endian\":%s}},"
+            "\"parameters\":[{\"id\":1,\"bits\":64,\"signed\":false}]}",
+            big ? "true" : "false");
+        require(qc_apply_bound(c, text, &heap, 1, NULL), qc_error(c));
+        for (unsigned inverse = 0; inverse < 2; ++inverse) {
+            if (inverse) {
+                require(qc_heap_free(c, heap), "retire captured byte source");
+                operation(c, "{\"op\":\"quncompute\",\"id\":7,\"saved\":true}");
+            }
+            require(qc_sparse_size(c) == 2, "bound byte support");
+            for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+                uint64_t low, high;
+                double complex amplitude;
+                require(qc_sparse_entry(c, row, &low, &high, &amplitude), "bound byte state row");
+                qc_mask basis = ((qc_mask)high << 64) | low;
+                unsigned coin = (unsigned)((basis >> wire) & 1);
+                qc_mask expected = coin ? QC_WIRE(wire) : 0;
+                if (!big && !inverse && coin)
+                    expected |= QC_WIRE(qc_lookup(c, 7)->wires[0]);
+                require(basis == expected, "independent bound byte joint state");
+                require(cabs(amplitude - cexp(I * (coin ? .31 : 0)) / sqrt(2)) < 1e-10,
+                        "bound byte read/inverse phase");
+            }
+        }
+        require(!c->measure && !c->reset, "bound byte read introduces no channel");
+        qc_destroy(c);
+    }
+}
+
+static void malformed_transfer_memory(void) {
+#define TRANSFER_U64(v) "{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":" #v "}"
+#define TRANSFER_FIELDS                                                                         \
+    "\"heap\":" TRANSFER_U64(1) ",\"heap_offset\":" TRANSFER_U64(0) ",\"count\":" TRANSFER_U64( \
+        1) ",\"big_endian\":false"
+    const char *cases[] = {
+        "{\"op\":\"qheap_memory\",\"mode\":\"bytes\"," TRANSFER_FIELDS "}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"bytes\"," TRANSFER_FIELDS ",\"bytes\":{}}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"bytes\"," TRANSFER_FIELDS
+        ",\"bytes\":[{\"op\":\"const\",\"bits\":16,\"signed\":false,\"value\":7}]}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"bytes\"," TRANSFER_FIELDS
+        ",\"bytes\":[{\"op\":\"const\",\"bits\":8,\"signed\":true,\"value\":7}]}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"bytes\"," TRANSFER_FIELDS
+        ",\"bytes\":[],\"source\":" TRANSFER_U64(1) "}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"check\"," TRANSFER_FIELDS "}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"check\"," TRANSFER_FIELDS ",\"limit\":65}",
+        "{\"op\":\"qheap_memory\",\"mode\":\"check\"," TRANSFER_FIELDS ",\"limit\":1,\"bytes\":[]}",
+    };
+    for (unsigned i = 0; i < sizeof cases / sizeof *cases; ++i) {
+        qc_context *c = qc_create(1, 7);
+        require(c && qc_heap_allocate(c, 1, 8, 0) == 1, "transfer schema fixture");
+        size_t registers = c->nregisters, gates = c->ngates;
+        unsigned physical = c->physical;
+        require(!qc_apply(c, cases[i], NULL) && *qc_error(c), "malformed transfer rejected");
+        require(c->nregisters == registers && c->ngates == gates && c->physical == physical,
+                "transfer schema rejected before synthesis/allocation");
+        qc_destroy(c);
+    }
+#undef TRANSFER_FIELDS
+#undef TRANSFER_U64
+}

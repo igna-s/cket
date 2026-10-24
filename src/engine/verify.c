@@ -313,6 +313,12 @@ static int heap_address_literal(qc_context *c, const cj_doc *d, int node) {
 
 static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
     int set = cj_equal(d, cj_get(d, inst, "mode"), "set");
+    int bytes = cj_equal(d, cj_get(d, inst, "mode"), "bytes");
+    int check = cj_equal(d, cj_get(d, inst, "mode"), "check");
+    static const char *const byte_view[] = {
+        "op", "mode", "heap", "heap_offset", "count", "bytes", "big_endian", "controls", NULL};
+    static const char *const range[] = {
+        "op", "mode", "heap", "heap_offset", "count", "limit", "big_endian", "controls", NULL};
     static const char *const fill[] = {
         "op", "mode", "heap", "heap_offset", "count", "expr", "big_endian", "controls", NULL};
     static const char *const copy[] = {"op",
@@ -325,14 +331,35 @@ static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
                                        "big_endian",
                                        "controls",
                                        NULL};
-    if ((!set && !cj_equal(d, cj_get(d, inst, "mode"), "copy") &&
+    if ((!set && !bytes && !check && !cj_equal(d, cj_get(d, inst, "mode"), "copy") &&
          !cj_equal(d, cj_get(d, inst, "mode"), "move")) ||
-        !fields(c, d, inst, set ? fill : copy) || !boolean_field(c, d, inst, "big_endian", 0) ||
+        !fields(c,
+                d,
+                inst,
+                set     ? fill
+                : bytes ? byte_view
+                : check ? range
+                        : copy) ||
+        !boolean_field(c, d, inst, "big_endian", 0) ||
         !heap_address_literal(c, d, cj_get(d, inst, "heap")) ||
         !heap_address_literal(c, d, cj_get(d, inst, "heap_offset")) ||
         !heap_address_literal(c, d, cj_get(d, inst, "count")))
         return qc_fail(c, "invalid heap byte operation schema");
-    if (set) {
+    if (check) {
+        uint64_t limit;
+        if (!unsigned_field(c, d, inst, "limit", &limit) || limit > 64)
+            return qc_fail(c, "invalid checked fixed byte extent");
+    } else if (bytes) {
+        int list = cj_get(d, inst, "bytes");
+        if (list < 0 || d->tokens[list].kind != '[' || d->tokens[list].children > 64)
+            return qc_fail(c, "heap byte source requires at most 64 typed byte expressions");
+        for (int t = list + 1; t < d->tokens[list].next; t = d->tokens[t].next) {
+            uint64_t bits;
+            if (!expression(c, d, t) || !unsigned_field(c, d, t, "bits", &bits) || bits != 8 ||
+                cj_bool(d, cj_get(d, t, "signed")))
+                return qc_fail(c, "heap byte source requires unsigned byte expressions");
+        }
+    } else if (set) {
         int expr = cj_get(d, inst, "expr");
         uint64_t bits;
         if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits) || bits != 8 ||

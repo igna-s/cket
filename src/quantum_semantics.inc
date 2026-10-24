@@ -47,6 +47,7 @@ bool quantum_pure_expression(tree value);
 std::string standard_ctype(tree call);
 std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_expression(tree selection, std::set<unsigned> &deps);
+std::string heap_byte_expression(tree selection, std::set<unsigned> &deps);
 tree lower_heap_effect(tree marker);
 tree lower_heap_memory(tree marker);
 std::string heap_effect_expression(tree marker, std::set<unsigned> &deps);
@@ -262,10 +263,10 @@ tree quantum_use(tree *node, int *walk, void *) {
         *walk = 0;
         return NULL_TREE;
     }
-    if (quantum_heap_accesses.count(*node) || quantum_heap_updates.count(*node) ||
-        quantum_indexed_accesses.count(*node) || quantum_coherent_accesses.count(*node) ||
-        quantum_memory_copies.count(*node) || quantum_value_programs.count(*node) ||
-        quantum_memory_sets.count(*node))
+    if (quantum_heap_accesses.count(*node) || quantum_heap_byte_reads.count(*node) ||
+        quantum_heap_updates.count(*node) || quantum_indexed_accesses.count(*node) ||
+        quantum_coherent_accesses.count(*node) || quantum_memory_copies.count(*node) ||
+        quantum_value_programs.count(*node) || quantum_memory_sets.count(*node))
         return *node;
     if (quantum(*node))
         return *node;
@@ -385,6 +386,10 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             pending.push_back(quantum_heap_accesses.at(current).index);
             continue;
         }
+        if (quantum_heap_byte_reads.count(current)) {
+            result.reads.insert(get_identifier("__cket_heap_payload"));
+            continue;
+        }
         if (quantum_heap_updates.count(current)) {
             const auto &update = quantum_heap_updates.at(current);
             result.writes.insert(get_identifier("__cket_heap_payload"));
@@ -399,6 +404,9 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
                 result.reads.insert(get_identifier("__cket_heap_payload"));
             else
                 pending.push_back(memory.source);
+            pending.insert(pending.end(), memory.bytes.begin(), memory.bytes.end());
+            if (memory.fixed_output)
+                pending.push_back(memory.fixed_output);
             continue;
         }
         if (quantum_indexed_accesses.count(current)) {
@@ -630,6 +638,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     auto code = TREE_CODE(value);
     if (quantum_heap_accesses.count(value))
         return heap_expression(value, deps);
+    if (quantum_heap_byte_reads.count(value))
+        return heap_byte_expression(value, deps);
     if (quantum_heap_updates.count(value))
         return heap_effect_expression(value, deps);
     if (quantum_indexed_accesses.count(value))
@@ -1214,7 +1224,8 @@ tree before_integer_narrowing(tree operand, tree type) {
 // Restore the promoted operation without folding away that domain again.
 tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
     if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
-        quantum_heap_accesses.count(value) || quantum_heap_updates.count(value) ||
+        cpu_byte_saves.count(value) || quantum_heap_accesses.count(value) ||
+        quantum_heap_byte_reads.count(value) || quantum_heap_updates.count(value) ||
         quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
         quantum_value_programs.count(value))
         return value;
@@ -1665,7 +1676,7 @@ tree lower_quantum_decl(Variable &var) {
         // Their saved inverse still borrows the resolved engine registers.
         tree probe = var.original_init;
         auto heap_read = [](tree *node, int *walk, void *) -> tree {
-            if (quantum_heap_accesses.count(*node))
+            if (quantum_heap_accesses.count(*node) || quantum_heap_byte_reads.count(*node))
                 return *node;
             if (DECL_P(*node) || TYPE_P(*node))
                 *walk = 0;
@@ -2492,7 +2503,7 @@ tree lower_node(tree value) {
     // Lower its typed arithmetic under the existing quantum controls, keeping
     // inactive division/shift domains lazy instead of executing them on CPU.
     bool coherent_cpu_condition = code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
-                                  !controls.empty() &&
+                                  !quantum_heap_cpu_branches.count(value) && !controls.empty() &&
                                   quantum_pure_expression(TREE_OPERAND(value, 0));
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
         (has_quantum(TREE_OPERAND(value, 0)) || coherent_cpu_condition)) {
@@ -2557,7 +2568,7 @@ tree lower_node(tree value) {
         return list;
     }
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
-        if (!controls.empty()) {
+        if (!controls.empty() && !quantum_heap_cpu_branches.count(value)) {
             error_at(at(value),
                      "|c>: classical branch inside quantum control is not supported yet");
             return value;

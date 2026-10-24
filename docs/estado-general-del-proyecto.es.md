@@ -19,10 +19,18 @@ aceptan tamaños CPU de ejecución y vistas de bytes parciales. El nuevo
 [ejemplo](../examples/blocks/05/heap_bytes.c) copia valores en superposición, mueve regiones
 solapadas y rellena con un valor cuántico capturado. Se conservan las versiones originales y las
 fases; los retornos son direcciones clásicas con alias comprobados. El [contrato](c11-heap.md)
-mantiene explícitos los límites. La mezcla entre heap y buffers fijos, las cadenas sobre heap y los
-flotantes cuánticos siguen pendientes.
+mantiene explícitos los límites. Las cadenas sobre heap y los flotantes cuánticos siguen pendientes.
 La [evidencia de este bloque](audit-evidence/heap-memory-v1/README.es.md) conserva 256 puntos de
 estado completo, 64 inversiones completas de puertas y las comprobaciones con ASan/UBSan.
+
+**Integración de buffers fijos y heap:** `memcpy` y `memmove` copian ahora en ambas direcciones, con
+longitudes CPU y vistas fijas comprobadas. También se capturan bytes actuales de objetos CPU
+conocidos hacia el heap. El [ejemplo](../examples/blocks/05/heap_transfer.c) conserva los resultados
+después de cambiar el origen y liberar el heap. Las palabras fuera de la longitud conservan sus
+qubits, incluida una copia de longitud cero. Las escrituras heap→fijo dentro de bucles CPU todavía
+requieren historia por iteración; los usos generales de punteros y ABI siguen abiertos.
+La [evidencia de integración](audit-evidence/heap-transfer-v1/README.es.md) registra 224 puntos de
+estado completo y 56 inversas, incluidas las construcciones con ASan/UBSan.
 
 **Avance de propiedad y copia:** el usuario abrió esta etapa de validación. Se añaden lecturas de
 buffers con índice CPU, acumulación/resta y paridad en bucles CPU, y resultados escalares devueltos

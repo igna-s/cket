@@ -102,10 +102,25 @@ static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
     int set = cj_equal(d, cj_get(d, inst, "mode"), "set");
     int move = cj_equal(d, cj_get(d, inst, "mode"), "move");
     int big = cj_bool(d, cj_get(d, inst, "big_endian"));
+    int check = cj_equal(d, cj_get(d, inst, "mode"), "check");
+    int bytes = cj_get(d, inst, "bytes");
     qc_heap *destination = heap_lookup(c, handle), *source = NULL;
     if (!heap_memory_range(c, destination, offset, count) || count > 64)
         return qc_fail(c, "heap byte operation exceeds its 64-byte budget");
-    if (!set) {
+    if (check) {
+        uint64_t limit;
+        cj_u64(d, cj_get(d, inst, "limit"), &limit);
+        return count <= limit || qc_fail(c, "heap transfer exceeds checked fixed storage bounds");
+    }
+    int byte_nodes[64];
+    if (bytes >= 0) {
+        if (count > (uint64_t)d->tokens[bytes].children)
+            return qc_fail(c, "heap transfer exceeds checked fixed source bounds");
+        unsigned i = 0;
+        for (int node = bytes + 1; node < d->tokens[bytes].next; node = d->tokens[node].next)
+            byte_nodes[i++] = node;
+    }
+    if (!set && bytes < 0) {
         cj_u64(d, cj_get(d, cj_get(d, inst, "source"), "value"), &source_handle);
         cj_u64(d, cj_get(d, cj_get(d, inst, "source_offset"), "value"), &source_offset);
         source = heap_lookup(c, source_handle);
@@ -124,7 +139,11 @@ static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
     char *capture = NULL;
     if (set)
         capture = cj_copy(d, cj_get(d, inst, "expr"));
-    else {
+    else if (bytes >= 0) {
+        capture = heap_memory_leaf(c, "const", 1, 0);
+        for (size_t byte = 0; byte < count; ++byte)
+            capture = heap_memory_binary(c, "sequence", 1, cj_copy(d, byte_nodes[byte]), capture);
+    } else {
         memcpy(original, source->ids, source->count * sizeof *original);
         capture = heap_memory_leaf(c, "const", 1, 0);
         size_t stride = source->width / 8;
@@ -171,6 +190,8 @@ static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
             char *value;
             if (set)
                 value = heap_memory_register(c, pin);
+            else if (bytes >= 0)
+                value = cj_copy(d, byte_nodes[address - (size_t)offset]);
             else {
                 size_t position = (size_t)source_offset + address - (size_t)offset;
                 size_t source_stride = source->width / 8, in_word = position % source_stride;

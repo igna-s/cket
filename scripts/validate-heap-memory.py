@@ -102,6 +102,7 @@ PROFILES = {
 }
 
 VALID = {
+    'fixed_source': 'int main(void){quant uint8_t *p=calloc(2,1);if(!p)return 2;quant uint8_t v=7;memcpy((void*)p,&v,1);unsigned a=measure(p[0]),b=measure(v);free((void*)p);return a!=7||b!=7;}',
     'borrowed_function': '''void copy_bytes(quant uint8_t *out,quant const uint8_t *in,size_t n){memcpy((void*)out,(const void*)in,n);}int main(void){quant uint8_t *p=calloc(3,1),*q=calloc(3,1);if(!p||!q)return 2;p[0]=3;p[1]=9;p[2]=5;copy_bytes(q+1,p+1,2);unsigned a=measure(q[0]),b=measure(q[1]),c=measure(q[2]);free((void*)p);free((void*)q);return a!=0||b!=9||c!=5;}''',
     'return_comparison': '''int main(void){quant uint8_t *p=calloc(2,1),*q=calloc(2,1);if(!p||!q)return 2;p[0]=3;p[1]=9;if(memcpy((void*)q,(const void*)p,2)!=(void*)q)return 3;if(memset((void*)(q+1),7,1)!=(void*)(q+1))return 4;unsigned a=measure(q[0]),b=measure(q[1]);free((void*)p);free((void*)q);return a!=3||b!=7;}''',
     'return_alias': '''int main(void){quant uint8_t *p=calloc(2,1),*q=calloc(2,1);if(!p||!q)return 2;p[0]=3;p[1]=9;void *v=memcpy((void*)q,(const void*)p,2);unsigned char *b=v;memmove(b+1,b,1);v=memset(b,7,1);unsigned x=measure(q[0]),y=measure(q[1]);int bad=v!=(void*)q;free((void*)p);free((void*)q);return bad||x!=7||y!=3;}''',
@@ -147,10 +148,6 @@ INVALID = {
     'readonly_cast': (
         'int main(void){quant uint8_t *p=calloc(2,1);const uint8_t *v=(const uint8_t*)p;memset((void*)v,0,1);}',
         'mutable destination',
-    ),
-    'fixed_source_pending': (
-        'int main(void){quant uint8_t *p=calloc(2,1);quant uint8_t v=7;memcpy((void*)p,&v,1);}',
-        'two heap views',
     ),
     'quantum_length': (
         'int main(void){quant uint8_t *p=calloc(2,1);quant uint8_t n=1;memset((void*)p,7,n);}',

@@ -1,5 +1,6 @@
 // Classical pointers name runtime quantum heaps. No host load reads their payload.
 tree unscaled_quantum_pointer_index(tree bytes, uint64_t stride);
+tree expand_heap_transfer(tree call, bool move);
 
 std::string heap_allocator(tree fn) {
     if (!fn || DECL_SAVED_TREE(fn))
@@ -367,6 +368,8 @@ tree expand_heap_call(tree call) {
         (heap_pointer(CALL_EXPR_ARG(call, 0)) || (copy && heap_pointer(CALL_EXPR_ARG(call, 1))))) {
         tree destination = CALL_EXPR_ARG(call, 0), source = CALL_EXPR_ARG(call, 1),
              count = CALL_EXPR_ARG(call, 2), element = NULL_TREE;
+        if (copy && (!heap_pointer(destination) || !heap_pointer(source)))
+            return expand_heap_transfer(call, move);
         bool readonly = false;
         if (!heap_pointer(destination, element, readonly) || readonly ||
             (!set && !heap_pointer(source))) {
@@ -450,6 +453,20 @@ std::string heap_expression(tree selection, std::set<unsigned> &deps) {
     return "{\"op\":\"heap_read\"" + type_json(access.type) + address + ",\"index\":" + index + '}';
 }
 
+std::string heap_byte_expression(tree selection, std::set<unsigned> &) {
+    const auto &access = quantum_heap_byte_reads.at(selection);
+    tree pointer = save_expr(access.first), ull = long_long_unsigned_type_node;
+    std::string handle = cpu_parameter(heap_runtime_call(
+        "__cket_heap_byte_identity", ull, {pointer}, {const_ptr_type_node}, at(selection)));
+    std::string offset = cpu_parameter(heap_runtime_call(
+        "__cket_heap_byte_offset", ull, {pointer}, {const_ptr_type_node}, at(selection)));
+    return "{\"op\":\"heap_byte_read\",\"bits\":8,\"signed\":false,\"heap\":" + handle +
+           ",\"offset\":" + offset +
+           ",\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":" +
+           std::to_string(access.second) +
+           "},\"big_endian\":" + (BYTES_BIG_ENDIAN ? "true" : "false") + '}';
+}
+
 tree lower_heap_effect_capture(tree marker,
                                unsigned capture,
                                bool returns_value,
@@ -521,14 +538,28 @@ tree lower_heap_memory(tree marker) {
     };
     std::set<unsigned> deps;
     std::string source;
-    if (memory.mode == "set") {
+    if (memory.mode == "bytes") {
+        source = ",\"bytes\":[";
+        for (tree byte : memory.bytes) {
+            if (source.back() != '[')
+                source += ',';
+            std::map<tree, tree> promoted;
+            tree value = restore_integer_arithmetic(byte, promoted);
+            source += "{\"op\":\"cast\",\"bits\":8,\"signed\":false,\"args\":[" +
+                      evaluate_expression(value, deps, &list) + "]}";
+        }
+        source += ']';
+    } else if (memory.fixed_output)
+        source = ",\"limit\":" + std::to_string(memory.limit);
+    else if (memory.mode == "set") {
         std::map<tree, tree> promoted;
         tree value = restore_integer_arithmetic(memory.source, promoted);
         source = ",\"expr\":{\"op\":\"cast\",\"bits\":8,\"signed\":false,\"args\":[" +
                  evaluate_expression(value, deps, &list) + "]}";
     } else
         source = address(save_expr(memory.source), "source");
-    std::string destination = address(memory.destination, "heap");
+    std::string destination =
+        address(memory.fixed_output ? memory.source : memory.destination, "heap");
     std::string count = cpu_parameter(fold_convert(ull, memory.count));
     append(&list,
            emit_operation("{\"op\":\"qheap_memory\",\"mode\":" + json(memory.mode) + destination +
@@ -539,6 +570,8 @@ tree lower_heap_memory(tree marker) {
         taint_uniform(id);
     for (const auto &control : controls)
         taint_uniform(control.first);
+    if (memory.fixed_output)
+        append(&list, lower_node(memory.fixed_output));
     return prefixed_value(list, fold_convert(TREE_TYPE(marker), memory.destination));
 }
 

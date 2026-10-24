@@ -134,8 +134,8 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
-`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap` y `heap_bytes`. En
-el primero, la capacidad inicial es un dato CPU recibido por `argv`:
+`bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes` y
+`heap_transfer`. En el primero, la capacidad inicial es un dato CPU recibido por `argv`:
 `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`, llena,
 modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
 explícitamente y libera. Compara la suma con los elementos observados y una fórmula C ordinaria.
@@ -147,10 +147,14 @@ resultados derivados que siguen vivos al redimensionar/liberar y los límites de
 mediciones ni reset implícitos. Se añade `coherent_heap`, con incremento mediante un índice cuántico
 y captura de su valor anterior. También se implementan resultados de asignación e incremento en
 consumidores programados fuera de bucles CPU. Faltan esos resultados dentro de bucles CPU, pruebas
-de direcciones disjuntas, intercambio entre heap y buffers fijos y adaptadores de cadenas.
-`heap_bytes` combina `memcpy`, `memmove` solapado y `memset` con datos cuánticos. Estas operaciones
-aceptan tamaños CPU y vistas de bytes parciales; no introducen mediciones. El bloque 05 sigue
-abierto.
+de direcciones disjuntas, escrituras heap→fijo en bucles CPU y adaptadores de cadenas. `heap_bytes`
+combina `memcpy`, `memmove` solapado y `memset` con datos cuánticos. Estas operaciones aceptan
+tamaños CPU y vistas de bytes parciales; no introducen mediciones. El bloque 05 sigue abierto.
+
+`heap_transfer` copia buffers fijos al heap y de vuelta, conserva valores después de cambiar el
+origen y liberar la reserva, y observa los resultados explícitamente. Las direcciones fijas son
+comprobadas; las longitudes pueden venir de CPU. Los objetos CPU no volátiles con extensión conocida
+también pueden aportar bytes al heap.
 
 ## Referencia del plan anterior de diez bloques
 

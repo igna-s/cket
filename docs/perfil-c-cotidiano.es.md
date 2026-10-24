@@ -29,9 +29,10 @@ habituales. Sus entradas pendientes siguen visibles en el inventario.
 
 El avance del 24 de octubre añade `memcpy` y `memmove` entre heaps y `memset` sobre heaps, con
 longitudes CPU de ejecución, vistas de bytes parciales y retornos de dirección clásicos. Se
-conservan los originales para los movimientos solapados y las inversas. El intercambio entre heap y
-buffers fijos y las cadenas sobre heap siguen pendientes; el [contrato](c11-heap.md) detalla los
-contextos y recursos admitidos.
+conservan los originales para los movimientos solapados y las inversas. También se copian buffers
+cuánticos fijos y heaps en ambas direcciones, y objetos CPU conocidos hacia heaps. El destino fijo
+conserva sus qubits fuera de la longitud solicitada. Sus escrituras dentro de bucles CPU y las
+cadenas sobre heap siguen pendientes; el [contrato](c11-heap.md) detalla los contextos y recursos.
 
 ## Orden de trabajo
 
