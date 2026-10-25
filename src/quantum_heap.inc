@@ -392,8 +392,15 @@ tree expand_heap_call(tree call) {
                      "|c>: heap byte addresses and length require pure classical expressions");
             return build_zero_cst(TREE_TYPE(call));
         }
-        if (set)
+        if (set) {
             source = expand_quantum_program(source);
+            if (!has_quantum(source)) {
+                // Capture the ordinary C value argument once, even when the
+                // byte range is empty or its write proves to be an identity.
+                source = save_expr(source);
+                cpu_library_saves.insert(source);
+            }
+        }
         tree marker =
             build_fn_decl("__cket_heap_memory",
                           build_function_type_list(TREE_TYPE(call), TREE_TYPE(source), NULL_TREE));

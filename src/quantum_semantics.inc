@@ -1227,10 +1227,11 @@ tree before_integer_narrowing(tree operand, tree type) {
 // Restore the promoted operation without folding away that domain again.
 tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned depth = 0) {
     if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value) ||
-        cpu_byte_saves.count(value) || expression_saves.count(value) ||
-        quantum_heap_accesses.count(value) || quantum_heap_byte_reads.count(value) ||
-        quantum_heap_updates.count(value) || quantum_indexed_accesses.count(value) ||
-        quantum_coherent_accesses.count(value) || quantum_value_programs.count(value))
+        cpu_byte_saves.count(value) || cpu_library_saves.count(value) ||
+        expression_saves.count(value) || quantum_heap_accesses.count(value) ||
+        quantum_heap_byte_reads.count(value) || quantum_heap_updates.count(value) ||
+        quantum_indexed_accesses.count(value) || quantum_coherent_accesses.count(value) ||
+        quantum_value_programs.count(value))
         return value;
     auto found = memo.find(value);
     if (found != memo.end())

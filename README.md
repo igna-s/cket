@@ -27,6 +27,14 @@ operate on unmeasured quantum data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
+**Known quantum correctness failures remain.** The
+[current coherence review](docs/re-audit-2026-10-24-coherence.md) reproduces dephasing when an
+unobserved borrow leaves its scope and in an inactive sector of a nonidentity coherent heap copy.
+Direct fixed-buffer writes and the checked heap identities have finite corrections. The latest
+[heap identity evidence](docs/audit-evidence/heap-identities-v1/README.es.md) records complete
+complex states, phases, stable owners and explicit resource exclusions. Earlier passing tests and
+historical papers do not certify these open cases.
+
 Start with [usable delivery 01](docs/entregas-incrementales.es.md): after building, run
 `bash scripts/run-block.sh 01` to compile eight small examples and produce native executables,
 OpenQASM circuits and resource reports. Deliveries track a defined incremental plan, not a claimed
@@ -222,8 +230,9 @@ preserved during addition/subtraction. Scalar overwrites can use
 [versioned storage and retained history](docs/c11-history.md): old dependent values keep their
 original inputs, and the new owner receives freshly computed storage. Unknown old states remain part
 of the joint circuit output unless a valid cleanup is available.
-[Structured coherent branches](docs/c11-control.md) select fresh values with the previous value on
-inactive amplitudes and preserve their original branch decisions through cleanup.
+[Structured coherent branches](docs/c11-control.md) retain their branch decisions. Direct fixed
+overwrites use a controlled exchange to preserve an inactive destination; general borrow cleanup and
+coherent heap copies still have the [open findings](docs/re-audit-2026-10-24-coherence.md).
 [Classical scalar branch joins](docs/c11-cpu-control.md) transfer the selected owner's physical
 storage without adding gates or copying its state, including nested branches and saved inverses.
 
@@ -343,7 +352,8 @@ that hid signed overflow. Unknown quantum states are not independently cloned.
 Temporary expressions retain the concrete input versions needed for their inverse. Checked
 overwrites preserve those versions; resizing or freeing a heap retires its public access path while
 saved borrows remain valid. Measurements/resets that invalidate a pending inverse are diagnosed.
-Derived values used only as coherent predicates can be uncomputed after their last use.
+Supported derived predicates can be uncomputed after their last use; the current audit still
+reproduces a scoped-borrow cleanup failure after a controlled overwrite.
 
 `div`, `ldiv`, `lldiv` and `imaxdiv` have [partial quantum product adapters](docs/c11-division.md)
 for pure quantum arguments, captured CPU arguments and fresh quotient/remainder results. Constant

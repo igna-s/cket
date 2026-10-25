@@ -9,16 +9,17 @@ floating/complex values and wider library contracts remain required.
 
 ## Selected values and preserved branch decisions
 
-An injective update with available inputs may use its existing controlled in-place route. Otherwise
-the compiler retains the old version and computes a fresh owner. For a branch predicate `p`, old
-value `x` and active transformation `f`, its value is `p ? f(x) : x`. The complete embedding
-preserves the old inputs and extends linearly to superpositions. An inactive branch preserves the
-previous value; it does not prepare zero as a replacement.
+An injective update with available inputs may use its existing controlled in-place route. Direct
+fixed overwrites otherwise compute the active value into zero storage and exchange it with the
+public owner under the controls. The history is zero on inactive amplitudes and holds the old value
+where the write occurs. The value formula `p ? f(x) : x` alone does not specify the required quantum
+correlations: computing it into another register while retaining `x` can dephase an inactive
+destination.
 
-The compiler serializes this value as typed `select` expressions. Nested controls require all
-enclosing predicates. Open controls select the opposite arm. `if/else` bodies use successive
-versions with the same saved branch decision, so an assignment to a condition variable does not
-change which arm executes. Each predicate undergoes C truth conversion.
+Typed `select` expressions describe the selected values. Nested controls require all enclosing
+predicates. Open controls select the opposite arm. `if/else` bodies use successive versions with the
+same saved branch decision, so an assignment to a condition variable does not change which arm
+executes. Each predicate undergoes C truth conversion.
 
 ```c
 #include <quantum.h>
@@ -40,6 +41,10 @@ int main(void) {
 These are gate computations on registers. No unknown quantum value or branch is evaluated on the
 CPU. There is no inserted measurement, reset or partial trace. The explicit terminal measurements in
 the example keep their source semantics.
+
+The [current quantum audit](re-audit-2026-10-24-coherence.md) still reproduces failures in scoped
+unobserved-borrow cleanup and nonidentity coherent heap copies. Finite direct fixed-store and heap
+identity corrections do not certify every controlled program.
 
 ## Predicate lifetime and CPU captures
 

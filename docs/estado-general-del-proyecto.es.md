@@ -6,10 +6,12 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 
 **Auditoría cuántica: corrección parcial y pendientes abiertos.** Se corrigen cuatro casos directos
 de pérdida de coherencia en ramas inactivas de buffers fijos. La revisión ampliada aún reproduce
-errores al limpiar préstamos no observados, en copias coherentes del heap y en autoasignación o
-autorrelleno de un byte del heap. El [informe](re-audit-2026-10-24-coherence.md) conserva los
-contraejemplos y distingue las pruebas que pasan; la calificación completa del compilador sigue
-abierta.
+errores al limpiar préstamos no observados y en copias coherentes no idénticas del heap. Se corrigen
+además la autoasignación y el autorrelleno idéntico del heap: preservan dueños, cables y fases en
+los perfiles comprobados. La [cápsula](audit-evidence/heap-identities-v1/README.es.md) registra 2232
+puntos de estado completo y 1116 inversas, con enteros de 8 a 64 bits, bucles y ASan/UBSan. El
+[informe](re-audit-2026-10-24-coherence.md) conserva los contraejemplos y distingue las pruebas que
+pasan; la calificación completa del compilador sigue abierta.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

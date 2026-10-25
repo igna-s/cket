@@ -95,7 +95,9 @@ retenida.
 
 La [revisión del 24 de octubre](re-audit-2026-10-24-coherence.md) encontró pérdidas de coherencia
 por historia redundante y por limpieza incompleta, aun con cero mediciones y resets. Se corrigen los
-casos directos observados de buffers fijos; siguen abiertos los préstamos que salen de su bloque y
-varios usos del heap. Los contratos anteriores y sus campañas finitas deben leerse con estos
-contraejemplos. La unitariedad del flujo completo conserva información global, pero también hay que
-comprobar el estado lógico y las correlaciones que cada operación promete conservar.
+casos directos observados de buffers fijos y las identidades comprobadas del heap, con
+[evidencia de fases y estados conjuntos](audit-evidence/heap-identities-v1/README.es.md). Siguen
+abiertos los préstamos que salen de su bloque y las copias coherentes no idénticas al heap. Los
+contratos anteriores y sus campañas finitas deben leerse con estos contraejemplos. La unitariedad
+del flujo completo conserva información global, pero también hay que comprobar el estado lógico y
+las correlaciones que cada operación promete conservar.

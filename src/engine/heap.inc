@@ -354,6 +354,8 @@ static int heap_scatter(qc_context *c, const cj_doc *d, int inst, qc_heap *heap,
     return collect_disposed(c);
 }
 
+#include "heap_identity.inc"
+
 static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result) {
     if (c->structural) {
         uint64_t width;
@@ -423,6 +425,8 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
     domain inputs;
     if (!collect_domain(c, d, expr_node, &inputs))
         return 0;
+    if (heap_store_identity(c, d, inst, old))
+        return collect_disposed(c);
     int aliases = 0;
     for (unsigned i = 0; i < inputs.count; ++i)
         aliases |= inputs.sources[i].id == old;

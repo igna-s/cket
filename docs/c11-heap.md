@@ -167,3 +167,22 @@ validator checks independent complex joint-state formulas, phases, saved inverse
 buffers, full gate reversal, returned aliases and runtime CPU loops. The engine separately checks
 both byte orders and malformed schemas before synthesis. Its native execution evidence is recorded
 separately from earlier heap campaigns.
+
+## Identity writes and remaining quantum findings
+
+A bounded symbolic proof preserves the existing owner, epoch and wires when a heap store is provably
+the current word. This avoids redundant history that previously dephased entangled self-assignment
+and identical one-byte fill. The proof uses typed bit expressions, valid saved dependency epochs and
+compatible coherent guards. It reads no amplitudes; unsupported or costly proofs use ordinary
+validation/synthesis. Discarded operands retain definedness checks. Pure CPU fill arguments are
+captured once, including zero-length fills. Effects under coherent control or mixed CPU effects with
+a quantum fill expression remain rejected.
+
+The [finite identity evidence](audit-evidence/heap-identities-v1/README.es.md) covers eight integer
+types through 64 bits, both synthesis policies and CPU loops, with full complex states, phases,
+stable owners/wires, zero private workspace and independent gate reversal. Returned captures have
+been state-checked through 32 bits; two 64-bit capture profiles exceed the 128-wire budget. The
+native fill identity uses a single byte with zero high bytes; engine fixtures separately check
+nonzero high bits and both byte orders. This does not prove every algebraic identity or arbitrary
+heap operation. The [quantum review](re-audit-2026-10-24-coherence.md) still reproduces dephasing in
+an inactive sector of a nonidentity coherent copy and in scoped unobserved-borrow cleanup.

@@ -7,9 +7,10 @@
 
 La [revisión cuántica posterior](../re-audit-2026-10-24-coherence.md) encontró pérdidas de
 coherencia que los casos finitos publicados no detectaban. Hay una corrección parcial de los casos
-directos de buffers fijos; siguen abiertos la limpieza de préstamos y varios contextos del heap. La
-demo de la nota no contiene esas combinaciones. Su evidencia tiene el alcance de los programas y
-fuentes identificados en cada campaña.
+directos de buffers fijos y las identidades comprobadas del heap; siguen abiertas la limpieza de
+préstamos y las copias coherentes no idénticas al heap. La demo de la nota no contiene esas
+combinaciones. Su evidencia tiene el alcance de los programas y fuentes identificados en cada
+campaña.
 
 La entrega actual tiene una
 [nota técnica de dos páginas](../../output/pdf/cket_memoria_runtime_nota_tecnica.pdf) y una

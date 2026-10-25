@@ -220,3 +220,11 @@ ancestors. The value then remains a root, subject to ordinary retained-history l
 rejected in borrowed unitary modules. This is a conservative preservation mechanism; retaining a
 correlated temporary can still dephase a logical owner at scope exit. See the
 [open quantum findings](re-audit-2026-10-24-coherence.md).
+
+Heap stores also attempt a bounded symbolic identity proof before allocating history. Validated
+typed expressions must match the existing word in every bit under the current controls. Saved
+definitions are expanded only with current dependency epochs and guards that cover the store.
+Discarded `sequence` operands must pass the supported definedness proof. A private error/work budget
+prevents an inconclusive proof from suppressing ordinary validation. No amplitudes or
+simulator-specific equality checks participate in this optimization. See the
+[finite heap identity evidence](audit-evidence/heap-identities-v1/README.es.md).

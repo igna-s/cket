@@ -24,6 +24,10 @@ build/validate_division 2>&1 | tee build/verify-division.log
 build/validate_bindings 2>&1 | tee build/verify-bindings.log
 build/validate_history 2>&1 | tee build/verify-history.log
 build/validate_heap 2>&1 | tee build/verify-heap.log
+build/validate_heap_identities 2>&1 | tee build/verify-heap-identities.log
+heap_identity_proof="$(mktemp -d "$PWD/build/heap-identity-proof.XXXXXX")"
+python3 scripts/validate-heap-identities.py --output "$heap_identity_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-heap-identity-states.log
 build/validate_runtime_versions 2>&1 | tee build/verify-runtime-versions.log
 build/validate_runtime_memory 2>&1 | tee build/verify-runtime-memory-engine.log
 runtime_memory_proof="$(mktemp -d "$PWD/build/runtime-memory-proof.XXXXXX")"

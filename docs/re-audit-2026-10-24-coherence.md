@@ -32,15 +32,16 @@ La regresión nueva compara 240 estados conjuntos completos y 120 inversas en ci
 ambas políticas de síntesis, GCC O0/O2 normales y O1 instrumentado. Su alcance incluye préstamos que
 siguen vivos en el punto observado; las salidas de bloque y el heap conservan pendientes.
 
-La ampliación de la revisión encontró estos resultados sobre el compilador corregido:
+La ampliación inicial de la revisión encontró estos resultados sobre la corrección de buffers fijos.
+Las dos identidades del heap se corrigen en el seguimiento posterior de este informe:
 
 | Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                    |
 | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
 | Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                            |
 | Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Abierto: conservar el temporal como raíz impide limpiar su correlación.   |
 | Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo. |
-| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Abierto: la autoasignación crea historia redundante.                      |
-| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Abierto: el autorrelleno de un byte no conserva la identidad.             |
+| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Corregida en el seguimiento de identidades; pureza actual 1 → 1.          |
+| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Corregido en el seguimiento de identidades; pureza actual 1 → 1.          |
 | `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                               |
 
 Todos esos contrastes se observan antes de medir o resetear. Una secuencia de puertas unitarias y su
@@ -48,9 +49,33 @@ inversa pueden ser correctas mientras la traducción sigue equivocándose al ret
 redundante o al limpiar un préstamo. Por eso no basta contar valores medidos ni puertas invertidas.
 
 La [cápsula de progreso](audit-evidence/coherent-store-progress-v1/README.es.md) separa la regresión
-que pasa de los contraejemplos que siguen abiertos. El siguiente trabajo debe resolver las
-identidades del heap y las inversas que necesitan una vista condicionada del dueño anterior;
-conservar indefinidamente un auxiliar no sustituye esa limpieza.
+que pasa de los contraejemplos que estaban abiertos en esa revisión. El seguimiento siguiente cierra
+las dos identidades del heap; las inversas que necesitan una vista condicionada del dueño anterior y
+las copias coherentes no idénticas siguen pendientes. Conservar indefinidamente un auxiliar no
+sustituye esa limpieza.
+
+## Seguimiento del 25 de octubre: identidades del heap
+
+`p[0]=p[0]` y el relleno idéntico `memset(p,p[0],1)` conservan ahora pureza conjunta 1 → 1 en los
+contraejemplos anteriores. El motor demuestra la igualdad de bits con la palabra existente antes de
+crear un dueño nuevo. Solo expande operaciones puras acotadas, respeta las guardas y épocas de cada
+definición y verifica operandos descartados. Si no demuestra la identidad, sigue la síntesis
+ordinaria. La prueba no lee amplitudes ni introduce canales.
+
+La [cápsula de identidades](audit-evidence/heap-identities-v1/README.es.md) congela 225 entradas y
+registra 2232 puntos de estado completo y 1116 inversas: ocho tipos enteros de 8 a 64 bits, ocho
+perfiles, 0/1/8 iteraciones, ambas políticas de síntesis y construcciones normales O0/O2 e
+instrumentada O1. Se comprueban fases, dueños y cables estables y auxiliares cero. Dos perfiles de
+captura devuelta de 64 bits exceden 128 cables y se excluyen explícitamente; las capturas se
+comprueban hasta 32 bits. El relleno nativo es de un byte; máscaras altas y ambos órdenes de bytes
+tienen evidencia adicional del motor, con su alcance separado.
+
+También se corrige la captura única de argumentos CPU de `memset` sobre heap, incluso con longitud
+cero. Los efectos CPU dentro de control cuántico o mezclados con una carga cuántica siguen
+rechazados. Las nuevas 1682 aserciones del motor y las regresiones afectadas pasan en ambas
+construcciones. **Quedan dos contraejemplos reproducidos en este compilador:** salida de bloque de
+un préstamo no observado y sector inactivo de copia coherente no idéntica al heap, ambos con pureza
+1 → 0.5. La corrección sigue siendo parcial.
 
 La demo `buffer_lengths.c` publicada no contiene esta combinación: sus escrituras de memoria no
 están bajo control cuántico y sus destinos iniciales son conocidos. Las campañas anteriores
