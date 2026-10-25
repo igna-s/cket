@@ -1,0 +1,33 @@
+{
+  "status": "passed",
+  "visual_review": "passed",
+  "pages": 2,
+  "source_commit": "da2ffb31e568026d58b8e5d98aa31929171cfac0",
+  "source_files": 221,
+  "source_manifest_sha256": "2cf3cfda4384427e9c185027e43dd460e244344f624e20f623eb6feebf36c531",
+  "pdf_sha256": "71a28ca6dfa235535c7a9abeb4d9ac9e179e112f1e306dd3e95098ed107df2ef",
+  "markdown_sha256": "064fc219731976e443d24934b60376b9040a95d85030aa1711831a279b484383",
+  "builder_sha256": "c313bc09f7b933a1b8266869c2e8b2b621082027f71e6b1497c52be32b665a00",
+  "embedded_fonts": [
+    "AAAAAA+DejaVuSansMono",
+    "AAAAAA+DejaVuSerif",
+    "AAAAAA+DejaVuSerif-Bold",
+    "Helvetica"
+  ],
+  "font_sha256": {
+    "NoteSerif": "3731a19f2b50d86d81dd1a1effcd81492ed1fa44f6ea904792dd98fdae9b3dfe",
+    "NoteBold": "f81ce497906182460f9a4beb89bec7c1265af2182f8110c25821dfc88486942e",
+    "NoteMono": "39c29931201f08dd89fdba4129c76288e6baeecf7c94fe4f6a757f2b50718b1b"
+  },
+  "metrics": {
+    "full_state_checkpoints": 900,
+    "complete_gate_inverses": 270,
+    "source_files": 221
+  },
+  "rendered_pages": [
+    "tmp/pdfs/runtime-memory-note-v1/page-1.png",
+    "tmp/pdfs/runtime-memory-note-v1/page-2.png"
+  ],
+  "scope": "Finite technical note for the demonstrated runtime-memory delivery; historical papers retain their original revision.",
+  "visual_review_detail": "Both rendered pages inspected: complete source, readable text/table, no clipping or overlap."
+}

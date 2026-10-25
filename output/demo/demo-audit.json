@@ -1,0 +1,44 @@
+{
+  "status": "passed",
+  "source_commit": "da2ffb31e568026d58b8e5d98aa31929171cfac0",
+  "source_files": 221,
+  "binary_sha256": "1438154403a1cd693c0ca78bdd9eb5c1a8fd83190bcf4a04a8916b9174d55deb",
+  "package_sha256": "09d5fe5c3d1ccd486a9a4e8f7211528d592f86620a4f1642b0b434e7208d7904",
+  "launcher_sha256": "b233ca87cfa793373a9816103f270463f0412a2c4c9ff59830b08f832d691c8e",
+  "source_sha256": "b23aa5a6c82eba051dbddd5c7f4f901668d5cae983221d611f0f9a0bca6b7449",
+  "native_runs": [
+    {
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/runtime-memory-demo-package-v1/bin/buffer_lengths",
+        "0"
+      ],
+      "exit_code": 0,
+      "output": "length=0 output={7,11} source=3"
+    },
+    {
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/runtime-memory-demo-package-v1/bin/buffer_lengths",
+        "1"
+      ],
+      "exit_code": 0,
+      "output": "length=1 output={1,11} source=9"
+    },
+    {
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/runtime-memory-demo-package-v1/bin/buffer_lengths",
+        "2"
+      ],
+      "exit_code": 0,
+      "output": "length=2 output={2,3} source=3"
+    }
+  ],
+  "dependencies": "\tlinux-vdso.so.1 (0x00007ffc69576000)\n\tlibm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007ee626942000)\n\tlibc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007ee626600000)\n\t/lib64/ld-linux-x86-64.so.2 (0x00007ee626a6f000)\n",
+  "windows_launcher": "passed",
+  "meaning": "Packaged native example; compiler source qualification remains in runtime-memory-v1.",
+  "windows_exit_code": 0,
+  "windows_output": [
+    "length=0 output={7,11} source=3",
+    "length=1 output={1,11} source=9",
+    "length=2 output={2,3} source=3"
+  ]
+}

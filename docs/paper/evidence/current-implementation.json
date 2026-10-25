@@ -226,7 +226,13 @@
     "tests/validation.h": "cb745670df18c14a90c49f8e55ed04a150d1366f9a68911eeb9505a0d15fd3a7"
   },
   "directed_evidence": "../../audit-evidence/runtime-memory-v1/summary.json",
-  "paper_audit": "runtime-note-pending; historical-main-review-pending-new-compiler",
+  "paper_audit": "runtime-note-qualified; historical-main-review-pending-new-compiler",
   "previous_paper_review": "../../audit-evidence/paper-truth-oct24-v1/summary.json",
-  "meaning": "Finite runtime memory validation advances the compiler. Historical manuscript evidence and its 210-input review keep their own scope."
+  "meaning": "Finite runtime memory validation advances the compiler. Historical manuscript evidence and its 210-input review keep their own scope.",
+  "runtime_note": {
+    "pdf": "../../../output/pdf/cket_memoria_runtime_nota_tecnica.pdf",
+    "audit": "runtime-memory-note-audit.json",
+    "source_commit": "da2ffb31e568026d58b8e5d98aa31929171cfac0",
+    "scope": "Finite technical note for the demonstrated runtime-memory delivery; historical papers retain their original revision."
+  }
 }

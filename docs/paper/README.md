@@ -5,10 +5,26 @@
 > identidad de fuentes. Esto no certifica todo el compilador ni completa C11. Los
 > [hallazgos y límites](re-audit-2026-10-24.md) explican el alcance de la revisión.
 
-El compilador continúa con [historial de bucles nativos](../c11-runtime-history.md). Ese bloque
-tiene su propia validación y cambia las entradas del compilador; la revisión publicada del paper
-conserva las 210 entradas de su predecesor. Integrar los cambios nuevos en esa revisión sigue
-pendiente. Los resultados históricos del manuscrito permanecen fijados a su revisión original.
+La entrega actual tiene una
+[nota técnica de dos páginas](../../output/pdf/cket_memoria_runtime_nota_tecnica.pdf) y una
+[demo ejecutable](../../output/demo/README.es.md) con funciones, arrays y `memcpy`, `memmove` y
+`memset` de longitud CPU. La [fuente editable](runtime_memory_note.es.md) y la
+[auditoría de la nota](evidence/runtime-memory-note-audit.json) vinculan el programa, las salidas y
+la campaña de 221 entradas: 900 puntos de estado completo y 270 inversas completas.
+
+La [ampliación de memoria](../c11-runtime-memory.md) tiene su propia validación. La revisión
+publicada de los manuscritos históricos conserva las 210 entradas de su predecesor; integrar los
+cambios nuevos en esa revisión sigue pendiente. Los resultados históricos permanecen fijados a su
+revisión original.
+
+Para regenerar solamente la nota de la entrega, con el entorno editorial instalado:
+
+```bash
+.deps/paper-venv/bin/python docs/paper/build_runtime_memory_note.py
+```
+
+El constructor comprueba texto y límites y renderiza las dos páginas para inspección. Su informe
+reinicia la revisión visual a `pending`; solo debe marcarse aprobada después de mirar ambas páginas.
 
 # Paper de C Ket
 

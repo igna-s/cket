@@ -4,6 +4,12 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
+**Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
+tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la
+[nota técnica de dos páginas](../output/pdf/cket_memoria_runtime_nota_tecnica.pdf) incluyen el
+programa, las salidas reales y los límites. Es una entrega funcional del bloque de memoria; el
+núcleo cotidiano continúa en desarrollo.
+
 **Longitudes CPU de memoria fija:** `memcpy`, `memmove` y `memset` seleccionan prefijos con tamaño
 recibido en ejecución, dentro de objetos comprobados y hasta 64 bytes. El
 [ejemplo](../examples/blocks/05/buffer_lengths.c) pasa la longitud de `argv` a una función. Se
