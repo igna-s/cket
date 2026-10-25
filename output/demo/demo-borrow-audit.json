@@ -1,0 +1,33 @@
+{
+  "version": "1.0.0-rc.1",
+  "date": "2026-10-25",
+  "compiler_input_manifest_sha256": "e20b4fa21d73ddacddd95c7de09cade1b4ce8bbe5f4e7efcc34106398c307a79",
+  "binary_sha256": "2abb997d5ebcba030dd8645edec8228fdb196e4761fdbf9ae669a29fd2036e6b",
+  "source_sha256": "9b8e3df6288bb4e235569fbdfae392a754d97c3f887a2d1e5ee5a2b91e9c3e43",
+  "tool_sha256": {
+    "cket": "fcbf3eaedcbcf40922ad70093bc50a93199d0374b6b95a6b1e74fe930f03c6a9",
+    "cket_plugin.so": "ff3eb772569c423395c9f5bba52f14d8146d2b69f12a6e5d3419746fed89934e",
+    "libcket_quantum.a": "d6eda378e2e9b9e24c00d29206fe6dba220457bd28121abcf22df86d11d10e2f",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e"
+  },
+  "runs": [
+    {
+      "seed": 1,
+      "exit_code": 0,
+      "stdout": "control=0 source=0 value=1 expected=1\n"
+    },
+    {
+      "seed": 7,
+      "exit_code": 0,
+      "stdout": "control=1 source=1 value=1 expected=1\n"
+    },
+    {
+      "seed": 13,
+      "exit_code": 0,
+      "stdout": "control=1 source=0 value=0 expected=0\n"
+    }
+  ],
+  "evidence": "docs/audit-evidence/rebound-borrows-v1",
+  "scope": "Finite native demo of conditional scoped-borrow cleanup and interference. Not a whole compiler, C11 or QPU certification.",
+  "known_failure": "Nonidentity coherent heap copy still dephases its inactive joint sector; this demo has no heap copy."
+}

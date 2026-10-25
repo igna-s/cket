@@ -123,4 +123,18 @@ inverse definitions and the inactive swap leaves owners/epochs unchanged. This p
 scoped temporaries to uncompute with their expected phase kickback. The
 [finite inactive-borrow evidence](audit-evidence/inactive-borrows-v1/README.es.md) covers selected
 bool/8/16/32-bit assignments and one-byte writes. A control in superposition can still require a
-conditional old-owner inverse; that broader scope cleanup remains incorrect in the archived case.
+conditional old-owner inverse; that archived scope case is corrected in the later
+conditional-inverse follow-up below.
+
+## Conditional inverse transport in 1.0.0-rc.1
+
+The [later scoped-borrow correction](audit-evidence/rebound-borrows-v1/README.es.md) supersedes the
+earlier failing possible-active root-overwrite examples. Saved inverses refer to the conditional
+location of each old input after a controlled swap. Reconstructible private decisions are expanded
+from stable roots so their physical copies can clean while declared borrowers remain live. Epochs,
+control masks, acyclicity and proof budgets are checked before the exchange. Complete complex states
+are checked before/during/after cleanup, including negative signed values and phase kickback. This
+finite correction does not qualify general repeated frontend writes, derived destinations,
+correlated range proofs, 64-bit scope cleanup or nonidentity coherent heap copies. The latter still
+has a reproduced inactive-sector coherence failure. See the
+[candidate scope](releases/v1.0.0-rc.1.es.md).

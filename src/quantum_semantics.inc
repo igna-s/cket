@@ -1361,15 +1361,32 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
            yes + ',' + no + "]}";
 }
 
-// Once a controlled store moves a value, an old inverse may no longer read
-// its original wires. Keep such computed values as roots rather than trying
-// to erase them with an invalid recipe. A proven inactive write keeps the
-// certificate, so scope disposal can still invert the unchanged computation.
+// Decision ancestors cannot borrow their own conditional old-value view:
+// that would create a cycle. Preserve those decisions as roots. Other saved
+// consumers are transported across the exchange by qswap's checked rebind.
 void materialize_assignment_borrows(unsigned target, location_t loc, tree *list) {
+    std::set<unsigned> decision_inputs;
+    std::vector<unsigned> pending;
+    for (const auto &control : controls)
+        pending.push_back(control.first);
+    while (!pending.empty()) {
+        unsigned id = pending.back();
+        pending.pop_back();
+        if (!decision_inputs.insert(id).second)
+            continue;
+        for (const auto &entry : variables)
+            if (entry.second.id == id && entry.second.lowered && !entry.second.moved &&
+                !entry.second.released)
+                pending.insert(pending.end(),
+                               entry.second.dependencies.begin(),
+                               entry.second.dependencies.end());
+    }
     for (auto &entry : variables) {
         auto &value = entry.second;
         if (!value.lowered || !value.derived || value.released || value.moved || value.measured ||
             (value.id != target && !value.dependencies.count(target) && !value.creation.empty()))
+            continue;
+        if (value.id != target && !decision_inputs.count(value.id) && !value.creation.empty())
             continue;
         append(
             list,
@@ -1397,21 +1414,55 @@ void rebind_guarded_saves(const Variable &var, unsigned history) {
                            ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
     std::set<unsigned> sources{var.id, history};
     previous = select_controls(previous, leaf, var.width, var.is_signed, sources);
+    // The engine can inline stable private decisions into its inverse. Keep
+    // their original input versions visible to later compiler lifetime checks.
+    std::vector<unsigned> pending(sources.begin(), sources.end());
+    std::set<unsigned> visited;
+    while (!pending.empty()) {
+        unsigned id = pending.back();
+        pending.pop_back();
+        if (!visited.insert(id).second)
+            continue;
+        for (const auto &entry : variables)
+            if (entry.second.id == id && entry.second.lowered && !entry.second.moved &&
+                !entry.second.released)
+                for (unsigned source : entry.second.dependencies)
+                    if (sources.insert(source).second)
+                        pending.push_back(source);
+    }
     std::string marker = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) + ',';
+    auto transport = [&](std::string &text) {
+        size_t begin = 0;
+        while ((begin = text.find(marker, begin)) != std::string::npos) {
+            size_t end = text.find('}', begin);
+            if (end == std::string::npos)
+                gcc_unreachable();
+            text.replace(begin, end - begin + 1, previous);
+            begin += previous.size();
+        }
+    };
     for (auto &entry : expression_saves) {
         auto &saved = entry.second;
         if (!saved.sources.count(var.id))
             continue;
-        size_t begin = 0;
-        while ((begin = saved.text.find(marker, begin)) != std::string::npos) {
-            size_t end = saved.text.find('}', begin);
-            if (end == std::string::npos)
-                gcc_unreachable();
-            saved.text.replace(begin, end - begin + 1, previous);
-            begin += previous.size();
-        }
+        transport(saved.text);
         saved.sources.insert(sources.begin(), sources.end());
     }
+    for (auto &entry : variables) {
+        auto &saved = entry.second;
+        if (!saved.lowered || !saved.derived || saved.released || saved.moved ||
+            saved.id == var.id || !saved.dependencies.count(var.id))
+            continue;
+        transport(saved.creation);
+        saved.dependencies.insert(sources.begin(), sources.end());
+        saved.optional_definition = saved.runtime_history = true;
+    }
+    // Actual saved inverses may outlive a compiler-visible borrower while
+    // disposal waits for another consumer. Let runtime disposal order them.
+    for (const auto &control : controls)
+        for (auto &entry : variables)
+            if (entry.second.id == control.first && entry.second.derived)
+                entry.second.optional_definition = entry.second.runtime_history = true;
     for (auto *frame : expression_frames)
         if (frame->reads.count(var.id))
             frame->reads.insert(sources.begin(), sources.end());
@@ -1452,8 +1503,8 @@ void guarded_assignment(Variable &var,
     // Selecting old into a fresh public output would dephase an inactive
     // unknown destination by making another correlated basis-value copy.
     append(list,
-           emit_operation("{\"op\":\"qswap\",\"id\":" + std::to_string(var.id) +
-                              ",\"other\":" + std::to_string(history) + control_json() + '}',
+           emit_operation("{\"op\":\"qswap\",\"id\":" + std::to_string(var.id) + ",\"other\":" +
+                              std::to_string(history) + ",\"rebind\":true" + control_json() + '}',
                           loc));
     rebind_guarded_saves(var, history);
     append(list,
@@ -1769,6 +1820,8 @@ tree lower_quantum_decl(Variable &var) {
         var.lowered = true;
         var.range_max = src.range_max;
         var.derived = src.derived;
+        var.optional_definition = src.optional_definition;
+        var.runtime_history = src.runtime_history;
         var.creation = src.creation;
         var.dependencies = src.dependencies;
         var.lower = src.lower;

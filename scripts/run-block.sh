@@ -21,7 +21,7 @@ elif [[ "$block" == 03 ]]; then
     source_directory=examples/blocks/03
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 05 ]]; then
-    names=(dynamic_heap coherent_heap heap_bytes heap_transfer heap_iterations fixed_buffers buffer_lengths)
+    names=(dynamic_heap coherent_heap heap_bytes heap_transfer heap_iterations fixed_buffers buffer_lengths borrow_cleanup)
     source_directory=examples/blocks/05
     export CKET_SIMULATOR=sparse
 elif [[ "$block" == 04 ]]; then

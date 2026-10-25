@@ -1,5 +1,10 @@
 # Version 1.0 intermediate specification and acceptance
 
+**October 25 candidate:** [1.0.0-rc.1](releases/v1.0.0-rc.1.es.md) packages the implemented scope
+and records missing work. It does not close the acceptance requirements below or the everyday C
+goal. In particular, a nonidentity coherent heap copy still has a reproduced coherence failure. The
+historical 0.4.0 release remains separately documented.
+
 This document fixes a bounded 1.0 release contract, not certification that the current
 implementation satisfies it. The user clarified the active project scope on October 23, 2026: a
 [fully usable everyday C core](perfil-c-cotidiano.es.md), including functions, arrays, pointers and

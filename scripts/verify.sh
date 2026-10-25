@@ -26,6 +26,10 @@ build/validate_history 2>&1 | tee build/verify-history.log
 build/validate_heap 2>&1 | tee build/verify-heap.log
 build/validate_heap_identities 2>&1 | tee build/verify-heap-identities.log
 build/validate_inactive_borrows 2>&1 | tee build/verify-inactive-borrows.log
+build/validate_swap_rebind 2>&1 | tee build/verify-swap-rebind.log
+rebound_borrow_proof="$(mktemp -d "$PWD/build/rebound-borrow-proof.XXXXXX")"
+python3 scripts/validate-rebound-borrows.py --output "$rebound_borrow_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-rebound-borrow-states.log
 inactive_borrow_proof="$(mktemp -d "$PWD/build/inactive-borrow-proof.XXXXXX")"
 python3 scripts/validate-inactive-borrows.py --output "$inactive_borrow_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-inactive-borrow-states.log

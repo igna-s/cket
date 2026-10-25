@@ -7,8 +7,11 @@
 
 La [revisión cuántica posterior](../re-audit-2026-10-24-coherence.md) encontró pérdidas de
 coherencia que los casos finitos publicados no detectaban. Hay una corrección parcial de los casos
-directos de buffers fijos y las identidades comprobadas del heap; siguen abiertas la limpieza de
-préstamos tras escrituras que pueden activarse y las copias coherentes no idénticas al heap. La
+directos de buffers fijos y las identidades comprobadas del heap. La
+[nota de inversas condicionadas](conditional_inverse_note.es.md) y su
+[evidencia de candidata](../audit-evidence/rebound-borrows-v1/README.es.md) corrigen además los
+perfiles publicados de préstamos tras escrituras que pueden activarse. Las vidas generales y las
+copias coherentes no idénticas al heap conservan pendientes. La
 [corrección posterior de préstamos inactivos](../audit-evidence/inactive-borrows-v1/README.es.md)
 preserva la limpieza con fase cuando se demuestra inactividad global. La demo de la nota no contiene
 esas combinaciones. Su evidencia tiene el alcance de los programas y fuentes identificados en cada

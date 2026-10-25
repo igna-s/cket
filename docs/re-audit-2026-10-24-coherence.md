@@ -35,14 +35,14 @@ siguen vivos en el punto observado; las salidas de bloque y el heap conservan pe
 La ampliación inicial de la revisión encontró estos resultados sobre la corrección de buffers fijos.
 Las dos identidades del heap se corrigen en el seguimiento posterior de este informe:
 
-| Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                               |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                                       |
-| Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Corregido si la escritura está probada inactiva; variante coherente todavía abierta. |
-| Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo.            |
-| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Corregida en el seguimiento de identidades; pureza actual 1 → 1.                     |
-| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Corregido en el seguimiento de identidades; pureza actual 1 → 1.                     |
-| `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                                          |
+| Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                             |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                                     |
+| Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Corregido en los perfiles finitos de inversas condicionadas del seguimiento final. |
+| Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo.          |
+| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Corregida en el seguimiento de identidades; pureza actual 1 → 1.                   |
+| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Corregido en el seguimiento de identidades; pureza actual 1 → 1.                   |
+| `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                                        |
 
 Todos esos contrastes se observan antes de medir o resetear. Una secuencia de puertas unitarias y su
 inversa pueden ser correctas mientras la traducción sigue equivocándose al retener información
@@ -117,3 +117,27 @@ La copia coherente no idéntica al heap conserva su fallo de pureza conjunta sec
 programas y estados crudos están archivados. La inversa general debe reconstruir el valor anterior
 desde su ubicación condicionada; demostrar que todo el circuito es unitario no resuelve esa
 obligación. La ciberseguridad permanece clásica.
+
+## Candidata 1.0.0-rc.1: inversas desde el dueño anterior condicionado
+
+La [cápsula de inversas condicionadas](audit-evidence/rebound-borrows-v1/README.es.md) congela 231
+entradas. Los dos contraejemplos de préstamos, con control cero y con control en superposición,
+conservan ahora pureza 1 → 1 y el efecto de fase. El intercambio transporta las recetas de los
+préstamos mediante vistas del valor anterior; no materializa todas las dependencias como raíces. Las
+decisiones privadas reconstruibles desde raíces estables se expanden en la receta para limpiar sus
+copias físicas. Se verifica el estado antes, durante y después del préstamo.
+
+Los 1368 puntos de estado y 456 inversas incluyen bool/8/16/32 bits, negativos -2/-1, controles
+abiertos/anidados, copias y rellenos de un byte, préstamos encadenados/movidos/aritméticos y función
+del mismo archivo. Pasan O0/O2 normales y O1 ASan/UBSan, con ambas políticas. Las 34197 aserciones
+del motor tienen su alcance separado de las pruebas del frontend. Los prototipos fallidos se
+archivan aparte: control privado redundante, certificado negativo incorrecto y exceso de espacio
+para reconstruir un booleano. La [nota técnica](paper/conditional_inverse_note.es.md) detalla la
+identidad y las precondiciones.
+
+**Sigue abierto el contraejemplo del heap:** copia no idéntica bajo control en superposición, sector
+inactivo con pureza 1 → 0.5 y error de densidad 0.5, sin mediciones ni resets. Los casos directos
+fijos y el heap con control cero del contraste conservan error cero. No se afirma que este sea el
+único defecto restante: las vidas generales, escrituras repetidas, destinos derivados y rangos
+correlacionados requieren contratos y evidencia adicionales. La candidata no cierra el perfil
+cotidiano ni recalifica los papers anteriores. La ciberseguridad permanece clásica.

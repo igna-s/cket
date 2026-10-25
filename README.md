@@ -3,7 +3,7 @@
 **A new quantum variant of C for GCC-based compilers.**
 
 [![Verification](https://github.com/igna-s/cket/actions/workflows/verify.yml/badge.svg)](https://github.com/igna-s/cket/actions/workflows/verify.yml)
-[![Version](https://img.shields.io/badge/version-0.4.0--experimental-orange)](docs/releases/v0.4.0.md)
+[![Version](https://img.shields.io/badge/version-1.0.0--rc.1-orange)](docs/releases/v1.0.0-rc.1.es.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write
@@ -12,9 +12,10 @@ temporary workspace. Classical C code still runs on the CPU; quantum operations 
 statevector simulator, with dense and opt-in sparse execution modes.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
-OpenQASM 3 circuits, and resource reports. The current version is **0.4.0**, with **GCC 11.4.0** as
-the reference configuration. It implements an intermediate subset, with
-[version 1.0 requirements still open](docs/v1-plan.md).
+OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.1**, with **GCC
+11.4.0** as the reference configuration. This is an experimental candidate; the stable 1.0
+requirements remain open. The [release guide in Spanish](docs/releases/v1.0.0-rc.1.es.md) lists what
+works, what is incomplete, the known coherence failure and commands to run the delivery.
 
 The current objective is a **fully usable everyday C core**: common types, functions, control,
 arrays, pointers, vectors and the library operations those programs need. The
@@ -27,15 +28,18 @@ operate on unmeasured quantum data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
-**Known quantum correctness failures remain.** The
-[current coherence review](docs/re-audit-2026-10-24-coherence.md) reproduces dephasing when an
-unobserved borrow leaves its scope after a possibly active coherent write, and in an inactive sector
-of a nonidentity coherent heap copy. Direct fixed-buffer writes and checked heap identities have
-finite corrections. The latest
-[inactive-borrow evidence](docs/audit-evidence/inactive-borrows-v1/README.es.md) also corrects scope
-cleanup when typed certificates prove the write globally inactive. It records complete states, phase
-kickback, stable owners/wires and explicit resource limits. Earlier passing tests and historical
-papers do not certify these open cases.
+**A known quantum correctness failure remains.** The
+[current coherence review](docs/re-audit-2026-10-24-coherence.md) reproduces inactive-sector
+dephasing in a nonidentity coherent heap copy; avoid that combination in this candidate. Direct
+fixed-buffer writes, checked heap identities and selected scoped-borrow cleanup cases have finite
+corrections. The latest
+[conditional-inverse evidence](docs/audit-evidence/rebound-borrows-v1/README.es.md) records 1368
+complete complex states and 456 gate inverses, with phases, stable owners and normal/ASan/UBSan
+builds. It includes possible-active coherent writes, signed negative values and live/scoped borrows.
+General repeated writes, derived destinations, correlated range proofs and 64-bit scope cleanup
+remain unqualified. Earlier tests and historical papers do not certify the open cases. The
+[new runnable example](examples/blocks/05/borrow_cleanup.c) and
+[technical note](docs/paper/conditional_inverse_note.es.md) demonstrate the corrected scope.
 
 Start with [usable delivery 01](docs/entregas-incrementales.es.md): after building, run
 `bash scripts/run-block.sh 01` to compile eight small examples and produce native executables,
@@ -845,7 +849,8 @@ Examples teach usage; tests enforce behavior; documents specify contracts.
 For implementation details, read the [language contract](docs/language.md),
 [C11 coverage matrix](docs/c-coverage.md), [IR verification contract](docs/ir-verification.md),
 [circuit ABI](docs/circuit-abi.md), and [1.0 plan](docs/v1-plan.md).
-[Release notes](docs/releases/v0.4.0.md) preserve the historical release snapshot.
+[Current release notes](docs/releases/v1.0.0-rc.1.es.md) describe the experimental candidate;
+[0.4.0 notes](docs/releases/v0.4.0.md) preserve the historical snapshot.
 
 The project uses the [MIT license](LICENSE). Contributions follow
 [CONTRIBUTING.md](CONTRIBUTING.md); vulnerability reports follow [SECURITY.md](SECURITY.md).

@@ -167,7 +167,7 @@ def main():
         levels=args.levels,
         synthesis_policies=[0, 1],
         sanitized=args.sanitized,
-        scope='Finite complete states and phase kickback after unobserved borrowed temporaries leave scope. Assignment: bool/8/16/32-bit; one-byte fixed copy into 8/16/32-bit owners. Guards are zero, open one or runtime CPU-prepared zero. The earlier full-word 32-bit copy fixture exceeded 128 wires; 64-bit scope profiles are not qualified. General possible-active coherent writes still materialize borrows and require conditional old-owner inverse recipes. No general lifetime qualification.',
+        scope='Finite complete states and phase kickback after unobserved borrowed temporaries leave scope. Assignment: bool/8/16/32-bit; one-byte fixed copy into 8/16/32-bit owners. Guards are zero, open one or runtime CPU-prepared zero. The earlier full-word 32-bit copy fixture exceeded 128 wires; 64-bit scope profiles are not qualified. Possible-active coherent cleanup has separate directed evidence in validate-rebound-borrows.py. No general lifetime qualification.',
     )
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary), flush=True)

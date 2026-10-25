@@ -88,12 +88,45 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     unsigned n = expr_nodes(d, e, nodes);
     if (!n)
         return 0;
+    if (cj_equal(d, op, "select") && n == 3) {
+        uint64_t condition_width;
+        bit_poly condition, yes, no, difference;
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &condition_width) || condition_width != 1 ||
+            !expr_bit(c, d, nodes[0], 0, &condition, depth + 1) ||
+            !expr_bit(c, d, nodes[1], bit, &yes, depth + 1) ||
+            !expr_bit(c, d, nodes[2], bit, &no, depth + 1))
+            return 0;
+        // Both pure arms must pass definedness. Lazy domains that cannot be
+        // proved here use arithmetic synthesis. The mux needs no word copy:
+        // no XOR (condition AND (yes XOR no)).
+        difference = yes;
+        return poly_xor(c, &difference, &no) && poly_product(c, out, &condition, &difference) &&
+               poly_xor(c, out, &no);
+    }
     if (cj_equal(d, op, "cast")) {
         uint64_t source_width;
         cj_u64(d, cj_get(d, nodes[0], "bits"), &source_width);
-        if (width == 1 && source_width > 1)
-            return 0; /* Boolean conversion is a zero test below. */
+        if (width == 1 && source_width > 1) {
+            int child_op = cj_get(d, nodes[0], "op");
+            /* C comparisons return int but already denote zero or one. */
+            if (cj_equal(d, child_op, "eq") || cj_equal(d, child_op, "ne"))
+                return expr_bit(c, d, nodes[0], 0, out, depth + 1);
+            return 0; /* General Boolean conversion is a zero test below. */
+        }
         return expr_bit(c, d, nodes[0], bit, out, depth + 1);
+    }
+    if (n == 2 && (cj_equal(d, op, "eq") || cj_equal(d, op, "ne"))) {
+        uint64_t left_width, right_width;
+        bit_poly left, right;
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &left_width) || left_width != 1 ||
+            !cj_u64(d, cj_get(d, nodes[1], "bits"), &right_width) || right_width != 1 ||
+            !expr_bit(c, d, nodes[0], 0, &left, depth + 1) ||
+            !expr_bit(c, d, nodes[1], 0, &right, depth + 1))
+            return 0;
+        if (bit)
+            return 1;
+        *out = left;
+        return poly_xor(c, out, &right) && (!cj_equal(d, op, "eq") || poly_toggle(c, out, 0));
     }
     if (cj_equal(d, op, "shl") || cj_equal(d, op, "shr")) {
         uint64_t shift, source_width;

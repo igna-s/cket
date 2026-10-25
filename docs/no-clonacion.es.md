@@ -103,3 +103,12 @@ conserva ahora la receta y deshace el temporal al salir del bloque, con su fase 
 contratos anteriores y sus campañas finitas deben leerse con estos contraejemplos. La unitariedad
 del flujo completo conserva información global, pero también hay que comprobar el estado lógico y
 las correlaciones que cada operación promete conservar.
+
+## Limpieza después de una escritura que puede activarse
+
+La [corrección de inversas condicionadas](audit-evidence/rebound-borrows-v1/README.es.md) cierra los
+contraejemplos anteriores de temporales al salir del bloque, también bajo control en superposición,
+en los perfiles finitos publicados. El valor anterior se reconstruye desde uno u otro dueño según el
+control, y se usa en la inversa guardada; no se clonan amplitudes ni se mide para limpiar. La
+[nota técnica](paper/conditional_inverse_note.es.md) explica la fase conservada y las restricciones.
+Las vidas generales y el contraejemplo de copia coherente no idéntica al heap permanecen pendientes.

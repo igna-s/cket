@@ -1,5 +1,5 @@
 {
-  "active": "inactive-borrows-v1",
+  "active": "rebound-borrows-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -24,13 +24,15 @@
     "runtime-memory-v1",
     "coherent-store-progress-v1",
     "heap-identities-v1",
-    "inactive-borrows-v1"
+    "inactive-borrows-v1",
+    "rebound-borrows-v1"
   ],
-  "meaning": "Finite scoped-borrow cleanup when saved typed certificates prove the write globally inactive. Complete complex states, phase kickback, unchanged public owners/wires and private-zero checks; normal O0/O2 and ASan/UBSan O1, both synthesis policies. Bool/8/16/32-bit assignments and one-byte copies into 8/16/32-bit owners. Full-word 32-bit copy fixture exceeded 128 wires; 64-bit scope cleanup is not qualified. Possible-active coherent borrow cleanup and nonidentity coherent heap copies still have inactive-sector dephasing. No whole-compiler, C11 or paper qualification.",
+  "meaning": "Finite conditional inverse transport across possible-active controlled root-owner swaps. Bool and signed/unsigned 8/16/32-bit assignments, one-byte copy/fill, open/nested controls, chained/moved/arithmetic scoped borrows, same-unit function and signed -2/-1 preparations. Complete complex states before/during/after cleanup, explicit phases, stable public owners, only required old-root history and gate reversal. Normal O0/O2 and ASan/UBSan O1; both synthesis policies. Repeated writes, derived destinations, correlated range proofs and 64-bit scope cleanup remain unqualified. Nonidentity coherent heap copy still has an inactive-sector dephasing counterexample. No whole-compiler, C11, QPU or historical-paper qualification.",
   "known_findings": [
     "coherent-overwrite-coherence-v1",
     "coherent-store-progress-v1",
     "heap-identities-v1",
-    "inactive-borrows-v1"
+    "inactive-borrows-v1",
+    "rebound-borrows-v1"
   ]
 }

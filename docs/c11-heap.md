@@ -190,3 +190,9 @@ an inactive sector of a nonidentity coherent copy and in scoped unobserved-borro
 The later [inactive-borrow correction](audit-evidence/inactive-borrows-v1/README.es.md) preserves
 scope cleanup for demonstrably inactive fixed writes. It does not close the nonidentity coherent
 heap-copy finding or general cleanup after possible-active coherent overwrites.
+
+The [1.0.0-rc.1 conditional-inverse correction](audit-evidence/rebound-borrows-v1/README.es.md)
+closes the published fixed root-owner scoped-borrow cases, including possible-active controls. It
+does not fix the nonidentity coherent heap-copy counterexample: its inactive joint sector still
+dephases. Avoid that combination in this candidate; existing finite heap evidence does not qualify
+it.

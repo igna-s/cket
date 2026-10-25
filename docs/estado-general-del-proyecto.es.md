@@ -4,16 +4,25 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
-**Auditoría cuántica: correcciones parciales y pendientes abiertos.** Se corrigen las ramas
-inactivas directas de buffers fijos, la autoasignación/autorrelleno idéntico del heap y ahora la
-limpieza de temporales cuando la escritura está demostrablemente inactiva. Esta última
-[cápsula](audit-evidence/inactive-borrows-v1/README.es.md) registra 252 puntos de estado completo y
-126 inversas, con fases y ASan/UBSan. La
-[cápsula de identidades del heap](audit-evidence/heap-identities-v1/README.es.md) conserva sus 2232
-estados y 1116 inversas de la revisión anterior. Persisten pérdidas de coherencia al limpiar
-préstamos tras escrituras que pueden activarse y en copias coherentes no idénticas al heap. El
-[informe](re-audit-2026-10-24-coherence.md) distingue los casos corregidos y abiertos; el compilador
-cotidiano y la recalificación de los papers siguen pendientes.
+**Candidata 1.0.0-rc.1 lista como entrega experimental; 1.0 estable pendiente.** La
+[guía breve de versión](releases/v1.0.0-rc.1.es.md) reúne qué está hecho, qué falta y cómo
+ejecutarlo. La [demo nueva](../output/demo/README-borrow.es.md) comprueba limpieza e interferencia
+después de una escritura bajo control cuántico. La ciberseguridad sigue clásica.
+
+**Última corrección:** los temporales pueden limpiar su inversa desde la ubicación condicionada del
+valor anterior. Se corrigen los contraejemplos con control cero y con control en superposición en
+los perfiles publicados, además del certificado de rangos negativos y una reserva innecesaria de
+espacio. La [cápsula actual](audit-evidence/rebound-borrows-v1/README.es.md) registra **1368 puntos
+de estado completo y 456 inversas**, con fases y construcciones normales/ASan/UBSan. Se observan
+también los préstamos todavía vivos; conservar una copia redundante del control no cuenta como
+limpieza correcta.
+
+**Falta:** persiste el contraejemplo de copia coherente no idéntica al heap, con pureza sectorial 1
+→ 0.5. No usar esa combinación en esta candidata. También quedan las vidas generales con escrituras
+repetidas/destinos derivados, más combinaciones de funciones y punteros, flotantes, integración
+cotidiana y recalificación de papers/CI. El
+[informe de coherencia](re-audit-2026-10-24-coherence.md) separa las revisiones históricas de la
+actual. La auditoría general continúa abierta; el número de versión no certifica C11 completo.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

@@ -507,17 +507,19 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                qc_fail(c, "quantum materialization requires available prepared storage");
     }
     if (cj_equal(d, heap_op, "qswap")) {
-        static const char *const allowed[] = {"op", "id", "other", "controls", NULL};
+        static const char *const allowed[] = {"op", "id", "other", "controls", "rebind", NULL};
         static const char *const control[] = {"id", "value", NULL};
         uint64_t id, other;
         if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
             !unsigned_field(c, d, inst, "other", &other) || id > UINT32_MAX || other > UINT32_MAX ||
-            id == other)
+            id == other || !boolean_field(c, d, inst, "rebind", 1))
             return qc_fail(c, "quantum swap requires two distinct storage identities");
         qc_register *a = qc_lookup(c, (uint32_t)id), *b = qc_lookup(c, (uint32_t)other);
         if (!a || !b || !a->alive || !b->alive || !a->prepared || !b->prepared || a->finished ||
             b->finished || a->width != b->width || a->signed_type != b->signed_type)
             return qc_fail(c, "quantum swap requires materialized storage of the same C type");
+        if (cj_bool(d, cj_get(d, inst, "rebind")) && a->signed_type < 0)
+            return qc_fail(c, "inverse transport requires an explicit C signedness");
         int guards = cj_get(d, inst, "controls");
         if (guards >= 0) {
             if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)

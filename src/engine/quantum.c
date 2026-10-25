@@ -1393,6 +1393,7 @@ failed:
 }
 
 #include "heap.inc"
+#include "swap_rebind.inc"
 
 // Relabel saved register references, preserving the JSON shape and all other
 // operands. This is ownership transport, not a copy of a quantum state.
@@ -1723,31 +1724,7 @@ int qc_apply_token(qc_context *c,
         !unborrowed(c, r->id))
         return 0;
     if (cj_equal(d, op, "qswap")) {
-        uint64_t other;
-        cj_u64(d, cj_get(d, inst, "other"), &other);
-        int inactive;
-        if (!phase_inactive(c, d, inst, &inactive))
-            return 0;
-        if (inactive || impossible)
-            return 1;
-        if (!unborrowed(c, r->id) || !unborrowed(c, (uint32_t)other))
-            return 0;
-        qc_register *b = reg(c, (uint32_t)other);
-        if (!c->structural)
-            for (unsigned bit = 0; bit < r->width; ++bit) {
-                qc_mask left = QC_WIRE(r->wires[bit]), right = QC_WIRE(b->wires[bit]);
-                if (!qc_emit(c, QC_X, b->wires[bit], mask | left, pattern | left, 0) ||
-                    !qc_emit(c, QC_X, r->wires[bit], mask | right, pattern | right, 0) ||
-                    !qc_emit(c, QC_X, b->wires[bit], mask | left, pattern | left, 0))
-                    return 0;
-            }
-        taint_controls(c, mask);
-        unknown_support(r);
-        unknown_support(b);
-        r->clean = b->clean = 0;
-        ++r->epoch;
-        ++b->epoch;
-        return 1;
+        return apply_swap(c, d, inst, mask, pattern);
     }
     if (cj_equal(d, op, "qxor_inplace")) {
         if (r->definition)

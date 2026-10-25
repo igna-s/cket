@@ -231,3 +231,25 @@ Discarded `sequence` operands must pass the supported definedness proof. A priva
 prevents an inconclusive proof from suppressing ordinary validation. No amplitudes or
 simulator-specific equality checks participate in this optimization. See the
 [finite heap identity evidence](audit-evidence/heap-identities-v1/README.es.md).
+
+## Optional controlled-swap inverse transport
+
+`qswap` optionally accepts Boolean `rebind`. When true, explicit matching signedness is required.
+The verifier still requires prepared distinct owners and Boolean controls disjoint from exchanged
+wires. On a possible-active path the exchanged owners themselves cannot have pending definitions;
+other saved borrowers may be transported. Without `rebind`, the previous borrower restrictions
+apply.
+
+Before emitting the exchange, the engine constructs conditional old-value recipes for saved
+expressions and gate-control masks, checks dependency epochs and the resulting graph, and enforces
+expansion/work budgets. Private decision definitions can expand only from available unchanged roots;
+cycles or stale epochs fail. Borrower values/epochs do not change during recipe transport. The
+exchanged owner epochs do change. The union of their support is conservative: `support_interval`
+means nonnegative numeric support, not the unsigned bit-pattern interval of a negative signed value.
+
+For provably valid pure branches, bit synthesis implements Boolean select as
+`no XOR (condition AND (yes XOR no))`; conditional definedness that this proof cannot establish uses
+the arithmetic route. C's integer-valued comparisons between one-bit operands retain zero/one
+semantics without a full-word temporary. The
+[finite evidence](audit-evidence/rebound-borrows-v1/README.es.md) does not establish general
+lifetime, heap-copy or whole-compiler correctness.

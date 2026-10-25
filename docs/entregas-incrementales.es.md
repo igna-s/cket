@@ -135,12 +135,13 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
 `bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes`,
-`heap_transfer`, `heap_iterations`, `fixed_buffers` y `buffer_lengths`. En el primero, la capacidad
-inicial es un dato CPU recibido por `argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`.
-El programa reserva con `calloc`, llena, modifica bajo un booleano cuántico, crece con `realloc`,
-recorre mediante una función, mide explícitamente y libera. Compara la suma con los elementos
-observados y una fórmula C ordinaria. Este avance genera un ejecutable nativo; el control CPU y el
-heap no se exportan como un circuito QASM estático.
+`heap_transfer`, `heap_iterations`, `fixed_buffers`, `buffer_lengths` y `borrow_cleanup`. En el
+primero, la capacidad inicial es un dato CPU recibido por `argv`:
+`CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva con `calloc`, llena,
+modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una función, mide
+explícitamente y libera. Compara la suma con los elementos observados y una fórmula C ordinaria.
+Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un circuito
+QASM estático.
 
 El [contrato de heap](c11-heap.md) explica la identidad de los registros, los préstamos, los
 resultados derivados que siguen vivos al redimensionar/liberar y los límites de recursos. No hay
@@ -190,3 +191,11 @@ solicitada después por el usuario y conserva su alcance y resultados por separa
 
 La ciberseguridad, criptografía y autenticación permanecen clásicas. Este plan tampoco requiere
 cambiar el aislamiento o la configuración de seguridad de Windows/WSL.
+
+La candidata [1.0.0-rc.1](releases/v1.0.0-rc.1.es.md) añade el octavo ejemplo del bloque 05,
+[`borrow_cleanup`](../examples/blocks/05/borrow_cleanup.c). Combina función, puntero, control en
+superposición, fase, limpieza de un temporal y comprobación de interferencia. Ese ejemplo genera
+además QASM e informe de recursos; los otros siete siguen siendo nativos. Hay una
+[demo empaquetada](../output/demo/README-borrow.es.md) para Windows/WSL. El bloque completo y el
+perfil cotidiano conservan pendientes explícitos; el heap bajo copia coherente no idéntica aún tiene
+un fallo conocido.
