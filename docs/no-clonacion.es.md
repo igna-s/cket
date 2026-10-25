@@ -90,3 +90,12 @@ anterior para los resultados todavía vivos. `free` retira el acceso público y 
 desconocidos como salidas conjuntas; los conocidos se limpian reversiblemente cuando terminan sus
 préstamos. No equivale a reset ni a medir. El programa debe presupuestar también esa historia
 retenida.
+
+## Hallazgos posteriores de coherencia
+
+La [revisión del 24 de octubre](re-audit-2026-10-24-coherence.md) encontró pérdidas de coherencia
+por historia redundante y por limpieza incompleta, aun con cero mediciones y resets. Se corrigen los
+casos directos observados de buffers fijos; siguen abiertos los préstamos que salen de su bloque y
+varios usos del heap. Los contratos anteriores y sus campañas finitas deben leerse con estos
+contraejemplos. La unitariedad del flujo completo conserva información global, pero también hay que
+comprobar el estado lógico y las correlaciones que cada operación promete conservar.

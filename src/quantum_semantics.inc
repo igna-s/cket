@@ -1360,11 +1360,128 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
            yes + ',' + no + "]}";
 }
 
+// Once a controlled store moves a value, an old inverse may no longer read
+// its original wires. Keep such computed values as roots rather than trying
+// to erase them with an invalid recipe. This changes certificates, not states.
+void materialize_assignment_borrows(unsigned target, location_t loc, tree *list) {
+    for (auto &entry : variables) {
+        auto &value = entry.second;
+        if (!value.lowered || !value.derived || value.released || value.moved || value.measured ||
+            (value.id != target && !value.dependencies.count(target) && !value.creation.empty()))
+            continue;
+        append(list,
+               emit_operation(
+                   "{\"op\":\"qmaterialize\",\"id\":" + std::to_string(value.id) +
+                       ",\"optional\":" + (value.optional_definition ? "true" : "false") + '}',
+                   loc));
+        taint_uniform(value.id);
+        value.derived = false;
+        value.optional_definition = value.runtime_history = true;
+        value.dependencies.clear();
+        value.creation.clear();
+    }
+}
+
+// SAVE_EXPR caches are compiler-owned normalized JSON. After a controlled
+// wire exchange, their old value is in history on the active path and still
+// in public storage on the inactive path. Preserve that logical old view.
+void rebind_guarded_saves(const Variable &var, unsigned history) {
+    std::string leaf = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
+                       ",\"bits\":" + std::to_string(var.width) +
+                       ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
+    std::string previous = "{\"op\":\"reg\",\"id\":" + std::to_string(history) +
+                           ",\"bits\":" + std::to_string(var.width) +
+                           ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
+    std::set<unsigned> sources{var.id, history};
+    previous = select_controls(previous, leaf, var.width, var.is_signed, sources);
+    std::string marker = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) + ',';
+    for (auto &entry : expression_saves) {
+        auto &saved = entry.second;
+        if (!saved.sources.count(var.id))
+            continue;
+        size_t begin = 0;
+        while ((begin = saved.text.find(marker, begin)) != std::string::npos) {
+            size_t end = saved.text.find('}', begin);
+            if (end == std::string::npos)
+                gcc_unreachable();
+            saved.text.replace(begin, end - begin + 1, previous);
+            begin += previous.size();
+        }
+        saved.sources.insert(sources.begin(), sources.end());
+    }
+    for (auto *frame : expression_frames)
+        if (frame->reads.count(var.id))
+            frame->reads.insert(sources.begin(), sources.end());
+}
+
+void guarded_assignment(Variable &var,
+                        const std::string &expr,
+                        const std::set<unsigned> &deps,
+                        location_t loc,
+                        tree *list) {
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    materialize_assignment_borrows(var.id, loc, list);
+    unsigned history = next_id++;
+    std::set<unsigned> sources = deps;
+    std::string zero = "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
+                       ",\"signed\":" + (var.is_signed ? "true" : "false") + ",\"value\":0}";
+    std::string value = select_controls(expr, zero, var.width, var.is_signed, sources);
+    append(list,
+           emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(history) +
+                                ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
+                                (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                            loc,
+                            history,
+                            true));
+    active_cpu_parameters.swap(parameters);
+    append(list,
+           emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(history) +
+                              ",\"expr\":" + value + '}',
+                          loc));
+    append(list,
+           emit_operation("{\"op\":\"qmaterialize\",\"id\":" + std::to_string(history) +
+                              ",\"optional\":false}",
+                          loc));
+    for (unsigned source : sources)
+        taint_uniform(source);
+    // Inactive: |old,0> stays |old,0>. Active: |old,f> becomes |f,old>.
+    // Selecting old into a fresh public output would dephase an inactive
+    // unknown destination by making another correlated basis-value copy.
+    append(list,
+           emit_operation("{\"op\":\"qswap\",\"id\":" + std::to_string(var.id) +
+                              ",\"other\":" + std::to_string(history) + control_json() + '}',
+                          loc));
+    rebind_guarded_saves(var, history);
+    append(list,
+           emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(history) + '}', loc));
+    Variable previous{};
+    previous.id = history;
+    previous.width = var.width;
+    previous.is_signed = var.is_signed;
+    previous.lowered = previous.history = previous.optional_definition = previous.runtime_history =
+        true;
+    previous.decl =
+        build_decl(loc, VAR_DECL, get_identifier("__cket_guarded_history"), TREE_TYPE(var.decl));
+    variables.emplace(previous.decl, previous);
+    var.derived = false;
+    var.optional_definition = var.runtime_history = true;
+    var.dependencies.clear();
+    var.creation.clear();
+    var.measured = var.clean = var.basis_known = var.pristine_uniform = false;
+    var.range_max = var.width == 64 ? UINT64_MAX : ((uint64_t{1} << var.width) - 1);
+    ++var.epoch;
+}
+
 void versioned_assignment(Variable &var,
                           const std::string &expr,
                           const std::set<unsigned> &deps,
                           location_t loc,
                           tree *list) {
+    if (!controls.empty() && (!var.basis_known || var.derived || dependent(var.id))) {
+        guarded_assignment(var, expr, deps, loc, list);
+        return;
+    }
     if (runtime_memory_depth || dynamic_depth > cpu_branches.size()) {
         std::set<unsigned> sources = deps;
         std::string value =
@@ -2664,7 +2781,7 @@ tree lower_node(tree value) {
         controls.back().second = 0;
         append(&list, lower_node(TREE_OPERAND(value, 2)));
         controls.pop_back();
-        if (dependent(flag)) {
+        if (dependent(flag) || !variables.at(key).derived) {
             variables.at(key).history = true;
             append(&list,
                    emit_cpu_storage("{\"op\":\"qretain\",\"id\":" + std::to_string(flag) + '}',
@@ -2689,7 +2806,10 @@ tree lower_node(tree value) {
         tree choice =
             save_expr(fold_convert(boolean_type_node, lower_node(TREE_OPERAND(value, 0))));
         TREE_OPERAND(value, 0) = choice;
-        invalidate_cpu_ranges();
+        // A CPU branch does not itself change quantum storage. Each arm starts
+        // with the incoming certificates; writes invalidate their own values
+        // and the join intersects the two results. Dropping a known constant
+        // here would unnecessarily turn a cleanable fill into retained history.
         auto incoming = variables;
         auto before = remaining;
         auto then_uses = branch_uses(TREE_OPERAND(value, 1));

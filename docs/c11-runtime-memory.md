@@ -55,6 +55,14 @@ Cybersecurity, cryptography and authentication stay classical.
 
 ## Finite evidence and resources
 
+The [later quantum audit](re-audit-2026-10-24-coherence.md) found that selecting the previous value
+into another public register could dephase an inactive unknown destination. The direct fixed-store
+route now computes the active value into zero storage and exchanges it under the quantum controls.
+History is zero on inactive branches. Saved GCC expressions use a conditional old-owner view.
+Computed borrows whose inverses would read changed wires are retained as roots; their general scope
+cleanup remains an open quantum-correctness issue. The related heap paths also have open
+coherence/identity findings. Passing the finite campaigns below does not close these findings.
+
 The [delivery evidence](audit-evidence/runtime-memory-v1/README.es.md) records source identity and
 separates complete complex states/inverses, native observations, boundary rejections and preflight
 state preservation. It does not certify arbitrary states or complete C11. Retained history consumes

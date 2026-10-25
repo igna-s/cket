@@ -205,3 +205,18 @@ through the explicit channel so a following checked inverse can clean the tempor
 in unit-only modules and does not permit coherent controls. Predicate observations preserve
 coherence inside each function fiber; source inputs are not additionally measured or reset. See
 [integer observations](c11-observations.md).
+
+## Controlled overwrite primitives and current limits
+
+`qswap` has `op`, `id`, `other` and optional `controls`. Its two distinct owners must be available,
+prepared, without pending inverse definitions, and have the same C representation. Boolean controls
+cannot alias either owner. Three controlled X gates per bit exchange the payloads; an inactive
+control preserves both states. The operation does not allocate, measure or reset.
+
+`qmaterialize` has `op`, `id` and the required Boolean `optional`. An optional unavailable owner is
+an identity; an available owner must be prepared and unfinished. It removes the inverse certificate
+without changing the quantum state and invalidates pristine-uniform certificates through its
+ancestors. The value then remains a root, subject to ordinary retained-history limits. It is
+rejected in borrowed unitary modules. This is a conservative preservation mechanism; retaining a
+correlated temporary can still dephase a logical owner at scope exit. See the
+[open quantum findings](re-audit-2026-10-24-coherence.md).

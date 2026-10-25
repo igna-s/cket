@@ -1,5 +1,5 @@
 {
-  "active": "runtime-memory-v1",
+  "active": "coherent-store-progress-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -21,10 +21,12 @@
     "heap-transfer-v1",
     "runtime-history-v1",
     "fixed-memory-loops-v1",
-    "runtime-memory-v1"
+    "runtime-memory-v1",
+    "coherent-store-progress-v1"
   ],
-  "meaning": "Finite runtime memory evidence and standalone demo remain available. A later inactive-branch coherence counterexample is open; this is not full compiler qualification.",
+  "meaning": "Finite corrected direct fixed-store cases; observed/surviving borrows, five profiles, two synthesis policies, normal O0/O2 and ASan/UBSan O1. Unobserved scoped borrows and heap identity/coherent paths remain incorrect. No full compiler or paper qualification.",
   "known_findings": [
-    "coherent-overwrite-coherence-v1"
+    "coherent-overwrite-coherence-v1",
+    "coherent-store-progress-v1"
   ]
 }

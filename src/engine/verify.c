@@ -479,6 +479,47 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         }
         return 1;
     }
+    if (cj_equal(d, heap_op, "qmaterialize")) {
+        static const char *const allowed[] = {"op", "id", "optional", NULL};
+        uint64_t id;
+        if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
+            id > UINT32_MAX || !boolean_field(c, d, inst, "optional", 0))
+            return qc_fail(c, "invalid quantum materialization identity or optional flag");
+        qc_register *r = qc_lookup(c, (uint32_t)id);
+        return (cj_bool(d, cj_get(d, inst, "optional")) && (!r || !r->alive)) ||
+               (r && r->alive && r->prepared && !r->finished) ||
+               qc_fail(c, "quantum materialization requires available prepared storage");
+    }
+    if (cj_equal(d, heap_op, "qswap")) {
+        static const char *const allowed[] = {"op", "id", "other", "controls", NULL};
+        static const char *const control[] = {"id", "value", NULL};
+        uint64_t id, other;
+        if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
+            !unsigned_field(c, d, inst, "other", &other) || id > UINT32_MAX || other > UINT32_MAX ||
+            id == other)
+            return qc_fail(c, "quantum swap requires two distinct storage identities");
+        qc_register *a = qc_lookup(c, (uint32_t)id), *b = qc_lookup(c, (uint32_t)other);
+        if (!a || !b || !a->alive || !b->alive || !a->prepared || !b->prepared || a->finished ||
+            b->finished || a->definition || b->definition || a->width != b->width ||
+            a->signed_type != b->signed_type)
+            return qc_fail(c, "quantum swap requires materialized storage of the same C type");
+        int guards = cj_get(d, inst, "controls");
+        if (guards >= 0) {
+            if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)
+                return qc_fail(c, "invalid quantum swap controls");
+            for (int t = guards + 1; t < d->tokens[guards].next; t = d->tokens[t].next) {
+                uint64_t source, wanted;
+                if (!fields(c, d, t, control) || !unsigned_field(c, d, t, "id", &source) ||
+                    !unsigned_field(c, d, t, "value", &wanted) || source > UINT32_MAX ||
+                    wanted > 1 || source == id || source == other)
+                    return qc_fail(c, "quantum swap control aliases its storage or is invalid");
+                qc_register *r = qc_lookup(c, (uint32_t)source);
+                if (!r || !r->alive || !r->prepared || r->width != 1)
+                    return qc_fail(c, "quantum swap control requires an available Boolean");
+            }
+        }
+        return 1;
+    }
     if (cj_equal(d, heap_op, "qassign") || cj_equal(d, heap_op, "qslot")) {
         static const char *const assignment[] = {"op", "id", "expr", NULL};
         static const char *const slot[] = {"op", "id", "width", "signed", "ancilla", "name", NULL};

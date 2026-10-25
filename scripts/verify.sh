@@ -29,6 +29,9 @@ build/validate_runtime_memory 2>&1 | tee build/verify-runtime-memory-engine.log
 runtime_memory_proof="$(mktemp -d "$PWD/build/runtime-memory-proof.XXXXXX")"
 python3 scripts/validate-runtime-memory.py --output "$runtime_memory_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-runtime-memory.log
+coherent_store_proof="$(mktemp -d "$PWD/build/coherent-store-proof.XXXXXX")"
+python3 scripts/validate-coherent-overwrites.py --output "$coherent_store_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-coherent-overwrites.log
 fixed_memory_proof="$(mktemp -d "$PWD/build/fixed-memory-proof.XXXXXX")"
 python3 scripts/validate-fixed-memory-loops.py --output "$fixed_memory_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-fixed-memory-loops.log

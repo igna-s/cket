@@ -1,6 +1,8 @@
 /* Fixed finite-domain reference: seven dense state profiles and one
  * complete 512-label controlled basis-action profile, each before and
- * after its saved inverse, under both engine synthesis policies. */
+ * after inversion, under both engine synthesis policies. The controlled store
+ * uses independent reversal of its complete gate suffix, rather than a saved
+ * compute inverse: its history is an output of a controlled swap. */
 /* Independent C/libc reference for the experiment's complete joint states.
  * Terminal measurements are not executed. Unknown overwritten inputs remain
  * explicit history, and the saved inverse must restore clean private wires. */
@@ -133,29 +135,24 @@ static qc_mask memset_mask(const qc_register *r, unsigned value) {
     return result;
 }
 
-static qc_register *memset_decision(qc_context *c, unsigned current) {
-    qc_register *decision = NULL;
-    for (size_t i = 0; i < c->nregisters; ++i) {
-        qc_register *r = &c->registers[i];
-        if (!r->alive || r->id == 0 || r->id == 1 || r->id == current)
-            continue;
-        if (decision || r->width != 1 || !r->definition || !r->ancillary)
-            fail("unexpected live controlled auxiliary");
-        decision = r;
-    }
-    return decision;
-}
-
 static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
-    qc_register *old = qc_lookup(c, 0), *flag = qc_lookup(c, 1);
-    qc_register *result = inverse ? NULL : qc_lookup(c, current);
-    qc_register *decision = memset_decision(c, current);
-    if (!old || !old->history || old->width != 8 || !flag || flag->width != 1 ||
-        flag->wires[0] != 8 || (!inverse && !result) || (inverse && decision))
+    qc_register *result = qc_lookup(c, current), *flag = qc_lookup(c, 1), *history = NULL;
+    if (current != 0 || !result || result->width != 8 || !flag || flag->width != 1 ||
+        flag->wires[0] != 8)
         fail("controlled history/input/cleanup invariant failed");
     for (unsigned i = 0; i < 8; ++i)
-        if (old->wires[i] != i)
+        if (result->wires[i] != i)
             fail("controlled input preparation map changed");
+    for (size_t i = 0; i < c->nregisters; ++i) {
+        qc_register *r = &c->registers[i];
+        if (!r->alive || r->id == current || r->id == 1)
+            continue;
+        if (history || !r->history || r->width != 8 || r->definition)
+            fail("unexpected live controlled auxiliary");
+        history = r;
+    }
+    if (!history)
+        fail("controlled store lost its active previous value");
     qc_mask states[512];
     double complex amplitudes[512];
     for (unsigned i = 0; i < 512; ++i) {
@@ -185,39 +182,30 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
     }
     if (prepared != 9 || c->measure || c->reset)
         fail("incomplete controlled preparation or implicit channel");
+    if (inverse)
+        for (size_t i = c->ngates; i-- > 0;) {
+            const qc_gate *g = &c->gates[i];
+            if (g->kind == QC_H)
+                continue;
+            for (unsigned label = 0; label < 512; ++label)
+                if ((states[label] & g->mask) == g->pattern) {
+                    if (g->kind == QC_X)
+                        states[label] ^= QC_WIRE(g->target);
+                    else
+                        amplitudes[label] *= cexp(-I * g->angle);
+                }
+        }
     for (unsigned label = 0; label < 512; ++label) {
         unsigned x = label & 255, b = label >> 8;
         unsigned value = b ? 17 : x;
-        qc_mask wanted = memset_mask(old, x) | memset_mask(flag, b);
-        if (!inverse) {
-            wanted |= memset_mask(result, value);
-            if (decision)
-                wanted |= memset_mask(decision, b);
-        }
-        double angle = .001 * x + .19 * b + (value == 7 ? .17 : 0);
+        qc_mask wanted = memset_mask(result, inverse ? x : value) | memset_mask(flag, b);
+        if (!inverse)
+            wanted |= memset_mask(history, b ? x : 0);
+        double angle = inverse ? 0 : .001 * x + .19 * b + (value == 7 ? .17 : 0);
         if (states[label] != wanted ||
             cabs(amplitudes[label] - cexp(I * angle) / sqrt(512.0)) > 1e-10)
             fail("controlled labeled input/result/phase/private state mismatch");
     }
-}
-
-static void memset_clean_decision(qc_context *c, unsigned current) {
-    qc_register *decision = memset_decision(c, current);
-    if (!decision)
-        return;
-    unsigned id = decision->id;
-    size_t size = strlen(decision->definition) + 128;
-    char *operation = malloc(size);
-    if (!operation)
-        fail("control inverse allocation failed");
-    snprintf(
-        operation, size, "{\"op\":\"quncompute\",\"id\":%u,\"expr\":%s}", id, decision->definition);
-    if (!qc_apply(c, operation, NULL))
-        fail(qc_error(c));
-    snprintf(operation, size, "{\"op\":\"qrelease\",\"id\":%u}", id);
-    if (!qc_apply(c, operation, NULL))
-        fail(qc_error(c));
-    free(operation);
 }
 
 static unsigned memset_state_probe(const char *ir, unsigned profile) {
@@ -255,9 +243,12 @@ static unsigned memset_state_probe(const char *ir, unsigned profile) {
         }
         if (current == UINT32_MAX)
             fail("source did not expose its current destination");
-        if (profile == 2)
+        if (profile == 2) {
             memset_control_paths(c, current, 0);
-        else
+            memset_control_paths(c, current, 1);
+            qc_destroy(c);
+            continue;
+        } else
             compare(c, profile, current, 0);
         while (nwrite) {
             char *operation = writes[--nwrite];
@@ -285,11 +276,7 @@ static unsigned memset_state_probe(const char *ir, unsigned profile) {
                 fail(qc_error(c));
             free(operation);
         }
-        if (profile == 2) {
-            memset_clean_decision(c, current);
-            memset_control_paths(c, current, 1);
-        } else
-            compare(c, profile, current, 1);
+        compare(c, profile, current, 1);
         qc_destroy(c);
     }
     cj_free(&d);

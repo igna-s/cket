@@ -20,12 +20,37 @@ También se reproduce el error al proyectar sobre `control = 0` un control origi
 superposición. Comprobar únicamente los valores de base, la unitariedad de las puertas o su inversa
 completa no detectaba este cambio de semántica de la rama inactiva.
 
-## Estado y alcance
+## Seguimiento del 25 de octubre: estado y alcance
 
-**El hallazgo está abierto.** Las sobrescrituras condicionadas de destinos cuánticos desconocidos
-necesitan una implementación que transporte la información anterior solo en la rama que escribe. Las
-dependencias de inversas y los alias deben conservar su significado después de ese transporte. No
-debe cerrarse el caso únicamente porque vuelva a pasar una comparación de valores medidos.
+**La corrección es parcial; quedan fallos cuánticos abiertos.** El cambio de buffers fijos calcula
+el valor activo en un auxiliar cero y usa un intercambio controlado. La rama inactiva conserva el
+destino; la historia recibe el valor anterior solo donde se escribe. Los cuatro contraejemplos
+directos dejan de perder pureza. Las expresiones guardadas de GCC conservan una vista del valor
+anterior para que un postfix no lea el valor actualizado.
+
+La regresión nueva compara 240 estados conjuntos completos y 120 inversas en cinco perfiles, con
+ambas políticas de síntesis, GCC O0/O2 normales y O1 instrumentado. Su alcance incluye préstamos que
+siguen vivos en el punto observado; las salidas de bloque y el heap conservan pendientes.
+
+La ampliación de la revisión encontró estos resultados sobre el compilador corregido:
+
+| Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                    |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                            |
+| Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Abierto: conservar el temporal como raíz impide limpiar su correlación.   |
+| Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo. |
+| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Abierto: la autoasignación crea historia redundante.                      |
+| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Abierto: el autorrelleno de un byte no conserva la identidad.             |
+| `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                               |
+
+Todos esos contrastes se observan antes de medir o resetear. Una secuencia de puertas unitarias y su
+inversa pueden ser correctas mientras la traducción sigue equivocándose al retener información
+redundante o al limpiar un préstamo. Por eso no basta contar valores medidos ni puertas invertidas.
+
+La [cápsula de progreso](audit-evidence/coherent-store-progress-v1/README.es.md) separa la regresión
+que pasa de los contraejemplos que siguen abiertos. El siguiente trabajo debe resolver las
+identidades del heap y las inversas que necesitan una vista condicionada del dueño anterior;
+conservar indefinidamente un auxiliar no sustituye esa limpieza.
 
 La demo `buffer_lengths.c` publicada no contiene esta combinación: sus escrituras de memoria no
 están bajo control cuántico y sus destinos iniciales son conocidos. Las campañas anteriores

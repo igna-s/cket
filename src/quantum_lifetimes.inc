@@ -130,6 +130,9 @@ void compute_known_storage(Variable &var,
                           loc));
     var.derived = true;
     var.optional_definition = !cpu_branches.empty();
+    // The other CPU arm may keep the known root in this same public slot.
+    // Disposal follows the actual path's optional saved definition.
+    var.runtime_history |= !cpu_branches.empty();
     var.history = false;
     var.dependencies = sources;
     var.creation = value;

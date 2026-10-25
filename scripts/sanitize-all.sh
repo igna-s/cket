@@ -107,6 +107,9 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 runtime_memory_proof="$(mktemp -d "$san_root/build/runtime-memory-proof.XXXXXX")"
 python3 scripts/validate-runtime-memory.py --compiler-root "$san_root" \
     --output "$runtime_memory_proof/sanitized" --levels O1 --sanitized
+coherent_store_proof="$(mktemp -d "$san_root/build/coherent-store-proof.XXXXXX")"
+python3 scripts/validate-coherent-overwrites.py --compiler-root "$san_root" \
+    --output "$coherent_store_proof/sanitized" --levels O1 --sanitized
 fixed_memory_proof="$(mktemp -d "$san_root/build/fixed-memory-proof.XXXXXX")"
 python3 scripts/validate-fixed-memory-loops.py --compiler-root "$san_root" \
     --output "$fixed_memory_proof/sanitized" --levels O1 --sanitized

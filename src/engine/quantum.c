@@ -1506,6 +1506,17 @@ int qc_apply_token(qc_context *c,
     }
     if (!qc_verify_instruction(c, d, inst))
         return 0;
+    if (cj_equal(d, op, "qmaterialize")) {
+        uint64_t id;
+        cj_u64(d, cj_get(d, inst, "id"), &id);
+        qc_register *r = reg(c, (uint32_t)id);
+        if (r && r->alive) {
+            qc_mask seen = 0;
+            taint_uniform(c, r->id, &seen);
+            clear_definition(r);
+        }
+        return 1;
+    }
     if (cj_equal(d, op, "cmemory")) {
         uint64_t count, limit, overlap;
         cj_u64(d, cj_get(d, cj_get(d, inst, "count"), "value"), &count);
@@ -1695,6 +1706,33 @@ int qc_apply_token(qc_context *c,
         return qc_fail(c, "use of unknown or released quantum storage");
     if (!cj_equal(d, op, "qmove") && !cj_equal(d, op, "qretain") && !unborrowed(c, r->id))
         return 0;
+    if (cj_equal(d, op, "qswap")) {
+        uint64_t other;
+        cj_u64(d, cj_get(d, inst, "other"), &other);
+        if (!unborrowed(c, (uint32_t)other))
+            return 0;
+        int inactive;
+        if (!phase_inactive(c, d, inst, &inactive))
+            return 0;
+        if (inactive || impossible)
+            return 1;
+        qc_register *b = reg(c, (uint32_t)other);
+        if (!c->structural)
+            for (unsigned bit = 0; bit < r->width; ++bit) {
+                qc_mask left = QC_WIRE(r->wires[bit]), right = QC_WIRE(b->wires[bit]);
+                if (!qc_emit(c, QC_X, b->wires[bit], mask | left, pattern | left, 0) ||
+                    !qc_emit(c, QC_X, r->wires[bit], mask | right, pattern | right, 0) ||
+                    !qc_emit(c, QC_X, b->wires[bit], mask | left, pattern | left, 0))
+                    return 0;
+            }
+        taint_controls(c, mask);
+        unknown_support(r);
+        unknown_support(b);
+        r->clean = b->clean = 0;
+        ++r->epoch;
+        ++b->epoch;
+        return 1;
+    }
     if (cj_equal(d, op, "qxor_inplace")) {
         if (r->definition)
             return qc_fail(c, "updating a computed value invalidates its inverse");

@@ -1,14 +1,15 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 24 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 25 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
-**Hallazgo cuántico abierto:** una sobrescritura fija bajo control cuántico puede perder coherencia
-en la rama inactiva al correlacionar innecesariamente el destino con su historia. El
-[contraejemplo y su alcance](re-audit-2026-10-24-coherence.md) registran el fallo; los valores
-medidos y las inversas de puertas por sí solos no lo descartaban. La demo siguiente no contiene esa
-combinación.
+**Auditoría cuántica: corrección parcial y pendientes abiertos.** Se corrigen cuatro casos directos
+de pérdida de coherencia en ramas inactivas de buffers fijos. La revisión ampliada aún reproduce
+errores al limpiar préstamos no observados, en copias coherentes del heap y en autoasignación o
+autorrelleno de un byte del heap. El [informe](re-audit-2026-10-24-coherence.md) conserva los
+contraejemplos y distingue las pruebas que pasan; la calificación completa del compilador sigue
+abierta.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

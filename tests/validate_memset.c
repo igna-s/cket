@@ -310,7 +310,7 @@ static void states(validation *v) {
         "PASS %u dense complete-state memset cases with phases, retained inputs, saved inverses and clean private wires\n",
         dense);
     printf(
-        "PASS %u controlled memset circuits: all 512 labeled input basis paths, amplitudes, phases and saved inverses; canonical nine-H preparation, both synthesis policies\n",
+        "PASS %u controlled memset circuits: all 512 labeled input basis paths, amplitudes, phases and complete gate-suffix inverses; canonical nine-H preparation, both synthesis policies\n",
         labeled);
     fflush(stdout);
 }
@@ -336,7 +336,7 @@ static void value_effects(validation *v) {
             }
     checks += count;
     printf(
-        "PASS %u complete memset value-effect states: postfix/prefix, decrement, comma, zero length, arrays, coherent/lazy effects, relative phases and saved inverses; live history before inversion, private zeros after\n",
+        "PASS %u complete memset value-effect states: postfix/prefix, decrement, comma, zero length, arrays, coherent/lazy effects and relative phases; saved inverses for ordinary effects, complete gate-suffix inverses for controlled effects; live history before inversion, private zeros after\n",
         count);
     fflush(stdout);
 }
