@@ -199,3 +199,11 @@ además QASM e informe de recursos; los otros siete siguen siendo nativos. Hay u
 [demo empaquetada](../output/demo/README-borrow.es.md) para Windows/WSL. El bloque completo y el
 perfil cotidiano conservan pendientes explícitos; el heap bajo copia coherente no idéntica aún tiene
 un fallo conocido.
+
+La [candidata 1.0.0-rc.2](releases/v1.0.0-rc.2.es.md) añade el noveno ejemplo del bloque 05,
+[`heap_coherence`](../examples/blocks/05/heap_coherence.c): una función con punteros prestados,
+temporal con fase y escritura de un byte del heap bajo control cuántico. El bloque produce nueve
+ejecutables y conserva el QASM estático de `borrow_cleanup`. La
+[demo empaquetada](../output/demo/README-heap.es.md) comprueba los valores medidos; las matrices de
+densidad/fase/inversa de la cápsula califican la coherencia del bloque. Las escrituras parciales de
+buffers fijos conservan un fallo abierto. La 1.0 estable y el perfil cotidiano siguen pendientes.

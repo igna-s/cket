@@ -1,5 +1,12 @@
 # Runtime quantum heaps
 
+**Current finite follow-up:**
+[1.0.0-rc.2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md) corrects the earlier
+reproduced nonidentity coherent heap-copy case. Heap byte patches preserve untouched wires and saved
+source views through overlapping moves. Earlier sections retain their source-scoped results. A
+partial **fixed-buffer** write still has an untouched-byte coherence counterexample; general
+lifetimes/alias/ABI and large profiles remain open.
+
 `malloc`, `calloc`, `realloc` and `free` have a partial native quantum contract for padding-free
 scalar integer/Boolean elements. Capacity and addresses are classical; the payload is a collection
 of engine-owned quantum registers. The executable never loads quantum values from ordinary host

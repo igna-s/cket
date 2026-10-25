@@ -316,28 +316,34 @@ static int heap_scatter(qc_context *c, const cj_doc *d, int inst, qc_heap *heap,
     // All reads above resolve against the original registers. Their saved
     // recipes keep those versions alive throughout every selected write.
     for (size_t slot = 0; slot < count; ++slot) {
-        char operation[1400];
+        char operation[1000];
+        uint32_t match;
+        snprintf(
+            operation,
+            sizeof operation,
+            "{\"op\":\"eq\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"bits\":%u,\"signed\":false,\"id\":%u},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%zu}]}",
+            selector_bits,
+            selector,
+            selector_bits,
+            slot + 1);
+        if (!heap_new_register(c, 1, 0, 1, &match) || !heap_compute(c, match, operation))
+            return 0;
         snprintf(
             operation,
             sizeof operation,
             "{\"op\":\"qheap_store\",\"heap\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%" PRIu64
-            "},\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu},\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},\"width\":%u,\"signed\":%s,\"expr\":{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"eq\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"bits\":%u,\"signed\":false,\"id\":%u},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%zu}]},{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u},{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u}]}}",
+            "},\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu},\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},\"width\":%u,\"signed\":%s,\"expr\":{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u},\"controls\":[{\"id\":%u,\"value\":1}]}",
             heap->handle,
             offset + slot,
             heap->width,
             heap->sign ? "true" : "false",
             heap->width,
             heap->sign ? "true" : "false",
-            selector_bits,
-            selector,
-            selector_bits,
-            slot + 1,
-            heap->width,
-            heap->sign ? "true" : "false",
             value,
-            heap->width,
-            heap->sign ? "true" : "false",
-            heap->ids[offset + slot]);
+            match);
+        if (!qc_apply(c, operation, NULL))
+            return 0;
+        snprintf(operation, sizeof operation, "{\"op\":\"qdispose\",\"id\":%u}", match);
         if (!qc_apply(c, operation, NULL))
             return 0;
     }
@@ -355,6 +361,153 @@ static int heap_scatter(qc_context *c, const cj_doc *d, int inst, qc_heap *heap,
 }
 
 #include "heap_identity.inc"
+
+static int
+heap_decision_reads(qc_context *c, uint32_t id, uint32_t owner, unsigned depth, unsigned *work) {
+    if (depth > QC_MAX_PHYSICAL || ++*work > 2000000) {
+        qc_fail(c, "heap decision dependency proof budget exceeded");
+        return -1;
+    }
+    qc_register *r = reg(c, id);
+    if (!r || !r->alive || !r->prepared) {
+        qc_fail(c, "heap decision input is unavailable");
+        return -1;
+    }
+    if (id == owner)
+        return 1;
+    int reads = 0;
+    if (r->definition)
+        for (unsigned i = 0; i < r->ndeps; ++i) {
+            qc_register *input = reg(c, r->deps[i]);
+            if (!input || !input->alive || input->epoch != r->epochs[i]) {
+                qc_fail(c, "heap decision input epochs changed");
+                return -1;
+            }
+            int result = heap_decision_reads(c, input->id, owner, depth + 1, work);
+            if (result < 0)
+                return -1;
+            reads |= result;
+        }
+    return reads;
+}
+
+static int
+heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, uint32_t owner) {
+    int guards = cj_get(d, inst, "controls");
+    size_t capacity = guards >= 0 ? (size_t)d->tokens[guards].children * 64 + 3 : 3, used = 1;
+    char *guard_text = malloc(capacity);
+    if (!guard_text)
+        return qc_fail(c, "cannot allocate heap swap controls");
+    guard_text[0] = '[';
+    uint32_t aliased_guard = 0;
+    int ok = 1;
+    for (int t = guards >= 0 ? guards + 1 : 0; guards >= 0 && t < d->tokens[guards].next && ok;
+         t = d->tokens[t].next) {
+        uint64_t id, wanted;
+        cj_u64(d, cj_get(d, t, "id"), &id);
+        cj_u64(d, cj_get(d, t, "value"), &wanted);
+        if (id == owner) {
+            if (!aliased_guard) {
+                char leaf[128];
+                snprintf(leaf,
+                         sizeof leaf,
+                         "{\"op\":\"reg\",\"bits\":1,\"signed\":false,\"id\":%u}",
+                         owner);
+                ok = heap_new_register(c, 1, 0, 1, &aliased_guard) &&
+                     heap_compute(c, aliased_guard, leaf);
+                if (!ok)
+                    break;
+                clear_definition(reg(c, aliased_guard));
+            }
+            id = aliased_guard;
+        }
+        unsigned work = 0;
+        int reads = heap_decision_reads(c, (uint32_t)id, owner, 0, &work);
+        if (reads < 0) {
+            ok = 0;
+            break;
+        }
+        // A decision about the old destination cannot depend on its own
+        // conditional inverse. Preserve that decision as necessary history.
+        if (reads) {
+            qc_mask seen = 0;
+            taint_uniform(c, (uint32_t)id, &seen);
+            clear_definition(reg(c, (uint32_t)id));
+        }
+        used += (size_t)snprintf(guard_text + used,
+                                 capacity - used,
+                                 "%s{\"id\":%u,\"value\":%u}",
+                                 used > 1 ? "," : "",
+                                 (uint32_t)id,
+                                 (unsigned)wanted);
+    }
+    guard_text[used++] = ']';
+    guard_text[used] = 0;
+    char *expression =
+        ok ? heap_guard_expression(
+                 c, d, inst, heap->width, heap->sign, cj_copy(d, cj_get(d, inst, "expr")))
+           : NULL;
+    uint64_t selected = bits_mask(heap->width);
+    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
+    if (expression && selected != bits_mask(heap->width)) {
+        size_t size = strlen(expression) + 256;
+        char *masked = malloc(size);
+        if (masked)
+            snprintf(
+                masked,
+                size,
+                "{\"op\":\"cast\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"band\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":%u,\"signed\":false,\"args\":[%s]},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%" PRIu64
+                "}]}]}",
+                heap->width,
+                heap->sign ? "true" : "false",
+                heap->width,
+                heap->width,
+                expression,
+                heap->width,
+                selected);
+        else
+            qc_fail(c, "cannot allocate masked heap value");
+        free(expression);
+        expression = masked;
+    }
+    uint32_t history = 0;
+    ok = expression && heap_new_register(c, heap->width, heap->sign, 0, &history) &&
+         heap_compute(c, history, expression);
+    free(expression);
+    if (ok) {
+        qc_register *r = reg(c, history);
+        qc_mask seen = 0;
+        for (unsigned i = 0; i < r->ndeps; ++i)
+            taint_uniform(c, r->deps[i], &seen);
+        clear_definition(r);
+        size_t size = used + 160;
+        char *swap = malloc(size);
+        if (!swap)
+            ok = qc_fail(c, "cannot allocate controlled heap exchange");
+        else {
+            snprintf(
+                swap,
+                size,
+                "{\"op\":\"qswap\",\"id\":%u,\"other\":%u,\"rebind\":true,\"bit_mask\":%" PRIu64
+                ",\"controls\":%s}",
+                owner,
+                history,
+                selected,
+                guard_text);
+            ok = qc_apply(c, swap, NULL);
+            free(swap);
+        }
+    }
+    free(guard_text);
+    if (!ok)
+        return 0;
+    // The heap retains its public owner. Only active amplitudes move the old
+    // destination into history; saved consumers use transported inverse views.
+    heap_retire(c, history);
+    if (aliased_guard)
+        heap_retire(c, aliased_guard);
+    return collect_disposed(c);
+}
 
 static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result) {
     if (c->structural) {
@@ -432,6 +585,10 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
         aliases |= inputs.sources[i].id == old;
     int controls_node = cj_get(d, inst, "controls");
     int controlled = controls_node >= 0 && d->tokens[controls_node].children;
+    uint64_t selected = bits_mask(heap->width);
+    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
+    if (controlled || selected != bits_mask(heap->width))
+        return heap_controlled_store(c, d, inst, heap, old);
     int reuse = reg(c, old)->clean && !heap_borrowed(c, old) && !aliases && !controlled;
     uint32_t destination = old;
     if (!reuse && !heap_new_register(c, heap->width, heap->sign, 0, &destination))
@@ -439,37 +596,6 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
     char *expr = cj_copy(d, expr_node);
     if (!expr)
         return qc_fail(c, "cannot allocate quantum heap store expression");
-    const char *signed_text = heap->sign ? "true" : "false";
-    if (controlled)
-        for (int t = controls_node + 1; t < d->tokens[controls_node].next; t = d->tokens[t].next) {
-            uint64_t id, value;
-            cj_u64(d, cj_get(d, t, "id"), &id);
-            cj_u64(d, cj_get(d, t, "value"), &value);
-            size_t capacity = strlen(expr) + 512;
-            char *selected = malloc(capacity);
-            if (!selected) {
-                free(expr);
-                return qc_fail(c, "cannot allocate controlled heap store");
-            }
-            char inactive[160];
-            snprintf(inactive,
-                     sizeof inactive,
-                     "{\"op\":\"reg\",\"bits\":%u,\"signed\":%s,\"id\":%u}",
-                     heap->width,
-                     signed_text,
-                     old);
-            snprintf(
-                selected,
-                capacity,
-                "{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"reg\",\"bits\":1,\"signed\":false,\"id\":%u},%s,%s]}",
-                heap->width,
-                signed_text,
-                (uint32_t)id,
-                value ? expr : inactive,
-                value ? inactive : expr);
-            free(expr);
-            expr = selected;
-        }
     size_t capacity = strlen(expr) + 120;
     char *compute_text = malloc(capacity);
     if (!compute_text) {

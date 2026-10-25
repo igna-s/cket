@@ -1,5 +1,9 @@
 # Hallazgo: pérdida de coherencia en sobrescrituras condicionadas
 
+**Estado actual:** el seguimiento de 1.0.0-rc.2 al final de este informe corrige los perfiles
+publicados del heap y registra un nuevo contraejemplo en el byte intacto de una palabra fija. Los
+apartados anteriores conservan las fuentes y resultados de cada revisión.
+
 Revisión del 24 de octubre de 2026 sobre el compilador de la entrega `da2ffb31e568`, publicada con
 su demo y nota técnica en `2fe516fba203`.
 
@@ -141,3 +145,34 @@ fijos y el heap con control cero del contraste conservan error cero. No se afirm
 único defecto restante: las vidas generales, escrituras repetidas, destinos derivados y rangos
 correlacionados requieren contratos y evidencia adicionales. La candidata no cierra el perfil
 cotidiano ni recalifica los papers anteriores. La ciberseguridad permanece clásica.
+
+## Candidata 1.0.0-rc.2: heap y bits que no se escriben
+
+El contraejemplo de copia coherente no idéntica al heap conserva ahora pureza conjunta sectorial 1 →
+1, con error cero. El destino mantiene sus cables y el intercambio controlado conserva el valor
+anterior solamente donde se escribe. Se amplía el intercambio a una máscara de bits: los bytes
+intactos del heap conservan su coherencia también en la rama activa. Las fuentes de `memmove`
+solapado consultan las recetas de sus versiones originales. Las escrituras con índice cuántico usan
+un predicado por elemento y no duplican los elementos no seleccionados.
+
+La [cápsula](audit-evidence/heap-coherence-v1/README.es.md) identifica 233 entradas y conserva 2670
+comparaciones de densidad pública con fórmulas explícitas de historia, 2670 estados conjuntos
+contrastados mediante otro intérprete de puertas y 852 inversiones completas. Son alcances
+distintos. Pasan O0/O2 normales y O1 ASan/UBSan, ambas políticas y 97 programas por nivel, incluidos
+préstamos de 32 bits, negativos, alias de relleno/copia, movimientos e índices cuánticos en sus
+perfiles y límites. La [nota](paper/heap_coherence_note.es.md) explica las identidades.
+
+**Nuevo contraejemplo abierto en buffers fijos:** preparar una palabra con byte alto en
+superposición y copiar solamente el byte bajo bajo control cuántico puede retener una copia del byte
+alto. Proyectando sobre el control activo, la pureza conjunta del byte alto y su referencia cae de 1
+a 0.5; el error de densidad es 0.5. No hay mediciones ni resets antes de observarlo. El mismo
+contraste en el heap conserva pureza 1 → 1 en ambas ramas con la nueva máscara. Los programas,
+estados y herramientas de este contraste están en la cápsula actual. La ruta de buffers fijos
+todavía no emite ese intercambio parcial. No se afirma que sea el único defecto restante; la
+auditoría general y las vidas/alias/ABI siguen abiertos.
+
+El arnés inicial seleccionó el simulador disperso también para el núcleo, que esperaba un rechazo de
+32 cables del modo denso. Se conserva ese 394/1 y la continuación con simulador predeterminado,
+395/0 en ambas construcciones, junto con las matrices que ya habían terminado. No se cuenta el fallo
+de configuración como defecto del compilador ni se oculta en una campaña ficticiamente
+ininterrumpida. Los papers históricos y el CI remoto mantienen sus revisiones originales.

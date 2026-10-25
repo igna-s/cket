@@ -179,6 +179,28 @@ swap_old_value(qc_context *c, const cj_doc *d, int inst, uint32_t same, uint32_t
             if (!value)
                 goto failed;
         }
+    uint64_t selected = bits_mask(r->width);
+    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
+    if (selected != bits_mask(r->width)) {
+        char *untouched = heap_memory_binary(
+            c,
+            "band",
+            r->width,
+            heap_memory_cast(c, r->width, 0, inactive),
+            heap_memory_leaf(c, "const", r->width, bits_mask(r->width) & ~selected));
+        inactive = NULL;
+        char *written = heap_memory_binary(c,
+                                           "band",
+                                           r->width,
+                                           heap_memory_cast(c, r->width, 0, value),
+                                           heap_memory_leaf(c, "const", r->width, selected));
+        value = heap_memory_cast(c,
+                                 r->width,
+                                 r->signed_type,
+                                 heap_memory_binary(c, "bor", r->width, untouched, written));
+        if (!value)
+            goto failed;
+    }
     free(inactive);
     return value;
 failed:
@@ -458,9 +480,26 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     uint64_t lower_a, upper_a, lower_b, upper_b;
     swap_support_bounds(a, &lower_a, &upper_a);
     swap_support_bounds(b, &lower_b, &upper_b);
-    uint64_t zeros = a->zero_mask & b->zero_mask;
+    uint64_t selected = bits_mask(a->width);
+    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
+    uint64_t zeros[2] = {(a->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected),
+                         (b->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected)};
+    uint64_t lower[2], upper[2];
+    if (selected == bits_mask(a->width)) {
+        lower[0] = lower[1] = lower_a < lower_b ? lower_a : lower_b;
+        upper[0] = upper[1] = upper_a > upper_b ? upper_a : upper_b;
+    } else {
+        uint64_t common =
+            a->basis_known && b->basis_known ? a->basis_value & b->basis_value & selected : 0;
+        lower[0] = (a->basis_known ? a->basis_value & ~selected : 0) | common;
+        lower[1] = (b->basis_known ? b->basis_value & ~selected : 0) | common;
+        upper[0] = bits_mask(a->width) & ~zeros[0];
+        upper[1] = bits_mask(b->width) & ~zeros[1];
+    }
     if (!c->structural)
         for (unsigned bit = 0; bit < a->width; ++bit) {
+            if (!(selected & (UINT64_C(1) << bit)))
+                continue;
             qc_mask x = QC_WIRE(a->wires[bit]), y = QC_WIRE(b->wires[bit]);
             if (!qc_emit(c, QC_X, b->wires[bit], mask | x, pattern | x, 0) ||
                 !qc_emit(c, QC_X, a->wires[bit], mask | y, pattern | y, 0) ||
@@ -472,19 +511,17 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     taint_controls(c, mask);
     unknown_support(a);
     unknown_support(b);
-    uint64_t lower = lower_a < lower_b ? lower_a : lower_b,
-             upper = upper_a > upper_b ? upper_a : upper_b;
     for (unsigned i = 0; i < 2; ++i) {
         qc_register *r = i ? b : a;
-        r->zero_mask = zeros;
+        r->zero_mask = zeros[i];
         // This certificate describes nonnegative numbers, not an unsigned
         // interval of encoded negative bit patterns.
-        r->support_interval = r->signed_type == 0 || upper <= bits_mask(r->width - 1);
-        r->support_lower = lower;
-        r->support_upper = upper;
-        r->basis_known = lower == upper;
-        r->basis_value = r->basis_known ? lower : 0;
-        r->clean = r->basis_known && !lower;
+        r->support_interval = r->signed_type == 0 || upper[i] <= bits_mask(r->width - 1);
+        r->support_lower = lower[i];
+        r->support_upper = upper[i];
+        r->basis_known = lower[i] == upper[i];
+        r->basis_value = r->basis_known ? lower[i] : 0;
+        r->clean = r->basis_known && !lower[i];
         ++r->epoch;
     }
     for (unsigned i = 0; i < count; ++i) {

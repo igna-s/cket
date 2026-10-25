@@ -1,5 +1,12 @@
 # Versioned assignments and retained quantum history
 
+**Current finite follow-up:**
+[1.0.0-rc.2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md) corrects the earlier
+reproduced nonidentity coherent heap-copy case. Heap byte patches preserve untouched wires and saved
+source views through overlapping moves. Earlier sections retain their source-scoped results. A
+partial **fixed-buffer** write still has an untouched-byte coherence counterexample; general
+lifetimes/alias/ABI and large profiles remain open.
+
 This advances M2/M4. Complete C11 expressions, dynamic control, memory and library coverage remain
 open. The implemented paths use quantum registers and gates; they do not evaluate unknown quantum
 values on the CPU.

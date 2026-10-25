@@ -2,6 +2,15 @@
 tree unscaled_quantum_pointer_index(tree bytes, uint64_t stride);
 tree expand_heap_transfer(tree call, bool move);
 
+void defer_heap_decisions() {
+    // A native heap write can preserve a decision about its previous payload
+    // as history. Runtime disposal uses the actual saved inverse or root.
+    for (const auto &control : controls)
+        for (auto &entry : variables)
+            if (entry.second.id == control.first && entry.second.derived)
+                entry.second.optional_definition = entry.second.runtime_history = true;
+}
+
 std::string heap_allocator(tree fn) {
     if (!fn || DECL_SAVED_TREE(fn))
         return "";
@@ -517,6 +526,7 @@ tree lower_heap_effect_capture(tree marker,
                at(marker)));
     for (unsigned source : deps)
         taint_uniform(source);
+    defer_heap_decisions();
     if (capture_dependencies) {
         *capture_dependencies = deps;
         for (const auto &control : controls)
@@ -592,6 +602,7 @@ tree lower_native_memory(tree marker) {
         taint_uniform(id);
     for (const auto &control : controls)
         taint_uniform(control.first);
+    defer_heap_decisions();
     if (memory.fixed_output)
         append(&list, lower_node(memory.fixed_output));
     return prefixed_value(list, fold_convert(TREE_TYPE(marker), memory.destination));

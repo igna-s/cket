@@ -389,8 +389,17 @@ static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
 static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
     int scatter = cj_equal(d, cj_get(d, inst, "op"), "qheap_scatter");
     int store = scatter || cj_equal(d, cj_get(d, inst, "op"), "qheap_store");
-    static const char *const write[] = {
-        "op", "heap", "offset", "index", "width", "signed", "expr", "controls", "capture", NULL};
+    static const char *const write[] = {"op",
+                                        "heap",
+                                        "offset",
+                                        "index",
+                                        "width",
+                                        "signed",
+                                        "expr",
+                                        "controls",
+                                        "capture",
+                                        "bit_mask",
+                                        NULL};
     static const char *const channel[] = {"op", "heap", "offset", "index", "width", "signed", NULL};
     uint64_t width, expr_width;
     if (!fields(c, d, inst, store ? write : channel) ||
@@ -404,6 +413,11 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
         return qc_fail(c, "heap operation requires a typed element and bound CPU addresses");
     if (!store)
         return 1;
+    int mask_node = cj_get(d, inst, "bit_mask");
+    uint64_t bit_mask;
+    if (mask_node >= 0 && (scatter || !cj_u64(d, mask_node, &bit_mask) || !bit_mask ||
+                           (width < 64 && bit_mask >> width)))
+        return qc_fail(c, "heap byte patch requires a nonzero in-width bit mask");
     uint64_t index_bits;
     int index = cj_get(d, inst, "index");
     if (scatter && (!unsigned_field(c, d, index, "bits", &index_bits) || index_bits != 64 ||
@@ -507,7 +521,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                qc_fail(c, "quantum materialization requires available prepared storage");
     }
     if (cj_equal(d, heap_op, "qswap")) {
-        static const char *const allowed[] = {"op", "id", "other", "controls", "rebind", NULL};
+        static const char *const allowed[] = {
+            "op", "id", "other", "controls", "rebind", "bit_mask", NULL};
         static const char *const control[] = {"id", "value", NULL};
         uint64_t id, other;
         if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
@@ -520,6 +535,11 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             return qc_fail(c, "quantum swap requires materialized storage of the same C type");
         if (cj_bool(d, cj_get(d, inst, "rebind")) && a->signed_type < 0)
             return qc_fail(c, "inverse transport requires an explicit C signedness");
+        uint64_t bit_mask;
+        int mask_node = cj_get(d, inst, "bit_mask");
+        if (mask_node >= 0 && (!cj_u64(d, mask_node, &bit_mask) || !bit_mask ||
+                               (a->width < 64 && bit_mask >> a->width)))
+            return qc_fail(c, "quantum swap requires a nonzero in-width bit mask");
         int guards = cj_get(d, inst, "controls");
         if (guards >= 0) {
             if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)

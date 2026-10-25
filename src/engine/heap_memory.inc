@@ -77,6 +77,52 @@ static int heap_memory_range(qc_context *c, qc_heap *heap, uint64_t offset, uint
     return 1;
 }
 
+// The pin's zero-valued sequence stores the original read expressions. A
+// controlled write may transport those expressions to conditional old owners.
+// Read the saved recipe, not a now-modified public register with the old id.
+static char *heap_memory_snapshot(qc_context *c,
+                                  uint32_t pin,
+                                  const cj_doc *operation,
+                                  int guards,
+                                  size_t count,
+                                  size_t position) {
+    qc_register *r = reg(c, pin);
+    cj_doc d = {0};
+    if (!r || !r->definition || position >= count || !cj_parse(&d, r->definition)) {
+        cj_free(&d);
+        qc_fail(c, "heap source snapshot is unavailable");
+        return NULL;
+    }
+    unsigned wanted[QC_MAX_PHYSICAL], n = 0;
+    if (guards >= 0)
+        for (int t = guards + 1; t < operation->tokens[guards].next;
+             t = operation->tokens[t].next) {
+            uint64_t value;
+            cj_u64(operation, cj_get(operation, t, "value"), &value);
+            wanted[n++] = (unsigned)value;
+        }
+    int e = 0, nodes[3];
+    while (n) {
+        if (!cj_equal(&d, cj_get(&d, e, "op"), "select") || expr_nodes(&d, e, nodes) != 3)
+            goto invalid;
+        e = nodes[wanted[--n] ? 1 : 2];
+    }
+    for (size_t i = count; i; --i) {
+        if (!cj_equal(&d, cj_get(&d, e, "op"), "sequence") || expr_nodes(&d, e, nodes) != 2)
+            goto invalid;
+        if (i - 1 == position) {
+            char *value = cj_copy(&d, nodes[0]);
+            cj_free(&d);
+            return value;
+        }
+        e = nodes[1];
+    }
+invalid:
+    cj_free(&d);
+    qc_fail(c, "heap source snapshot recipe lost its capture structure");
+    return NULL;
+}
+
 static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
     if (c->structural)
         return 1;
@@ -191,24 +237,33 @@ static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
             if (set)
                 value = heap_memory_register(c, pin);
             else if (bytes >= 0)
-                value = cj_copy(d, byte_nodes[address - (size_t)offset]);
+                value = heap_memory_snapshot(
+                    c, pin, d, guards, (size_t)count, address - (size_t)offset);
             else {
                 size_t position = (size_t)source_offset + address - (size_t)offset;
                 size_t source_stride = source->width / 8, in_word = position % source_stride;
+                size_t source_first = (size_t)source_offset / source_stride,
+                       source_last = ((size_t)source_offset + (size_t)count - 1) / source_stride;
                 unsigned shift = 8 * (big ? source_stride - 1 - in_word : in_word);
                 value = heap_memory_cast(
                     c,
                     8,
                     0,
-                    heap_memory_binary(c,
-                                       "shr",
-                                       source->width,
-                                       heap_memory_cast(c,
-                                                        source->width,
-                                                        0,
-                                                        heap_memory_register(
-                                                            c, original[position / source_stride])),
-                                       heap_memory_leaf(c, "const", 8, shift)));
+                    heap_memory_binary(
+                        c,
+                        "shr",
+                        source->width,
+                        heap_memory_cast(
+                            c,
+                            source->width,
+                            0,
+                            heap_memory_snapshot(c,
+                                                 pin,
+                                                 d,
+                                                 guards,
+                                                 source_last - source_first + 1,
+                                                 position / source_stride - source_first)),
+                        heap_memory_leaf(c, "const", 8, shift)));
             }
             unsigned shift = 8 * (big ? stride - 1 - byte : byte);
             value = heap_memory_binary(c,
@@ -226,11 +281,13 @@ static int heap_memory_action(qc_context *c, const cj_doc *d, int inst) {
                       "{\"op\":\"qheap_store\",\"heap\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%" PRIu64
                       "},\"offset\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":%zu},"
                       "\"index\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":0},"
-                      "\"width\":%u,\"signed\":%s,\"expr\":%s,\"controls\":%s}",
+                      "\"width\":%u,\"signed\":%s,\"bit_mask\":%" PRIu64
+                      ",\"expr\":%s,\"controls\":%s}",
                       handle,
                       slot,
                       destination->width,
                       destination->sign ? "true" : "false",
+                      mask,
                       word,
                       controls)
                 : NULL;

@@ -112,3 +112,16 @@ en los perfiles finitos publicados. El valor anterior se reconstruye desde uno u
 control, y se usa en la inversa guardada; no se clonan amplitudes ni se mide para limpiar. La
 [nota técnica](paper/conditional_inverse_note.es.md) explica la fase conservada y las restricciones.
 Las vidas generales y el contraejemplo de copia coherente no idéntica al heap permanecen pendientes.
+
+## Bits intactos y copias coherentes del heap
+
+La [corrección de 1.0.0-rc.2](audit-evidence/heap-coherence-v1/README.es.md) conserva la coherencia
+del destino inactivo y de los bytes del heap que no se escriben. Las inversas reconstruyen los bits
+anteriores desde los dueños y la máscara del intercambio; las copias solapadas consultan sus
+versiones originales. Se comprueban densidades públicas con historia explícita, estados conjuntos
+por otro intérprete de puertas e inversas, con ámbitos separados.
+
+Una escritura parcial sobre una palabra fija todavía puede correlacionar el byte intacto con
+historia privada y quitarle coherencia en la rama activa. El circuito global sigue siendo unitario:
+ese hecho por sí solo no garantiza la semántica de los bits que debían quedar intactos. La
+[nota técnica](paper/heap_coherence_note.es.md) y el informe conservan el caso abierto.

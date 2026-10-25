@@ -108,6 +108,9 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_heap_identities"
 "$san_root/build/validate_inactive_borrows"
 "$san_root/build/validate_swap_rebind"
+heap_coherence_proof="$(mktemp -d "$san_root/build/heap-coherence-proof.XXXXXX")"
+python3 scripts/validate-heap-coherence.py --compiler-root "$san_root" \
+    --output "$heap_coherence_proof/sanitized" --levels O1 --sanitized
 rebound_borrow_proof="$(mktemp -d "$san_root/build/rebound-borrow-proof.XXXXXX")"
 python3 scripts/validate-rebound-borrows.py --compiler-root "$san_root" \
     --output "$rebound_borrow_proof/sanitized" --levels O1 --sanitized

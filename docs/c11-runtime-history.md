@@ -1,5 +1,12 @@
 # Native runtime iteration history
 
+**Current finite follow-up:**
+[1.0.0-rc.2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md) corrects the earlier
+reproduced nonidentity coherent heap-copy case. Heap byte patches preserve untouched wires and saved
+source views through overlapping moves. Earlier sections retain their source-scoped results. A
+partial **fixed-buffer** write still has an untouched-byte coherence counterexample; general
+lifetimes/alias/ABI and large profiles remain open.
+
 Structured CPU loops can now retain separate versions of scalar assignments, heap update results and
 heap-to-fixed byte destinations. The C condition chooses iterations classically; the payload
 continues to use quantum registers. This advances the everyday C profile and does not implement

@@ -2845,11 +2845,18 @@ tree lower_node(tree value) {
                                     flag,
                                     false));
         } else {
+            bool optional = variables.at(key).optional_definition;
             variables.erase(key);
-            append(&list, emit_operation(inverse_operation(flag, predicate), at(value)));
-            append(&list,
-                   emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(flag) + '}',
-                                  at(value)));
+            if (optional)
+                append(&list,
+                       emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(flag) + '}',
+                                      at(value)));
+            else {
+                append(&list, emit_operation(inverse_operation(flag, predicate), at(value)));
+                append(&list,
+                       emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(flag) + '}',
+                                      at(value)));
+            }
         }
         return list;
     }

@@ -1,5 +1,5 @@
 {
-  "active": "rebound-borrows-v1",
+  "active": "heap-coherence-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -25,14 +25,16 @@
     "coherent-store-progress-v1",
     "heap-identities-v1",
     "inactive-borrows-v1",
-    "rebound-borrows-v1"
+    "rebound-borrows-v1",
+    "heap-coherence-v1"
   ],
-  "meaning": "Finite conditional inverse transport across possible-active controlled root-owner swaps. Bool and signed/unsigned 8/16/32-bit assignments, one-byte copy/fill, open/nested controls, chained/moved/arithmetic scoped borrows, same-unit function and signed -2/-1 preparations. Complete complex states before/during/after cleanup, explicit phases, stable public owners, only required old-root history and gate reversal. Normal O0/O2 and ASan/UBSan O1; both synthesis policies. Repeated writes, derived destinations, correlated range proofs and 64-bit scope cleanup remain unqualified. Nonidentity coherent heap copy still has an inactive-sector dephasing counterexample. No whole-compiler, C11, QPU or historical-paper qualification.",
+  "meaning": "Finite heap root-owner coherent stores, byte patches, heap/fixed source copies, fills, overlapping moves and quantum selected writes. Normal O0/O2 and ASan/UBSan O1; both synthesis policies. Explicit public reduced density formulas with virtual old-value histories, independently evolved physical joint states and full gate inverses; phases, scoped borrows, negative words and post-free outputs. Bool stores/scatter and signed/unsigned 8/16/32-bit scalar/byte profiles; multiword moves/scatter through 16 bits. Two 32-bit destinations plus two full-word histories exceed 128 wires. General lifetimes and 64-bit profiles remain unqualified. A partial fixed-buffer write still dephases an untouched high byte in its active sector. Historical papers and full remote CI are not qualified for these new inputs.",
   "known_findings": [
     "coherent-overwrite-coherence-v1",
     "coherent-store-progress-v1",
     "heap-identities-v1",
     "inactive-borrows-v1",
-    "rebound-borrows-v1"
+    "rebound-borrows-v1",
+    "heap-coherence-v1"
   ]
 }

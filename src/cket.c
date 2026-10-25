@@ -116,7 +116,7 @@ int main(int argc, char **argv) {
             return 0;
         }
         if (!strcmp(arg, "--version")) {
-            puts("|c> / cket 1.0.0-rc.1 (experimental GCC + native C)");
+            puts("|c> / cket 1.0.0-rc.2 (experimental GCC + native C)");
             return 0;
         }
         if (!strcmp(arg, "-o") || !strcmp(arg, "--output") || !strcmp(arg, "--gcc") ||

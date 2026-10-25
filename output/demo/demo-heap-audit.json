@@ -1,0 +1,38 @@
+{
+  "version": "1.0.0-rc.2",
+  "date": "2026-10-25",
+  "runs": [
+    {
+      "seed": 1,
+      "exit_code": 0,
+      "stdout": "control=1 high=0 value=0 expected=0\n"
+    },
+    {
+      "seed": 7,
+      "exit_code": 0,
+      "stdout": "control=1 high=1 value=257 expected=257\n"
+    },
+    {
+      "seed": 13,
+      "exit_code": 0,
+      "stdout": "control=0 high=1 value=256 expected=256\n"
+    },
+    {
+      "seed": 29,
+      "exit_code": 0,
+      "stdout": "control=0 high=0 value=0 expected=0\n"
+    }
+  ],
+  "compiler_input_manifest_sha256": "07064fd9448d2db27f15634ddeb4016b4d7b4869adbfe0b5669f1faf704b7d65",
+  "binary_sha256": "377f59f3f24a74a3214681512d1ad7229895807b4a6a8ded9c8d89b022ca04cd",
+  "source_sha256": "03c51e7187e110b2b48435bddd808698a5b256ca9c2797720209b05d37bc9bc9",
+  "tool_sha256": {
+    "cket": "938138e444cdc9c8002841f6ea040925891963f0e36801f477509f28379cbbc4",
+    "cket_plugin.so": "8f842c5bc61318ed1fb30f79252d8714cfcd9c26791033b9fe83676aa64bf323",
+    "libcket_quantum.a": "3bc32a01d07ca8a43cc82dd2607f6f374359c49fb00baf0ae110a17b0098cdd4",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e"
+  },
+  "evidence": "docs/audit-evidence/heap-coherence-v1",
+  "scope": "Native functional heap-byte demo. Its measured outputs do not by themselves prove coherence; the separate density/state/inverse matrix does.",
+  "known_failure": "Partial writes to fixed words still have an untouched-high-byte coherence counterexample; this program writes a heap word."
+}

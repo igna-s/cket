@@ -1,5 +1,11 @@
 # Runtime lengths for fixed quantum buffers
 
+**Known current failure:** a partial write into a fixed word can dephase an untouched high byte in
+the active sector. Earlier finite memory tests did not qualify that superposed high-byte case. The
+[1.0.0-rc.2 correction](audit-evidence/heap-coherence-v1/README.es.md) fixes this invariant on the
+heap; the fixed-buffer frontend path still needs its partial exchange. Avoid that combination in
+this candidate. General runtime-memory qualification remains open.
+
 `memcpy`, `memmove` and `memset` accept pure CPU byte lengths over checked fixed integer storage.
 Addresses and object extents remain statically checked. A call selects at most 64 bytes and fails
 before destination writes if its count exceeds either object or that synthesis bound.

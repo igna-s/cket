@@ -88,6 +88,20 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     unsigned n = expr_nodes(d, e, nodes);
     if (!n)
         return 0;
+    if (cj_equal(d, op, "sequence") && n == 2) {
+        uint64_t discarded_width;
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &discarded_width))
+            return 0;
+        // A bound heap read retains its evaluated index as a discarded first
+        // operand. Prove that whole operand, then synthesize the selected
+        // value by bits without allocating a second full-width word.
+        for (unsigned b = 0; b < discarded_width; ++b) {
+            bit_poly discarded;
+            if (!expr_bit(c, d, nodes[0], b, &discarded, depth + 1))
+                return 0;
+        }
+        return expr_bit(c, d, nodes[1], bit, out, depth + 1);
+    }
     if (cj_equal(d, op, "select") && n == 3) {
         uint64_t condition_width;
         bit_poly condition, yes, no, difference;

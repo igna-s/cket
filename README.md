@@ -3,7 +3,7 @@
 **A new quantum variant of C for GCC-based compilers.**
 
 [![Verification](https://github.com/igna-s/cket/actions/workflows/verify.yml/badge.svg)](https://github.com/igna-s/cket/actions/workflows/verify.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0--rc.1-orange)](docs/releases/v1.0.0-rc.1.es.md)
+[![Version](https://img.shields.io/badge/version-1.0.0--rc.2-orange)](docs/releases/v1.0.0-rc.2.es.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write
@@ -12,9 +12,9 @@ temporary workspace. Classical C code still runs on the CPU; quantum operations 
 statevector simulator, with dense and opt-in sparse execution modes.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
-OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.1**, with **GCC
+OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.2**, with **GCC
 11.4.0** as the reference configuration. This is an experimental candidate; the stable 1.0
-requirements remain open. The [release guide in Spanish](docs/releases/v1.0.0-rc.1.es.md) lists what
+requirements remain open. The [release guide in Spanish](docs/releases/v1.0.0-rc.2.es.md) lists what
 works, what is incomplete, the known coherence failure and commands to run the delivery.
 
 The current objective is a **fully usable everyday C core**: common types, functions, control,
@@ -28,18 +28,19 @@ operate on unmeasured quantum data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
-**A known quantum correctness failure remains.** The
-[current coherence review](docs/re-audit-2026-10-24-coherence.md) reproduces inactive-sector
-dephasing in a nonidentity coherent heap copy; avoid that combination in this candidate. Direct
-fixed-buffer writes, checked heap identities and selected scoped-borrow cleanup cases have finite
-corrections. The latest
-[conditional-inverse evidence](docs/audit-evidence/rebound-borrows-v1/README.es.md) records 1368
-complete complex states and 456 gate inverses, with phases, stable owners and normal/ASan/UBSan
-builds. It includes possible-active coherent writes, signed negative values and live/scoped borrows.
-General repeated writes, derived destinations, correlated range proofs and 64-bit scope cleanup
-remain unqualified. Earlier tests and historical papers do not certify the open cases. The
-[new runnable example](examples/blocks/05/borrow_cleanup.c) and
-[technical note](docs/paper/conditional_inverse_note.es.md) demonstrate the corrected scope.
+**A known quantum correctness failure remains in partial fixed-buffer writes.** A one-byte write
+into a fixed word can dephase its untouched high byte in the active sector. Avoid that combination
+in this candidate. The [current report](docs/re-audit-2026-10-24-coherence.md) distinguishes this
+reproduced finding from corrected heap and earlier fixed-store cases.
+
+The [heap coherence evidence](docs/audit-evidence/heap-coherence-v1/README.es.md) corrects the
+previous inactive-sector heap-copy counterexample and protects untouched heap bytes. It records 2670
+public density comparisons, 2670 independently evolved joint gate states and 852 complete inverses,
+with separate scopes, normal O0/O2 and ASan/UBSan O1. It includes overlapping moves, quantum
+selected writes, negative words and scoped borrows. General lifetimes, repeated writes, alias/ABI
+combinations and 64-bit resource-heavy profiles remain unqualified. The
+[new example](examples/blocks/05/heap_coherence.c) and
+[technical note](docs/paper/heap_coherence_note.es.md) document this finite correction.
 
 Start with [usable delivery 01](docs/entregas-incrementales.es.md): after building, run
 `bash scripts/run-block.sh 01` to compile eight small examples and produce native executables,
@@ -849,7 +850,7 @@ Examples teach usage; tests enforce behavior; documents specify contracts.
 For implementation details, read the [language contract](docs/language.md),
 [C11 coverage matrix](docs/c-coverage.md), [IR verification contract](docs/ir-verification.md),
 [circuit ABI](docs/circuit-abi.md), and [1.0 plan](docs/v1-plan.md).
-[Current release notes](docs/releases/v1.0.0-rc.1.es.md) describe the experimental candidate;
+[Current release notes](docs/releases/v1.0.0-rc.2.es.md) describe the experimental candidate;
 [0.4.0 notes](docs/releases/v0.4.0.md) preserve the historical snapshot.
 
 The project uses the [MIT license](LICENSE). Contributions follow

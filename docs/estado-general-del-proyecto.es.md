@@ -4,25 +4,27 @@
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
-**Candidata 1.0.0-rc.1 lista como entrega experimental; 1.0 estable pendiente.** La
-[guía breve de versión](releases/v1.0.0-rc.1.es.md) reúne qué está hecho, qué falta y cómo
-ejecutarlo. La [demo nueva](../output/demo/README-borrow.es.md) comprueba limpieza e interferencia
-después de una escritura bajo control cuántico. La ciberseguridad sigue clásica.
+**Candidata actual: 1.0.0-rc.2. La 1.0 estable sigue pendiente.** La
+[guía de versión](releases/v1.0.0-rc.2.es.md) resume lo implementado y lo que falta. La
+[demo del heap](../output/demo/README-heap.es.md) está lista para Windows/WSL. La ciberseguridad
+permanece clásica y sin cambios.
 
-**Última corrección:** los temporales pueden limpiar su inversa desde la ubicación condicionada del
-valor anterior. Se corrigen los contraejemplos con control cero y con control en superposición en
-los perfiles publicados, además del certificado de rangos negativos y una reserva innecesaria de
-espacio. La [cápsula actual](audit-evidence/rebound-borrows-v1/README.es.md) registra **1368 puntos
-de estado completo y 456 inversas**, con fases y construcciones normales/ASan/UBSan. Se observan
-también los préstamos todavía vivos; conservar una copia redundante del control no cuenta como
-limpieza correcta.
+**Se corrigen las copias coherentes del heap del contraejemplo anterior:** pureza sectorial 1 → 1 y
+error de densidad cero. Las escrituras parciales del heap intercambian solamente los bits escritos;
+el byte intacto conserva coherencia en ambas ramas. Las copias solapadas leen las expresiones
+anteriores guardadas y los índices cuánticos usan controles por elemento. La
+[cápsula](audit-evidence/heap-coherence-v1/README.es.md) conserva 233 entradas y registra 2670
+comparaciones de densidad pública, 2670 contrastes de estado conjunto por puertas independientes y
+852 inversas, con construcciones normales y ASan/UBSan. Son ámbitos distintos, no cobertura
+porcentual de C.
 
-**Falta:** persiste el contraejemplo de copia coherente no idéntica al heap, con pureza sectorial 1
-→ 0.5. No usar esa combinación en esta candidata. También quedan las vidas generales con escrituras
-repetidas/destinos derivados, más combinaciones de funciones y punteros, flotantes, integración
-cotidiana y recalificación de papers/CI. El
-[informe de coherencia](re-audit-2026-10-24-coherence.md) separa las revisiones históricas de la
-actual. La auditoría general continúa abierta; el número de versión no certifica C11 completo.
+**Nuevo pendiente reproducido: escritura parcial sobre buffers fijos.** Una copia de un byte a una
+palabra fija puede retener también el byte intacto y reducir su pureza conjunta de 1 a 0.5 en la
+rama activa. Esa ruta todavía no usa el intercambio parcial del heap. Evitar esa combinación. Las
+vidas generales, escrituras repetidas, funciones/punteros/alias, integración cotidiana, flotantes y
+recalificación de papers/CI también conservan pendientes. El
+[informe](re-audit-2026-10-24-coherence.md) separa los casos actuales de los históricos; el número
+de versión no certifica el perfil completo ni toda la biblioteca C11.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

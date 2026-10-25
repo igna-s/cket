@@ -267,8 +267,126 @@ static void rejected_graph(int stale) {
     qc_destroy(c);
 }
 
+static unsigned read_value(qc_context *c, qc_mask basis, uint32_t id) {
+    qc_register *r = qc_lookup(c, id);
+    unsigned value = 0;
+    for (unsigned bit = 0; bit < r->width; ++bit)
+        value |= (unsigned)((basis >> r->wires[bit]) & 1) << bit;
+    return value;
+}
+
+static void partial_exchanges(void) {
+    for (unsigned mode = 0; mode < 3; ++mode)
+        for (unsigned rounds = 1; rounds <= 3; ++rounds) {
+            qc_context *c = qc_create_sparse(7, 1024);
+            require(c != NULL, "partial fixture", c);
+            c->recording = 1;
+            qc_allow_tables(c, 0);
+            prepare(c, 1, 8, 0);
+            prepare(c, 2, 8, 0);
+            prepare(c, 3, 1, 0);
+            for (unsigned id = 1; id <= 2; ++id) {
+                unsigned bit = id == 1 ? 2 : 1;
+                qc_register *r = qc_lookup(c, id);
+                require(qc_emit(c, QC_H, r->wires[bit], 0, 0, 0), "untouched bit", c);
+                r->zero_mask &= ~(UINT64_C(1) << bit);
+                r->support_interval = r->uniform = 0;
+                ++r->epoch;
+            }
+            apply(c, "{\"op\":\"qalloc\",\"id\":5,\"width\":8,\"signed\":false,\"ancilla\":true}");
+            apply(
+                c,
+                "{\"op\":\"qcompute\",\"id\":5,\"expr\":{\"op\":\"bxor\",\"bits\":8,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":1,\"bits\":8,\"signed\":false},{\"op\":\"reg\",\"id\":2,\"bits\":8,\"signed\":false}]}}");
+            const unsigned ids[] = {1, 1, 2, 2, 3, 5}, bits[] = {0, 2, 0, 1, 0, 0};
+            const double angles[] = {.11, .23, .31, .19, .37, .41};
+            for (unsigned i = 0; i < 6; ++i) {
+                qc_mask bit = QC_WIRE(qc_lookup(c, ids[i])->wires[bits[i]]);
+                require(qc_emit(c, QC_PHASE, 0, bit, bit, angles[i]), "partial phase", c);
+                qc_lookup(c, ids[i])->uniform = 0;
+            }
+            char text[256];
+            const char *guards = mode == 0   ? "[]"
+                                 : mode == 1 ? "[{\"id\":3,\"value\":1}]"
+                                             : "[{\"id\":3,\"value\":0}]";
+            snprintf(
+                text,
+                sizeof text,
+                "{\"op\":\"qswap\",\"id\":1,\"other\":2,\"rebind\":true,\"bit_mask\":1,\"controls\":%s}",
+                guards);
+            for (unsigned i = 0; i < rounds; ++i)
+                apply(c, text);
+            for (unsigned inverse = 0; inverse < 2; ++inverse) {
+                if (inverse)
+                    apply(c, "{\"op\":\"quncompute\",\"id\":5,\"saved\":true}");
+                require(qc_sparse_size(c) == 32, "partial complete support", c);
+                for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+                    uint64_t low, high;
+                    double complex amplitude;
+                    require(qc_sparse_entry(c, row, &low, &high, &amplitude), "partial row", c);
+                    qc_mask actual = ((qc_mask)high << 64) | low;
+                    unsigned a = read_value(c, actual, 1), b = read_value(c, actual, 2),
+                             flag = read_value(c, actual, 3);
+                    int active = mode == 0 || (mode == 1 ? flag : !flag);
+                    unsigned old_a = a, old_b = b;
+                    if (active && (rounds & 1)) {
+                        old_a = (a & ~1u) | (b & 1);
+                        old_b = (b & ~1u) | (a & 1);
+                    }
+                    unsigned saved = old_a ^ old_b;
+                    double angle = .11 * (old_a & 1) + .23 * ((old_a >> 2) & 1) +
+                                   .31 * (old_b & 1) + .19 * ((old_b >> 1) & 1) + .37 * flag +
+                                   .41 * (saved & 1);
+                    qc_mask expected = value_bits(c, 1, a) | value_bits(c, 2, b) |
+                                       value_bits(c, 3, flag) |
+                                       value_bits(c, 5, inverse ? 0 : saved);
+                    require(actual == expected &&
+                                cabs(amplitude - cexp(I * angle) / sqrt(32.0)) < 1e-10,
+                            "partial swap lost an untouched phase or inverse",
+                            c);
+                }
+            }
+            size_t gates = c->ngates;
+            for (size_t i = gates; i; --i) {
+                qc_gate g = c->gates[i - 1];
+                require(qc_emit(c,
+                                g.kind,
+                                g.target,
+                                g.mask,
+                                g.pattern,
+                                g.kind == QC_PHASE ? -g.angle : g.angle),
+                        "partial full inverse",
+                        c);
+            }
+            require(cabs(qc_amplitude(c, 0) - 1) < 1e-10 && !c->measure && !c->reset,
+                    "partial inverse or channel",
+                    c);
+            qc_destroy(c);
+        }
+}
+
+static void rejected_masks(void) {
+    const char *masks[] = {"0", "256", "-1", "true", "1.5"};
+    for (unsigned i = 0; i < sizeof masks / sizeof *masks; ++i) {
+        qc_context *c = fixture(8, 0, 0);
+        size_t gates = c->ngates;
+        uint64_t epoch = qc_lookup(c, 1)->epoch;
+        char text[160];
+        snprintf(text,
+                 sizeof text,
+                 "{\"op\":\"qswap\",\"id\":1,\"other\":2,\"rebind\":true,\"bit_mask\":%s}",
+                 masks[i]);
+        require(!qc_apply(c, text, NULL) && strstr(qc_error(c), "bit mask"), "invalid bit mask", c);
+        require(c->ngates == gates && qc_lookup(c, 1)->epoch == epoch,
+                "invalid mask changed storage",
+                c);
+        qc_destroy(c);
+    }
+}
+
 int main(void) {
     complete_states();
+    partial_exchanges();
+    rejected_masks();
     rejected_graph(0);
     rejected_graph(1);
     printf(

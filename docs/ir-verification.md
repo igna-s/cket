@@ -253,3 +253,25 @@ the arithmetic route. C's integer-valued comparisons between one-bit operands re
 semantics without a full-word temporary. The
 [finite evidence](audit-evidence/rebound-borrows-v1/README.es.md) does not establish general
 lifetime, heap-copy or whole-compiler correctness.
+
+## Selected bits in heap stores and exchanges
+
+`qswap` and `qheap_store` accept optional integer `bit_mask`. If present it must be nonzero and fit
+the declared word width; missing means all bits. `qheap_scatter` does not accept this field.
+Malformed masks fail verification before the operation changes registers. The exchange emits gates
+only on selected wire pairs; untouched wires keep their values and coherence. Saved inverse inputs
+combine current untouched bits with the conditionally exchanged selected bits. Zero masks and
+support bounds are recomputed conservatively per owner, preserving the nonnegative interval contract
+for signed words.
+
+Heap byte adapters compute zero outside the write mask and retain only the selected old bits in
+history. Overlapping operations obtain original source expressions from their saved zero-valued pin
+recipe after each transport. Quantum selected writes use Boolean controls per element. A decision
+about a changing payload can become necessary history; optional frontend disposal uses the actual
+runtime certificate rather than forcing a removed definition to invert.
+
+Bit synthesis can pass through `sequence` only after proving all bits of its discarded operand.
+Otherwise arithmetic synthesis checks that operand's complete typed domain. This avoids a needless
+full-width temporary for bound heap reads without omitting invalid discarded arithmetic. The
+[finite evidence and current fixed-buffer finding](audit-evidence/heap-coherence-v1/README.es.md) do
+not qualify all frontend write paths or general ownership/control flow.
