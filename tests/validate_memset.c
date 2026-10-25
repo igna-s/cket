@@ -60,8 +60,8 @@ static const memset_case native_cases[] =
          0},
         {"dynamic-count",
          "#include <quantum.h>\n#include <string.h>\nint main(void){unsigned n=1;quant uint8_t x=1;memset((void*)&x,0,n);return measure(x);}\n",
-         "constant checked byte count",
-         0},
+         NULL,
+         1},
         {"bounds",
          "#include <quantum.h>\n#include <string.h>\nint main(void){quant uint8_t x=1;memset((void*)&x,0,2);return measure(x);}\n",
          "checked storage bounds",
@@ -280,7 +280,7 @@ static void native_and_rejections(validation *v) {
         "PASS %u native memset cases: classical return pointer, byte/word/array writes, partial bytes, coherent conditions, aliases and once-only CPU arguments; five GCC levels and both builtin modes\n",
         positive);
     printf(
-        "PASS %u memset rejection contracts: read-only storage, bounds, runtime counts, unmeasured CPU writes, reachable zero-length argument UB and coherent CPU effects\n",
+        "PASS %u memset rejection contracts: read-only storage, bounds, unmeasured CPU writes, reachable zero-length argument UB and coherent CPU effects\n",
         negative);
     fflush(stdout);
 }

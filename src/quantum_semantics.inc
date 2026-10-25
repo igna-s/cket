@@ -26,6 +26,7 @@ struct ExpressionFrame {
 std::vector<ExpressionFrame *> expression_frames;
 std::vector<std::pair<unsigned, unsigned>> controls;
 unsigned dynamic_depth = 0;
+unsigned runtime_memory_depth = 0;
 
 struct CpuBranch {
     std::vector<std::string> operations;
@@ -49,7 +50,7 @@ std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_byte_expression(tree selection, std::set<unsigned> &deps);
 tree lower_heap_effect(tree marker);
-tree lower_heap_memory(tree marker);
+tree lower_native_memory(tree marker);
 std::string heap_effect_expression(tree marker, std::set<unsigned> &deps);
 tree lower_heap_channel(tree call);
 tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings);
@@ -259,7 +260,7 @@ void append(tree *list, tree value) {
 }
 
 tree quantum_use(tree *node, int *walk, void *) {
-    if (quantum_heap_memory.count(*node)) {
+    if (quantum_native_memory.count(*node)) {
         // The effect changes quantum storage, but its result is the classical
         // destination address. Do not classify that address as a quantum bit.
         *walk = 0;
@@ -399,8 +400,8 @@ QuantumAccesses quantum_accesses(tree value, bool sequencing = false) {
             pending.push_back(update.value);
             continue;
         }
-        if (quantum_heap_memory.count(current)) {
-            const auto &memory = quantum_heap_memory.at(current);
+        if (quantum_native_memory.count(current)) {
+            const auto &memory = quantum_native_memory.at(current);
             result.writes.insert(get_identifier("__cket_heap_payload"));
             if (memory.mode != "set")
                 result.reads.insert(get_identifier("__cket_heap_payload"));
@@ -568,7 +569,7 @@ bool discarded_memory_sequence(tree value) {
     value = strip(value);
     if (!value)
         return false;
-    if (quantum_heap_updates.count(value) || quantum_heap_memory.count(value) ||
+    if (quantum_heap_updates.count(value) || quantum_native_memory.count(value) ||
         quantum_memory_sets.count(value) || quantum_memory_copies.count(value) ||
         quantum_value_programs.count(value))
         return true;
@@ -1364,7 +1365,7 @@ void versioned_assignment(Variable &var,
                           const std::set<unsigned> &deps,
                           location_t loc,
                           tree *list) {
-    if (dynamic_depth > cpu_branches.size()) {
+    if (runtime_memory_depth || dynamic_depth > cpu_branches.size()) {
         std::set<unsigned> sources = deps;
         std::string value =
             select_controls(expr, register_expression(var), var.width, var.is_signed, sources);
@@ -1456,6 +1457,12 @@ void merge_cpu_paths(const std::map<tree, Variable> &left,
             continue;
         }
         const auto &b = other->second;
+        if (a.private_capture && b.private_capture && !a.lowered && b.lowered &&
+            b.optional_definition) {
+            a = b;
+            a.creation.clear();
+            continue;
+        }
         bool runtime = a.runtime_history || b.runtime_history;
         if (a.id != b.id || a.lowered != b.lowered || a.moved != b.moved ||
             a.released != b.released ||
@@ -1508,6 +1515,13 @@ void merge_cpu_versions(const std::map<tree, Variable> &incoming,
         }
         const auto &a = l->second, &b = r->second;
         unsigned uses = after.count(entry.second.id) ? after.at(entry.second.id) : 0;
+        if (a.private_capture && b.private_capture && a.id == b.id && a.lowered != b.lowered) {
+            auto &merged = entry.second;
+            merged = a.lowered ? a : b;
+            merged.optional_definition = merged.runtime_history = true;
+            merged.creation.clear();
+            continue;
+        }
         if (a.lowered != b.lowered || a.moved != b.moved || a.released != b.released ||
             a.width != b.width || a.is_signed != b.is_signed) {
             error_at(loc, "|c>: CPU paths disagree on quantum ownership");
@@ -2028,11 +2042,11 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
-    if (quantum_heap_memory.count(value))
-        return lower_heap_memory(value);
+    if (quantum_native_memory.count(value))
+        return lower_native_memory(value);
     if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&
-        quantum_heap_memory.count(strip(value)))
-        return fold_convert(TREE_TYPE(value), lower_heap_memory(strip(value)));
+        quantum_native_memory.count(strip(value)))
+        return fold_convert(TREE_TYPE(value), lower_native_memory(strip(value)));
     if ((code == MODIFY_EXPR || code == INIT_EXPR) &&
         quantum_heap_pointers.count(strip(TREE_OPERAND(value, 0)))) {
         if (!controls.empty()) {
@@ -2071,7 +2085,26 @@ tree lower_node(tree value) {
                 }
                 auto saved_controls = std::move(controls);
                 controls.clear();
-                append(&list, lower_node(step));
+                if (dynamic_depth) {
+                    auto &capture = variables.at(decl);
+                    capture.lowered = capture.clean = capture.basis_known = true;
+                    capture.optional_definition = true;
+                    capture.runtime_history = true;
+                    capture.lower = capture.upper = 0;
+                    append(
+                        &list,
+                        emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(capture.id) +
+                                           ",\"width\":" + std::to_string(capture.width) +
+                                           ",\"signed\":" + (capture.is_signed ? "true" : "false") +
+                                           ",\"ancilla\":true,\"name\":" + json(capture.name) + '}',
+                                       at(value)));
+                    append(
+                        &list,
+                        emit_operation("{\"op\":\"qprepare\",\"id\":" + std::to_string(capture.id) +
+                                           ",\"lower\":0,\"upper\":0}",
+                                       at(value)));
+                } else
+                    append(&list, lower_node(step));
                 controls = std::move(saved_controls);
             } else {
                 auto &capture = variables.at(strip(TREE_OPERAND(step, 0)));
@@ -2083,7 +2116,7 @@ tree lower_node(tree value) {
                 }
                 consume(capture);
                 unsigned previous_depth = coherent_expression_depth;
-                ++coherent_expression_depth;
+                coherent_expression_depth += !cpu_library_saves.count(strip(TREE_OPERAND(step, 1)));
                 std::set<unsigned> dependencies;
                 std::string captured = cast_result(
                     evaluate_expression(TREE_OPERAND(step, 1), dependencies, &list), capture);
@@ -2583,7 +2616,7 @@ tree lower_node(tree value) {
     // Lower its typed arithmetic under the existing quantum controls, keeping
     // inactive division/shift domains lazy instead of executing them on CPU.
     bool coherent_cpu_condition = code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
-                                  !quantum_heap_cpu_branches.count(value) && !controls.empty() &&
+                                  !quantum_memory_cpu_branches.count(value) && !controls.empty() &&
                                   quantum_pure_expression(TREE_OPERAND(value, 0));
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
         (has_quantum(TREE_OPERAND(value, 0)) || coherent_cpu_condition)) {
@@ -2648,7 +2681,7 @@ tree lower_node(tree value) {
         return list;
     }
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
-        if (!controls.empty() && !quantum_heap_cpu_branches.count(value)) {
+        if (!controls.empty() && !quantum_memory_cpu_branches.count(value)) {
             error_at(at(value),
                      "|c>: classical branch inside quantum control is not supported yet");
             return value;
@@ -2754,13 +2787,20 @@ tree lower_node(tree value) {
         instructions.push_back("{\"op\":\"cloop_end\"}");
         tree result = alloc_stmt_list();
         append(&result, value);
-        for (const auto &entry : back_edge)
-            if (!incoming.count(entry.first) && entry.second.lowered && !entry.second.released &&
-                !entry.second.moved)
+        for (const auto &entry : back_edge) {
+            auto previous = incoming.find(entry.first);
+            bool created = previous == incoming.end() ||
+                           (entry.second.private_capture && !previous->second.lowered);
+            if (created && entry.second.lowered && !entry.second.released && !entry.second.moved) {
                 append(&result,
                        emit_operation(
                            "{\"op\":\"qdispose\",\"id\":" + std::to_string(entry.second.id) + '}',
                            at(value)));
+                auto current = variables.find(entry.first);
+                if (current != variables.end())
+                    current->second.released = true;
+            }
+        }
         return result;
     }
     if ((code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||

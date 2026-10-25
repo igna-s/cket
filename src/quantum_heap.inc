@@ -35,8 +35,8 @@ bool heap_pointer(tree value, tree &element, bool &readonly) {
         return heap_pointer(TREE_OPERAND(value, 0), element, readonly);
     if (TREE_CODE(value) == COMPOUND_EXPR)
         return heap_pointer(TREE_OPERAND(value, 1), element, readonly);
-    if (quantum_heap_memory.count(value))
-        return heap_pointer(quantum_heap_memory.at(value).destination, element, readonly);
+    if (quantum_native_memory.count(value))
+        return heap_pointer(quantum_native_memory.at(value).destination, element, readonly);
     bool move = false;
     if (TREE_CODE(value) == CALL_EXPR && call_expr_nargs(value) == 3 &&
         (standard_memory_set(get_callee_fndecl(value)) ||
@@ -66,8 +66,8 @@ bool heap_borrowed_pointer(tree value) {
         return heap_borrowed_pointer(TREE_OPERAND(value, 0));
     if (TREE_CODE(value) == COMPOUND_EXPR)
         return heap_borrowed_pointer(TREE_OPERAND(value, 1));
-    if (quantum_heap_memory.count(value))
-        return heap_borrowed_pointer(quantum_heap_memory.at(value).destination);
+    if (quantum_native_memory.count(value))
+        return heap_borrowed_pointer(quantum_native_memory.at(value).destination);
     bool move = false;
     if (TREE_CODE(value) == CALL_EXPR && call_expr_nargs(value) == 3 &&
         (standard_memory_set(get_callee_fndecl(value)) ||
@@ -398,13 +398,13 @@ tree expand_heap_call(tree call) {
             build_fn_decl("__cket_heap_memory",
                           build_function_type_list(TREE_TYPE(call), TREE_TYPE(source), NULL_TREE));
         tree result = build_call_expr_loc(at(call), marker, 1, source);
-        quantum_heap_memory.emplace(result,
-                                    QuantumHeapMemory{save_expr(destination),
-                                                      source,
-                                                      count,
-                                                      set    ? "set"
-                                                      : move ? "move"
-                                                             : "copy"});
+        quantum_native_memory.emplace(result,
+                                      QuantumNativeMemory{save_expr(destination),
+                                                          source,
+                                                          count,
+                                                          set    ? "set"
+                                                          : move ? "move"
+                                                                 : "copy"});
         return result;
     }
     if (operation == "free" && call_expr_nargs(call) == 1 && heap_pointer(CALL_EXPR_ARG(call, 0))) {
@@ -522,9 +522,24 @@ tree lower_heap_effect(tree marker) {
     return lower_heap_effect_capture(marker, 0, false);
 }
 
-tree lower_heap_memory(tree marker) {
-    const auto &memory = quantum_heap_memory.at(marker);
+tree lower_native_memory(tree marker) {
+    const auto &memory = quantum_native_memory.at(marker);
     tree ull = long_long_unsigned_type_node, list = alloc_stmt_list();
+    if (memory.mode == "fixed") {
+        std::string count = cpu_parameter(fold_convert(ull, memory.count));
+        append(&list,
+               emit_operation("{\"op\":\"cmemory\",\"count\":" + count +
+                                  ",\"limit\":" + std::to_string(memory.limit) +
+                                  (memory.overlap == UINT64_MAX
+                                       ? ""
+                                       : ",\"overlap\":" + std::to_string(memory.overlap)) +
+                                  control_json() + '}',
+                              at(marker)));
+        ++runtime_memory_depth;
+        append(&list, lower_node(memory.fixed_output));
+        --runtime_memory_depth;
+        return prefixed_value(list, fold_convert(TREE_TYPE(marker), memory.destination));
+    }
     auto address = [&](tree pointer, const char *field) {
         return std::string(",\"") + field + "\":" +
                cpu_parameter(heap_runtime_call("__cket_heap_byte_identity",

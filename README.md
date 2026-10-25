@@ -330,8 +330,11 @@ inverses. General pointer/ABI contexts and string adapters on heaps remain pendi
 `fixed_buffers` adds a fixed array passed to a function with overlapping `memmove` and `memset`
 inside a CPU loop. Its self-dependent fill is captured once before any destination word changes. The
 [fixed-buffer loop evidence](docs/audit-evidence/fixed-memory-loops-v1/README.es.md) separates
-complete complex states, gate inversion, native contexts and sanitizer checks. Counts and addresses
-on this fixed-only route are still checked constants.
+complete complex states, gate inversion, native contexts and sanitizer checks. The new
+[runtime-length route](docs/c11-runtime-memory.md) accepts pure CPU counts over checked fixed views.
+`buffer_lengths` passes its `argv` length to a function and combines copying, overlap and filling.
+Addresses remain checked constants. Returned data reads require explicit quantum observation; CPU
+placeholder reads and unchecked address escapes are rejected.
 
 The [ownership and copy contracts](docs/no-clonacion.es.md) distinguish moves, borrows, correlated
 basis-value copies and retained overwrites. Validation found and corrected a narrowed-addition bug

@@ -135,12 +135,12 @@ La cobertura exhaustiva de consumidores y recursos sigue pendiente. El bloque 04
 ## Avance utilizable del bloque 05: heap y vectores dinámicos
 
 `bash scripts/run-block.sh 05` compila y ejecuta `dynamic_heap`, `coherent_heap`, `heap_bytes`,
-`heap_transfer`, `heap_iterations` y `fixed_buffers`. En el primero, la capacidad inicial es un dato
-CPU recibido por `argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`. El programa reserva
-con `calloc`, llena, modifica bajo un booleano cuántico, crece con `realloc`, recorre mediante una
-función, mide explícitamente y libera. Compara la suma con los elementos observados y una fórmula C
-ordinaria. Este avance genera un ejecutable nativo; el control CPU y el heap no se exportan como un
-circuito QASM estático.
+`heap_transfer`, `heap_iterations`, `fixed_buffers` y `buffer_lengths`. En el primero, la capacidad
+inicial es un dato CPU recibido por `argv`: `CKET_SIMULATOR=sparse build/blocks/05/dynamic_heap 4`.
+El programa reserva con `calloc`, llena, modifica bajo un booleano cuántico, crece con `realloc`,
+recorre mediante una función, mide explícitamente y libera. Compara la suma con los elementos
+observados y una fórmula C ordinaria. Este avance genera un ejecutable nativo; el control CPU y el
+heap no se exportan como un circuito QASM estático.
 
 El [contrato de heap](c11-heap.md) explica la identidad de los registros, los préstamos, los
 resultados derivados que siguen vivos al redimensionar/liberar y los límites de recursos. No hay

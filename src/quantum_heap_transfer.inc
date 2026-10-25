@@ -62,10 +62,10 @@ tree expand_heap_transfer(tree call, bool move) {
         return reject("|c>: heap byte transfer requires mutable fixed destination storage");
     uint64_t capacity = std::min<uint64_t>(64, fixed.size() - fixed.offset);
     tree length = save_expr(fold_convert(ull, count));
-    QuantumHeapMemory operation{save_expr(heap_transfer_address(destination)),
-                                save_expr(source),
-                                length,
-                                to_heap ? "bytes" : "check"};
+    QuantumNativeMemory operation{save_expr(heap_transfer_address(destination)),
+                                  save_expr(source),
+                                  length,
+                                  to_heap ? "bytes" : "check"};
     operation.limit = capacity;
     std::vector<tree> arguments;
     if (to_heap) {
@@ -105,7 +105,7 @@ tree expand_heap_transfer(tree call, bool move) {
             tree program = make_quantum_value_program(call, {word}, boolean_true_node);
             tree branch = build3_loc(
                 at(call), COND_EXPR, void_type_node, active, program, build_empty_stmt(at(call)));
-            quantum_heap_cpu_branches.insert(branch);
+            quantum_memory_cpu_branches.insert(branch);
             append(&operation.fixed_output, branch);
             arguments.push_back(program);
         }
@@ -113,6 +113,6 @@ tree expand_heap_transfer(tree call, bool move) {
     tree fn =
         build_fn_decl("__cket_heap_transfer", build_function_type(TREE_TYPE(call), NULL_TREE));
     tree result = build_call_expr_loc_array(at(call), fn, arguments.size(), arguments.data());
-    quantum_heap_memory.emplace(result, std::move(operation));
+    quantum_native_memory.emplace(result, std::move(operation));
     return result;
 }

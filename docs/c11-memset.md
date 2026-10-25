@@ -99,10 +99,12 @@ reads its destination, the compiler captures its byte once before changing any w
 instead of reusing an initial known-basis proof. The
 [fixed-loop campaign](audit-evidence/fixed-memory-loops-v1/README.es.md) records finite evidence.
 
-Runtime counts on this fixed-storage route, general pointers and aliasing, general aggregates,
-padding, `_Bool` object-byte writes, floating objects and volatile/atomic accesses require further
-implementation. The [heap route](c11-heap.md) has its separate CPU count/offset contract. Static
-loop expansion and supported CPU branches do not imply arbitrary control-flow support.
+Pure CPU [runtime counts](c11-runtime-memory.md) now select checked prefixes on fixed storage. The
+fill is captured once, including for zero count; unselected whole words retain their wires. General
+pointers and aliasing, general aggregates, padding, `_Bool` object-byte writes, floating objects and
+volatile/atomic accesses require further implementation. The [heap route](c11-heap.md) has its
+separate CPU count/offset contract. Static loop expansion and supported CPU branches do not imply
+arbitrary control-flow support.
 
 Unsequenced modifications and accesses retain their C11 undefined-behavior diagnostic. CPU side
 effects under coherent control are rejected. A quantum value cannot silently be written into a CPU
@@ -113,7 +115,7 @@ Cybersecurity and security-specific memory interfaces remain classical and outsi
 
 The maintained [validator](../tests/validate_memset.c) passes **940 checks** in each normal and
 ASan/UBSan configuration: 140 dense state/inverse cases, 20 complete controlled labeled-action
-circuits, 160 sequenced-effect state/inverse cases, 490 native executions, 70 diagnostic contracts
+circuits, 160 sequenced-effect state/inverse cases, 500 native executions, 60 diagnostic contracts
 and 60 wide generation cases. Source profiles use five GCC optimization levels and both builtin
 modes; state/action checks also use both synthesis policies. These proof categories are distinct.
 

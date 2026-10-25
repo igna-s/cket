@@ -61,6 +61,7 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" tests/validate_history.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_history"
 "$real_cc" "${flags[@]}" tests/validate_heap.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_heap"
 "$real_cc" "${flags[@]}" tests/validate_runtime_versions.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_runtime_versions"
+"$real_cc" "${flags[@]}" tests/validate_runtime_memory.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_runtime_memory"
 "$real_cc" "${flags[@]}" tests/validate_ctype.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_ctype"
 "$real_cc" "${flags[@]}" tests/validate_profiles.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_profiles"
 "$real_cc" "${flags[@]}" tests/validate_numeric_locale.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_numeric_locale"
@@ -102,6 +103,10 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_history"
 "$san_root/build/validate_heap"
 "$san_root/build/validate_runtime_versions"
+"$san_root/build/validate_runtime_memory"
+runtime_memory_proof="$(mktemp -d "$san_root/build/runtime-memory-proof.XXXXXX")"
+python3 scripts/validate-runtime-memory.py --compiler-root "$san_root" \
+    --output "$runtime_memory_proof/sanitized" --levels O1 --sanitized
 fixed_memory_proof="$(mktemp -d "$san_root/build/fixed-memory-proof.XXXXXX")"
 python3 scripts/validate-fixed-memory-loops.py --compiler-root "$san_root" \
     --output "$fixed_memory_proof/sanitized" --levels O1 --sanitized

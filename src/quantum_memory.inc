@@ -572,7 +572,7 @@ tree expand_memory_set(tree call) {
     }
     tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
     if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
-        return reject("|c>: quantum memset currently requires a constant checked byte count");
+        return expand_dynamic_memory(call, false, true);
     uint64_t count = tree_to_uhwi(bytes);
     if (count > range.size() - range.offset)
         return reject("|c>: quantum memset exceeds its checked storage bounds");

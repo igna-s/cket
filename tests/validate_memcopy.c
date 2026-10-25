@@ -245,18 +245,17 @@ static void contracts(validation *v) {
         "uint8_t a=7;quant uint8_t b=0;memcpy((void*)&b,&a,1);return measure(b)!=7||a!=7;",
         "quant uint8_t a=7,b=0;quant uint8_t child=b+1;memcpy((void*)&b,(const void*)&a,1);unsigned old=measure(child),result=measure(b),source=measure(a);return old!=1||result!=7||source!=7;",
         "quant uint8_t a=7,b=0;quant uint8_t child=a-a;memcpy((void*)&child,(const void*)&b,1);unsigned result=measure(child),source=measure(a),other=measure(b);return result||source!=7||other;",
-        "quant uint8_t a=7,b=0;int n=2;while(n--)memcpy((void*)&b,(const void*)&a,1);unsigned result=measure(b),source=measure(a);return result!=7||source!=7;"};
+        "quant uint8_t a=7,b=0;int n=2;while(n--)memcpy((void*)&b,(const void*)&a,1);unsigned result=measure(b),source=measure(a);return result!=7||source!=7;",
+        "quant uint8_t a=7,b=0;size_t n=1;memcpy((void*)&b,(const void*)&a,n);unsigned result=measure(b),source=measure(a);return result!=7||source!=7;"};
     const char *invalid[] = {
         "quant uint8_t a=7;memcpy((void*)&a,(const void*)&a,1);measure(a);",
         "quant uint8_t a[3]={7,0,0};memcpy((void*)(a+1),(const void*)a,2);measure(a[0]);measure(a[1]);measure(a[2]);",
-        "quant uint8_t a=7,b=0;size_t n=1;memcpy((void*)&b,(const void*)&a,n);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;memcpy((void*)&b,(const void*)&a,2);measure(a);measure(b);",
         "quant uint8_t a=7;uint8_t b=0;memcpy(&b,(const void*)&a,1);measure(a);",
         "quant bool a=true,b=false;memcpy((void*)&b,(const void*)&a,1);measure(a);measure(b);",
         "quant uint8_t a=7,b=0;quant const uint8_t *p=&b;memcpy((void*)p,(const void*)&a,1);measure(a);measure(b);"};
     const char *diagnostics[] = {"overlapping quantum memcpy",
                                  "overlapping quantum memcpy",
-                                 "constant byte count",
                                  "exceeds its checked storage bounds",
                                  "cannot write unmeasured data into CPU storage",
                                  "integer object bytes without padding",

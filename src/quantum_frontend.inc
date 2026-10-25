@@ -1052,6 +1052,7 @@ tree expand_integer_division(tree call) {
 }
 
 tree expand_byte_copy(tree call, bool move);
+tree expand_dynamic_memory(tree call, bool move, bool set);
 
 tree expand_memory_copy(tree call, bool move) {
     if (call_expr_nargs(call) != 3)
@@ -1069,8 +1070,7 @@ tree expand_memory_copy(tree call, bool move) {
         return expand_byte_copy(call, move);
     tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
     if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
-        return reject(
-            "|c>: quantum memory copy currently needs a constant byte count; dynamic extents need bounded memory synthesis");
+        return expand_dynamic_memory(call, move, false);
     tree target_size = TYPE_SIZE_UNIT(destination.element_type),
          source_size = TYPE_SIZE_UNIT(source.element_type);
     if (!target_size || !source_size || !tree_fits_uhwi_p(target_size) ||
@@ -1149,8 +1149,11 @@ tree expand_memory_copy(tree call, bool move) {
 #include "quantum_memory.inc"
 #include "quantum_byte_copy.inc"
 #include "quantum_heap_transfer.inc"
+#include "quantum_dynamic_memory.inc"
 #include "quantum_decimal.inc"
 #include "quantum_search_writes.inc"
+
+#include "quantum_memory_returns.inc"
 
 // A standard memory function returns its destination, independently of the
 // quantum data. Emit its writes once, then retain only a checked address alias.
@@ -1185,7 +1188,7 @@ bool expand_pointer_borrow(tree decl, tree &prefix) {
     }
     prefix = memory_call ? expand_quantum_program(initial) : build_empty_stmt(at(decl));
     if (memory_call && !quantum_memory_copies.count(prefix) && !quantum_memory_sets.count(prefix) &&
-        !quantum_value_programs.count(prefix) && !quantum_heap_memory.count(prefix)) {
+        !quantum_value_programs.count(prefix) && !quantum_native_memory.count(prefix)) {
         // The normal adapter already emitted its storage/count/CPU-boundary diagnostic.
         return true;
     }
@@ -1559,9 +1562,19 @@ tree expand_quantum_program(tree value) {
     if (!value)
         return value;
     if (quantum_heap_accesses.count(value) || quantum_heap_byte_reads.count(value) ||
-        quantum_heap_updates.count(value) || quantum_heap_memory.count(value))
+        quantum_heap_updates.count(value) || quantum_native_memory.count(value))
         return value;
     auto code = TREE_CODE(value);
+    if (code == MODIFY_EXPR || code == INIT_EXPR || code == PREINCREMENT_EXPR ||
+        code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR) {
+        tree target = strip(TREE_OPERAND(value, 0));
+        if ((TREE_CODE(target) == INDIRECT_REF || TREE_CODE(target) == ARRAY_REF) &&
+            memory_return_in_address(TREE_OPERAND(target, 0), true)) {
+            error_at(at(value),
+                     "|c>: memory-return writes require a checked local destination borrow");
+            return build_zero_cst(TREE_TYPE(value));
+        }
+    }
     if (code == BIND_EXPR) {
         tree unrolled = expand_static_for_block(value);
         if (unrolled)
@@ -1639,8 +1652,13 @@ tree expand_quantum_program(tree value) {
             DECL_INITIAL(decl) = NULL_TREE;
             return expand_quantum_program(build3(BIND_EXPR, void_type_node, vars, list, NULL_TREE));
         }
-        if (DECL_INITIAL(decl))
+        if (DECL_INITIAL(decl)) {
             DECL_INITIAL(decl) = expand_quantum_program(DECL_INITIAL(decl));
+            if (!quantum(decl) && memory_return_address_value(DECL_INITIAL(decl)))
+                error_at(
+                    at(decl),
+                    "|c>: quantum memory-return address requires a checked local borrow; CPU storage escape is unsupported");
+        }
         return value;
     }
     tree heap_update = expand_heap_write(value);
@@ -1778,6 +1796,14 @@ tree expand_quantum_program(tree value) {
             }
         }
         // Resolve aggregate arguments before borrowing scalar storage.
+        if (effect.empty() && !quantum_function(fn) && !standard_integer_absolute(fn) &&
+            !standard_integer_division(fn))
+            for (int i = 0; i < call_expr_nargs(value); ++i)
+                if (memory_return_in_address(CALL_EXPR_ARG(value, i), true)) {
+                    error_at(at(value),
+                             "|c>: quantum memory-return address cannot escape to a CPU call");
+                    return build_zero_cst(TREE_TYPE(value));
+                }
         tree param = fn ? DECL_ARGUMENTS(fn) : NULL_TREE;
         for (int i = 0; i < call_expr_nargs(value); ++i) {
             bool pointer_borrow = param && lookup_attribute("cket_quant", DECL_ATTRIBUTES(param)) &&
@@ -1786,6 +1812,19 @@ tree expand_quantum_program(tree value) {
                 CALL_EXPR_ARG(value, i) = expand_quantum_program(CALL_EXPR_ARG(value, i));
             if (param)
                 param = DECL_CHAIN(param);
+        }
+        if (effect == "measure" && call_expr_nargs(value) == 1) {
+            tree input = strip(CALL_EXPR_ARG(value, 0));
+            if (TREE_CODE(input) == COMPOUND_EXPR &&
+                discarded_memory_sequence(TREE_OPERAND(input, 0)) &&
+                quantum(strip(TREE_OPERAND(input, 1)))) {
+                // Observe the actual post-call owner as ordinary storage.
+                // Keeping the effect outside qobserve also preserves future
+                // source uses in the compiler's lifetime accounting.
+                CALL_EXPR_ARG(value, 0) = TREE_OPERAND(input, 1);
+                return build2_loc(
+                    at(value), COMPOUND_EXPR, TREE_TYPE(value), TREE_OPERAND(input, 0), value);
+            }
         }
         if (quantum_function(fn))
             return instantiate_quantum_call(value);
@@ -1803,6 +1842,9 @@ tree expand_quantum_program(tree value) {
         return value;
     }
     if (code == INDIRECT_REF) {
+        tree returned = expand_memory_return_read(value);
+        if (returned)
+            return returned;
         tree heap = expand_heap_read(value);
         if (heap)
             return heap;
@@ -1817,6 +1859,11 @@ tree expand_quantum_program(tree value) {
             return element;
     }
     if (code == ARRAY_REF || code == COMPONENT_REF) {
+        if (code == ARRAY_REF) {
+            tree returned = expand_memory_return_read(value);
+            if (returned)
+                return returned;
+        }
         tree heap = expand_heap_read(value);
         if (heap)
             return heap;
@@ -1920,6 +1967,13 @@ tree expand_quantum_program(tree value) {
     if (EXPR_P(value))
         for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
             TREE_OPERAND(value, i) = expand_quantum_program(TREE_OPERAND(value, i));
+    if ((code == MODIFY_EXPR || code == INIT_EXPR) && !quantum(strip(TREE_OPERAND(value, 0))) &&
+        memory_return_address_value(TREE_OPERAND(value, 1)))
+        error_at(at(value),
+                 "|c>: quantum memory-return address cannot escape through CPU assignment");
+    if (code == RETURN_EXPR && memory_return_address_value(TREE_OPERAND(value, 0)))
+        error_at(at(value),
+                 "|c>: quantum memory-return address cannot escape through a CPU return");
     if (EXPR_P(value) && TREE_TYPE(value) &&
         (INTEGRAL_TYPE_P(TREE_TYPE(value)) || SCALAR_FLOAT_TYPE_P(TREE_TYPE(value))) &&
         !has_quantum(value) && quantum_pure_expression(value))

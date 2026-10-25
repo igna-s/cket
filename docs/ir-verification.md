@@ -74,6 +74,13 @@ absent from the document. Validation does not reconstruct GCC's complete type sy
 
 ## Engine-maintained range proofs
 
+`cmemory` is a gate-free preflight for runtime fixed-buffer prefixes. `count` is a bound unsigned
+64-bit constant expression; `limit` is a raw byte count from 0 to 64. Optional `overlap` limits the
+largest nonoverlapping memcpy prefix. Optional controls require prepared Boolean registers and
+strict entry schemas. Bounds and overlap fail before collection, allocation or writes. Proven
+inactive coherent controls skip the domain check while preserving schema checks. Borrowed unitary
+modules reject this precondition operation. See [runtime memory](c11-runtime-memory.md).
+
 Independently of expression metadata, the engine maintains:
 
 - A known basis value when provable.

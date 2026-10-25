@@ -18,6 +18,7 @@ tree quantum_value_capture(tree call,
     // The zero preparation is separate from the circuit-domain expression,
     // including when that expression uses only captured CPU bytes.
     record_decl(decl, nullptr);
+    variables.at(decl).private_capture = true;
     prefix.push_back(build1(DECL_EXPR, void_type_node, decl));
     prefix.push_back(build2_loc(at(call), MODIFY_EXPR, type, decl, fold_convert(type, expression)));
     return fold_convert(value_type, decl);

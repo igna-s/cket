@@ -24,7 +24,7 @@ tree expand_byte_copy(tree call, bool move) {
         return reject("|c>: quantum byte copy requires mutable destination storage");
     tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
     if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
-        return reject("|c>: quantum byte copy requires a constant byte count");
+        return expand_dynamic_memory(call, move, false);
     uint64_t count = tree_to_uhwi(length);
     if (count > destination.size() - destination.offset || count > source.size() - source.offset)
         return reject("|c>: quantum byte copy exceeds its checked storage bounds");

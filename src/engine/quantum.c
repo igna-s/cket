@@ -1506,6 +1506,38 @@ int qc_apply_token(qc_context *c,
     }
     if (!qc_verify_instruction(c, d, inst))
         return 0;
+    if (cj_equal(d, op, "cmemory")) {
+        uint64_t count, limit, overlap;
+        cj_u64(d, cj_get(d, cj_get(d, inst, "count"), "value"), &count);
+        cj_u64(d, cj_get(d, inst, "limit"), &limit);
+        *result = 0;
+        if (c->validation && c->structural)
+            return 1;
+        qc_mask mask, pattern;
+        int impossible;
+        if (!controls(c, d, inst, &mask, &pattern, &impossible))
+            return 0;
+        int guards = cj_get(d, inst, "controls");
+        if (guards >= 0) {
+            ar_builder proof = {.c = c, .d = d};
+            for (int t = guards + 1; t < d->tokens[guards].next; t = d->tokens[t].next) {
+                uint64_t id, wanted;
+                int fixed;
+                cj_u64(d, cj_get(d, t, "id"), &id);
+                cj_u64(d, cj_get(d, t, "value"), &wanted);
+                if (ar_register_boolean_constant(&proof, (uint32_t)id, &fixed, 0) &&
+                    fixed != (int)wanted)
+                    return 1;
+                if (*c->error)
+                    return 0;
+            }
+        }
+        if (count > limit)
+            return qc_fail(c, "runtime fixed memory exceeds checked byte bounds");
+        if (cj_u64(d, cj_get(d, inst, "overlap"), &overlap) && count > overlap)
+            return qc_fail(c, "overlapping quantum memcpy has undefined C behavior; use memmove");
+        return 1;
+    }
     if (!c->structural) {
         char *bound = NULL;
         if (!ctype_bind(c, d, inst, &bound))

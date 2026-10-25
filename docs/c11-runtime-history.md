@@ -57,9 +57,10 @@ with a separate bounded sparse mode. Reaching a budget fails explicitly rather t
 states. Repeated self-dependent versions can exhaust that budget even when the C loop is finite.
 
 Fixed-to-fixed `memcpy`, `memmove` and `memset` now share this history path in structured CPU loops,
-with checked constant addresses/counts. A self-dependent fill byte is captured before any word
-changes. Their [finite evidence](audit-evidence/fixed-memory-loops-v1/README.es.md) is separate from
-the earlier heap-loop campaign.
+with checked addresses. Counts may also be [pure CPU runtime values](c11-runtime-memory.md). A
+self-dependent fill byte is captured before any word changes. Their
+[finite evidence](audit-evidence/fixed-memory-loops-v1/README.es.md) is separate from the earlier
+heap-loop campaign.
 
 Quantum declarations inside controlled branches or CPU loops, general quantum loop conditions, early
 returns with live owners, arbitrary jumps, general indexed overwrites and heap strings retain

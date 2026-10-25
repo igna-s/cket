@@ -8,6 +8,11 @@ conserva estos contratos y añade la corrección de operandos enteros del cuerpo
 
 ## Qué representa el puntero
 
+La [ruta de longitud CPU](c11-runtime-memory.md) añade lecturas directas compatibles mediante
+`measure(*(uint8_t *)memcpy(...))`, secuenciando el efecto antes de observar el registro real. La
+misma lectura sin `measure` se rechaza. Los retornos no comprobados tampoco pueden escapar a
+llamadas o agregados CPU; las escrituras directas necesitan un préstamo local comprobado.
+
 En los casos admitidos, `memcpy`, `memmove` y `memset` devuelven la dirección de su destino. El
 frontend conserva esa dirección como un alias comprobado en compilación. No coloca el valor de un
 registro cuántico en un puntero CPU ni convierte la copia de valores de base en clonación de un

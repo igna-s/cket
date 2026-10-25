@@ -46,6 +46,7 @@ struct Variable {
     bool history = false;
     bool optional_definition = false;
     bool runtime_history = false;
+    bool private_capture = false;
     bool pending_destruction = false;
     bool pristine_uniform = false;
 };
@@ -78,17 +79,18 @@ std::map<tree, tree> quantum_heap_pointers;
 std::map<tree, QuantumHeapAccess> quantum_heap_accesses;
 std::map<tree, QuantumHeapUpdate> quantum_heap_updates;
 
-struct QuantumHeapMemory {
+struct QuantumNativeMemory {
     tree destination, source, count;
     std::string mode;
     std::vector<tree> bytes{};
     tree fixed_output = NULL_TREE;
     uint64_t limit = 64;
+    uint64_t overlap = UINT64_MAX;
 };
 
-std::map<tree, QuantumHeapMemory> quantum_heap_memory;
+std::map<tree, QuantumNativeMemory> quantum_native_memory;
 std::map<tree, std::pair<tree, uint64_t>> quantum_heap_byte_reads;
-std::set<tree> quantum_heap_cpu_branches;
+std::set<tree> quantum_memory_cpu_branches;
 std::set<tree> quantum_heap_borrows;
 std::set<tree> quantum_heap_queries;
 
@@ -465,6 +467,7 @@ void finish_function(void *event, void *) {
     lazy_effect_depth = 0;
     controls.clear();
     dynamic_depth = 0;
+    runtime_memory_depth = 0;
     cpu_branches.clear();
     observed_quantum_outputs.clear();
     if (has_quantum) {
@@ -518,9 +521,9 @@ void finish_function(void *event, void *) {
     quantum_heap_pointers.clear();
     quantum_heap_accesses.clear();
     quantum_heap_updates.clear();
-    quantum_heap_memory.clear();
+    quantum_native_memory.clear();
     quantum_heap_byte_reads.clear();
-    quantum_heap_cpu_branches.clear();
+    quantum_memory_cpu_branches.clear();
     quantum_heap_borrows.clear();
     quantum_heap_queries.clear();
     indexed_expansions.clear();

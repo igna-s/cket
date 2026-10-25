@@ -452,6 +452,33 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
+    if (cj_equal(d, heap_op, "cmemory")) {
+        static const char *const allowed[] = {"op", "count", "limit", "overlap", "controls", NULL};
+        uint64_t limit, overlap;
+        int ok = fields(c, d, inst, allowed) &&
+                 heap_address_literal(c, d, cj_get(d, inst, "count")) &&
+                 unsigned_field(c, d, inst, "limit", &limit) && limit <= 64 &&
+                 (cj_get(d, inst, "overlap") < 0 ||
+                  (unsigned_field(c, d, inst, "overlap", &overlap) && overlap <= 64));
+        if (!ok)
+            return qc_fail(c, "invalid checked fixed-memory extent schema");
+        int guards = cj_get(d, inst, "controls");
+        if (guards >= 0) {
+            static const char *const row[] = {"id", "value", NULL};
+            if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)
+                return qc_fail(c, "invalid fixed-memory controls");
+            for (int t = guards + 1; t < d->tokens[guards].next; t = d->tokens[t].next) {
+                uint64_t id, wanted;
+                if (!fields(c, d, t, row) || !unsigned_field(c, d, t, "id", &id) ||
+                    !unsigned_field(c, d, t, "value", &wanted) || id > UINT32_MAX || wanted > 1)
+                    return qc_fail(c, "invalid fixed-memory control entry");
+                qc_register *r = qc_lookup(c, (uint32_t)id);
+                if (!r || !r->alive || !r->prepared || r->width != 1)
+                    return qc_fail(c, "fixed-memory control requires an available Boolean");
+            }
+        }
+        return 1;
+    }
     if (cj_equal(d, heap_op, "qassign") || cj_equal(d, heap_op, "qslot")) {
         static const char *const assignment[] = {"op", "id", "expr", NULL};
         static const char *const slot[] = {"op", "id", "width", "signed", "ancilla", "name", NULL};

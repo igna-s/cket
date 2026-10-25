@@ -1,0 +1,26 @@
+{
+  "normal": {
+    "cket_plugin.so": "8d11649dfdbdf31d707e698a55709a4cc4a57c9d7cf7fe24ffcda562da23f709",
+    "json.o": "bbc7f02f75690f901297174ac592f337145688aae4026a0454678560e5f3ecdd",
+    "quantum.o": "c9e278e1b606737a754a1bcee7d614893e02e20427c4885d530dff6d2091d461",
+    "verify.o": "efeb199b55e52d4c0c2f030ba269aa7be900212e35db6ea64904226f489bd088",
+    "simulator.o": "550b9d3ea51d3700196a54090d1c0c829905f75a77f38b32585dc7d138e57722",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e",
+    "cket": "fe754baf2cc7d3fc35f51b5f9b119b4db0ffc67af219ea4d53192f248fe08d80",
+    "validate_runtime_memory": "92e80fb7ff1cb88032dbb7c370687dc01dfd358206148d8800a7c00013511d86"
+  },
+  "sanitized": {
+    "cket_plugin.so": "088b01ff27bcbc40912de8d303beacdea4d75a54742183452362b98e77e5af72",
+    "json.o": "6c04ad082b8be35dad0ffeaeaec8eb8bf1ad6c87fa8404ed6ce6cb412e2d6c76",
+    "quantum.o": "e6ac9bbe572880afe7ab623b454560522c54a8f97c95693fe50c0b58a963ab5e",
+    "verify.o": "4f966c0f1a50ea97a9e32021a586e96b631794f681b1579c17ebb123030d724f",
+    "simulator.o": "415bcce9d0de074c0c4110ec0ff072fce79b3b3e953f12b94bef62bac78edd40",
+    "cket_runtime.o": "eecb52e2df63391cd3dbdd3f95826c4b31d9dd4306ee8628620ea6313d0f68fa",
+    "cket": "da296d01826b3ddac1cb8217ed4dcae54070403f22f904f286d8cc57ef496428",
+    "validate_runtime_memory": "712a8b042f8bcaf62d812bab89797c3e30801f6d2cf09edc93b11db73ad21c7d"
+  },
+  "example": {
+    "normal": "1438154403a1cd693c0ca78bdd9eb5c1a8fd83190bcf4a04a8916b9174d55deb",
+    "sanitized": "cf1091c67cb449f650d167319b6801726911aaccd00b7672069addf7e9c77c5d"
+  }
+}

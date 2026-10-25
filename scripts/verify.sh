@@ -25,6 +25,10 @@ build/validate_bindings 2>&1 | tee build/verify-bindings.log
 build/validate_history 2>&1 | tee build/verify-history.log
 build/validate_heap 2>&1 | tee build/verify-heap.log
 build/validate_runtime_versions 2>&1 | tee build/verify-runtime-versions.log
+build/validate_runtime_memory 2>&1 | tee build/verify-runtime-memory-engine.log
+runtime_memory_proof="$(mktemp -d "$PWD/build/runtime-memory-proof.XXXXXX")"
+python3 scripts/validate-runtime-memory.py --output "$runtime_memory_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-runtime-memory.log
 fixed_memory_proof="$(mktemp -d "$PWD/build/fixed-memory-proof.XXXXXX")"
 python3 scripts/validate-fixed-memory-loops.py --output "$fixed_memory_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-fixed-memory-loops.log

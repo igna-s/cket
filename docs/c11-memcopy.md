@@ -14,6 +14,9 @@ overlap. Both return their destination. The frontend supports discarded calls an
 destination-return borrows; the [return contract](c11-memory-returns.md) describes their consumers.
 General escaping or indirect quantum pointer ABI remains pending.
 
+The [runtime-length route](c11-runtime-memory.md) accepts pure CPU byte counts over these fixed
+views, with preflight bounds/overlap checks, inactive-byte identity and retained word versions.
+
 ## Checked whole-element path
 
 The original path accepts equal-size padding-free integer elements, constant byte counts divisible
@@ -82,7 +85,7 @@ Nonidentity copies in structured CPU loops use the
 even if the destination was initially known: a later iteration cannot reuse that initial basis
 proof. Read-before-write ordering preserves original `memmove` bytes in either direction. Exact
 same-range identity and zero-length copies keep their existing no-write path. Checked static
-expansions remain available. Dynamic counts/addresses, padding and `_Bool` object padding, general
+expansions remain available. Dynamic addresses, padding and `_Bool` object padding, general
 aggregate layouts, general pointer returns and arbitrary aliasing functions remain pending.
 Simulator, physical representation, expression and history budgets apply separately from the
 frontend byte bound. The sparse simulator permits bounded occupied support; it does not make
@@ -99,11 +102,11 @@ Historical campaigns ran 414 memory-copy checks on their recorded sources, inclu
 states/inverses, native C contracts and wide generation. Those results do not qualify the new
 extension. The maintained validator moves seven obsolete rejection cases into positive native
 contracts and uses sparse simulation for those executions. The runtime loop case is now a positive
-native contract with consumers observed before their sources. The 414 checks include 120 complete
-phased states/inverses, four overlapping states, 190 native contracts, 70 rejections and 30 wide
-exports. The fixed-loop delivery separately records new runtime states and the maintained suite on
-its own sources. The normal native core regression and delivery results are recorded separately in
-the current evidence capsule.
+native contract with consumers observed before their sources. The runtime-count case is also
+positive. The 414 checks include 120 complete phased states/inverses, four overlapping states, 200
+native contracts, 60 rejections and 30 wide exports. The fixed-loop delivery separately records new
+runtime states and the maintained suite on its own sources. The normal native core regression and
+delivery results are recorded separately in the current evidence capsule.
 
 The [C11 inventory](c11-inventory.md) and [interface index](c11-library.json) keep these interfaces
 partial. Broad integration, sanitizers, complete states/inverses and all GCC contexts remain open.

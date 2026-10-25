@@ -38,8 +38,10 @@ pendientes; el [contrato](c11-heap.md) detalla los contextos y recursos.
 Las copias, movimientos solapados y rellenos entre buffers fijos también conservan versiones dentro
 de bucles CPU. [fixed_buffers.c](../examples/blocks/05/fixed_buffers.c) combina esas operaciones en
 una función con contador por valor. La
-[evidencia finita](audit-evidence/fixed-memory-loops-v1/README.es.md) no completa los
-tamaños/direcciones generales, retornos ni flujos arbitrarios de propiedad.
+[evidencia finita](audit-evidence/fixed-memory-loops-v1/README.es.md) no completa los direcciones
+generales, retornos ni flujos arbitrarios de propiedad. Los
+[tamaños CPU de ejecución](c11-runtime-memory.md) ya seleccionan prefijos de buffers fijos
+comprobados; `buffer_lengths.c` pasa esa longitud a una función y observa los resultados.
 
 ## Orden de trabajo
 

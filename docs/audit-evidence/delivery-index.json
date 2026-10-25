@@ -1,5 +1,5 @@
 {
-  "active": "fixed-memory-loops-v1",
+  "active": "runtime-memory-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -20,7 +20,8 @@
     "heap-memory-v1",
     "heap-transfer-v1",
     "runtime-history-v1",
-    "fixed-memory-loops-v1"
+    "fixed-memory-loops-v1",
+    "runtime-memory-v1"
   ],
-  "meaning": "Current source identity selects finite fixed-buffer runtime-memory validation. Historical deliveries retain their inputs; full everyday C integration and new-compiler paper qualification remain open."
+  "meaning": "Current source identity selects finite runtime-length memory validation. The complete everyday-C profile and full new-compiler paper integration remain open."
 }

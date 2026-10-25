@@ -115,8 +115,9 @@ byte counts. Known-basis destinations retain translation/XOR copy gates; unknown
 previous owners. A separate route supports up to 64 object bytes, partial words, different integer
 sizes and known CPU sources. Exact memmove aliases are identity and supported overlap uses
 read-before-write ordering. Checked local destination returns and retained writes in CPU loops are
-supported. Padding, runtime counts/addresses on the fixed-only route, quantum-to-CPU writes and
-general pointer ABI remain pending. Finite loop states, inverses and sanitizers have their own
+supported. Pure CPU [runtime counts](c11-runtime-memory.md) select checked byte prefixes. Padding,
+runtime addresses on the fixed-only route, quantum-to-CPU writes and general pointer ABI remain
+pending. Finite loop states, inverses and sanitizers have their own
 [evidence](audit-evidence/fixed-memory-loops-v1/README.es.md); general compiler-context
 qualification remains open.
 

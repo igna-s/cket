@@ -94,6 +94,7 @@ def main():
         'history': r'^2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
         'heap': r'^16878 heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes\.$',
         'runtime_versions': r'^15 runtime history contracts passed; finite states, schema guards and resource bounds have separate scopes\.$',
+        'runtime_memory': r'^23 runtime memory preflight contracts passed; schemas, bounds, overlap, typed binding and inactive controls checked before mutation\.$',
         'ctype': r'^1815 ctype checks passed; immutable byte-locale coverage is distinct from wide-character, concurrency and source-folding contracts\.$',
         'profiles': r'^96 immutable profile proof checks passed; distinct locale functions cannot share branch facts\.$',
         'numeric_locale': r'^70 numeric locale checks passed; JSON phases and QASM decimals preserve global/thread locales\.$',
