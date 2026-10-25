@@ -1,6 +1,6 @@
 {
   "date": "2026-10-24",
-  "status": "finite-runtime-memory-qualified",
+  "status": "finite-evidence-with-open-critical-quantum-finding",
   "source_files": 221,
   "source_sha256": {
     ".clang-format": "dbfda7a613671d884b579b3ba3b9ac1544aa5cd7e130a4daca270ef87567fecd",
@@ -234,5 +234,11 @@
     "audit": "runtime-memory-note-audit.json",
     "source_commit": "da2ffb31e568026d58b8e5d98aa31929171cfac0",
     "scope": "Finite technical note for the demonstrated runtime-memory delivery; historical papers retain their original revision."
+  },
+  "known_quantum_finding": {
+    "status": "open",
+    "summary": "../../audit-evidence/coherent-overwrite-coherence-v1/summary.json",
+    "report": "../../re-audit-2026-10-24-coherence.md",
+    "scope": "Inactive coherent overwrite of unknown fixed storage may dephase its public destination; published standalone demo does not exercise it."
   }
 }

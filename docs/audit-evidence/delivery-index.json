@@ -23,5 +23,8 @@
     "fixed-memory-loops-v1",
     "runtime-memory-v1"
   ],
-  "meaning": "Current source identity selects finite runtime-length memory validation. The complete everyday-C profile and full new-compiler paper integration remain open."
+  "meaning": "Finite runtime memory evidence and standalone demo remain available. A later inactive-branch coherence counterexample is open; this is not full compiler qualification.",
+  "known_findings": [
+    "coherent-overwrite-coherence-v1"
+  ]
 }

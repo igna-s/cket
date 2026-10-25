@@ -5,6 +5,10 @@
 > identidad de fuentes. Esto no certifica todo el compilador ni completa C11. Los
 > [hallazgos y límites](re-audit-2026-10-24.md) explican el alcance de la revisión.
 
+La [revisión cuántica posterior](../re-audit-2026-10-24-coherence.md) encontró un fallo abierto de
+coherencia en sobrescrituras condicionadas de destinos desconocidos. Los casos finitos publicados no
+lo detectaban. La demo de la nota no contiene esa combinación.
+
 La entrega actual tiene una
 [nota técnica de dos páginas](../../output/pdf/cket_memoria_runtime_nota_tecnica.pdf) y una
 [demo ejecutable](../../output/demo/README.es.md) con funciones, arrays y `memcpy`, `memmove` y
