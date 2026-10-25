@@ -1363,18 +1363,20 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
 
 // Once a controlled store moves a value, an old inverse may no longer read
 // its original wires. Keep such computed values as roots rather than trying
-// to erase them with an invalid recipe. This changes certificates, not states.
+// to erase them with an invalid recipe. A proven inactive write keeps the
+// certificate, so scope disposal can still invert the unchanged computation.
 void materialize_assignment_borrows(unsigned target, location_t loc, tree *list) {
     for (auto &entry : variables) {
         auto &value = entry.second;
         if (!value.lowered || !value.derived || value.released || value.moved || value.measured ||
             (value.id != target && !value.dependencies.count(target) && !value.creation.empty()))
             continue;
-        append(list,
-               emit_operation(
-                   "{\"op\":\"qmaterialize\",\"id\":" + std::to_string(value.id) +
-                       ",\"optional\":" + (value.optional_definition ? "true" : "false") + '}',
-                   loc));
+        append(
+            list,
+            emit_operation("{\"op\":\"qmaterialize\",\"id\":" + std::to_string(value.id) +
+                               ",\"optional\":" + (value.optional_definition ? "true" : "false") +
+                               control_json() + '}',
+                           loc));
         taint_uniform(value.id);
         value.derived = false;
         value.optional_definition = value.runtime_history = true;

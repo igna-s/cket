@@ -117,6 +117,7 @@ int qc_apply_token(qc_context *c,
                    uint64_t *result);
 qc_register *qc_lookup(qc_context *c, uint32_t id);
 int qc_verify_expression(qc_context *c, const cj_doc *d, int expression);
+int qc_controls_inactive(qc_context *c, const cj_doc *d, int instruction, int *inactive);
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int instruction);
 int qc_verify_document(qc_context *c, const cj_doc *d);
 int qc_verify_ctype_profile(qc_context *c, const cj_doc *d, int expression, int mapping);

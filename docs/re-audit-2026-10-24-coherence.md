@@ -35,14 +35,14 @@ siguen vivos en el punto observado; las salidas de bloque y el heap conservan pe
 La ampliación inicial de la revisión encontró estos resultados sobre la corrección de buffers fijos.
 Las dos identidades del heap se corrigen en el seguimiento posterior de este informe:
 
-| Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                    |
-| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                            |
-| Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Abierto: conservar el temporal como raíz impide limpiar su correlación.   |
-| Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo. |
-| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Corregida en el seguimiento de identidades; pureza actual 1 → 1.          |
-| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Corregido en el seguimiento de identidades; pureza actual 1 → 1.          |
-| `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                               |
+| Contexto                                                                                        | Resultado cuántico observado                                    | Estado                                                                               |
+| ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| Copia y asignación fija directas, rama inactiva                                                 | Pureza 1 → 1                                                    | Corregidas en los perfiles finitos publicados.                                       |
+| Un préstamo temporal no observado sale de su bloque después de una asignación bajo control cero | Pureza del dueño 1 → 0.5                                        | Corregido si la escritura está probada inactiva; variante coherente todavía abierta. |
+| Copia coherente sobre heap, sector inactivo                                                     | Pureza conjunta de la fuente de referencia y el destino 1 → 0.5 | Abierto: el estado local de cada registro por separado ocultaba el fallo.            |
+| `p[0] = p[0]` sobre un heap entrelazado                                                         | Pureza conjunta 1 → 0.5                                         | Corregida en el seguimiento de identidades; pureza actual 1 → 1.                     |
+| `memset(p, p[0], 1)` sobre ese heap                                                             | Pureza conjunta 1 → 0.5                                         | Corregido en el seguimiento de identidades; pureza actual 1 → 1.                     |
+| `memmove(p, p, 1)` sobre ese heap                                                               | Pureza conjunta 1 → 1                                           | Identidad conservada en el caso comprobado.                                          |
 
 Todos esos contrastes se observan antes de medir o resetear. Una secuencia de puertas unitarias y su
 inversa pueden ser correctas mientras la traducción sigue equivocándose al retener información
@@ -73,9 +73,9 @@ tienen evidencia adicional del motor, con su alcance separado.
 También se corrige la captura única de argumentos CPU de `memset` sobre heap, incluso con longitud
 cero. Los efectos CPU dentro de control cuántico o mezclados con una carga cuántica siguen
 rechazados. Las nuevas 1682 aserciones del motor y las regresiones afectadas pasan en ambas
-construcciones. **Quedan dos contraejemplos reproducidos en este compilador:** salida de bloque de
-un préstamo no observado y sector inactivo de copia coherente no idéntica al heap, ambos con pureza
-1 → 0.5. La corrección sigue siendo parcial.
+construcciones. En esa revisión quedaban el préstamo bajo control cero y el sector inactivo de copia
+coherente no idéntica al heap, con pureza 1 → 0.5. El seguimiento posterior corrige el primero y
+reproduce una variante con control en superposición; la corrección sigue siendo parcial.
 
 La demo `buffer_lengths.c` publicada no contiene esta combinación: sus escrituras de memoria no
 están bajo control cuántico y sus destinos iniciales son conocidos. Las campañas anteriores
@@ -93,3 +93,27 @@ conserva los programas, logs, matrices y herramientas usadas. La referencia fís
 es [Wootters y Zurek, Nature 299, 802–803 (1982)](https://doi.org/10.1038/299802a0).
 
 La ciberseguridad permanece clásica y sin cambios.
+
+## Seguimiento del 25 de octubre: limpieza ante inactividad demostrada
+
+El préstamo temporal del contraejemplo original bajo `control=0` conserva ahora su definición
+invertible. `qmaterialize` recibe las guardas de la escritura y solo elimina la definición si no
+puede demostrar inactividad global. Un intercambio inactivo tampoco consume préstamos ni cambia
+épocas. La limpieza al salir del bloque invierte realmente el temporal: pureza 1 → 1 y fase relativa
+esperada, con cero mediciones/resets.
+
+La [cápsula de préstamos inactivos](audit-evidence/inactive-borrows-v1/README.es.md) congela 227
+entradas y registra 252 puntos de estado completo y 126 inversas, O0/O2 normales y O1 ASan/UBSan,
+con ambas políticas. Incluye asignaciones bool/8/16/32 bits y copias de un byte hacia palabras de
+8/16/32 bits; guardas cero, uno negado y cero preparado desde CPU. Una primera copia de palabra
+completa de 32 bits excedió 128 cables; la limpieza de préstamos de 64 bits tampoco se califica. Las
+139 aserciones nuevas del motor comprueban certificados, épocas obsoletas y rechazos antes de mutar.
+Las regresiones de identidades y sobrescrituras se repiten con esta revisión y conservan sus
+recuentos separados.
+
+**Persisten dos contraejemplos bajo control en superposición.** En la variante del préstamo,
+proyectar y normalizar sobre el `control=0` original da pureza 1 → 0.5 después de salir del bloque.
+La copia coherente no idéntica al heap conserva su fallo de pureza conjunta sectorial 1 → 0.5. Los
+programas y estados crudos están archivados. La inversa general debe reconstruir el valor anterior
+desde su ubicación condicionada; demostrar que todo el circuito es unitario no resuelve esa
+obligación. La ciberseguridad permanece clásica.

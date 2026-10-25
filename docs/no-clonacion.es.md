@@ -97,7 +97,9 @@ La [revisión del 24 de octubre](re-audit-2026-10-24-coherence.md) encontró pé
 por historia redundante y por limpieza incompleta, aun con cero mediciones y resets. Se corrigen los
 casos directos observados de buffers fijos y las identidades comprobadas del heap, con
 [evidencia de fases y estados conjuntos](audit-evidence/heap-identities-v1/README.es.md). Siguen
-abiertos los préstamos que salen de su bloque y las copias coherentes no idénticas al heap. Los
+abiertos los préstamos tras escrituras que pueden activarse y las copias coherentes no idénticas al
+heap. La [limpieza ante inactividad demostrada](audit-evidence/inactive-borrows-v1/README.es.md)
+conserva ahora la receta y deshace el temporal al salir del bloque, con su fase esperada. Los
 contratos anteriores y sus campañas finitas deben leerse con estos contraejemplos. La unitariedad
 del flujo completo conserva información global, pero también hay que comprobar el estado lógico y
 las correlaciones que cada operación promete conservar.

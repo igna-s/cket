@@ -1,5 +1,5 @@
 {
-  "active": "heap-identities-v1",
+  "active": "inactive-borrows-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -23,12 +23,14 @@
     "fixed-memory-loops-v1",
     "runtime-memory-v1",
     "coherent-store-progress-v1",
-    "heap-identities-v1"
+    "heap-identities-v1",
+    "inactive-borrows-v1"
   ],
-  "meaning": "Finite symbolic heap-identity correction with full complex states, unchanged public owners/wires, private-zero checks, CPU loops and pure CPU fill capture. Eight integer types, normal O0/O2 and ASan/UBSan O1, both synthesis policies. Returned captures checked through 32 bits; two 64-bit capture profiles explicitly excluded by the 128-wire limit. Scoped unobserved borrows and coherent nonidentity heap writes remain incorrect. No whole-compiler, C11 or paper qualification.",
+  "meaning": "Finite scoped-borrow cleanup when saved typed certificates prove the write globally inactive. Complete complex states, phase kickback, unchanged public owners/wires and private-zero checks; normal O0/O2 and ASan/UBSan O1, both synthesis policies. Bool/8/16/32-bit assignments and one-byte copies into 8/16/32-bit owners. Full-word 32-bit copy fixture exceeded 128 wires; 64-bit scope cleanup is not qualified. Possible-active coherent borrow cleanup and nonidentity coherent heap copies still have inactive-sector dephasing. No whole-compiler, C11 or paper qualification.",
   "known_findings": [
     "coherent-overwrite-coherence-v1",
     "coherent-store-progress-v1",
-    "heap-identities-v1"
+    "heap-identities-v1",
+    "inactive-borrows-v1"
   ]
 }

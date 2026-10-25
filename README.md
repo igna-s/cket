@@ -29,11 +29,13 @@ what remains partial or pending, and what the available tests demonstrate.
 
 **Known quantum correctness failures remain.** The
 [current coherence review](docs/re-audit-2026-10-24-coherence.md) reproduces dephasing when an
-unobserved borrow leaves its scope and in an inactive sector of a nonidentity coherent heap copy.
-Direct fixed-buffer writes and the checked heap identities have finite corrections. The latest
-[heap identity evidence](docs/audit-evidence/heap-identities-v1/README.es.md) records complete
-complex states, phases, stable owners and explicit resource exclusions. Earlier passing tests and
-historical papers do not certify these open cases.
+unobserved borrow leaves its scope after a possibly active coherent write, and in an inactive sector
+of a nonidentity coherent heap copy. Direct fixed-buffer writes and checked heap identities have
+finite corrections. The latest
+[inactive-borrow evidence](docs/audit-evidence/inactive-borrows-v1/README.es.md) also corrects scope
+cleanup when typed certificates prove the write globally inactive. It records complete states, phase
+kickback, stable owners/wires and explicit resource limits. Earlier passing tests and historical
+papers do not certify these open cases.
 
 Start with [usable delivery 01](docs/entregas-incrementales.es.md): after building, run
 `bash scripts/run-block.sh 01` to compile eight small examples and produce native executables,

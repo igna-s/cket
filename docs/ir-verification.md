@@ -209,16 +209,19 @@ coherence inside each function fiber; source inputs are not additionally measure
 ## Controlled overwrite primitives and current limits
 
 `qswap` has `op`, `id`, `other` and optional `controls`. Its two distinct owners must be available,
-prepared, without pending inverse definitions, and have the same C representation. Boolean controls
-cannot alias either owner. Three controlled X gates per bit exchange the payloads; an inactive
-control preserves both states. The operation does not allocate, measure or reset.
+prepared and have the same C representation. Pending inverse definitions and input borrowers are
+forbidden on a possible active path; a proved globally inactive swap preserves them unchanged.
+Boolean controls cannot alias either owner. Three controlled X gates per bit exchange the payloads;
+an inactive control preserves both states. The operation does not allocate, measure or reset.
 
-`qmaterialize` has `op`, `id` and the required Boolean `optional`. An optional unavailable owner is
-an identity; an available owner must be prepared and unfinished. It removes the inverse certificate
-without changing the quantum state and invalidates pristine-uniform certificates through its
-ancestors. The value then remains a root, subject to ordinary retained-history limits. It is
-rejected in borrowed unitary modules. This is a conservative preservation mechanism; retaining a
-correlated temporary can still dephase a logical owner at scope exit. See the
+`qmaterialize` has `op`, `id`, required Boolean `optional` and optional `controls`. An optional
+unavailable owner is an identity; an available owner must be prepared and unfinished. Guard schemas
+and available Boolean controls are checked first. If saved typed certificates prove global
+inactivation, the definition is preserved. Otherwise it removes the inverse certificate without
+changing the quantum state and invalidates pristine-uniform certificates through its ancestors. The
+value then remains a root, subject to ordinary retained-history limits. It is rejected in borrowed
+unitary modules. This is a conservative preservation mechanism; retaining a correlated temporary can
+still dephase a logical owner at scope exit. See the
 [open quantum findings](re-audit-2026-10-24-coherence.md).
 
 Heap stores also attempt a bounded symbolic identity proof before allocating history. Validated

@@ -117,3 +117,10 @@ Completed campaign counts and hashes are recorded in the
 further version/ownership support. Declarations inside controlled flow, products, dynamic indexed
 writes, `switch`, jumps and early returns remain separate P/R obligations. This finite stage does
 not close M3 or the full C11 objective.
+
+When typed saved certificates prove a write globally inactive, materialization keeps existing
+inverse definitions and the inactive swap leaves owners/epochs unchanged. This permits checked
+scoped temporaries to uncompute with their expected phase kickback. The
+[finite inactive-borrow evidence](audit-evidence/inactive-borrows-v1/README.es.md) covers selected
+bool/8/16/32-bit assignments and one-byte writes. A control in superposition can still require a
+conditional old-owner inverse; that broader scope cleanup remains incorrect in the archived case.

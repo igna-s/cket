@@ -25,6 +25,10 @@ build/validate_bindings 2>&1 | tee build/verify-bindings.log
 build/validate_history 2>&1 | tee build/verify-history.log
 build/validate_heap 2>&1 | tee build/verify-heap.log
 build/validate_heap_identities 2>&1 | tee build/verify-heap-identities.log
+build/validate_inactive_borrows 2>&1 | tee build/verify-inactive-borrows.log
+inactive_borrow_proof="$(mktemp -d "$PWD/build/inactive-borrow-proof.XXXXXX")"
+python3 scripts/validate-inactive-borrows.py --output "$inactive_borrow_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-inactive-borrow-states.log
 heap_identity_proof="$(mktemp -d "$PWD/build/heap-identity-proof.XXXXXX")"
 python3 scripts/validate-heap-identities.py --output "$heap_identity_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-heap-identity-states.log

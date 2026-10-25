@@ -694,6 +694,12 @@ static const cj_doc *parsed_operation(qc_context *c, const char *text, cj_doc *l
 #include "arithmetic.inc"
 #include "phase.inc"
 
+// Certificate-only proof shared by schema checks and metadata operations.
+// It consults saved typed values/epochs, never simulator amplitudes.
+int qc_controls_inactive(qc_context *c, const cj_doc *d, int inst, int *inactive) {
+    return phase_inactive(c, d, inst, inactive);
+}
+
 static int synthesize_compute(
     qc_context *c, const cj_doc *d, int expr, qc_register *target, qc_mask outer, qc_mask state) {
     domain dom;
@@ -1509,6 +1515,15 @@ int qc_apply_token(qc_context *c,
     if (cj_equal(d, op, "qmaterialize")) {
         uint64_t id;
         cj_u64(d, cj_get(d, inst, "id"), &id);
+        qc_mask mask, pattern;
+        int impossible;
+        if (!controls(c, d, inst, &mask, &pattern, &impossible))
+            return 0;
+        int inactive;
+        if (!qc_controls_inactive(c, d, inst, &inactive))
+            return 0;
+        if (inactive)
+            return 1;
         qc_register *r = reg(c, (uint32_t)id);
         if (r && r->alive) {
             qc_mask seen = 0;
@@ -1704,18 +1719,19 @@ int qc_apply_token(qc_context *c,
     }
     if (!r || !r->alive)
         return qc_fail(c, "use of unknown or released quantum storage");
-    if (!cj_equal(d, op, "qmove") && !cj_equal(d, op, "qretain") && !unborrowed(c, r->id))
+    if (!cj_equal(d, op, "qmove") && !cj_equal(d, op, "qretain") && !cj_equal(d, op, "qswap") &&
+        !unborrowed(c, r->id))
         return 0;
     if (cj_equal(d, op, "qswap")) {
         uint64_t other;
         cj_u64(d, cj_get(d, inst, "other"), &other);
-        if (!unborrowed(c, (uint32_t)other))
-            return 0;
         int inactive;
         if (!phase_inactive(c, d, inst, &inactive))
             return 0;
         if (inactive || impossible)
             return 1;
+        if (!unborrowed(c, r->id) || !unborrowed(c, (uint32_t)other))
+            return 0;
         qc_register *b = reg(c, (uint32_t)other);
         if (!c->structural)
             for (unsigned bit = 0; bit < r->width; ++bit) {

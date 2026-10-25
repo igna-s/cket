@@ -186,3 +186,7 @@ native fill identity uses a single byte with zero high bytes; engine fixtures se
 nonzero high bits and both byte orders. This does not prove every algebraic identity or arbitrary
 heap operation. The [quantum review](re-audit-2026-10-24-coherence.md) still reproduces dephasing in
 an inactive sector of a nonidentity coherent copy and in scoped unobserved-borrow cleanup.
+
+The later [inactive-borrow correction](audit-evidence/inactive-borrows-v1/README.es.md) preserves
+scope cleanup for demonstrably inactive fixed writes. It does not close the nonidentity coherent
+heap-copy finding or general cleanup after possible-active coherent overwrites.
