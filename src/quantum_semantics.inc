@@ -35,6 +35,7 @@ struct CpuBranch {
 };
 
 std::vector<CpuBranch *> cpu_branches;
+tree cpu_patch_locals = NULL_TREE;
 size_t embedded_module_bytes = 0;
 tree apply_fn = NULL_TREE, apply_arg_fn = NULL_TREE;
 tree apply_values_fn = NULL_TREE;
@@ -1405,7 +1406,10 @@ void materialize_assignment_borrows(unsigned target, location_t loc, tree *list)
 // SAVE_EXPR caches are compiler-owned normalized JSON. After a controlled
 // wire exchange, their old value is in history on the active path and still
 // in public storage on the inactive path. Preserve that logical old view.
-void rebind_guarded_saves(const Variable &var, unsigned history) {
+void rebind_guarded_saves(const Variable &var,
+                          unsigned history,
+                          const std::string &bit_mask = "",
+                          const std::set<unsigned> &mask_parameters = {}) {
     std::string leaf = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
                        ",\"bits\":" + std::to_string(var.width) +
                        ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
@@ -1414,6 +1418,21 @@ void rebind_guarded_saves(const Variable &var, unsigned history) {
                            ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
     std::set<unsigned> sources{var.id, history};
     previous = select_controls(previous, leaf, var.width, var.is_signed, sources);
+    if (!bit_mask.empty()) {
+        std::string type = ",\"bits\":" + std::to_string(var.width) + ",\"signed\":false";
+        auto cast = [&](const std::string &value) {
+            return "{\"op\":\"cast\"" + type + ",\"args\":[" + value + "]}";
+        };
+        std::string mask = cast(bit_mask);
+        std::string kept = "{\"op\":\"band\"" + type + ",\"args\":[" + cast(leaf) +
+                           ",{\"op\":\"bnot\"" + type + ",\"args\":[" + mask + "]}]}";
+        std::string changed =
+            "{\"op\":\"band\"" + type + ",\"args\":[" + cast(previous) + ',' + mask + "]}";
+        previous = "{\"op\":\"cast\",\"bits\":" + std::to_string(var.width) +
+                   ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                   ",\"args\":[{\"op\":\"bor\"" + type + ",\"args\":[" + kept + ',' + changed +
+                   "]}]}";
+    }
     // The engine can inline stable private decisions into its inverse. Keep
     // their original input versions visible to later compiler lifetime checks.
     std::vector<unsigned> pending(sources.begin(), sources.end());
@@ -1433,19 +1452,23 @@ void rebind_guarded_saves(const Variable &var, unsigned history) {
     std::string marker = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) + ',';
     auto transport = [&](std::string &text) {
         size_t begin = 0;
+        bool changed = false;
         while ((begin = text.find(marker, begin)) != std::string::npos) {
             size_t end = text.find('}', begin);
             if (end == std::string::npos)
                 gcc_unreachable();
             text.replace(begin, end - begin + 1, previous);
             begin += previous.size();
+            changed = true;
         }
+        return changed;
     };
     for (auto &entry : expression_saves) {
         auto &saved = entry.second;
         if (!saved.sources.count(var.id))
             continue;
-        transport(saved.text);
+        if (transport(saved.text))
+            saved.parameters.insert(mask_parameters.begin(), mask_parameters.end());
         saved.sources.insert(sources.begin(), sources.end());
     }
     for (auto &entry : variables) {
@@ -1466,6 +1489,88 @@ void rebind_guarded_saves(const Variable &var, unsigned history) {
     for (auto *frame : expression_frames)
         if (frame->reads.count(var.id))
             frame->reads.insert(sources.begin(), sources.end());
+}
+
+void patched_assignment(Variable &var,
+                        const std::string &expr,
+                        const std::set<unsigned> &deps,
+                        tree bit_mask,
+                        location_t loc,
+                        tree *list) {
+    std::set<unsigned> mask_parameters;
+    std::string mask;
+    tree literal = strip(fold(bit_mask));
+    if (TREE_CODE(literal) == INTEGER_CST && tree_fits_uhwi_p(literal))
+        mask = "{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":" +
+               std::to_string(tree_to_uhwi(literal)) + '}';
+    else {
+        // This CPU value belongs to this write, even if the source length
+        // changes before an old-value consumer or inverse is emitted.
+        tree captured =
+            build_decl(loc,
+                       VAR_DECL,
+                       get_identifier(("__cket_patch_mask_" + std::to_string(next_id)).c_str()),
+                       long_long_unsigned_type_node);
+        DECL_CONTEXT(captured) = active_function;
+        DECL_ARTIFICIAL(captured) = 1;
+        // Old-value views can outlive this CPU arm or value-program block.
+        // Bind the capture in the function's generated outer lexical scope.
+        DECL_CHAIN(captured) = cpu_patch_locals;
+        cpu_patch_locals = captured;
+        tree initializer = fold_convert(long_long_unsigned_type_node, bit_mask);
+        DECL_INITIAL(captured) =
+            cpu_branches.empty() ? initializer : build_zero_cst(long_long_unsigned_type_node);
+        tree declaration = build1(DECL_EXPR, void_type_node, captured);
+        if (cpu_branches.empty())
+            append(list, declaration);
+        else {
+            // An unexecuted CPU arm has a zero write mask. Old-value views
+            // must not read an uninitialized branch-local capture.
+            cpu_branches.front()->prefix.push_back(declaration);
+            append(
+                list,
+                build2_loc(loc, MODIFY_EXPR, long_long_unsigned_type_node, captured, initializer));
+        }
+        mask = cpu_parameter(captured);
+        mask_parameters.insert(cpu_parameter_ids.at(captured));
+    }
+    std::set<unsigned> parameters;
+    parameters.swap(active_cpu_parameters);
+    unsigned history = next_id++;
+    append(list,
+           emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(history) +
+                                ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
+                                (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                            loc,
+                            history,
+                            true));
+    active_cpu_parameters.swap(parameters);
+    append(list,
+           emit_operation("{\"op\":\"qpatch\",\"id\":" + std::to_string(var.id) +
+                              ",\"history\":" + std::to_string(history) + ",\"bit_mask\":" + mask +
+                              ",\"expr\":" + expr + control_json() + '}',
+                          loc));
+    rebind_guarded_saves(var, history, mask, mask_parameters);
+    for (unsigned source : deps)
+        taint_uniform(source);
+    append(list,
+           emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(history) + '}', loc));
+    Variable previous{};
+    previous.id = history;
+    previous.width = var.width;
+    previous.is_signed = var.is_signed;
+    previous.lowered = previous.history = previous.optional_definition = previous.runtime_history =
+        true;
+    previous.decl =
+        build_decl(loc, VAR_DECL, get_identifier("__cket_patch_history"), TREE_TYPE(var.decl));
+    variables.emplace(previous.decl, previous);
+    var.derived = false;
+    var.optional_definition = var.runtime_history = true;
+    var.dependencies.clear();
+    var.creation.clear();
+    var.measured = var.clean = var.basis_known = var.pristine_uniform = false;
+    var.range_max = var.width == 64 ? UINT64_MAX : ((uint64_t{1} << var.width) - 1);
+    ++var.epoch;
 }
 
 void guarded_assignment(Variable &var,
@@ -2336,7 +2441,12 @@ tree lower_node(tree value) {
             coherent_expression_depth = previous_depth;
             // A copy overwrites information. A self-dependent byte mask is
             // not a permutation of the old word; retain its previous owner.
-            versioned_assignment(target, expression, dependencies, at(value), &list);
+            auto mask = operation.bit_masks.find(update);
+            if (mask != operation.bit_masks.end())
+                patched_assignment(
+                    target, expression, dependencies, mask->second, at(value), &list);
+            else
+                versioned_assignment(target, expression, dependencies, at(value), &list);
             cleanup(&list);
         }
         tree result = build_zero_cst(TREE_TYPE(value));
@@ -2365,6 +2475,7 @@ tree lower_node(tree value) {
             }
         }
         bool runtime_iteration = dynamic_depth > cpu_branches.size();
+        unsigned fill_capture = UINT_MAX;
         cleanup(&list);
         if (operation.elements.empty() && !has_quantum(operation.fill) && controls.empty()) {
             // Even a zero-length C call evaluates its value argument once.
@@ -2388,7 +2499,7 @@ tree lower_node(tree value) {
             bool aliases_fill = false;
             for (const auto &entry : operation.elements)
                 aliases_fill |= fill_dependencies.count(variables.at(entry.first).id) != 0;
-            if (runtime_iteration && aliases_fill) {
+            if (aliases_fill) {
                 // Runtime assignments reuse public identities. Capture the
                 // once-evaluated fill before the first word replaces an input.
                 Variable capture{};
@@ -2404,7 +2515,8 @@ tree lower_node(tree value) {
                 capture.dependencies = fill_dependencies;
                 capture.creation = byte;
                 variables.emplace(capture.decl, capture);
-                remaining[capture.id] = 0;
+                remaining[capture.id] = 1;
+                fill_capture = capture.id;
                 active_cpu_parameters.clear();
                 append(
                     &list,
@@ -2453,6 +2565,11 @@ tree lower_node(tree value) {
             for (const auto &entry : operation.elements) {
                 auto &target = variables.at(entry.first);
                 consume(target);
+                // A pure read of this word's low byte written back to that
+                // same byte is an identity. The once-evaluated fill capture
+                // still supplies any later array elements in this call.
+                if (entry.second == 255 && strip(operation.fill) == entry.first)
+                    continue;
                 taint_uniform(target.id);
                 for (unsigned source : fill_dependencies)
                     taint_uniform(source);
@@ -2483,7 +2600,7 @@ tree lower_node(tree value) {
                                                     ',' + part + "]}";
                 }
                 std::set<unsigned> dependencies = fill_dependencies;
-                if (entry.second != full) {
+                if (entry.second != full || aliases_fill) {
                     std::string previous;
                     if (reuse_basis)
                         previous = "{\"op\":\"const\"" + type + ",\"value\":" +
@@ -2498,6 +2615,17 @@ tree lower_node(tree value) {
                                        ",\"value\":" + std::to_string(full ^ entry.second) + "}]}";
                     pattern =
                         "{\"op\":\"bor\"" + type + ",\"args\":[" + kept + ',' + pattern + "]}";
+                    if (!reuse_basis) {
+                        active_cpu_parameters = fill_parameters;
+                        patched_assignment(
+                            target,
+                            cast_result(pattern, target),
+                            dependencies,
+                            build_int_cstu(long_long_unsigned_type_node, entry.second),
+                            at(value),
+                            &list);
+                        continue;
+                    }
                 }
                 if (reuse_basis && !observed_quantum_outputs.count(target.decl)) {
                     active_cpu_parameters = fill_parameters;
@@ -2529,6 +2657,8 @@ tree lower_node(tree value) {
                 versioned_assignment(
                     target, cast_result(pattern, target), dependencies, at(value), &list);
             }
+            if (fill_capture != UINT_MAX)
+                remaining[fill_capture] = 0;
         }
         // Local destination borrows have already been resolved by the frontend.
         // Unsupported general CPU consumers still reject this marker.

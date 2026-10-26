@@ -42,6 +42,7 @@ tree expand_byte_copy(tree call, bool move) {
                 string_byte_mask(source, position);
         }
     std::vector<std::pair<tree, tree>> words;
+    std::map<tree, tree> bit_masks;
     std::map<tree, std::set<tree>> inputs;
     for (uint64_t i = 0; i < count; ++i) {
         uint64_t position = destination.offset + i;
@@ -53,6 +54,11 @@ tree expand_byte_copy(tree call, bool move) {
             (overlap->second & string_byte_mask(destination, position)))
             return reject("|c>: overlapping quantum memcpy has undefined C behavior; use memmove");
         string_word_byte(destination, i, object_byte(source, i, at(call)), words, at(call));
+        uint64_t mask = string_byte_mask(destination, position);
+        auto prior = bit_masks.find(target);
+        if (prior != bit_masks.end())
+            mask |= tree_to_uhwi(prior->second);
+        bit_masks[target] = build_int_cstu(long_long_unsigned_type_node, mask);
         if (source.quantum)
             inputs[target].insert(source.elements[(size_t)((source.offset + i) / source.stride)]);
     }
@@ -81,5 +87,5 @@ tree expand_byte_copy(tree call, bool move) {
     }
     if (ordered.size() != words.size())
         return reject("|c>: cyclic quantum byte-copy dependencies need a retained snapshot");
-    return make_quantum_value_program(call, ordered, boolean_true_node);
+    return make_quantum_value_program(call, ordered, boolean_true_node, {}, NULL_TREE, bit_masks);
 }

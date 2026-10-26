@@ -1,8 +1,14 @@
-**Seguimiento actual, 1.0.0-rc.2:** la [nota de memoria coherente](heap_coherence_note.es.md) y la
-[evidencia de 233 entradas](../audit-evidence/heap-coherence-v1/README.es.md) corrigen los perfiles
-publicados de copia coherente y bytes intactos del heap. Persiste un contraejemplo de escritura
-parcial sobre una palabra fija. Los PDF y resultados históricos que siguen conservan sus fuentes; no
-se los recalifica automáticamente para este compilador.
+**Seguimiento actual, RC3:** la [nota de bytes intactos de buffers fijos](fixed_patches_note.es.md)
+y la [cápsula de 236 entradas](../audit-evidence/fixed-patches-v1/README.es.md) cierran el
+contraejemplo publicado en RC2. Califican perfiles finitos de densidad, fases e inversas; la
+revisión general de papers sigue pendiente. Los PDF y resultados históricos conservan sus fuentes
+originales.
+
+**Seguimiento histórico, 1.0.0-rc.2:** la [nota de memoria coherente](heap_coherence_note.es.md) y
+la [evidencia de 233 entradas](../audit-evidence/heap-coherence-v1/README.es.md) corrigen los
+perfiles publicados de copia coherente y bytes intactos del heap. Persiste un contraejemplo de
+escritura parcial sobre una palabra fija. Los PDF y resultados históricos que siguen conservan sus
+fuentes; no se los recalifica automáticamente para este compilador.
 
 > Revisión del 24 de octubre de 2026: se corrige el umbral de enumeración en ambos idiomas y se
 > distinguen los límites del prototipo histórico de la prioridad actual de C cotidiano. La auditoría

@@ -28,6 +28,19 @@ static int heap_identity_truth(heap_identity_proof *p, const cj_doc *d, int e, i
         *value = width == 1 ? raw != 0 : (raw & bits_mask((unsigned)width)) != 0;
         return 1;
     }
+    if (!cj_equal(d, op, "reg")) {
+        // A runtime CPU length becomes typed constants at binding. Resolve
+        // its comparisons without treating any quantum input as a constant.
+        qc_context constant = *p->c;
+        constant.error[0] = 0;
+        domain inputs;
+        if (collect_domain(&constant, d, e, &inputs) && !inputs.count &&
+            evaluate(&constant, d, e, &inputs, NULL, &raw)) {
+            *value = raw != 0;
+            return 1;
+        }
+        return 0;
+    }
     if (width != 1 || !cj_equal(d, op, "reg") || !cj_u64(d, cj_get(d, e, "id"), &raw))
         return 0;
     qc_register *r = reg(p->c, (uint32_t)raw);

@@ -129,6 +129,19 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         }
         return expr_bit(c, d, nodes[0], bit, out, depth + 1);
     }
+    if (n == 2 && (cj_equal(d, op, "eq") || cj_equal(d, op, "ne") || cj_equal(d, op, "lt") ||
+                   cj_equal(d, op, "le") || cj_equal(d, op, "gt") || cj_equal(d, op, "ge"))) {
+        // CPU-bound byte extents contain closed comparisons. Proving their
+        // constant result keeps a masked word update in Boolean synthesis;
+        // no quantum source is evaluated or substituted here.
+        qc_context constant = *c;
+        constant.error[0] = 0;
+        domain inputs;
+        uint64_t value;
+        if (collect_domain(&constant, d, e, &inputs) && !inputs.count &&
+            evaluate(&constant, d, e, &inputs, NULL, &value))
+            return !(value & (UINT64_C(1) << bit)) || poly_toggle(c, out, 0);
+    }
     if (n == 2 && (cj_equal(d, op, "eq") || cj_equal(d, op, "ne"))) {
         uint64_t left_width, right_width;
         bit_poly left, right;

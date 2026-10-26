@@ -1,5 +1,11 @@
 # Checked quantum `memset`
 
+**Current finite follow-up:** [RC3 masked writes](audit-evidence/fixed-patches-v1/README.es.md)
+preserve untouched fixed-word bytes and clean known producers. Self fills retain their public owner
+without redundant history. Three state profiles now use complete sparse states and full gate
+inverses; the remaining dense and labeled-path profiles keep separate scopes. General
+library/lifetime qualification remains open.
+
 This is an integrated partial adapter for checked integer storage. It does not establish complete
 C11 memory or library support. Its expression composition contract is described in
 [discarded memory-call sequences](c11-memory-sequences.md).
@@ -13,9 +19,10 @@ retains its classical libc call and return pointer.
 
 The implemented destination forms are checked scalar integer objects, fixed integer arrays and
 compatible checked borrows. Their elements have 8, 16, 32 or 64 bits, with no padding. Constant byte
-offsets can select part of an element or cross element boundaries. The byte count must be constant,
-within the resolved object and at most 64. These checks do not promise that the resulting circuit
-fits the backend's physical wire budget or the simulator's smaller statevector budget.
+offsets can select part of an element or cross element boundaries. Static byte counts and
+[pure runtime CPU lengths](c11-runtime-memory.md) must stay within the resolved object and at most
+64 bytes. These checks do not promise that the resulting circuit fits the backend's physical wire
+budget or the simulator's smaller statevector budget.
 
 Unwritten bytes keep their original values. The implementation uses the target byte order when
 mapping object bytes to integer bits. Current execution evidence uses GCC 11.4 on little-endian

@@ -391,13 +391,150 @@ heap_decision_reads(qc_context *c, uint32_t id, uint32_t owner, unsigned depth, 
     return reads;
 }
 
-static int
-heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, uint32_t owner) {
+static char *
+heap_store_value(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, uint64_t selected) {
+    char *expression = heap_guard_expression(
+        c, d, inst, heap->width, heap->sign, cj_copy(d, cj_get(d, inst, "expr")));
+    if (expression && selected != bits_mask(heap->width)) {
+        size_t size = strlen(expression) + 256;
+        char *masked = malloc(size);
+        if (masked)
+            snprintf(
+                masked,
+                size,
+                "{\"op\":\"cast\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"band\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":%u,\"signed\":false,\"args\":[%s]},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%" PRIu64
+                "}]}]}",
+                heap->width,
+                heap->sign ? "true" : "false",
+                heap->width,
+                heap->width,
+                expression,
+                heap->width,
+                selected);
+        else
+            qc_fail(c, "cannot allocate masked heap value");
+        free(expression);
+        expression = masked;
+    }
+    return expression;
+}
+
+static char *patch_old_definition(qc_context *c, uint32_t owner) {
+    qc_register *r = reg(c, owner);
+    if (r->basis_known) {
+        char text[128];
+        snprintf(text,
+                 sizeof text,
+                 "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":%" PRIu64 "}",
+                 r->width,
+                 r->signed_type ? "true" : "false",
+                 r->basis_value);
+        char *value = strdup(text);
+        if (!value)
+            qc_fail(c, "cannot retain known register patch producer");
+        return value;
+    }
+    if (!r->definition)
+        return NULL;
+    for (unsigned i = 0; i < r->ndeps; ++i) {
+        qc_register *input = reg(c, r->deps[i]);
+        if (!input || !input->alive || input->epoch != r->epochs[i]) {
+            qc_fail(c, "register patch producer epochs changed");
+            return NULL;
+        }
+    }
+    char *value = strdup(r->definition);
+    for (unsigned wire = 0; value && wire < QC_MAX_PHYSICAL; ++wire) {
+        if (!(r->definition_mask & QC_WIRE(wire)))
+            continue;
+        qc_register *guard = NULL;
+        for (size_t i = 0; i < c->nregisters; ++i)
+            if (c->registers[i].alive && c->registers[i].width == 1 &&
+                c->registers[i].wires[0] == wire) {
+                guard = &c->registers[i];
+                break;
+            }
+        if (!guard) {
+            free(value);
+            qc_fail(c, "register patch producer control is unavailable");
+            return NULL;
+        }
+        size_t size = strlen(value) + 320;
+        char *next = malloc(size);
+        if (next) {
+            char zero[96];
+            snprintf(zero,
+                     sizeof zero,
+                     "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
+                     r->width,
+                     r->signed_type ? "true" : "false");
+            int closed = !!(r->definition_pattern & QC_WIRE(wire));
+            snprintf(
+                next,
+                size,
+                "{\"op\":\"select\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"reg\",\"id\":%u,\"bits\":1,\"signed\":false},%s,%s]}",
+                r->width,
+                r->signed_type ? "true" : "false",
+                guard->id,
+                closed ? value : zero,
+                closed ? zero : value);
+        }
+        free(value);
+        value = next;
+    }
+    if (!value)
+        qc_fail(c, "cannot retain register patch producer");
+    return value;
+}
+
+static int heap_exchange_store(qc_context *c,
+                               const cj_doc *d,
+                               int inst,
+                               qc_heap *heap,
+                               uint32_t owner,
+                               uint64_t provided_history,
+                               uint64_t selected) {
+    int provided = provided_history != UINT64_MAX, inactive = 0;
+    if (provided && !qc_controls_inactive(c, d, inst, &inactive))
+        return 0;
+    // A proved identity still supplies the compiler's old-value view. Keep
+    // that temporary derived so disposal can really reverse the copy.
+    if (provided && (!selected || inactive || heap_store_identity(c, d, inst, owner))) {
+        char *value = heap_store_value(c, d, inst, heap, selected);
+        int ok = value && heap_compute(c, (uint32_t)provided_history, value);
+        free(value);
+        return ok;
+    }
+    char *old_definition = provided ? patch_old_definition(c, owner) : NULL;
+    if (*c->error)
+        return 0;
+    uint32_t pin = 0;
+    if (old_definition && reg(c, owner)->ndeps) {
+        // Preserve the producer's inputs while its public output is changed.
+        // The pin is identically zero; its extra dependency certificate emits
+        // no duplicate producer computation or observation of the payload.
+        qc_register prior = *reg(c, owner);
+        if (!heap_new_register(c, 1, 0, 1, &pin)) {
+            free(old_definition);
+            return 0;
+        }
+        qc_register *hold = reg(c, pin);
+        hold->definition = strdup("{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}");
+        if (!hold->definition) {
+            free(old_definition);
+            return qc_fail(c, "cannot pin register patch producer inputs");
+        }
+        hold->ndeps = prior.ndeps;
+        memcpy(hold->deps, prior.deps, prior.ndeps * sizeof *prior.deps);
+        memcpy(hold->epochs, prior.epochs, prior.ndeps * sizeof *prior.epochs);
+    }
     int guards = cj_get(d, inst, "controls");
     size_t capacity = guards >= 0 ? (size_t)d->tokens[guards].children * 64 + 3 : 3, used = 1;
     char *guard_text = malloc(capacity);
-    if (!guard_text)
+    if (!guard_text) {
+        free(old_definition);
         return qc_fail(c, "cannot allocate heap swap controls");
+    }
     guard_text[0] = '[';
     uint32_t aliased_guard = 0;
     int ok = 1;
@@ -443,35 +580,9 @@ heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, u
     }
     guard_text[used++] = ']';
     guard_text[used] = 0;
-    char *expression =
-        ok ? heap_guard_expression(
-                 c, d, inst, heap->width, heap->sign, cj_copy(d, cj_get(d, inst, "expr")))
-           : NULL;
-    uint64_t selected = bits_mask(heap->width);
-    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
-    if (expression && selected != bits_mask(heap->width)) {
-        size_t size = strlen(expression) + 256;
-        char *masked = malloc(size);
-        if (masked)
-            snprintf(
-                masked,
-                size,
-                "{\"op\":\"cast\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"band\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":%u,\"signed\":false,\"args\":[%s]},{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"value\":%" PRIu64
-                "}]}]}",
-                heap->width,
-                heap->sign ? "true" : "false",
-                heap->width,
-                heap->width,
-                expression,
-                heap->width,
-                selected);
-        else
-            qc_fail(c, "cannot allocate masked heap value");
-        free(expression);
-        expression = masked;
-    }
-    uint32_t history = 0;
-    ok = expression && heap_new_register(c, heap->width, heap->sign, 0, &history) &&
+    char *expression = ok ? heap_store_value(c, d, inst, heap, selected) : NULL;
+    uint32_t history = provided ? (uint32_t)provided_history : 0;
+    ok = expression && (provided || heap_new_register(c, heap->width, heap->sign, 0, &history)) &&
          heap_compute(c, history, expression);
     free(expression);
     if (ok) {
@@ -480,6 +591,12 @@ heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, u
         for (unsigned i = 0; i < r->ndeps; ++i)
             taint_uniform(c, r->deps[i], &seen);
         clear_definition(r);
+        r = reg(c, owner);
+        if (r->definition) {
+            seen = 0;
+            taint_uniform(c, owner, &seen);
+            clear_definition(r);
+        }
         size_t size = used + 160;
         char *swap = malloc(size);
         if (!swap)
@@ -498,15 +615,78 @@ heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, u
             free(swap);
         }
     }
+    if (ok && old_definition) {
+        size_t size = strlen(old_definition) + used + 64;
+        char *text = malloc(size);
+        cj_doc producer = {0};
+        if (text)
+            snprintf(text, size, "{\"expr\":%s,\"controls\":%s}", old_definition, guard_text);
+        char *recipe = text && cj_parse(&producer, text)
+                           ? heap_store_value(c, &producer, 0, heap, selected)
+                           : NULL;
+        cj_free(&producer);
+        free(text);
+        cj_doc expression = {0};
+        domain inputs;
+        ok = recipe && cj_parse(&expression, recipe) && collect_domain(c, &expression, 0, &inputs);
+        if (ok) {
+            qc_register *r = reg(c, history);
+            r->definition = recipe;
+            recipe = NULL;
+            for (unsigned i = 0; i < inputs.count && ok; ++i)
+                ok = remember_dependency(c, r, inputs.sources[i].id);
+        }
+        cj_free(&expression);
+        free(recipe);
+        if (!ok && !*c->error)
+            qc_fail(c, "cannot certify register patch history recipe");
+    }
+    free(old_definition);
     free(guard_text);
     if (!ok)
         return 0;
     // The heap retains its public owner. Only active amplitudes move the old
     // destination into history; saved consumers use transported inverse views.
-    heap_retire(c, history);
+    if (!provided)
+        heap_retire(c, history);
     if (aliased_guard)
         heap_retire(c, aliased_guard);
+    if (pin)
+        heap_retire(c, pin);
     return collect_disposed(c);
+}
+
+static int
+heap_controlled_store(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, uint32_t owner) {
+    uint64_t selected = bits_mask(heap->width);
+    cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
+    return heap_exchange_store(c, d, inst, heap, owner, UINT64_MAX, selected);
+}
+
+static int register_patch(qc_context *c, const cj_doc *d, int inst) {
+    uint64_t owner, history, selected;
+    cj_u64(d, cj_get(d, inst, "id"), &owner);
+    cj_u64(d, cj_get(d, inst, "history"), &history);
+    cj_u64(d, cj_get(d, cj_get(d, inst, "bit_mask"), "value"), &selected);
+    qc_register *r = reg(c, (uint32_t)owner);
+    qc_heap representation = {.width = r->width, .sign = r->signed_type};
+    if (c->structural) {
+        // CPU templates check types and availability, not a placeholder mask
+        // as if it were the real runtime write set.
+        char *value = heap_store_value(c, d, inst, &representation, selected);
+        int ok = value && heap_compute(c, (uint32_t)history, value);
+        free(value);
+        if (!ok)
+            return 0;
+        r = reg(c, (uint32_t)owner);
+        clear_definition(r);
+        unknown_support(r);
+        r->clean = 0;
+        ++r->epoch;
+        return 1;
+    }
+    return heap_exchange_store(
+        c, d, inst, &representation, (uint32_t)owner, (uint32_t)history, selected);
 }
 
 static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *result) {

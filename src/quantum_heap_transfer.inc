@@ -78,6 +78,7 @@ tree expand_heap_transfer(tree call, bool move) {
         }
     } else {
         std::vector<std::pair<tree, tree>> words;
+        std::map<tree, tree> bit_masks;
         for (uint64_t i = 0; i < capacity; ++i) {
             uint64_t position = fixed.offset + i;
             tree target = fixed.elements[(size_t)(position / fixed.stride)];
@@ -94,6 +95,17 @@ tree expand_heap_transfer(tree call, bool move) {
                                              heap_byte_read_marker(operation.source, i, at(call))),
                                 object_byte(fixed, i, at(call)));
             string_word_byte(fixed, i, byte, words, at(call));
+            tree mask = fold_build3_loc(at(call),
+                                        COND_EXPR,
+                                        ull,
+                                        selected,
+                                        build_int_cstu(ull, string_byte_mask(fixed, position)),
+                                        build_zero_cst(ull));
+            auto prior = bit_masks.find(target);
+            bit_masks[target] =
+                prior == bit_masks.end()
+                    ? mask
+                    : fold_build2_loc(at(call), BIT_IOR_EXPR, ull, prior->second, mask);
         }
         operation.fixed_output = alloc_stmt_list();
         for (const auto &word : words) {
@@ -102,7 +114,8 @@ tree expand_heap_transfer(tree call, bool move) {
             first = first < fixed.offset ? 0 : first - fixed.offset;
             tree active = fold_build2_loc(
                 at(call), GT_EXPR, boolean_type_node, length, build_int_cstu(ull, first));
-            tree program = make_quantum_value_program(call, {word}, boolean_true_node);
+            tree program = make_quantum_value_program(
+                call, {word}, boolean_true_node, {}, NULL_TREE, bit_masks);
             tree branch = build3_loc(
                 at(call), COND_EXPR, void_type_node, active, program, build_empty_stmt(at(call)));
             quantum_memory_cpu_branches.insert(branch);

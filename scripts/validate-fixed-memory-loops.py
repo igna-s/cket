@@ -78,6 +78,11 @@ def check(profile, points, rounds):
             for bit, wire in enumerate(register['wires']):
                 wire_values[wire] = [(v >> bit) & 1 for v in values]
 
+        for patch in point['patches']:
+            old = [list(wire_values[w]) for w in patch['target_wires']]
+            for bit, wire in enumerate(patch['history_wires']):
+                wire_values[wire] = old[bit] if (patch['bit_mask'] >> bit) & 1 else [0, 0]
+
         if point['tag'] == 'step':
             if profile == 'copy':
                 words[1] = list(words[0])
@@ -207,7 +212,14 @@ def main():
                         [str(binary), str(rounds)],
                         dict(env, OWNERSHIP_TABLES=str(tables)),
                     )
-                    points = [json.loads(line) for line in log.splitlines() if line.startswith('{')]
+                    points, patches = [], []
+                    for line in log.splitlines():
+                        if line.startswith('PATCH '):
+                            patches.append(json.loads(line[6:]))
+                        elif line.startswith('{'):
+                            point = json.loads(line)
+                            point['patches'], patches = patches, []
+                            points.append(point)
                     checkpoints += check(profile, points, rounds)
                     inverses += 1
     summary = dict(

@@ -1,13 +1,13 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 25 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 26 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
-**Candidata actual: 1.0.0-rc.2. La 1.0 estable sigue pendiente.** La
-[guía de versión](releases/v1.0.0-rc.2.es.md) resume lo implementado y lo que falta. La
-[demo del heap](../output/demo/README-heap.es.md) está lista para Windows/WSL. La ciberseguridad
-permanece clásica y sin cambios.
+**Candidata actual: 1.0.0-rc.3. La 1.0 estable sigue pendiente.** La
+[guía de versión](releases/v1.0.0-rc.3.es.md) resume lo implementado y lo que falta. La
+[demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
+ciberseguridad permanece clásica y sin cambios.
 
 **Se corrigen las copias coherentes del heap del contraejemplo anterior:** pureza sectorial 1 → 1 y
 error de densidad cero. Las escrituras parciales del heap intercambian solamente los bits escritos;
@@ -18,13 +18,20 @@ comparaciones de densidad pública, 2670 contrastes de estado conjunto por puert
 852 inversas, con construcciones normales y ASan/UBSan. Son ámbitos distintos, no cobertura
 porcentual de C.
 
-**Nuevo pendiente reproducido: escritura parcial sobre buffers fijos.** Una copia de un byte a una
-palabra fija puede retener también el byte intacto y reducir su pureza conjunta de 1 a 0.5 en la
-rama activa. Esa ruta todavía no usa el intercambio parcial del heap. Evitar esa combinación. Las
-vidas generales, escrituras repetidas, funciones/punteros/alias, integración cotidiana, flotantes y
-recalificación de papers/CI también conservan pendientes. El
-[informe](re-audit-2026-10-24-coherence.md) separa los casos actuales de los históricos; el número
-de versión no certifica el perfil completo ni toda la biblioteca C11.
+**Se corrige el contraejemplo del byte intacto de buffers fijos:** pureza conjunta 1 → 1 en ambas
+ramas y error de densidad cero. La [nueva cápsula](audit-evidence/fixed-patches-v1/README.es.md)
+conserva 236 entradas exactas y registra 1920 comparaciones de densidad pública, 1920 estados
+conjuntos por puertas independientes y 912 inversas, normales O0/O2 y ASan/UBSan O1. Incluye raíces
+y productores reversibles, enteros 16/32 con/sin signo, longitudes CPU, alias, solapamiento y
+préstamos con fases después de cambiar la longitud. Los temporales y sus predicados se limpian
+cuando terminan sus consumidores. La [nota técnica](paper/fixed_patches_note.es.md) explica los
+contratos y sus límites.
+
+**Qué sigue pendiente:** cerrar vidas y alias generales, composición y el perfil cotidiano; revisar
+los adaptadores de cadenas que escriben bytes con selección cuántica; calificar recursos de 64 bits
+y más combinaciones de escrituras repetidas. Flotantes, papers y CI general conservan sus
+pendientes. Los resultados finitos anteriores no son un porcentaje de C ni certifican toda la
+biblioteca. El [informe](re-audit-2026-10-24-coherence.md) conserva cada revisión histórica.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

@@ -1,0 +1,63 @@
+{
+  "version": "1.0.0-rc.3",
+  "runs": [
+    {
+      "length": 0,
+      "seed": 1,
+      "exit_code": 0,
+      "stdout": "length=0 control=1 high=0 value=0 expected=0\n"
+    },
+    {
+      "length": 0,
+      "seed": 7,
+      "exit_code": 0,
+      "stdout": "length=0 control=0 high=1 value=257 expected=257\n"
+    },
+    {
+      "length": 0,
+      "seed": 13,
+      "exit_code": 0,
+      "stdout": "length=0 control=1 high=1 value=256 expected=256\n"
+    },
+    {
+      "length": 0,
+      "seed": 29,
+      "exit_code": 0,
+      "stdout": "length=0 control=1 high=0 value=0 expected=0\n"
+    },
+    {
+      "length": 1,
+      "seed": 1,
+      "exit_code": 0,
+      "stdout": "length=1 control=1 high=0 value=0 expected=0\n"
+    },
+    {
+      "length": 1,
+      "seed": 7,
+      "exit_code": 0,
+      "stdout": "length=1 control=1 high=1 value=257 expected=257\n"
+    },
+    {
+      "length": 1,
+      "seed": 13,
+      "exit_code": 0,
+      "stdout": "length=1 control=0 high=1 value=256 expected=256\n"
+    },
+    {
+      "length": 1,
+      "seed": 29,
+      "exit_code": 0,
+      "stdout": "length=1 control=0 high=0 value=0 expected=0\n"
+    }
+  ],
+  "binary_sha256": "4620ed72ae8c8566adb7a63e82058b27ed4457ffb67ec9f86884cbad76d47fb8",
+  "source_sha256": "cf58a050a5b0003af654327eaf74bec52732a5d20580e2e58f2e467991bd3cfb",
+  "tool_sha256": {
+    "cket": "c06b45a5a4d43772502b966a433f191704b964af59b668ba1050708862068ecb",
+    "cket_plugin.so": "4423b2a95e5d61da643106c3d0d12a0b6cd9232a684e84dff964496bdae19584",
+    "libcket_quantum.a": "cd2b9b4c1f2f7bad9ba02a02069c9d0f04bdd0708eea287f232eaedfe0a79e02",
+    "cket_runtime.o": "69a7648ab80cd69fdf55965f21db830b10ae39e755572153846f556d873e000e"
+  },
+  "evidence": "docs/audit-evidence/fixed-patches-v1",
+  "scope": "Measured functional values; quantum coherence is qualified separately by the finite density/state/inverse matrix."
+}

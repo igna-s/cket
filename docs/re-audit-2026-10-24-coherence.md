@@ -1,8 +1,8 @@
 # Hallazgo: pérdida de coherencia en sobrescrituras condicionadas
 
-**Estado actual:** el seguimiento de 1.0.0-rc.2 al final de este informe corrige los perfiles
-publicados del heap y registra un nuevo contraejemplo en el byte intacto de una palabra fija. Los
-apartados anteriores conservan las fuentes y resultados de cada revisión.
+**Estado actual:** el seguimiento de RC3 al final corrige el contraejemplo publicado del byte
+intacto de una palabra fija. Las secciones anteriores conservan sus fuentes y resultados. Las vidas
+y los alias generales, la integración cotidiana y la recalificación de papers/CI siguen abiertos.
 
 Revisión del 24 de octubre de 2026 sobre el compilador de la entrega `da2ffb31e568`, publicada con
 su demo y nota técnica en `2fe516fba203`.
@@ -176,3 +176,22 @@ El arnés inicial seleccionó el simulador disperso también para el núcleo, qu
 395/0 en ambas construcciones, junto con las matrices que ya habían terminado. No se cuenta el fallo
 de configuración como defecto del compilador ni se oculta en una campaña ficticiamente
 ininterrumpida. Los papers históricos y el CI remoto mantienen sus revisiones originales.
+
+## Seguimiento RC3: bytes intactos de buffers fijos
+
+El contraejemplo del byte alto intacto deja de perder coherencia: pureza conjunta 1 → 1 en ambas
+ramas, sin canales implícitos. El frontend emite una máscara real de bytes para copias, movimientos,
+rellenos y transferencias heap→fijo. Las vistas anteriores transportan esa misma máscara; la
+longitud CPU queda capturada aunque se modifique después. Las ramas no ejecutadas tienen máscara
+cero con alcance léxico válido. La [nota técnica](paper/fixed_patches_note.es.md) explica el
+historial de raíces y la limpieza de productores y decisiones derivadas.
+
+La [cápsula de RC3](audit-evidence/fixed-patches-v1/README.es.md) conserva 236 entradas, 1920
+densidades públicas, 1920 estados físicos por otro intérprete de puertas y 912 inversas completas,
+en O0/O2 normales y O1 ASan/UBSan. Esos ámbitos son distintos. Los bucles conservan sus
+comparaciones estrictas de estado completo; el observador registra ubicación y máscara de la
+historia y la referencia predice sus valores anteriores sin leer amplitudes.
+
+Este cierre finito no certifica todos los estados, vidas o alias generales, todos los adaptadores de
+cadenas ni todo el perfil cotidiano. Los recursos de 64 bits, papers y CI general requieren trabajo
+adicional. Las cápsulas históricas y sus fallos se conservan.

@@ -1,5 +1,5 @@
 {
-  "active": "heap-coherence-v1",
+  "active": "fixed-patches-v1",
   "history": [
     "string-library-v1",
     "search-positions-v2",
@@ -26,15 +26,17 @@
     "heap-identities-v1",
     "inactive-borrows-v1",
     "rebound-borrows-v1",
-    "heap-coherence-v1"
+    "heap-coherence-v1",
+    "fixed-patches-v1"
   ],
-  "meaning": "Finite heap root-owner coherent stores, byte patches, heap/fixed source copies, fills, overlapping moves and quantum selected writes. Normal O0/O2 and ASan/UBSan O1; both synthesis policies. Explicit public reduced density formulas with virtual old-value histories, independently evolved physical joint states and full gate inverses; phases, scoped borrows, negative words and post-free outputs. Bool stores/scatter and signed/unsigned 8/16/32-bit scalar/byte profiles; multiword moves/scatter through 16 bits. Two 32-bit destinations plus two full-word histories exceed 128 wires. General lifetimes and 64-bit profiles remain unqualified. A partial fixed-buffer write still dephases an untouched high byte in its active sector. Historical papers and full remote CI are not qualified for these new inputs.",
+  "meaning": "Finite fixed-word byte writes with signed/unsigned 16/32-bit unknown roots and reversible producers; static copies, runtime lengths 0/1/2, open/nested controls, alias fills, intra-word overlapping moves, heap sources and scoped borrowed phases after length changes. Normal O0/O2 and ASan/UBSan O1; both synthesis policies. Independent semantic public density formulas, independent joint gate evolution and complete inverses. Root overwritten bits remain explicit history; producer histories and saved decisions clean after borrowers. General lifetimes, aliases/ABI, all string writers, 64-bit workspace-heavy profiles, full CI and papers remain unqualified.",
   "known_findings": [
     "coherent-overwrite-coherence-v1",
     "coherent-store-progress-v1",
     "heap-identities-v1",
     "inactive-borrows-v1",
     "rebound-borrows-v1",
-    "heap-coherence-v1"
+    "heap-coherence-v1",
+    "fixed-patches-v1"
   ]
 }

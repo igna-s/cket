@@ -28,7 +28,8 @@ tree make_quantum_value_program(tree call,
                                 const std::vector<std::pair<tree, tree>> &words,
                                 tree defined,
                                 std::vector<tree> prefix = {},
-                                tree result_value = NULL_TREE) {
+                                tree result_value = NULL_TREE,
+                                const std::map<tree, tree> &bit_masks = {}) {
     QuantumValueProgram operation;
     operation.prefix = std::move(prefix);
     operation.result = result_value;
@@ -47,6 +48,12 @@ tree make_quantum_value_program(tree call,
                                    missing_string_terminator(type, at(call)));
         tree update = build2_loc(at(call), MODIFY_EXPR, type, word.first, next);
         operation.updates.push_back(update);
+        auto mask = bit_masks.find(word.first);
+        if (mask != bit_masks.end()) {
+            operation.bit_masks.emplace(update, mask->second);
+            // Keep metadata-only mask trees reachable by GCC's collector.
+            arguments.push_back(mask->second);
+        }
         arguments.push_back(update);
     }
     if (result_value)

@@ -1592,6 +1592,8 @@ int qc_apply_token(qc_context *c,
                    "dynamic quantum heap requires native execution; static export is unsupported");
     if (cj_equal(d, op, "qheap_memory"))
         return heap_memory_action(c, d, inst);
+    if (cj_equal(d, op, "qpatch"))
+        return register_patch(c, d, inst);
     if (cj_equal(d, op, "qheap_store") || cj_equal(d, op, "qheap_scatter") ||
         cj_equal(d, op, "qheap_measure") || cj_equal(d, op, "qheap_reset"))
         return heap_action(c, d, inst, result);
@@ -2275,9 +2277,9 @@ int qc_document(qc_context *c, const char *ir, int validation, int ignore_measur
             int instruction =
                 cj_equal(&d, cj_get(&d, t, "op"), "qbind") ? cj_get(&d, t, "instruction") : t;
             int operation = cj_get(&d, instruction, "op");
-            c->cpu_versions |= cj_equal(&d, operation, "qphi") ||
-                               cj_equal(&d, operation, "qassign") ||
-                               cj_equal(&d, operation, "qslot");
+            c->cpu_versions |=
+                cj_equal(&d, operation, "qphi") || cj_equal(&d, operation, "qassign") ||
+                cj_equal(&d, operation, "qslot") || cj_equal(&d, operation, "qpatch");
         }
     if (c->structural && c->simulate) {
         cj_free(&d);

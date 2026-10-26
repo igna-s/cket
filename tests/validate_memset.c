@@ -307,7 +307,7 @@ static void states(validation *v) {
             }
     checks += dense + labeled;
     printf(
-        "PASS %u dense complete-state memset cases with phases, retained inputs, saved inverses and clean private wires\n",
+        "PASS %u dense/sparse complete-state memset cases with phases, retained inputs, saved/full-gate inverses and clean private wires\n",
         dense);
     printf(
         "PASS %u controlled memset circuits: all 512 labeled input basis paths, amplitudes, phases and complete gate-suffix inverses; canonical nine-H preparation, both synthesis policies\n",
@@ -387,7 +387,7 @@ int main(int argc, char **argv) {
     wide(&v);
     validation_cleanup(&v);
     printf(
-        "%u memset checks passed; dense states, labeled paths, native executions, rejections and wide generation have distinct proof scopes.\n",
+        "%u memset checks passed; dense/sparse states, labeled paths, native executions, rejections and wide generation have distinct proof scopes.\n",
         checks);
     return 0;
 }

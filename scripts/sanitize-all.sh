@@ -63,6 +63,7 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" tests/validate_heap_identities.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_heap_identities"
 "$real_cc" "${flags[@]}" tests/validate_inactive_borrows.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_inactive_borrows"
 "$real_cc" "${flags[@]}" tests/validate_swap_rebind.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_swap_rebind"
+"$real_cc" "${flags[@]}" tests/validate_patches.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_patches"
 "$real_cc" "${flags[@]}" tests/validate_runtime_versions.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_runtime_versions"
 "$real_cc" "${flags[@]}" tests/validate_runtime_memory.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_runtime_memory"
 "$real_cc" "${flags[@]}" tests/validate_ctype.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_ctype"
@@ -108,6 +109,10 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 "$san_root/build/validate_heap_identities"
 "$san_root/build/validate_inactive_borrows"
 "$san_root/build/validate_swap_rebind"
+"$san_root/build/validate_patches"
+fixed_patch_proof="$(mktemp -d "$PWD/build/fixed-patch-sanitized-proof.XXXXXX")"
+python3 scripts/validate-fixed-patches.py --compiler-root "$san_root" \
+    --output "$fixed_patch_proof/sanitized" --levels O1 --sanitized
 heap_coherence_proof="$(mktemp -d "$san_root/build/heap-coherence-proof.XXXXXX")"
 python3 scripts/validate-heap-coherence.py --compiler-root "$san_root" \
     --output "$heap_coherence_proof/sanitized" --levels O1 --sanitized

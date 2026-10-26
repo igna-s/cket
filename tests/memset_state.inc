@@ -1,4 +1,4 @@
-/* Fixed finite-domain reference: seven dense state profiles and one
+/* Fixed finite-domain reference: four dense, three sparse state profiles and one
  * complete 512-label controlled basis-action profile, each before and
  * after inversion, under both engine synthesis policies. The controlled store
  * uses independent reversal of its complete gate suffix, rather than a saved
@@ -208,6 +208,60 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
     }
 }
 
+/* Identity fills retain their public root; known overwritten bytes have a
+ * cleanable producer. Compare every complex amplitude and all private wires,
+ * then reverse the actual complete gate stream independently of saved recipes. */
+static void memset_patched_states(qc_context *c, unsigned profile, unsigned current) {
+    unsigned count = profile == 4 ? 2 : 256;
+    if (current != 0 || qc_sparse_size(c) != count || c->measure || c->reset)
+        fail("patched memset support/owner/channel invariant failed");
+    for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+        uint64_t low, high;
+        double complex amplitude;
+        if (!qc_sparse_entry(c, row, &low, &high, &amplitude))
+            fail("patched memset sparse row unavailable");
+        qc_mask actual = ((qc_mask)high << 64) | low;
+        qc_register *input = qc_lookup(c, profile == 4 ? 1 : 0);
+        unsigned label = 0;
+        for (unsigned bit = 0; bit < input->width; ++bit)
+            label |= (unsigned)((actual >> input->wires[bit]) & 1) << bit;
+        qc_mask expected;
+        double angle;
+        if (profile == 4) {
+            expected = memset_mask(qc_lookup(c, 0), 0x34 | (label << 8)) |
+                       memset_mask(qc_lookup(c, 1), label);
+            angle = (.19 + .17) * label;
+        } else {
+            expected = memset_mask(qc_lookup(c, 0), label);
+            if (profile == 7)
+                expected |= memset_mask(qc_lookup(c, 1), label);
+            angle = .001 * label + (profile == 1 && label == 7 ? .17 : 0);
+        }
+        if (actual != expected || cabs(amplitude - cexp(I * angle) / sqrt(count)) > 1e-10)
+            fail("patched memset public phase/value or private garbage mismatch");
+    }
+    size_t gates = c->ngates;
+    for (size_t i = gates; i > 0; --i) {
+        qc_gate gate = c->gates[i - 1];
+        if (!qc_emit(c,
+                     gate.kind,
+                     gate.target,
+                     gate.mask,
+                     gate.pattern,
+                     gate.kind == QC_PHASE ? -gate.angle : gate.angle))
+            fail("patched memset full inverse failed");
+    }
+    if (cabs(qc_amplitude(c, 0) - 1) > 1e-10)
+        fail("patched memset inverse did not restore zero");
+    for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+        uint64_t low, high;
+        double complex amplitude;
+        if (!qc_sparse_entry(c, row, &low, &high, &amplitude) ||
+            ((low || high) && cabs(amplitude) > 1e-10))
+            fail("patched memset inverse left garbage");
+    }
+}
+
 static unsigned memset_state_probe(const char *ir, unsigned profile) {
     char *text = strdup(ir);
     if (profile > 7)
@@ -216,9 +270,12 @@ static unsigned memset_state_probe(const char *ir, unsigned profile) {
     if (!text || !cj_parse(&d, text))
         fail("invalid IR input");
     for (unsigned tables = 0; tables < 2; ++tables) {
-        qc_context *c = qc_create(profile == 2 ? 0 : 1, 7);
+        int patched = profile == 1 || profile == 4 || profile == 7;
+        qc_context *c = patched ? qc_create_sparse(7, 4096) : qc_create(profile == 2 ? 0 : 1, 7);
         if (!c || !qc_verify_document(c, &d))
             fail(c ? qc_error(c) : "context allocation failed");
+        if (patched)
+            c->recording = 1;
         qc_allow_tables(c, tables);
         int list = cj_get(&d, 0, "instructions");
         char *writes[16];
@@ -243,6 +300,13 @@ static unsigned memset_state_probe(const char *ir, unsigned profile) {
         }
         if (current == UINT32_MAX)
             fail("source did not expose its current destination");
+        if (patched) {
+            memset_patched_states(c, profile, current);
+            for (unsigned i = 0; i < nwrite; ++i)
+                free(writes[i]);
+            qc_destroy(c);
+            continue;
+        }
         if (profile == 2) {
             memset_control_paths(c, current, 0);
             memset_control_paths(c, current, 1);

@@ -466,6 +466,56 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
 
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
+    if (cj_equal(d, heap_op, "qpatch")) {
+        static const char *const allowed[] = {
+            "op", "id", "history", "expr", "bit_mask", "controls", NULL};
+        uint64_t id, history, selected, width, mask_width;
+        int expr = cj_get(d, inst, "expr"), mask = cj_get(d, inst, "bit_mask");
+        if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
+            !unsigned_field(c, d, inst, "history", &history) || id > UINT32_MAX ||
+            history > UINT32_MAX || id == history || !expression(c, d, expr) ||
+            !expression(c, d, mask) || !cj_equal(d, cj_get(d, mask, "op"), "const") ||
+            !unsigned_field(c, d, mask, "bits", &mask_width) || mask_width != 64 ||
+            cj_bool(d, cj_get(d, mask, "signed")) ||
+            !unsigned_field(c, d, mask, "value", &selected))
+            return qc_fail(c, "register patch requires distinct owners and a bound uint64 mask");
+        qc_register *a = qc_lookup(c, (uint32_t)id), *b = qc_lookup(c, (uint32_t)history);
+        if (!a || !b || !a->alive || !b->alive || !a->prepared || a->finished || b->finished ||
+            !b->clean || b->definition || a->width != b->width || a->signed_type < 0 ||
+            a->signed_type != b->signed_type || !unsigned_field(c, d, expr, "bits", &width) ||
+            width != a->width || cj_bool(d, cj_get(d, expr, "signed")) != a->signed_type ||
+            (width < 64 && selected >> width))
+            return qc_fail(c,
+                           "register patch needs prepared typed input and separate clean history");
+        for (int t = expr; t < d->tokens[expr].next; ++t) {
+            uint64_t source;
+            if (d->tokens[t].kind == '{' && cj_equal(d, cj_get(d, t, "op"), "reg") &&
+                cj_u64(d, cj_get(d, t, "id"), &source) && source == history)
+                return qc_fail(c, "register patch expression aliases its clean history");
+        }
+        for (size_t i = 0; i < c->nregisters; ++i)
+            if (c->registers[i].alive && c->registers[i].definition)
+                for (unsigned j = 0; j < c->registers[i].ndeps; ++j)
+                    if (c->registers[i].deps[j] == history)
+                        return qc_fail(c, "register patch history has outstanding borrowers");
+        int guards = cj_get(d, inst, "controls");
+        if (guards >= 0) {
+            static const char *const row[] = {"id", "value", NULL};
+            if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)
+                return qc_fail(c, "invalid register patch controls");
+            for (int t = guards + 1; t < d->tokens[guards].next; t = d->tokens[t].next) {
+                uint64_t source, wanted;
+                if (!fields(c, d, t, row) || !unsigned_field(c, d, t, "id", &source) ||
+                    !unsigned_field(c, d, t, "value", &wanted) || source > UINT32_MAX ||
+                    wanted > 1 || source == history)
+                    return qc_fail(c, "register patch control aliases history or is invalid");
+                qc_register *r = qc_lookup(c, (uint32_t)source);
+                if (!r || !r->alive || !r->prepared || r->finished || r->width != 1)
+                    return qc_fail(c, "register patch control requires a prepared Boolean");
+            }
+        }
+        return 1;
+    }
     if (cj_equal(d, heap_op, "cmemory")) {
         static const char *const allowed[] = {"op", "count", "limit", "overlap", "controls", NULL};
         uint64_t limit, overlap;

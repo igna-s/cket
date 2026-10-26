@@ -3,7 +3,7 @@
 **A new quantum variant of C for GCC-based compilers.**
 
 [![Verification](https://github.com/igna-s/cket/actions/workflows/verify.yml/badge.svg)](https://github.com/igna-s/cket/actions/workflows/verify.yml)
-[![Version](https://img.shields.io/badge/version-1.0.0--rc.2-orange)](docs/releases/v1.0.0-rc.2.es.md)
+[![Version](https://img.shields.io/badge/version-1.0.0--rc.3-orange)](docs/releases/v1.0.0-rc.3.es.md)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 `|c>` is an experimental C11 extension. Add `quant` to supported integer declarations, write
@@ -12,10 +12,10 @@ temporary workspace. Classical C code still runs on the CPU; quantum operations 
 statevector simulator, with dense and opt-in sparse execution modes.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
-OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.2**, with **GCC
+OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC
 11.4.0** as the reference configuration. This is an experimental candidate; the stable 1.0
-requirements remain open. The [release guide in Spanish](docs/releases/v1.0.0-rc.2.es.md) lists what
-works, what is incomplete, the known coherence failure and commands to run the delivery.
+requirements remain open. The [release guide in Spanish](docs/releases/v1.0.0-rc.3.es.md) lists what
+works, what is incomplete, the finite coherence correction and commands to run the delivery.
 
 The current objective is a **fully usable everyday C core**: common types, functions, control,
 arrays, pointers, vectors and the library operations those programs need. The
@@ -28,10 +28,14 @@ operate on unmeasured quantum data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
-**A known quantum correctness failure remains in partial fixed-buffer writes.** A one-byte write
-into a fixed word can dephase its untouched high byte in the active sector. Avoid that combination
-in this candidate. The [current report](docs/re-audit-2026-10-24-coherence.md) distinguishes this
-reproduced finding from corrected heap and earlier fixed-store cases.
+**Partial fixed-word writes now preserve untouched bytes in the published counterexample.** The
+[new evidence](docs/audit-evidence/fixed-patches-v1/README.es.md) records 1920 semantic public
+density comparisons, 1920 independently evolved joint states and 912 complete inverses, with normal
+O0/O2 and ASan/UBSan O1. It includes signed/unsigned 16/32-bit roots and reversible producers, CPU
+lengths, open/nested controls, alias fills, overlapping moves, heap sources and scoped phases. The
+[fixed-buffer example](examples/blocks/05/fixed_coherence.c) and
+[technical note](docs/paper/fixed_patches_note.es.md) explain the correction. General lifetime,
+alias/ABI, all string writers, large 64-bit profiles and current full CI/papers remain unqualified.
 
 The [heap coherence evidence](docs/audit-evidence/heap-coherence-v1/README.es.md) corrects the
 previous inactive-sector heap-copy counterexample and protects untouched heap bytes. It records 2670
@@ -850,7 +854,7 @@ Examples teach usage; tests enforce behavior; documents specify contracts.
 For implementation details, read the [language contract](docs/language.md),
 [C11 coverage matrix](docs/c-coverage.md), [IR verification contract](docs/ir-verification.md),
 [circuit ABI](docs/circuit-abi.md), and [1.0 plan](docs/v1-plan.md).
-[Current release notes](docs/releases/v1.0.0-rc.2.es.md) describe the experimental candidate;
+[Current release notes](docs/releases/v1.0.0-rc.3.es.md) describe the experimental candidate;
 [0.4.0 notes](docs/releases/v0.4.0.md) preserve the historical snapshot.
 
 The project uses the [MIT license](LICENSE). Contributions follow

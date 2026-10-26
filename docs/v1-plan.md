@@ -1,9 +1,10 @@
 # Version 1.0 intermediate specification and acceptance
 
-**October 25 candidate:** [1.0.0-rc.2](releases/v1.0.0-rc.2.es.md) packages the current finite
-scope. The earlier heap-copy counterexample is corrected; a partial fixed-buffer write still has a
-reproduced untouched-byte coherence failure. This candidate does not close the acceptance
-requirements below or the everyday C goal. Earlier releases retain their own source identities.
+**October 26 candidate:** [1.0.0-rc.3](releases/v1.0.0-rc.3.es.md) corrects the published untouched
+fixed-byte counterexample with finite density/state/inverse evidence. General lifetime, alias/ABI,
+string writers, large 64-bit profiles and current full CI/paper review remain open. This candidate
+does not close the acceptance requirements below or the everyday C goal. Earlier releases retain
+their own source identities.
 
 This document fixes a bounded 1.0 release contract, not certification that the current
 implementation satisfies it. The user clarified the active project scope on October 23, 2026: a

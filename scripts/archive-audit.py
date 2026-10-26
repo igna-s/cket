@@ -82,7 +82,7 @@ def main():
         'strncmp': r'^246 strncmp checks passed; NUL-terminated comparisons remain distinct from complete string/library support\.$',
         'strings': r'^460 string family checks passed; bounded strlen/strcmp adapters are distinct from complete C string compatibility\.$',
         'byte_snapshots': r'^650 CPU byte snapshot checks passed; dynamic addresses, volatile/atomic access and complete quantum C11 remain pending\.$',
-        'memset': r'^940 memset checks passed; dense states, labeled paths, native executions, rejections and wide generation have distinct proof scopes\.$',
+        'memset': r'^940 memset checks passed; dense/sparse states, labeled paths, native executions, rejections and wide generation have distinct proof scopes\.$',
         'memory_sequences': r'^360 memory sequence checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes\.$',
         'memory_returns': r'^290 memory return checks passed; complete labeled action, native integration and expected rejections have distinct proof scopes\.$',
         'pointer_differences': r'^170 pointer difference checks passed; native distances, finite coherent action and unsupported contexts have separate scopes\.$',

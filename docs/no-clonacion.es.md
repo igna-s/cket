@@ -121,7 +121,9 @@ anteriores desde los dueños y la máscara del intercambio; las copias solapadas
 versiones originales. Se comprueban densidades públicas con historia explícita, estados conjuntos
 por otro intérprete de puertas e inversas, con ámbitos separados.
 
-Una escritura parcial sobre una palabra fija todavía puede correlacionar el byte intacto con
-historia privada y quitarle coherencia en la rama activa. El circuito global sigue siendo unitario:
-ese hecho por sí solo no garantiza la semántica de los bits que debían quedar intactos. La
-[nota técnica](paper/heap_coherence_note.es.md) y el informe conservan el caso abierto.
+La [ampliación de RC3](audit-evidence/fixed-patches-v1/README.es.md) corrige también el
+contraejemplo del byte intacto de buffers fijos. Retiene solamente los bits escritos de raíces
+desconocidas y conserva recetas de productores reversibles para limpiar historia tras los préstamos.
+La [nota técnica nueva](paper/fixed_patches_note.es.md) incluye las máscaras CPU y el estado
+intermedio de los predicados retenidos. La unitariedad global por sí sola sigue sin garantizar la
+semántica pública; vidas, alias y perfiles generales conservan pendientes.

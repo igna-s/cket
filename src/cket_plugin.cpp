@@ -102,6 +102,7 @@ std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
 
 struct QuantumValueProgram {
     std::vector<tree> prefix, updates;
+    std::map<tree, tree> bit_masks;
     tree result = NULL_TREE;
 };
 
@@ -469,6 +470,7 @@ void finish_function(void *event, void *) {
     dynamic_depth = 0;
     runtime_memory_depth = 0;
     cpu_branches.clear();
+    cpu_patch_locals = NULL_TREE;
     observed_quantum_outputs.clear();
     if (has_quantum) {
         walk_tree(&DECL_SAVED_TREE(fn), count_uses, nullptr, nullptr);
@@ -491,6 +493,11 @@ void finish_function(void *event, void *) {
         // Ordinary helper loops/branches must not enter the quantum IR.
     } else
         DECL_SAVED_TREE(fn) = lower_node(DECL_SAVED_TREE(fn));
+    if (cpu_patch_locals) {
+        DECL_SAVED_TREE(fn) =
+            build3(BIND_EXPR, void_type_node, cpu_patch_locals, DECL_SAVED_TREE(fn), NULL_TREE);
+        cpu_patch_locals = NULL_TREE;
+    }
     for (const auto &item : variables) {
         const auto &var = item.second;
         if (DECL_CONTEXT(var.decl) == fn &&

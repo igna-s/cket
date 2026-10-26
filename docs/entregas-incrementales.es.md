@@ -207,3 +207,10 @@ ejecutables y conserva el QASM estático de `borrow_cleanup`. La
 [demo empaquetada](../output/demo/README-heap.es.md) comprueba los valores medidos; las matrices de
 densidad/fase/inversa de la cápsula califican la coherencia del bloque. Las escrituras parciales de
 buffers fijos conservan un fallo abierto. La 1.0 estable y el perfil cotidiano siguen pendientes.
+
+La [candidata RC3](releases/v1.0.0-rc.3.es.md) añade el décimo ejecutable del bloque 05,
+[`fixed_coherence`](../examples/blocks/05/fixed_coherence.c), con array, función, punteros
+prestados, longitud CPU y préstamo con fase. Cierra el contraejemplo publicado del byte intacto fijo
+con [densidades e inversas](audit-evidence/fixed-patches-v1/README.es.md). La
+[demo empaquetada](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La 1.0 estable y
+el perfil cotidiano siguen pendientes; las entregas anteriores conservan sus revisiones.

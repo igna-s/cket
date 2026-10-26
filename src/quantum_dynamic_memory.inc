@@ -39,6 +39,7 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
     bool identity = move && source.quantum && destination.elements == source.elements &&
                     destination.offset == source.offset && destination.stride == source.stride;
     std::vector<std::pair<tree, tree>> words;
+    std::map<tree, tree> bit_masks;
     std::map<tree, std::set<tree>> inputs;
     for (uint64_t i = 0; i < operation.limit && !identity; ++i) {
         uint64_t dst = destination.offset + i;
@@ -56,6 +57,16 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
                                     fold_convert(integer_type_node, next),
                                     object_byte(destination, i, at(call)));
         string_word_byte(destination, i, byte, words, at(call));
+        tree mask = fold_build3_loc(at(call),
+                                    COND_EXPR,
+                                    ull,
+                                    selected,
+                                    build_int_cstu(ull, string_byte_mask(destination, dst)),
+                                    build_zero_cst(ull));
+        auto prior = bit_masks.find(target);
+        bit_masks[target] = prior == bit_masks.end()
+                                ? mask
+                                : fold_build2_loc(at(call), BIT_IOR_EXPR, ull, prior->second, mask);
         if (!set && source.quantum) {
             inputs[target].insert(source.elements[(size_t)((source.offset + i) / source.stride)]);
             if (!move)
@@ -101,7 +112,8 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
         first = first < destination.offset ? 0 : first - destination.offset;
         tree active = fold_build2_loc(
             at(call), GT_EXPR, boolean_type_node, length, build_int_cstu(ull, first));
-        tree program = make_quantum_value_program(call, {word}, boolean_true_node);
+        tree program =
+            make_quantum_value_program(call, {word}, boolean_true_node, {}, NULL_TREE, bit_masks);
         tree branch = build3_loc(
             at(call), COND_EXPR, void_type_node, active, program, build_empty_stmt(at(call)));
         quantum_memory_cpu_branches.insert(branch);
