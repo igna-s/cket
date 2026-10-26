@@ -300,7 +300,9 @@ int main(int argc, char **argv) {
         char *command[] = {driver, (char *)options[i], NULL};
         require(&v, !validation_run(&v, command, output, 30), "driver", options[i]);
         char *text = validation_read(output);
-        require(&v, strstr(text, i ? "0.4.0" : "usage:") != NULL, "driver", "CLI information");
+        int informative = i ? !strcmp(text, "|c> / cket 1.0.0-rc.3 (experimental GCC + native C)\n")
+                            : strstr(text, "usage:") != NULL;
+        require(&v, informative, "driver", "CLI information");
         free(text);
     }
     char *bad_seed[] = {driver, source, "--run", "--seed", "-1", NULL};

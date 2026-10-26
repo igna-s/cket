@@ -190,15 +190,17 @@ stable owners/wires, zero private workspace and independent gate reversal. Retur
 been state-checked through 32 bits; two 64-bit capture profiles exceed the 128-wire budget. The
 native fill identity uses a single byte with zero high bytes; engine fixtures separately check
 nonzero high bits and both byte orders. This does not prove every algebraic identity or arbitrary
-heap operation. The [quantum review](re-audit-2026-10-24-coherence.md) still reproduces dephasing in
-an inactive sector of a nonidentity coherent copy and in scoped unobserved-borrow cleanup.
+heap operation. The [quantum review](re-audit-2026-10-24-coherence.md) preserves the historical
+dephasing findings in an inactive sector of a nonidentity coherent copy and in scoped
+unobserved-borrow cleanup. Their later finite corrections have separate source identities.
 
 The later [inactive-borrow correction](audit-evidence/inactive-borrows-v1/README.es.md) preserves
-scope cleanup for demonstrably inactive fixed writes. It does not close the nonidentity coherent
-heap-copy finding or general cleanup after possible-active coherent overwrites.
+scope cleanup for demonstrably inactive fixed writes. That campaign did not close the nonidentity
+coherent heap-copy finding or general cleanup after possible-active coherent overwrites.
 
 The [1.0.0-rc.1 conditional-inverse correction](audit-evidence/rebound-borrows-v1/README.es.md)
-closes the published fixed root-owner scoped-borrow cases, including possible-active controls. It
-does not fix the nonidentity coherent heap-copy counterexample: its inactive joint sector still
-dephases. Avoid that combination in this candidate; existing finite heap evidence does not qualify
-it.
+closes the published fixed root-owner scoped-borrow cases, including possible-active controls. That
+RC1 campaign did not fix the nonidentity coherent heap-copy counterexample. The later
+[RC2 heap correction](audit-evidence/heap-coherence-v1/README.es.md) closes the reproduced case,
+with independent public densities, joint gate states and inverses. General heap and lifetime
+combinations still require their own qualification.

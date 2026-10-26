@@ -1,14 +1,24 @@
-**Seguimiento actual, RC3:** la [nota de bytes intactos de buffers fijos](fixed_patches_note.es.md)
-y la [cápsula de 236 entradas](../audit-evidence/fixed-patches-v1/README.es.md) cierran el
-contraejemplo publicado en RC2. Califican perfiles finitos de densidad, fases e inversas; la
-revisión general de papers sigue pendiente. Los PDF y resultados históricos conservan sus fuentes
-originales.
+**Seguimiento actual, 26 de octubre de 2026:** la candidata sigue siendo RC3, con dos bloques
+posteriores publicados. Las correcciones se describen en notas separadas de los manuscritos
+históricos:
 
-**Seguimiento histórico, 1.0.0-rc.2:** la [nota de memoria coherente](heap_coherence_note.es.md) y
-la [evidencia de 233 entradas](../audit-evidence/heap-coherence-v1/README.es.md) corrigen los
-perfiles publicados de copia coherente y bytes intactos del heap. Persiste un contraejemplo de
-escritura parcial sobre una palabra fija. Los PDF y resultados históricos que siguen conservan sus
-fuentes; no se los recalifica automáticamente para este compilador.
+| Bloque                                     | Nota y evidencia                                                                                    | Alcance                                                                                                                              |
+| ------------------------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Copias del heap, RC2                       | [Nota](heap_coherence_note.es.md), [233 entradas](../audit-evidence/heap-coherence-v1/README.es.md) | Corrige los contraejemplos publicados de copia coherente y bytes intactos del heap.                                                  |
+| Buffers fijos, RC3                         | [Nota](fixed_patches_note.es.md), [236 entradas](../audit-evidence/fixed-patches-v1/README.es.md)   | Corrige el contraejemplo de escritura parcial de una palabra fija que quedaba abierto en RC2.                                        |
+| Escrituras de cadenas                      | [Nota](string_writes_note.es.md), [237 entradas](../audit-evidence/string-writes-v1/README.es.md)   | Máscaras de los bytes realmente escritos, con catorce exclusiones por recursos.                                                      |
+| Valores anteriores y efectos seleccionados | [Nota](lazy_values_note.es.md), [237 entradas](../audit-evidence/lazy-pending-v1/README.es.md)      | Corrige operandos pendientes y vidas de inversas. Pasan 2332 comprobaciones normales de historial y 355 dirigidas con sanitizadores. |
+
+Estas campañas califican perfiles finitos de densidad, fases e inversas. La revisión general de
+papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
+fuentes originales; no se los recalifica automáticamente para el compilador actual.
+
+El [seguimiento de integración y ejemplos](../audit-evidence/integration-cli-paper-v1/README.es.md)
+comprueba los tres bloques C exactos de ambos manuscritos con el compilador posterior a `be96caf`:
+tres ejecuciones nativas y seis estados completos frente a sus fórmulas, con ambas políticas de
+síntesis. También corrige la referencia de versión del test de ejemplos, que todavía exigía `0.4.0`.
+Esta comprobación conserva los PDF y la evaluación histórica; no cierra la revisión científica
+general ni el CI integrado.
 
 > Revisión del 24 de octubre de 2026: se corrige el umbral de enumeración en ambos idiomas y se
 > distinguen los límites del prototipo histórico de la prioridad actual de C cotidiano. La auditoría
@@ -18,12 +28,12 @@ fuentes; no se los recalifica automáticamente para este compilador.
 > [hallazgos y límites](re-audit-2026-10-24.md) explican el alcance de la revisión.
 
 La [revisión cuántica posterior](../re-audit-2026-10-24-coherence.md) encontró pérdidas de
-coherencia que los casos finitos publicados no detectaban. Hay una corrección parcial de los casos
-directos de buffers fijos y las identidades comprobadas del heap. La
+coherencia que los casos finitos publicados no detectaban. Conserva los fallos originales y sus
+correcciones sucesivas; los cierres finitos actuales figuran en la tabla anterior. La
 [nota de inversas condicionadas](conditional_inverse_note.es.md) y su
 [evidencia de candidata](../audit-evidence/rebound-borrows-v1/README.es.md) corrigen además los
-perfiles publicados de préstamos tras escrituras que pueden activarse. Las vidas generales y las
-copias coherentes no idénticas al heap conservan pendientes. La
+perfiles publicados de préstamos tras escrituras que pueden activarse. Las vidas y los alias
+generales conservan pendientes. La
 [corrección posterior de préstamos inactivos](../audit-evidence/inactive-borrows-v1/README.es.md)
 preserva la limpieza con fase cuando se demuestra inactividad global. La demo de la nota no contiene
 esas combinaciones. Su evidencia tiene el alcance de los programas y fuentes identificados en cada
