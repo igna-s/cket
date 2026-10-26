@@ -251,7 +251,10 @@ static void exported(validation *v,
                 validation_fail("QASM binding fixture budget exceeded");
             length += (size_t)written;
         }
-        if (!count)
+        // A selected CPU trace can now have no numerical quantum inputs:
+        // its branch choice is supplied separately to select_cpu_trace below.
+        // Arithmetic binding fixtures must still emit their declared inputs.
+        if (!count && !cpu_count)
             validation_fail("CPU binding QASM fixture emitted no templates");
         rows[length++] = ']';
         rows[length] = 0;

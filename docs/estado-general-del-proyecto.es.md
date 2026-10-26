@@ -26,12 +26,21 @@ cualquier escritura. La 1.0 estable sigue pendiente.
 
 **Historial y efectos seleccionados corregidos:** la referencia antigua suponía identificadores
 separados para el valor viejo y el destino actual. Se actualizan los canales, estados completos y
-fases sin depender de esa suposición. La suite normal completa pasa 2332 comprobaciones y el alcance
-cambiado pasa 355 dirigidas con ASan/UBSan; esto último no es una ejecución completa de las 2332
-instrumentadas. Al llegar a los casos antes ocultos se corrigieron operandos anteriores que no se
-transportaban y vidas de inversas en brazos inactivos. La
-[nota técnica](paper/lazy_values_note.es.md) explica los fallos y sus límites. El CI general sigue
+fases sin depender de esa suposición. La suite completa pasa 2332 comprobaciones tanto en normal
+como con ASan/UBSan en la [nueva campaña C](audit-evidence/c-priority-integration-v1/README.es.md).
+La pasada histórica de 355 casos instrumentados de la [nota técnica](paper/lazy_values_note.es.md)
+conserva su alcance original. Al llegar a los casos antes ocultos se corrigieron operandos
+anteriores que no se transportaban y vidas de inversas en brazos inactivos. El CI general sigue
 pendiente.
+
+**Integración C prioritaria comprobada:** pasan los 17 validadores C normales listados en la nueva
+cápsula y diez completos con ASan/UBSan. La pasada instrumentada de capturas de bytes se interrumpe
+por tiempo; los seis validadores que venían después quedan pendientes. En normal también pasan 145
+compilaciones del fuzzer, 24 circuitos de crecimiento, cinco comparaciones clásicas y 70
+exportaciones verificadas con QuEST: 64 estados y seis canales. Se corrige una expectativa antigua
+del fixture QASM para ramas CPU sin parámetros numéricos. El SDK conserva exactamente los mismos
+binarios del compilador. Esta campaña no sustituye toda la composición de `scripts/verify.sh` ni
+cierra la 1.0 estable.
 
 **Nueva demo lista para ejecutar:** `output\demo\run_lazy_demo.cmd` usa WSL sin recompilar ni montar
 unidades Windows. Incluye el caso antes rechazado `condition ? value++ : value--` y otro con

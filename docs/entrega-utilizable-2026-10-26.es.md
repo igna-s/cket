@@ -47,6 +47,14 @@ ASan/UBSan. La [cápsula](audit-evidence/memory-return-reference-v1/README.es.md
 nativos, acciones etiquetadas completas, fases, canales de historial e inversas. Las salidas medidas
 de la demo no se presentan como prueba de todos los estados posibles.
 
+La [campaña C posterior](audit-evidence/c-priority-integration-v1/README.es.md) pasa sus 17
+validadores normales y diez completos con ASan/UBSan, incluido el historial completo de 2332 casos.
+La pasada instrumentada de capturas de bytes queda interrumpida por tiempo; los seis validadores que
+venían después permanecen pendientes. Además pasan en normal 145 compilaciones del fuzzer, 24
+circuitos de crecimiento y las 70 exportaciones verificadas por QuEST: 64 estados y seis canales. La
+corrección posterior afecta solo al test QASM; el paquete conserva los mismos binarios del
+compilador y su snapshot original. La campaña no es una ejecución completa de `scripts/verify.sh`.
+
 ## Qué falta
 
 Quedan vidas, alias, punteros y ABI generales, más dominios de división y recursos, flotantes
