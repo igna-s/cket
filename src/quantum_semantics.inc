@@ -11,6 +11,39 @@ std::map<tree, SavedExpression> expression_saves;
 std::map<tree, unsigned> cpu_parameter_ids;
 std::vector<tree> cpu_parameter_values;
 std::set<unsigned> active_cpu_parameters;
+std::vector<SavedExpression *> pending_expression_saves;
+
+// Serialized operands on the C++ stack still borrow their old input values.
+// Keep them visible while a later sequenced effect changes a public owner.
+struct PendingExpression {
+    SavedExpression saved;
+
+    PendingExpression(std::string text, const std::set<unsigned> &sources)
+        : saved{std::move(text), sources, active_cpu_parameters} {
+        pending_expression_saves.push_back(&saved);
+    }
+
+    PendingExpression(const PendingExpression &) = delete;
+    PendingExpression &operator=(const PendingExpression &) = delete;
+
+    ~PendingExpression() {
+        gcc_assert(!pending_expression_saves.empty() && pending_expression_saves.back() == &saved);
+        pending_expression_saves.pop_back();
+    }
+
+    void assign(std::string text, const std::set<unsigned> &sources) {
+        saved.text = std::move(text);
+        saved.sources.insert(sources.begin(), sources.end());
+        saved.parameters.insert(active_cpu_parameters.begin(), active_cpu_parameters.end());
+    }
+
+    std::string finish(std::set<unsigned> &sources) {
+        sources.insert(saved.sources.begin(), saved.sources.end());
+        active_cpu_parameters.insert(saved.parameters.begin(), saved.parameters.end());
+        return saved.text;
+    }
+};
+
 std::set<tree> cpu_library_saves;
 std::set<tree> cpu_byte_saves;
 unsigned coherent_expression_depth = 0;
@@ -784,16 +817,16 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // The expression result is an additional read absent from the lvalue
         // occurrence counted in GCC's tree. Postfix freezes that read first.
         ++remaining[variables.at(target).id];
-        std::string result;
+        PendingExpression result("", deps);
         if (postfix)
-            result = expression(target, deps);
+            result.assign(expression(target, deps), deps);
         std::set<unsigned> parameters;
         parameters.swap(active_cpu_parameters);
         append(expression_frames.back()->prefix, lower_node(value));
         active_cpu_parameters.insert(parameters.begin(), parameters.end());
         if (!postfix)
-            result = expression(target, deps);
-        return result;
+            result.assign(expression(target, deps), deps);
+        return result.finish(deps);
     }
     bool lazy = code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
                 code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR;
@@ -959,10 +992,11 @@ std::string expression(tree value, std::set<unsigned> &deps) {
                  get_tree_code_name(code));
         return "{}";
     }
-    std::string result = "{\"op\":" + json(op) + type_json(TREE_TYPE(value)) + ",\"args\":[";
+    PendingExpression result("{\"op\":" + json(op) + type_json(TREE_TYPE(value)) + ",\"args\":[",
+                             deps);
     for (int i = 0; i < arity; ++i) {
         if (i)
-            result += ',';
+            result.saved.text += ',';
         bool lazy_arm =
             i && (code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
                   code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR);
@@ -971,11 +1005,13 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         // Pure arms still keep their arithmetic within the selected branch.
         coherent_expression_depth += coherent_arm;
         lazy_effect_depth += lazy_arm;
-        result += expression(TREE_OPERAND(value, i), deps);
+        std::string operand = expression(TREE_OPERAND(value, i), deps);
+        result.assign(result.saved.text + operand, deps);
         lazy_effect_depth -= lazy_arm;
         coherent_expression_depth -= coherent_arm;
     }
-    return result + "]}";
+    result.saved.text += "]}";
+    return result.finish(deps);
 }
 
 std::string evaluate_expression(tree value, std::set<unsigned> &deps, tree *prefix) {
@@ -1332,12 +1368,12 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
     unsigned previous_lazy_depth = lazy_effect_depth;
     lazy_effect_depth = 0;
     ++coherent_expression_depth;
-    std::string yes, no;
+    PendingExpression yes("", deps), no("", deps);
     if (code == COND_EXPR) {
         controls.push_back({flag, 1});
-        yes = expression(TREE_OPERAND(value, 1), deps);
+        yes.assign(expression(TREE_OPERAND(value, 1), deps), deps);
         controls.back().second = 0;
-        no = expression(TREE_OPERAND(value, 2), deps);
+        no.assign(expression(TREE_OPERAND(value, 2), deps), deps);
         controls.pop_back();
     } else {
         bool conjunction = code == TRUTH_ANDIF_EXPR || code == TRUTH_AND_EXPR;
@@ -1345,8 +1381,12 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
         std::string right = "{\"op\":\"cast\",\"bits\":1,\"signed\":false,\"args\":[" +
                             expression(TREE_OPERAND(value, 1), deps) + "]}";
         controls.pop_back();
-        yes = conjunction ? right : "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":1}";
-        no = conjunction ? "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}" : right;
+        yes.assign(conjunction ? right
+                               : "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":1}",
+                   deps);
+        no.assign(conjunction ? "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":0}"
+                              : right,
+                  deps);
     }
     --coherent_expression_depth;
     lazy_effect_depth = previous_lazy_depth;
@@ -1356,10 +1396,12 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
                "{\"op\":\"qretain\",\"id\":" + std::to_string(flag) + '}', at(value), flag, false));
     std::string decision =
         "{\"op\":\"reg\",\"id\":" + std::to_string(flag) + ",\"bits\":1,\"signed\":false}";
-    yes = "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + yes + "]}";
-    no = "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + no + "]}";
+    std::string yes_value =
+        "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + yes.finish(deps) + "]}";
+    std::string no_value =
+        "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + no.finish(deps) + "]}";
     return "{\"op\":\"select\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + decision + ',' +
-           yes + ',' + no + "]}";
+           yes_value + ',' + no_value + "]}";
 }
 
 // Decision ancestors cannot borrow their own conditional old-value view:
@@ -1367,6 +1409,7 @@ std::string lazy_quantum_expression(tree value, std::set<unsigned> &deps) {
 // consumers are transported across the exchange by qswap's checked rebind.
 void materialize_assignment_borrows(unsigned target, location_t loc, tree *list) {
     std::set<unsigned> decision_inputs;
+    std::set<unsigned> deferred_inputs;
     std::vector<unsigned> pending;
     for (const auto &control : controls)
         pending.push_back(control.first);
@@ -1384,7 +1427,11 @@ void materialize_assignment_borrows(unsigned target, location_t loc, tree *list)
     }
     for (auto &entry : variables) {
         auto &value = entry.second;
-        if (!value.lowered || !value.derived || value.released || value.moved || value.measured ||
+        bool possible_inverse =
+            value.derived ||
+            (value.optional_definition && (value.id == target || decision_inputs.count(value.id)));
+        if (!value.lowered || !possible_inverse || value.released || value.moved ||
+            value.measured ||
             (value.id != target && !value.dependencies.count(target) && !value.creation.empty()))
             continue;
         if (value.id != target && !decision_inputs.count(value.id) && !value.creation.empty())
@@ -1396,10 +1443,29 @@ void materialize_assignment_borrows(unsigned target, location_t loc, tree *list)
                                control_json() + '}',
                            loc));
         taint_uniform(value.id);
+        deferred_inputs.insert(value.dependencies.begin(), value.dependencies.end());
         value.derived = false;
         value.optional_definition = value.runtime_history = true;
         value.dependencies.clear();
         value.creation.clear();
+    }
+    // A proved inactive materialization preserves the runtime inverse even
+    // though the compiler must allow the possible active path. Its ancestors
+    // still need their real consumer lifetimes, rather than qhistory_end now.
+    pending.assign(deferred_inputs.begin(), deferred_inputs.end());
+    std::set<unsigned> visited;
+    while (!pending.empty()) {
+        unsigned id = pending.back();
+        pending.pop_back();
+        if (!visited.insert(id).second)
+            continue;
+        for (auto &entry : variables) {
+            auto &input = entry.second;
+            if (input.id != id || !input.lowered || input.released || input.moved)
+                continue;
+            input.optional_definition = input.runtime_history = true;
+            pending.insert(pending.end(), input.dependencies.begin(), input.dependencies.end());
+        }
     }
 }
 
@@ -1472,6 +1538,13 @@ void rebind_guarded_saves(const Variable &var,
         if (transport(saved.text))
             saved.parameters.insert(mask_parameters.begin(), mask_parameters.end());
         saved.sources.insert(sources.begin(), sources.end());
+    }
+    for (auto *saved : pending_expression_saves) {
+        if (!saved->sources.count(var.id))
+            continue;
+        if (transport(saved->text))
+            saved->parameters.insert(mask_parameters.begin(), mask_parameters.end());
+        saved->sources.insert(sources.begin(), sources.end());
     }
     for (auto &entry : variables) {
         auto &saved = entry.second;

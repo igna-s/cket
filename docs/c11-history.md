@@ -1,11 +1,11 @@
 # Versioned assignments and retained quantum history
 
-**Current finite follow-up:**
-[1.0.0-rc.2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md) corrects the earlier
-reproduced nonidentity coherent heap-copy case. Heap byte patches preserve untouched wires and saved
-source views through overlapping moves. Earlier sections retain their source-scoped results. A
-partial **fixed-buffer** write still has an untouched-byte coherence counterexample; general
-lifetimes/alias/ABI and large profiles remain open.
+**Current finite follow-ups:** [RC2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md)
+and [RC3 fixed buffers](audit-evidence/fixed-patches-v1/README.es.md) correct the published heap and
+untouched fixed-byte counterexamples. The later
+[string-write block](audit-evidence/string-writes-v1/README.es.md) covers a separate finite scope.
+Earlier results retain their source identities. General lifetimes/alias/ABI and large profiles
+remain open.
 
 This advances M2/M4. Complete C11 expressions, dynamic control, memory and library coverage remain
 open. The implemented paths use quantum registers and gates; they do not evaluate unknown quantum
@@ -18,6 +18,11 @@ transfer the source-level owner to that new version. The previous register remai
 dependent values. For a computational-basis function `f`, the embedding is `|x>|0> -> |x>|f(x)>`,
 extended linearly to arbitrary superpositions. It preserves relative phases and information in the
 complete joint state. The old register is retained history, not a cloned unknown quantum state.
+
+That formula describes fresh-value versions. A controlled write instead retains the active old bits
+and can keep the public owner's identity through an exchange, as specified by the
+[selected-value contract](c11-control.md). Its old value is not necessarily an independent register
+with the source variable's original identifier.
 
 The compiler implements this for unconditional and structured coherent scalar assignments and
 statically resolved array, structure and pointer-borrow aliases. Covered paths include constant
@@ -46,10 +51,11 @@ ownership-transfer contract and its current GCC-folding limitations.
 
 ## Lifetime, cleanup and resources
 
-Each retained version keeps its own register identifier and its original inverse dependencies.
-Checked aliases continue to resolve the current source-level owner. The `qretain` IR instruction
-marks history without changing its gates, value or epoch. This allows an old dependent computation
-to finish or invert after an overwrite of its source-level variable.
+Each retained version has its own history owner. Saved inverse dependencies can be transported to
+conditional old-value views when public owners exchange their contents. Checked aliases continue to
+resolve the current source-level owner. The `qretain` IR instruction marks history without changing
+its gates, value or epoch. This allows an old dependent computation to finish or invert after an
+overwrite of its source-level variable.
 
 Derived history is uncomputed when all of its uses and dependents have ended and its inputs remain
 available. For a root history value proven to be in a known basis state, `qhistory_end` restores it
@@ -58,11 +64,13 @@ quantum context ends and remains part of the circuit's joint output. Ending its 
 lifetime does not emit a measurement, reset or partial trace. A source-level history handle and
 explicit ownership transfer/discharge API remain **P**.
 
-For an overwritten word of width `w`, the old version retains `w` qubits and the new value requires
-fresh storage. Chains and live dependent results can retain several versions. Synthesis work has its
-own additional cost. Resource reports include current and peak history qubits, already counted in
-the logical/ancillary totals. Known-basis cleanup may reduce the current history while leaving the
-recorded peak unchanged.
+For an overwritten word of width `w`, a fresh-value version or a swap-history word needs `w` storage
+qubits. A masked write retains only the selected old bits as information; the other history bits are
+zero, although the current word representation still allocates its full width. The public owner can
+keep its identity through an exchange. Chains and live dependent results can retain several
+versions. Synthesis work has its own additional cost. Resource reports include current and peak
+history qubits, already counted in the logical/ancillary totals. Known-basis cleanup may reduce the
+current history while leaving the recorded peak unchanged.
 
 The backend represents at most 128 physical qubits and the native statevector at most 24. A
 table-free circuit can require more private work than the bounded table route, so passing a native

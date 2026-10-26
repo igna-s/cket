@@ -18,11 +18,19 @@ públicas, 1776 estados conjuntos por puertas independientes y 888 inversas, con
 Las 24 comprobaciones adicionales de NUL inválido y guarda inactiva verifican el estado anterior a
 cualquier escritura. La 1.0 estable sigue pendiente.
 
-**Fallo de validación abierto:** `validate_history` tiene una referencia escalar anterior al cambio
-de identidades: usa el mismo dueño para representar el valor viejo y el actualizado. Falla en el
-primer caso `if(c) x=false`, tanto sobre RC3 como sobre este bloque. Se conserva el fallo; hace
-falta actualizar y auditar esa referencia. Las campañas dirigidas que pasan no convierten el CI
-general en aprobado.
+**Historial y efectos seleccionados corregidos:** la referencia antigua suponía identificadores
+separados para el valor viejo y el destino actual. Se actualizan los canales, estados completos y
+fases sin depender de esa suposición. La suite normal completa pasa 2332 comprobaciones y el alcance
+cambiado pasa 355 dirigidas con ASan/UBSan; esto último no es una ejecución completa de las 2332
+instrumentadas. Al llegar a los casos antes ocultos se corrigieron operandos anteriores que no se
+transportaban y vidas de inversas en brazos inactivos. La
+[nota técnica](paper/lazy_values_note.es.md) explica los fallos y sus límites. El CI general sigue
+pendiente.
+
+**Nueva demo lista para ejecutar:** `output\demo\run_lazy_demo.cmd` usa WSL sin recompilar ni montar
+unidades Windows. Incluye el caso antes rechazado `condition ? value++ : value--` y otro con
+entradas en superposición y fases. La [guía](../output/demo/README-lazy.es.md) distingue estos
+valores observados de la evidencia independiente de coherencia e inversas.
 
 **Se corrigen las copias coherentes del heap del contraejemplo anterior:** pureza sectorial 1 → 1 y
 error de densidad cero. Las escrituras parciales del heap intercambian solamente los bits escritos;

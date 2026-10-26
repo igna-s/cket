@@ -4,6 +4,11 @@ Supported integer scalar effects can now produce values inside conditional selec
 short circuits. This advances M2/M3 in the [complete C11 roadmap](c11-roadmap.md); it does not
 complete C11, the function/memory model or the standard library.
 
+The [pending-value correction](paper/lazy_values_note.es.md) transports serialized operands across
+later selected effects and defers ancestors whose runtime inverse may survive an inactive arm. It
+also updates the old state references for stable destination identities. Historical campaign results
+remain tied to their original sources; this change does not certify the full control model.
+
 ## Evaluation and quantum meaning
 
 The condition is evaluated first, including its supported ordered effects. Its C truth value is
@@ -70,8 +75,10 @@ inactive branch must remain distinct from that semantic incompatibility.
 - 320 basis executions against ordinary C references at five GCC optimization levels.
 - 65 combinations of CPU bindings, fixed memory aliases, same-unit functions, nested coherent
   control, static loops, inactive arithmetic, signed/unsigned words and explicit observation.
-- 160 complete phased joint states at five GCC levels and both synthesis policies, including
-  original retained roots, selected outputs, exact source channels and zero private garbage.
+- 160 phased domains at five GCC levels and both synthesis policies, with independent C
+  values/phases/history channels, complete gate-state comparisons, independent unitary inverses,
+  exact source observations and private zeros. The history encoding need not use the old root
+  identifier as a separate register.
 - 15 diagnostics for reachable undefined operations and volatile CPU effects, plus five native
   executions checking supported lazy results inside runtime CPU loops.
 - Eight direct fixed-predicate contracts, including stale epochs, partial controls, phase-preserving

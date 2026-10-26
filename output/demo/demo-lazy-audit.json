@@ -1,0 +1,127 @@
+{
+  "status": "passed-native-value-demo",
+  "date": "2026-10-26",
+  "compiler_snapshot": "lazy-pending-source-v1",
+  "compiler_input_files": 237,
+  "package_sha256": "564a0f0a19455b90add8779d05d3e4ffcb796ad36042ae5e3589db6f0c4ab465",
+  "file_sha256": {
+    "LICENSE": "8996eb8860c1f313209a4c5373c067836df2c1c429353a533ab54cdcdf81b573",
+    "bin/lazy_values": "23a089c7020f4bc206e23a7570b7c8f948544f3b51c4ce3188bfe97d54d510e9",
+    "bin/lazy_values_basis": "da32f44fbdbdd48ed01de951d72c1f68b29080283ea3bb83a5fd326accdb3130",
+    "lazy_values.c": "e15e7b631a048a88253173a5c4ab3d5ce0702c6ee734d8316abe889559797bc6",
+    "lazy_values_basis.c": "17d17c416cf116511365d402dcd89152fd046adf83279a65aaf04481be209d46"
+  },
+  "commands": [
+    {
+      "mode": "normal",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-source-v1/build/cket",
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/lazy_values.c",
+        "-O2",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values"
+      ],
+      "exit_code": 0,
+      "stdout": "Built /tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values\nExecution backend: linked native C statevector motor\n"
+    },
+    {
+      "mode": "normal",
+      "seed": 1,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=0 expected=1\n"
+    },
+    {
+      "mode": "normal",
+      "seed": 7,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=1 value=1 condition=1 expected=1\n"
+    },
+    {
+      "mode": "normal",
+      "seed": 13,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=1 expected=1\n"
+    },
+    {
+      "mode": "normal",
+      "seed": 29,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/bin/lazy_values"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=0 expected=1\n"
+    },
+    {
+      "mode": "sanitized",
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-v1/build/cket",
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-demo-package-v1/lazy_values.c",
+        "-O1",
+        "-fsanitize=address,undefined",
+        "-fno-omit-frame-pointer",
+        "-fno-pie",
+        "-no-pie",
+        "-o",
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent"
+      ],
+      "exit_code": 0,
+      "stdout": "Built /tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent\nExecution backend: linked native C statevector motor\n"
+    },
+    {
+      "mode": "sanitized",
+      "seed": 1,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=0 expected=1\n"
+    },
+    {
+      "mode": "sanitized",
+      "seed": 7,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=1 value=1 condition=1 expected=1\n"
+    },
+    {
+      "mode": "sanitized",
+      "seed": 13,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=1 expected=1\n"
+    },
+    {
+      "mode": "sanitized",
+      "seed": 29,
+      "command": [
+        "/tmp/quantum-audit-isolated-20261017/build/lazy-pending-sanitized-results-v1/demo-coherent"
+      ],
+      "exit_code": 0,
+      "stdout": "previous=0 value=1 condition=0 expected=1\n"
+    }
+  ],
+  "basis_example_logs": {
+    "normal": "previous=0 value=1 condition=0\n",
+    "sanitized": "previous=0 value=1 condition=0\n"
+  },
+  "scope": "One corrected known-basis case plus four coherent seed executions per configuration. These measured values do not establish coherence; the independent phased history-channel/state/inverse references are separate. No physical QPU or complete C-profile claim.",
+  "windows_launcher": {
+    "stdout": "LICENSE: OK\nbin/lazy_values: OK\nbin/lazy_values_basis: OK\nlazy_values.c: OK\nlazy_values_basis.c: OK\nprevious=0 value=1 condition=0\nprevious=0 value=1 condition=0 expected=1\nprevious=1 value=1 condition=1 expected=1\nprevious=0 value=1 condition=1 expected=1\nprevious=0 value=1 condition=0 expected=1\n",
+    "transport": "stdin tar; no Windows drive mounts",
+    "command": "output\\demo\\run_lazy_demo.cmd",
+    "exit_code": 0
+  }
+}

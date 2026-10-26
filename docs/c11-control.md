@@ -1,11 +1,11 @@
 # Coherent scalar assignments and control joins
 
-**Current finite follow-up:**
-[1.0.0-rc.2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md) corrects the earlier
-reproduced nonidentity coherent heap-copy case. Heap byte patches preserve untouched wires and saved
-source views through overlapping moves. Earlier sections retain their source-scoped results. A
-partial **fixed-buffer** write still has an untouched-byte coherence counterexample; general
-lifetimes/alias/ABI and large profiles remain open.
+**Current finite follow-ups:** [RC2 heap coherence](audit-evidence/heap-coherence-v1/README.es.md)
+and [RC3 fixed buffers](audit-evidence/fixed-patches-v1/README.es.md) correct the published heap and
+untouched fixed-byte counterexamples. The later
+[string-write block](audit-evidence/string-writes-v1/README.es.md) covers a separate finite scope.
+Earlier results retain their source identities. General lifetimes/alias/ABI and large profiles
+remain open.
 
 This advances M2/M3/M4 toward full C11 coverage. Structured coherent `if` statements can update
 supported scalar owners, including fixed array/field/pointer aliases and mutable same-unit quantum
@@ -49,9 +49,9 @@ These are gate computations on registers. No unknown quantum value or branch is 
 CPU. There is no inserted measurement, reset or partial trace. The explicit terminal measurements in
 the example keep their source semantics.
 
-The [current quantum audit](re-audit-2026-10-24-coherence.md) still reproduces failures in scoped
-unobserved-borrow cleanup and nonidentity coherent heap copies. Finite direct fixed-store and heap
-identity corrections do not certify every controlled program.
+The [quantum audit](re-audit-2026-10-24-coherence.md) records the earlier failures and their later
+scoped-borrow, heap and fixed-byte corrections. Those finite results do not certify every controlled
+program.
 
 ## Predicate lifetime and CPU captures
 
@@ -78,7 +78,10 @@ A nested predicate is zero outside its enclosing active controls. C arithmetic o
 defined on the branches where it executes. Range proofs can identify an unconditional, saved Boolean
 identity or complement through truth-preserving casts, logical negation and equality with zero. The
 definition's inputs must be alive at the recorded epochs. Partially controlled definitions and
-general Boolean functions do not receive that certificate.
+general Boolean functions do not receive that alias certificate. A separate bounded polynomial proof
+can now infer a Boolean branch fact from a saved producer with valid input epochs, including its
+recorded control mask. It reasons about zero/one values; the low bit of an arbitrary integer does
+not determine C truth. Neither proof reads amplitudes.
 
 The arithmetic route uses these relations in branch facts. The bounded table route filters rows
 inconsistent with a certified Boolean relation when its canonical source is also in the domain. It
@@ -98,12 +101,18 @@ to be reported separately.
 
 ## Validation scope
 
+The current [reference correction](paper/lazy_values_note.es.md) passes the normal history suite and
+focused instrumented checks. The SDK comparisons listed below retain their historical source
+identities; they are not a new independent SDK qualification of this follow-up.
+
 The coherent additions in `tests/test_coherent_history.inc` distinguish:
 
-- 110 complete Boolean joint states: 11 C profiles at five GCC optimization levels and both table
-  policies. These cover one/two arms, self controls, nesting, CPU snapshots, inactive arithmetic,
-  mutable functions and successive joins. Relative phases and every private wire are compared to
-  explicit value references; source measurement counts are checked separately.
+- 110 Boolean domains: 11 C profiles at five GCC optimization levels and both table policies. These
+  cover one/two arms, self controls, nesting, CPU snapshots, inactive arithmetic, mutable functions
+  and successive joins. Relative phases and every private wire are compared to C
+  value/phase/history-channel references and independent gate trajectories. The complete physical
+  state is checked, including private zeros, then the unitary gate sequence is inverted
+  independently. Source measurement counts are checked separately.
 - 30 complete word states: signed/unsigned eight-bit results and fixed array/pointer aliases with
   known basis word inputs, at five levels and both policies. These do not exhaust arbitrary
   eight-bit superpositions or certify bitfields.
@@ -142,6 +151,6 @@ from stable roots so their physical copies can clean while declared borrowers re
 control masks, acyclicity and proof budgets are checked before the exchange. Complete complex states
 are checked before/during/after cleanup, including negative signed values and phase kickback. This
 finite correction does not qualify general repeated frontend writes, derived destinations,
-correlated range proofs, 64-bit scope cleanup or nonidentity coherent heap copies. The latter still
-has a reproduced inactive-sector coherence failure. See the
+correlated range proofs, 64-bit scope cleanup or all coherent heap copies. The later RC2 heap
+correction closes the specific reproduced inactive-sector failure. See the
 [candidate scope](releases/v1.0.0-rc.1.es.md).

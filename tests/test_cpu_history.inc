@@ -3,7 +3,7 @@
 /* Complete joint states come from independent C value/phase references. Native
  * executions separately check that GCC takes the supplied CPU paths and that
  * conditions with side effects are evaluated exactly once. */
-static void cpu_history_documents(validation *v) {
+static void cpu_history_documents(validation *v, unsigned first_profile, unsigned last_profile) {
     const char *bodies[] = {"if(k)x=false;",
                             "if(k)x=false;else x=true;",
                             "if(++reads&&k){x=false;k=0;}else{x=true;k=1;}",
@@ -22,7 +22,9 @@ static void cpu_history_documents(validation *v) {
                                     "(!(choice&1)&&result!=0)",
                                     "((choice&1)&&result!=!input)"};
     unsigned compiled = 0, executed = 0, states = 0;
-    for (unsigned profile = 0; profile < 8; ++profile)
+    if (first_profile >= last_profile || last_profile > 8)
+        validation_fail("invalid CPU history profile range");
+    for (unsigned profile = first_profile; profile < last_profile; ++profile)
         for (unsigned level = 0; level < 5; ++level) {
             char source[4096], path[4096], compiler[4096], program[8192], executable[4096];
             validation_path(source, sizeof source, "%s/cpu-history.c", v->temp);
@@ -113,6 +115,8 @@ static void cpu_history_documents(validation *v) {
                     unsigned decisions[] = {control, second};
                     char *trace =
                         select_cpu_trace(bound ? bound : ir, decisions, profile == 4 ? 2 : 1);
+                    if (profile == 7 && control)
+                        c->recording = 1;
                     if (!qc_document(c, trace, 0, 1))
                         validation_fail(
                             "CPU history state failed profile=%u level=%s choice=%u tables=%u: %s",
@@ -158,6 +162,27 @@ static void cpu_history_documents(validation *v) {
                                           ((size_t)result << out->wires[0]);
                         angles[sample] = old_n * .11 + old_x * .19 + result * .31 + root_n * .17;
                     }
+                    if (profile == 7 && control) {
+                        size_t public_values[4];
+                        unsigned history[4];
+                        size_t public_mask =
+                            ((size_t)1 << qc_lookup(c, 0)->wires[0]) | ((size_t)1 << out->wires[0]);
+                        for (unsigned sample = 0; sample < 4; ++sample) {
+                            unsigned old_n = sample & 1, old_x = sample >> 1;
+                            public_values[sample] = ((size_t)old_n << qc_lookup(c, 0)->wires[0]) |
+                                                    ((size_t)!old_n << out->wires[0]);
+                            // The two coherent stores retain their own active
+                            // old bit, rather than a whole unconditional root.
+                            history[sample] = old_x ? (old_n ? 1 : 2) : 0;
+                        }
+                        history_boolean_rows(c,
+                                             public_values,
+                                             angles,
+                                             history,
+                                             public_mask,
+                                             indices,
+                                             "CPU/coherent C");
+                    }
                     for (size_t basis = 0; basis < qc_state_size(c); ++basis) {
                         double complex expected = 0;
                         for (unsigned sample = 0; sample < 4; ++sample)
@@ -178,6 +203,8 @@ static void cpu_history_documents(validation *v) {
                         if (c->registers[i].alive && c->registers[i].history &&
                             c->registers[i].definition)
                             validation_fail("CPU history private inverse was not cleaned");
+                    if (profile == 7 && control)
+                        coherent_gate_inverse(c);
                     free(trace);
                     free(bound);
                     qc_destroy(c);

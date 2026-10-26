@@ -208,3 +208,18 @@ La revisión también expone una referencia obsoleta en `validate_history`, repr
 construcción publicada de RC3: para `if(c) x=false`, toma el mismo dueño como valor viejo y como
 resultado. Ese fallo no se cuenta como una prueba aprobada. Hace falta actualizar su referencia
 independiente y auditar los demás perfiles; el cierre del CI general sigue abierto.
+
+## Seguimiento del 26 de octubre: operandos pendientes e historial
+
+Se actualizan las referencias escalares, la rama coherente dentro de control CPU y las expresiones
+seleccionadas. Se conservan valores C, fases, clases de historial, estados completos e inversas
+independientes. Al superar el primer fallo antiguo aparecen rechazos reales de incrementos,
+decrementos y asignaciones condicionales: operandos parciales no transportados, antecesores
+liberados antes de su inversa y decisiones que necesitaban volver a materializarse tras un brazo
+inactivo. Se corrigen en el frontend, sin debilitar el verificador del motor.
+
+La suite normal completa de historial pasa 2332 comprobaciones; el alcance cambiado pasa 355
+dirigidas con ASan/UBSan. Las regresiones de expresiones y núcleo pasan 3509 y 395 por construcción.
+La [nota](paper/lazy_values_note.es.md) y la [demo](../output/demo/README-lazy.es.md) explican el
+bloque. El CI completo, las vidas/alias/ABI generales, los perfiles grandes y los papers generales
+siguen pendientes. Los fallos anteriores se mantienen en sus cápsulas originales.

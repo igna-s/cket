@@ -240,6 +240,38 @@ static void lazy_value_combinations(validation *v) {
         count);
 }
 
+// Abstract history labels follow the lexical root writes and saved decisions.
+// They specify which input rows may stay coherent; they do not assign private
+// physical wires or obtain expected values from simulator amplitudes.
+static unsigned lazy_history_class(unsigned profile, unsigned c, unsigned x) {
+    switch (profile) {
+    case 0:
+    case 3:
+    case 4:
+    case 9:
+    case 10:
+    case 11:
+    case 12:
+        return x ? (c ? 1 : 2) : 0;
+    case 1:
+    case 7:
+        return c && x;
+    case 2:
+        return !c && x;
+    case 5:
+    case 6:
+    case 13:
+    case 14:
+        return x;
+    case 8:
+        return c;
+    case 15:
+        return c | (x << 1);
+    default:
+        validation_fail("unknown lazy history channel");
+    }
+}
+
 static void lazy_value_states(validation *v) {
     const char *levels[] = {"-O0", "-O1", "-O2", "-O3", "-Os"};
     unsigned count = 0;
@@ -286,6 +318,7 @@ static void lazy_value_states(validation *v) {
                 if (!context)
                     validation_fail("lazy state allocation failed");
                 qc_allow_tables(context, tables);
+                context->recording = 1;
                 if (!qc_document(context, ir, 0, 1))
                     validation_fail("lazy state execution failed profile=%u level=%s tables=%u: %s",
                                     profile,
@@ -296,21 +329,29 @@ static void lazy_value_states(validation *v) {
                     validation_fail("lazy effect cleanup changed explicit channels");
                 size_t indices[4];
                 double angles[4];
+                size_t public_values[4], public_mask = 0;
+                unsigned history[4];
+                for (unsigned field = 0; field < 3; ++field) {
+                    qc_register *storage = qc_lookup(context, outputs[field]);
+                    if (!storage || !storage->alive || storage->width != 1)
+                        validation_fail("lazy output storage disappeared");
+                    public_mask |= (size_t)1 << storage->wires[0];
+                }
                 for (unsigned raw = 0; raw < 4; ++raw) {
                     unsigned input_c = raw & 1, input_x = raw >> 1, value, next_c, next_x;
                     lazy_reference(profile, input_c, input_x, &value, &next_c, &next_x);
-                    indices[raw] = 0;
-                    const uint32_t ids[] = {0, 1, outputs[0], outputs[1], outputs[2]};
-                    const unsigned values[] = {input_c, input_x, value, next_x, next_c};
-                    for (unsigned field = 0; field < 5; ++field) {
-                        qc_register *storage = qc_lookup(context, ids[field]);
-                        if (!storage || !storage->alive || storage->width != 1)
-                            validation_fail("lazy output/root storage disappeared");
+                    public_values[raw] = 0;
+                    const unsigned values[] = {value, next_x, next_c};
+                    for (unsigned field = 0; field < 3; ++field) {
+                        qc_register *storage = qc_lookup(context, outputs[field]);
                         if (values[field])
-                            indices[raw] |= (size_t)1 << storage->wires[0];
+                            public_values[raw] |= (size_t)1 << storage->wires[0];
                     }
                     angles[raw] = .19 * input_c + .31 * input_x + .37 * value;
+                    history[raw] = lazy_history_class(profile, input_c, input_x);
                 }
+                history_boolean_rows(
+                    context, public_values, angles, history, public_mask, indices, "lazy C");
                 for (size_t basis = 0; basis < qc_state_size(context); ++basis) {
                     double complex expected = 0;
                     for (unsigned raw = 0; raw < 4; ++raw)
@@ -328,6 +369,7 @@ static void lazy_value_states(validation *v) {
                     if (context->registers[i].alive && context->registers[i].history &&
                         context->registers[i].definition)
                         validation_fail("lazy decision/intermediate history was not uncomputed");
+                coherent_gate_inverse(context);
                 qc_destroy(context);
                 ++count;
             }
@@ -335,7 +377,7 @@ static void lazy_value_states(validation *v) {
         }
     checks += count;
     printf(
-        "PASS %u lazy full states: independent C values, phases, retained roots, zero private garbage, exact channels, five GCC levels and both synthesis policies\n",
+        "PASS %u lazy domains: independent C values/phases/history channels, complete gate states and independent inverses; private zeros, exact observations, five GCC levels and both synthesis policies\n",
         count);
 }
 

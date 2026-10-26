@@ -455,8 +455,22 @@ static void rejections(validation *v) {
 }
 
 int main(int argc, char **argv) {
+    if (argc == 2 && !strcmp(argv[1], "--coherent-reference")) {
+        validation v;
+        validation_init(&v, argv[0]);
+        coherent_documents(&v);
+        coherent_word_documents(&v);
+        cpu_history_documents(&v, 7, 8);
+        lazy_value_states(&v);
+        lazy_value_contracts(&v);
+        validation_cleanup(&v);
+        printf(
+            "%u focused history-reference checks passed; semantic channels, complete gate states, inverses and native paths have separate scopes.\n",
+            checks);
+        return 0;
+    }
     if (argc != 1)
-        validation_fail("usage: validate_history");
+        validation_fail("usage: validate_history [--coherent-reference]");
     states();
     lifetimes();
     cpu_owner_contracts();
@@ -468,7 +482,7 @@ int main(int argc, char **argv) {
     documents(&v);
     coherent_documents(&v);
     coherent_word_documents(&v);
-    cpu_history_documents(&v);
+    cpu_history_documents(&v, 0, 8);
     cpu_word_history_documents(&v);
     effect_value_programs(&v);
     effect_value_states(&v);

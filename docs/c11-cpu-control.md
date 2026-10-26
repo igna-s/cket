@@ -96,7 +96,9 @@ The history tests separate:
 - 40 Boolean C programs across five GCC optimization levels, 90 native paths and 180 complete
   selected-trace states. Cases combine nested branches, mutable procedures, saved CPU conditions,
   captured divisors and coherent control inside a CPU arm. Relative phases and every private wire
-  are compared with explicit references.
+  are compared with explicit references. Nested coherent stores use active old-bit history classes
+  rather than assuming the original root identifier still denotes a separate old value. Their gate
+  trajectories and unitary inverses are interpreted independently.
 - 15 word programs, 30 native paths and 60 complete selected-trace states across five levels and
   both policies. These use known basis eight-bit words through scalar, array and parameter aliases;
   they do not exhaust arbitrary eight-bit input superpositions.
