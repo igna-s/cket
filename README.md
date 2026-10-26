@@ -28,6 +28,13 @@ operate on unmeasured quantum data.
 A [general status overview in Spanish](docs/estado-general-del-proyecto.es.md) explains what works,
 what remains partial or pending, and what the available tests demonstrate.
 
+The development block after RC3 corrects untouched-byte coherence in fixed-word `strcpy`, `strncpy`,
+`strcat` and `strncat`, using quantum write masks when the terminator is quantum. The
+[string-write note](docs/paper/string_writes_note.es.md) explains retained history, cleanup, finite
+validation and resource exclusions. This does not qualify every string writer or the full everyday C
+profile. An old scalar-history validator still has a reproducible reference mismatch, including on
+RC3; the general verification gate remains open.
+
 **Partial fixed-word writes now preserve untouched bytes in the published counterexample.** The
 [new evidence](docs/audit-evidence/fixed-patches-v1/README.es.md) records 1920 semantic public
 density comparisons, 1920 independently evolved joint states and 912 complete inverses, with normal

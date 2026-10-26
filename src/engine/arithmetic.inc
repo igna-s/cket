@@ -196,6 +196,61 @@ static int ar_register_boolean_alias(
     return !*p->c->error;
 }
 
+static int ar_bit_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wanted) {
+    uint64_t width;
+    int operation = cj_get(p->d, e, "op");
+    if (!cj_u64(p->d, cj_get(p->d, e, "bits"), &width) ||
+        (width != 1 && !cj_equal(p->d, operation, "eq") && !cj_equal(p->d, operation, "ne") &&
+         !cj_equal(p->d, operation, "not") && !cj_equal(p->d, operation, "land") &&
+         !cj_equal(p->d, operation, "lor")))
+        return 0; // A general integer's low bit does not determine C truth.
+    uint32_t id;
+    int inverted = 0;
+    if (!ar_boolean_alias(p, p->d, fact->expression, &id, &inverted, 0))
+        return 0;
+    qc_register *r = reg(p->c, id);
+    if (!r || !r->alive || !r->prepared || !r->definition)
+        return 0;
+    for (unsigned i = 0; i < r->ndeps; ++i) {
+        qc_register *input = reg(p->c, r->deps[i]);
+        if (!input || !input->alive || input->epoch != r->epochs[i])
+            return 0;
+    }
+    qc_context proof = *p->c;
+    proof.symbolic_work = 0;
+    proof.error[0] = 0;
+    cj_doc d = {0};
+    bit_poly condition, value;
+    int ok = cj_parse(&d, r->definition) && expr_bit(&proof, &d, 0, 0, &condition, 0) &&
+             expr_bit(&proof, p->d, e, 0, &value, 0);
+    cj_free(&d);
+    if (!ok)
+        return 0;
+    for (unsigned wire = 0; wire < QC_MAX_PHYSICAL; ++wire) {
+        if (!(r->definition_mask & QC_WIRE(wire)))
+            continue;
+        bit_poly gate = {.terms = {QC_WIRE(wire)}, .count = 1}, next;
+        if (!(r->definition_pattern & QC_WIRE(wire)) && !poly_toggle(&proof, &gate, 0))
+            return 0;
+        if (!poly_product(&proof, &next, &condition, &gate))
+            return 0;
+        condition = next;
+    }
+    if (!(fact->wanted ^ inverted) && !poly_toggle(&proof, &condition, 0))
+        return 0;
+    for (int candidate = 0; candidate < 2; ++candidate) {
+        bit_poly difference = value, contradiction;
+        if ((candidate && !poly_toggle(&proof, &difference, 0)) ||
+            !poly_product(&proof, &contradiction, &condition, &difference))
+            return 0;
+        if (!contradiction.count) {
+            *wanted = candidate;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 static int ar_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wanted) {
     *wanted = fact->wanted;
     if (ar_same(p, e, fact->expression, 0))
@@ -205,7 +260,7 @@ static int ar_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wanted)
     if (!ar_boolean_alias(p, p->d, e, &value_id, &value_inverted, 0) ||
         !ar_boolean_alias(p, p->d, fact->expression, &fact_id, &fact_inverted, 0) ||
         value_id != fact_id)
-        return 0;
+        return ar_bit_truth_fact(p, e, fact, wanted);
     *wanted ^= value_inverted ^ fact_inverted;
     return 1;
 }
@@ -225,6 +280,20 @@ static int ar_boolean_constant(ar_builder *p, const cj_doc *d, int e, int *value
     if (cj_equal(d, op, "const") && cj_u64(d, cj_get(d, e, "value"), &raw)) {
         *value = (raw & bits_mask((unsigned)width)) != 0;
         return 1;
+    }
+    if (width == 1) {
+        // Bit certificates can prove a byte comparison constant even when a
+        // numeric interval loses holes after narrowing. This proof is isolated
+        // from arithmetic work/error state and never inspects amplitudes.
+        qc_context proof = *p->c;
+        proof.symbolic_work = 0;
+        proof.error[0] = 0;
+        bit_poly result;
+        if (expr_bit(&proof, d, e, 0, &result, 0) &&
+            (!result.count || (result.count == 1 && !result.terms[0]))) {
+            *value = result.count != 0;
+            return 1;
+        }
     }
     if (cj_equal(d, op, "reg") && width == 1 && cj_u64(d, cj_get(d, e, "id"), &raw))
         return ar_register_boolean_constant(p, (uint32_t)raw, value, depth + 1);
@@ -698,6 +767,13 @@ static int ar_bound(ar_builder *p, int e, unsigned depth) {
         }
     }
 facts:
+    if (w == 1) {
+        int fixed;
+        if (ar_boolean_constant(p, p->d, e, &fixed, 0))
+            r->lo = r->hi = numeric((uint64_t)fixed, 1, r->sign);
+        if (*p->c->error)
+            return 0;
+    }
     if (r->lo < low || r->hi > high) {
         if (r->sign && !cj_equal(p->d, op, "cast"))
             return 0;

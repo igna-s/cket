@@ -11,6 +11,13 @@ static qc_context *observed;
 static char *owner_names[4096];
 static size_t gate_position;
 static uint64_t retained = UINT64_MAX;
+static int exit_registered;
+
+void ownership_checkpoint(const char *tag);
+
+static void exit_checkpoint(void) {
+    ownership_checkpoint("exit");
+}
 
 static void fail_trace(const char *message) {
     fprintf(stderr, "ownership trace: %s\n", message);
@@ -65,7 +72,15 @@ uint64_t __wrap___cket_apply(const char *operation) {
     } else
         retained = UINT64_MAX;
     cj_free(&d);
-    return __real___cket_apply(operation);
+    uint64_t result = __real___cket_apply(operation);
+    // The runtime registers its destructor after constructing the context.
+    // Register here, after the first call, so this observer runs before it.
+    if (!exit_registered && getenv("OWNERSHIP_EXIT_CHECKPOINT")) {
+        if (atexit(exit_checkpoint))
+            fail_trace("cannot observe failed operation");
+        exit_registered = 1;
+    }
+    return result;
 }
 
 static void mask_json(qc_mask value) {

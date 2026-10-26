@@ -29,7 +29,21 @@ tree make_quantum_value_program(tree call,
                                 tree defined,
                                 std::vector<tree> prefix = {},
                                 tree result_value = NULL_TREE,
-                                const std::map<tree, tree> &bit_masks = {}) {
+                                const std::map<tree, tree> &bit_masks = {},
+                                const std::map<tree, tree> &quantum_masks = {}) {
+    if (!quantum_masks.empty() || words.empty()) {
+        // Check the whole call before any destination write, including calls
+        // whose first destination mask is zero on some amplitudes.
+        tree checked =
+            fold_build3_loc(at(call),
+                            COND_EXPR,
+                            unsigned_char_type_node,
+                            defined,
+                            build_zero_cst(unsigned_char_type_node),
+                            missing_string_terminator(unsigned_char_type_node, at(call)));
+        quantum_value_capture(call, checked, "__cket_string_domain_", prefix);
+        defined = boolean_true_node;
+    }
     QuantumValueProgram operation;
     operation.prefix = std::move(prefix);
     operation.result = result_value;
@@ -53,6 +67,11 @@ tree make_quantum_value_program(tree call,
             operation.bit_masks.emplace(update, mask->second);
             // Keep metadata-only mask trees reachable by GCC's collector.
             arguments.push_back(mask->second);
+        }
+        auto selector = quantum_masks.find(word.first);
+        if (selector != quantum_masks.end()) {
+            operation.quantum_masks.emplace(update, selector->second);
+            arguments.push_back(selector->second);
         }
         arguments.push_back(update);
     }

@@ -1409,7 +1409,8 @@ void materialize_assignment_borrows(unsigned target, location_t loc, tree *list)
 void rebind_guarded_saves(const Variable &var,
                           unsigned history,
                           const std::string &bit_mask = "",
-                          const std::set<unsigned> &mask_parameters = {}) {
+                          const std::set<unsigned> &mask_parameters = {},
+                          const std::set<unsigned> &mask_sources = {}) {
     std::string leaf = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
                        ",\"bits\":" + std::to_string(var.width) +
                        ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
@@ -1417,6 +1418,7 @@ void rebind_guarded_saves(const Variable &var,
                            ",\"bits\":" + std::to_string(var.width) +
                            ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
     std::set<unsigned> sources{var.id, history};
+    sources.insert(mask_sources.begin(), mask_sources.end());
     previous = select_controls(previous, leaf, var.width, var.is_signed, sources);
     if (!bit_mask.empty()) {
         std::string type = ",\"bits\":" + std::to_string(var.width) + ",\"signed\":false";
@@ -1496,7 +1498,8 @@ void patched_assignment(Variable &var,
                         const std::set<unsigned> &deps,
                         tree bit_mask,
                         location_t loc,
-                        tree *list) {
+                        tree *list,
+                        tree quantum_mask = NULL_TREE) {
     std::set<unsigned> mask_parameters;
     std::string mask;
     tree literal = strip(fold(bit_mask));
@@ -1534,6 +1537,18 @@ void patched_assignment(Variable &var,
         mask = cpu_parameter(captured);
         mask_parameters.insert(cpu_parameter_ids.at(captured));
     }
+    std::string selector_field, effective_mask = mask;
+    std::set<unsigned> mask_sources;
+    if (quantum_mask) {
+        auto &selector = variables.at(strip(quantum_mask));
+        consume(selector);
+        selector.optional_definition = selector.runtime_history = true;
+        selector_field = ",\"mask_register\":" + std::to_string(selector.id);
+        mask_sources.insert(selector.id);
+        effective_mask = "{\"op\":\"band\",\"bits\":64,\"signed\":false,\"args\":[" + mask +
+                         ",{\"op\":\"cast\",\"bits\":64,\"signed\":false,\"args\":[" +
+                         register_expression(selector) + "]}]}";
+    }
     std::set<unsigned> parameters;
     parameters.swap(active_cpu_parameters);
     unsigned history = next_id++;
@@ -1548,9 +1563,13 @@ void patched_assignment(Variable &var,
     append(list,
            emit_operation("{\"op\":\"qpatch\",\"id\":" + std::to_string(var.id) +
                               ",\"history\":" + std::to_string(history) + ",\"bit_mask\":" + mask +
-                              ",\"expr\":" + expr + control_json() + '}',
+                              // A captured quantum mask already includes the
+                              // enclosing controls. Keeping them twice would
+                              // retain decisions even in zero-mask sectors.
+                              ",\"expr\":" + expr + selector_field +
+                              (quantum_mask ? ",\"controls\":[]" : control_json()) + '}',
                           loc));
-    rebind_guarded_saves(var, history, mask, mask_parameters);
+    rebind_guarded_saves(var, history, effective_mask, mask_parameters, mask_sources);
     for (unsigned source : deps)
         taint_uniform(source);
     append(list,
@@ -2443,8 +2462,15 @@ tree lower_node(tree value) {
             // not a permutation of the old word; retain its previous owner.
             auto mask = operation.bit_masks.find(update);
             if (mask != operation.bit_masks.end())
-                patched_assignment(
-                    target, expression, dependencies, mask->second, at(value), &list);
+                patched_assignment(target,
+                                   expression,
+                                   dependencies,
+                                   mask->second,
+                                   at(value),
+                                   &list,
+                                   operation.quantum_masks.count(update)
+                                       ? operation.quantum_masks.at(update)
+                                       : NULL_TREE);
             else
                 versioned_assignment(target, expression, dependencies, at(value), &list);
             cleanup(&list);

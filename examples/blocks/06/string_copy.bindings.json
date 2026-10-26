@@ -1,8 +1,13 @@
 [
   {
-    "instruction": 57,
+    "instruction": 73,
     "values": [
-      0,
+      0
+    ]
+  },
+  {
+    "instruction": 77,
+    "values": [
       0
     ]
   }

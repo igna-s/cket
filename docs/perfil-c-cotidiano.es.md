@@ -27,6 +27,12 @@ La ciberseguridad, criptografía y autenticación permanecen clásicas. El cierr
 requiere completar caracteres anchos, complejos, atomics, threads ni todas las interfaces poco
 habituales. Sus entradas pendientes siguen visibles en el inventario.
 
+El bloque posterior a RC3 corrige la coherencia de bytes intactos en cuatro adaptadores fijos de
+cadenas. La [nota](paper/string_writes_note.es.md) delimita los programas comprobados y los casos
+que exceden los recursos. El validador general de historial conserva una referencia escalar
+incompatible con las identidades actuales, reproducida también en RC3; ese cierre y la validación
+integrada continúan pendientes.
+
 El avance del 24 de octubre añade `memcpy` y `memmove` entre heaps y `memset` sobre heaps, con
 longitudes CPU de ejecución, vistas de bytes parciales y retornos de dirección clásicos. Se
 conservan los originales para los movimientos solapados y las inversas. También se copian buffers

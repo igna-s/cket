@@ -103,6 +103,7 @@ std::map<tree, QuantumMemoryCopy> quantum_memory_copies;
 struct QuantumValueProgram {
     std::vector<tree> prefix, updates;
     std::map<tree, tree> bit_masks;
+    std::map<tree, tree> quantum_masks;
     tree result = NULL_TREE;
 };
 

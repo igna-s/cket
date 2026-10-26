@@ -9,6 +9,21 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
+**Bloque de desarrollo posterior a RC3:** las escrituras fijas de `strcpy`, `strncpy`, `strcat` y
+`strncat` usan máscaras de los bytes realmente escritos. Un NUL cuántico selecciona esa máscara sin
+medirlo; las concatenaciones vacías no guardan una historia de escritura. La
+[nota de cadenas](paper/string_writes_note.es.md) explica la no clonación, los productores y las
+exclusiones de recursos. Las matrices normales O0/O2 y ASan/UBSan O1 registran 1776 densidades
+públicas, 1776 estados conjuntos por puertas independientes y 888 inversas, con ámbitos distintos.
+Las 24 comprobaciones adicionales de NUL inválido y guarda inactiva verifican el estado anterior a
+cualquier escritura. La 1.0 estable sigue pendiente.
+
+**Fallo de validación abierto:** `validate_history` tiene una referencia escalar anterior al cambio
+de identidades: usa el mismo dueño para representar el valor viejo y el actualizado. Falla en el
+primer caso `if(c) x=false`, tanto sobre RC3 como sobre este bloque. Se conserva el fallo; hace
+falta actualizar y auditar esa referencia. Las campañas dirigidas que pasan no convierten el CI
+general en aprobado.
+
 **Se corrigen las copias coherentes del heap del contraejemplo anterior:** pureza sectorial 1 → 1 y
 error de densidad cero. Las escrituras parciales del heap intercambian solamente los bits escritos;
 el byte intacto conserva coherencia en ambas ramas. Las copias solapadas leen las expresiones
@@ -27,9 +42,9 @@ préstamos con fases después de cambiar la longitud. Los temporales y sus predi
 cuando terminan sus consumidores. La [nota técnica](paper/fixed_patches_note.es.md) explica los
 contratos y sus límites.
 
-**Qué sigue pendiente:** cerrar vidas y alias generales, composición y el perfil cotidiano; revisar
-los adaptadores de cadenas que escriben bytes con selección cuántica; calificar recursos de 64 bits
-y más combinaciones de escrituras repetidas. Flotantes, papers y CI general conservan sus
+**Qué sigue pendiente:** cerrar vidas y alias generales, composición y el perfil cotidiano; ampliar
+los adaptadores de cadenas y resolver los perfiles excluidos por recursos; calificar recursos de 64
+bits y más combinaciones de escrituras repetidas. Flotantes, papers y CI general conservan sus
 pendientes. Los resultados finitos anteriores no son un porcentaje de C ni certifican toda la
 biblioteca. El [informe](re-audit-2026-10-24-coherence.md) conserva cada revisión histórica.
 

@@ -93,9 +93,15 @@ tree expand_string_concat(tree call) {
     tree end = fold_build2_loc(at(call), PLUS_EXPR, integer_type_node, start, copied);
     tree defined = fold_build2_loc(
         at(call), LT_EXPR, boolean_type_node, end, build_int_cstu(integer_type_node, count));
+    tree fixed_length = strip(fold(source_length));
+    if (fixed_length && TREE_CODE(fixed_length) == INTEGER_CST && integer_zerop(fixed_length))
+        // An empty append validates the destination string but writes no
+        // bytes. It needs neither a word mask nor an old-value history.
+        return make_quantum_value_program(call, {}, defined, std::move(prefix));
     std::vector<std::pair<tree, tree>> words;
+    std::map<tree, tree> bit_masks, mask_values;
     for (uint64_t i = 0; i < count; ++i) {
-        tree next = object_byte(destination, i, at(call));
+        tree next = build_zero_cst(integer_type_node);
         for (uint64_t j = 0; j < reads; ++j) {
             tree after_start = fold_build2_loc(at(call),
                                                PLUS_EXPR,
@@ -118,15 +124,43 @@ tree expand_string_concat(tree call) {
                                    object_byte(source, j, at(call)),
                                    next);
         }
-        tree terminator = fold_build2_loc(
-            at(call), EQ_EXPR, boolean_type_node, end, build_int_cstu(integer_type_node, i));
-        next = fold_build3_loc(at(call),
-                               COND_EXPR,
-                               integer_type_node,
-                               terminator,
-                               build_zero_cst(integer_type_node),
-                               next);
+        tree position = build_int_cstu(integer_type_node, i);
+        tree after_start = fold_build2_loc(at(call), LE_EXPR, boolean_type_node, start, position);
+        tree through_end = fold_build2_loc(at(call), LE_EXPR, boolean_type_node, position, end);
+        tree nonempty = fold_build2_loc(
+            at(call), NE_EXPR, boolean_type_node, copied, build_zero_cst(integer_type_node));
+        tree enabled = fold_build2_loc(
+            at(call),
+            TRUTH_ANDIF_EXPR,
+            boolean_type_node,
+            nonempty,
+            fold_build2_loc(
+                at(call), TRUTH_ANDIF_EXPR, boolean_type_node, after_start, through_end));
+        uint64_t offset = destination.offset + i;
+        tree target = destination.elements[(size_t)(offset / destination.stride)];
+        tree type = unsigned_type_for(TREE_TYPE(target));
+        uint64_t mask = string_byte_mask(destination, offset);
+        auto previous_bits = bit_masks.find(target);
+        bit_masks[target] = build_int_cstu(
+            long_long_unsigned_type_node,
+            mask | (previous_bits == bit_masks.end() ? 0 : tree_to_uhwi(previous_bits->second)));
+        tree selected = fold_build3_loc(
+            at(call), COND_EXPR, type, enabled, build_int_cstu(type, mask), build_zero_cst(type));
+        auto previous_mask = mask_values.find(target);
+        mask_values[target] =
+            previous_mask == mask_values.end()
+                ? selected
+                : fold_build2_loc(at(call), BIT_IOR_EXPR, type, previous_mask->second, selected);
         string_word_byte(destination, i, next, words, at(call));
     }
-    return make_quantum_value_program(call, words, defined, std::move(prefix));
+    std::map<tree, tree> quantum_masks;
+    for (const auto &entry : mask_values)
+        quantum_masks[entry.first] =
+            quantum_value_capture(call,
+                                  entry.second,
+                                  "__cket_concat_mask_",
+                                  prefix,
+                                  unsigned_type_for(TREE_TYPE(entry.first)));
+    return make_quantum_value_program(
+        call, words, defined, std::move(prefix), NULL_TREE, bit_masks, quantum_masks);
 }

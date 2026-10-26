@@ -464,11 +464,25 @@ static int heap_instruction(qc_context *c, const cj_doc *d, int inst) {
     return 1;
 }
 
+static int verify_mask_register(
+    qc_context *c, const cj_doc *d, int inst, uint32_t first, uint32_t second, unsigned width) {
+    int token = cj_get(d, inst, "mask_register");
+    if (token < 0)
+        return 1;
+    uint64_t id;
+    if (!cj_u64(d, token, &id) || id > UINT32_MAX || id == first || id == second)
+        return qc_fail(c, "quantum bit mask requires a separate register identity");
+    qc_register *r = qc_lookup(c, (uint32_t)id);
+    return (r && r->alive && r->prepared && !r->finished && r->width == width &&
+            r->signed_type == 0) ||
+           qc_fail(c, "quantum bit mask requires available unsigned storage of matching width");
+}
+
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     int heap_op = cj_get(d, inst, "op");
     if (cj_equal(d, heap_op, "qpatch")) {
         static const char *const allowed[] = {
-            "op", "id", "history", "expr", "bit_mask", "controls", NULL};
+            "op", "id", "history", "expr", "bit_mask", "mask_register", "controls", NULL};
         uint64_t id, history, selected, width, mask_width;
         int expr = cj_get(d, inst, "expr"), mask = cj_get(d, inst, "bit_mask");
         if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
@@ -487,6 +501,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             (width < 64 && selected >> width))
             return qc_fail(c,
                            "register patch needs prepared typed input and separate clean history");
+        if (!verify_mask_register(c, d, inst, (uint32_t)id, (uint32_t)history, a->width))
+            return 0;
         for (int t = expr; t < d->tokens[expr].next; ++t) {
             uint64_t source;
             if (d->tokens[t].kind == '{' && cj_equal(d, cj_get(d, t, "op"), "reg") &&
@@ -572,7 +588,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     }
     if (cj_equal(d, heap_op, "qswap")) {
         static const char *const allowed[] = {
-            "op", "id", "other", "controls", "rebind", "bit_mask", NULL};
+            "op", "id", "other", "controls", "rebind", "bit_mask", "mask_register", NULL};
         static const char *const control[] = {"id", "value", NULL};
         uint64_t id, other;
         if (!fields(c, d, inst, allowed) || !unsigned_field(c, d, inst, "id", &id) ||
@@ -590,6 +606,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         if (mask_node >= 0 && (!cj_u64(d, mask_node, &bit_mask) || !bit_mask ||
                                (a->width < 64 && bit_mask >> a->width)))
             return qc_fail(c, "quantum swap requires a nonzero in-width bit mask");
+        if (!verify_mask_register(c, d, inst, (uint32_t)id, (uint32_t)other, a->width))
+            return 0;
         int guards = cj_get(d, inst, "controls");
         if (guards >= 0) {
             if (d->tokens[guards].kind != '[' || d->tokens[guards].children > QC_MAX_PHYSICAL)

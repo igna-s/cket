@@ -1,7 +1,10 @@
-# Checked `strlen` and `strcmp`
+# Checked string adapters
 
-This contract describes the partial adapters in the current 144-input integration. It does not claim
-complete quantum C11 string compatibility or a completed broad campaign.
+The read-only contract below describes the partial adapters qualified in the historical 144-input
+integration. The development block after RC3 adds a separate
+[fixed-word string-write correction](paper/string_writes_note.es.md) for `strcpy`, `strncpy`,
+`strcat` and `strncat`. Its quantum masks and finite resource exclusions do not qualify complete
+quantum C11 string compatibility or a completed broad campaign.
 
 The adapters preserve the input registers and compute the result reversibly. `strlen` retains C's
 `size_t` result type. `strcmp` interprets characters as unsigned bytes and returns the exact

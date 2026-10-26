@@ -391,10 +391,27 @@ heap_decision_reads(qc_context *c, uint32_t id, uint32_t owner, unsigned depth, 
     return reads;
 }
 
+static char *heap_memory_text(qc_context *c, const char *format, ...);
+
 static char *
 heap_store_value(qc_context *c, const cj_doc *d, int inst, qc_heap *heap, uint64_t selected) {
     char *expression = heap_guard_expression(
         c, d, inst, heap->width, heap->sign, cj_copy(d, cj_get(d, inst, "expr")));
+    uint64_t selector;
+    if (expression && cj_u64(d, cj_get(d, inst, "mask_register"), &selector)) {
+        char *masked = heap_memory_text(
+            c,
+            "{\"op\":\"cast\",\"bits\":%u,\"signed\":%s,\"args\":[{\"op\":\"band\",\"bits\":%u,\"signed\":false,\"args\":[{\"op\":\"cast\",\"bits\":%u,\"signed\":false,\"args\":[%s]},{\"op\":\"reg\",\"id\":%u,\"bits\":%u,\"signed\":false}]}]}",
+            heap->width,
+            heap->sign ? "true" : "false",
+            heap->width,
+            heap->width,
+            expression,
+            (uint32_t)selector,
+            heap->width);
+        free(expression);
+        expression = masked;
+    }
     if (expression && selected != bits_mask(heap->width)) {
         size_t size = strlen(expression) + 256;
         char *masked = malloc(size);
@@ -487,6 +504,131 @@ static char *patch_old_definition(qc_context *c, uint32_t owner) {
     return value;
 }
 
+/* Inline certified producers before changing their public output. This rebases
+ * a mask onto unchanged roots without observing or copying the quantum state.
+ * An unknown destination root has no such recipe and needs decision history. */
+static char *patch_stable_text(qc_context *c,
+                               const char *text,
+                               uint32_t owner,
+                               const char *old_definition,
+                               unsigned depth,
+                               unsigned *work) {
+    if (depth > 128 || ++*work > 4096) {
+        qc_fail(c, "quantum mask producer expansion budget exceeded");
+        return NULL;
+    }
+    cj_doc d = {0};
+    if (!cj_parse(&d, text)) {
+        cj_free(&d);
+        qc_fail(c, "cannot parse quantum mask producer");
+        return NULL;
+    }
+    char *out = malloc(65537);
+    size_t copied = 0, used = 0;
+    if (!out) {
+        cj_free(&d);
+        qc_fail(c, "cannot expand quantum mask producer");
+        return NULL;
+    }
+    for (int token = 0; token < d.count; ++token) {
+        uint64_t id;
+        if (d.tokens[token].kind != '{' || !cj_equal(&d, cj_get(&d, token, "op"), "reg") ||
+            !cj_u64(&d, cj_get(&d, token, "id"), &id))
+            continue;
+        qc_register *r = reg(c, (uint32_t)id);
+        char *value = NULL;
+        if (!r || !r->alive || !r->prepared)
+            qc_fail(c, "quantum mask producer input is unavailable");
+        else if (id == owner)
+            value = old_definition
+                        ? patch_stable_text(c, old_definition, owner, NULL, depth + 1, work)
+                        : NULL;
+        else if (r->basis_known) {
+            char *producer = patch_old_definition(c, (uint32_t)id);
+            if (producer)
+                value = patch_stable_text(c, producer, owner, old_definition, depth + 1, work);
+            free(producer);
+        } else {
+            value = cj_copy(&d, token);
+            if (!value)
+                qc_fail(c, "cannot copy quantum mask input");
+        }
+        size_t before = d.tokens[token].begin - copied;
+        if (!value || used + before + strlen(value) > 65536) {
+            if (value)
+                qc_fail(c, "expanded quantum mask text budget exceeded");
+            free(value);
+            free(out);
+            cj_free(&d);
+            return NULL;
+        }
+        memcpy(out + used, text + copied, before);
+        used += before;
+        memcpy(out + used, value, strlen(value));
+        used += strlen(value);
+        copied = d.tokens[token].end;
+        free(value);
+    }
+    size_t after = strlen(text + copied);
+    if (used + after > 65536) {
+        free(out);
+        out = NULL;
+        qc_fail(c, "expanded quantum mask text budget exceeded");
+    } else
+        memcpy(out + used, text + copied, after + 1);
+    cj_free(&d);
+    return out;
+}
+
+static int patch_rebase_mask(
+    qc_context *c, uint32_t selector, uint32_t owner, const char *old_definition, unsigned depth) {
+    if (!old_definition)
+        return 0;
+    if (depth > 128)
+        return qc_fail(c, "quantum mask dependency depth exceeded");
+    // Keep shared captures shared. Rebase their recipes individually instead
+    // of duplicating the entire producer graph into every mask bit.
+    qc_register prior = *reg(c, selector);
+    for (unsigned i = 0; i < prior.ndeps; ++i) {
+        uint32_t input = prior.deps[i];
+        if (input == owner)
+            continue;
+        unsigned work = 0;
+        int reads = heap_decision_reads(c, input, owner, 0, &work);
+        if (reads < 0 || (reads && !patch_rebase_mask(c, input, owner, old_definition, depth + 1)))
+            return 0;
+    }
+    char *producer = patch_old_definition(c, selector);
+    unsigned work = 0;
+    char *stable =
+        producer ? patch_stable_text(c, producer, owner, old_definition, 0, &work) : NULL;
+    free(producer);
+    if (!stable)
+        return 0;
+    cj_doc d = {0};
+    domain inputs;
+    int ok = cj_parse(&d, stable) && collect_domain(c, &d, 0, &inputs);
+    cj_free(&d);
+    if (!ok) {
+        free(stable);
+        if (!*c->error)
+            qc_fail(c, "cannot certify quantum mask producer");
+        return 0;
+    }
+    qc_register *r = reg(c, selector);
+    clear_definition(r);
+    r->definition = stable;
+    for (unsigned i = 0; i < inputs.count; ++i)
+        if (!remember_dependency(c, r, inputs.sources[i].id))
+            return 0;
+    return 1;
+}
+
+static int
+patch_stabilize_mask(qc_context *c, uint32_t selector, uint32_t owner, const char *old_definition) {
+    return patch_rebase_mask(c, selector, owner, old_definition, 0);
+}
+
 static int heap_exchange_store(qc_context *c,
                                const cj_doc *d,
                                int inst,
@@ -495,11 +637,20 @@ static int heap_exchange_store(qc_context *c,
                                uint64_t provided_history,
                                uint64_t selected) {
     int provided = provided_history != UINT64_MAX, inactive = 0;
+    uint64_t selector = 0;
+    int quantum_mask = cj_u64(d, cj_get(d, inst, "mask_register"), &selector);
+    char selector_field[64] = "";
+    if (quantum_mask)
+        snprintf(
+            selector_field, sizeof selector_field, ",\"mask_register\":%u", (uint32_t)selector);
     if (provided && !qc_controls_inactive(c, d, inst, &inactive))
         return 0;
     // A proved identity still supplies the compiler's old-value view. Keep
     // that temporary derived so disposal can really reverse the copy.
-    if (provided && (!selected || inactive || heap_store_identity(c, d, inst, owner))) {
+    int empty_mask = quantum_mask && reg(c, (uint32_t)selector)->basis_known &&
+                     !reg(c, (uint32_t)selector)->basis_value;
+    if (provided &&
+        (!selected || inactive || empty_mask || heap_store_identity(c, d, inst, owner))) {
         char *value = heap_store_value(c, d, inst, heap, selected);
         int ok = value && heap_compute(c, (uint32_t)provided_history, value);
         free(value);
@@ -527,6 +678,23 @@ static int heap_exchange_store(qc_context *c,
         hold->ndeps = prior.ndeps;
         memcpy(hold->deps, prior.deps, prior.ndeps * sizeof *prior.deps);
         memcpy(hold->epochs, prior.epochs, prior.ndeps * sizeof *prior.epochs);
+    }
+    if (quantum_mask) {
+        unsigned work = 0;
+        int reads = heap_decision_reads(c, (uint32_t)selector, owner, 0, &work);
+        if (reads < 0) {
+            free(old_definition);
+            return 0;
+        }
+        if (reads && !patch_stabilize_mask(c, (uint32_t)selector, owner, old_definition)) {
+            if (*c->error) {
+                free(old_definition);
+                return 0;
+            }
+            qc_mask seen = 0;
+            taint_uniform(c, (uint32_t)selector, &seen);
+            clear_definition(reg(c, (uint32_t)selector));
+        }
     }
     int guards = cj_get(d, inst, "controls");
     size_t capacity = guards >= 0 ? (size_t)d->tokens[guards].children * 64 + 3 : 3, used = 1;
@@ -597,7 +765,7 @@ static int heap_exchange_store(qc_context *c,
             taint_uniform(c, owner, &seen);
             clear_definition(r);
         }
-        size_t size = used + 160;
+        size_t size = used + 256;
         char *swap = malloc(size);
         if (!swap)
             ok = qc_fail(c, "cannot allocate controlled heap exchange");
@@ -606,21 +774,27 @@ static int heap_exchange_store(qc_context *c,
                 swap,
                 size,
                 "{\"op\":\"qswap\",\"id\":%u,\"other\":%u,\"rebind\":true,\"bit_mask\":%" PRIu64
-                ",\"controls\":%s}",
+                ",\"controls\":%s%s}",
                 owner,
                 history,
                 selected,
-                guard_text);
+                guard_text,
+                selector_field);
             ok = qc_apply(c, swap, NULL);
             free(swap);
         }
     }
     if (ok && old_definition) {
-        size_t size = strlen(old_definition) + used + 64;
+        size_t size = strlen(old_definition) + used + 128;
         char *text = malloc(size);
         cj_doc producer = {0};
         if (text)
-            snprintf(text, size, "{\"expr\":%s,\"controls\":%s}", old_definition, guard_text);
+            snprintf(text,
+                     size,
+                     "{\"expr\":%s,\"controls\":%s%s}",
+                     old_definition,
+                     guard_text,
+                     selector_field);
         char *recipe = text && cj_parse(&producer, text)
                            ? heap_store_value(c, &producer, 0, heap, selected)
                            : NULL;

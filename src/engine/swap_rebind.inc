@@ -181,19 +181,37 @@ swap_old_value(qc_context *c, const cj_doc *d, int inst, uint32_t same, uint32_t
         }
     uint64_t selected = bits_mask(r->width);
     cj_u64(d, cj_get(d, inst, "bit_mask"), &selected);
-    if (selected != bits_mask(r->width)) {
+    uint64_t selector;
+    int quantum_mask = cj_u64(d, cj_get(d, inst, "mask_register"), &selector);
+    if (quantum_mask || selected != bits_mask(r->width)) {
+        char *written_mask;
+        if (quantum_mask) {
+            unsigned work = 0;
+            written_mask = heap_memory_binary(
+                c,
+                "band",
+                r->width,
+                heap_memory_cast(
+                    c,
+                    r->width,
+                    0,
+                    swap_stable_register(c, (uint32_t)selector, same, other, 0, &work)),
+                heap_memory_leaf(c, "const", r->width, selected));
+        } else
+            written_mask = heap_memory_leaf(c, "const", r->width, selected);
+        if (!written_mask)
+            goto failed;
+        char *kept_mask =
+            heap_memory_binary(c,
+                               "bxor",
+                               r->width,
+                               heap_memory_leaf(c, "const", r->width, bits_mask(r->width)),
+                               strdup(written_mask));
         char *untouched = heap_memory_binary(
-            c,
-            "band",
-            r->width,
-            heap_memory_cast(c, r->width, 0, inactive),
-            heap_memory_leaf(c, "const", r->width, bits_mask(r->width) & ~selected));
+            c, "band", r->width, heap_memory_cast(c, r->width, 0, inactive), kept_mask);
         inactive = NULL;
-        char *written = heap_memory_binary(c,
-                                           "band",
-                                           r->width,
-                                           heap_memory_cast(c, r->width, 0, value),
-                                           heap_memory_leaf(c, "const", r->width, selected));
+        char *written = heap_memory_binary(
+            c, "band", r->width, heap_memory_cast(c, r->width, 0, value), written_mask);
         value = heap_memory_cast(c,
                                  r->width,
                                  r->signed_type,
@@ -464,10 +482,16 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     cj_u64(d, cj_get(d, inst, "id"), &left_id);
     cj_u64(d, cj_get(d, inst, "other"), &right_id);
     uint32_t left = (uint32_t)left_id, right = (uint32_t)right_id;
+    uint64_t selector_id;
+    qc_register *selector = cj_u64(d, cj_get(d, inst, "mask_register"), &selector_id)
+                                ? reg(c, (uint32_t)selector_id)
+                                : NULL;
     int inactive;
     if (!phase_inactive(c, d, inst, &inactive))
         return 0;
     if (inactive)
+        return 1;
+    if (selector && selector->basis_known && !selector->basis_value)
         return 1;
     int rebind = cj_bool(d, cj_get(d, inst, "rebind"));
     if (!rebind && (!unborrowed(c, left) || !unborrowed(c, right)))
@@ -485,7 +509,7 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     uint64_t zeros[2] = {(a->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected),
                          (b->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected)};
     uint64_t lower[2], upper[2];
-    if (selected == bits_mask(a->width)) {
+    if (!selector && selected == bits_mask(a->width)) {
         lower[0] = lower[1] = lower_a < lower_b ? lower_a : lower_b;
         upper[0] = upper[1] = upper_a > upper_b ? upper_a : upper_b;
     } else {
@@ -501,14 +525,27 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
             if (!(selected & (UINT64_C(1) << bit)))
                 continue;
             qc_mask x = QC_WIRE(a->wires[bit]), y = QC_WIRE(b->wires[bit]);
-            if (!qc_emit(c, QC_X, b->wires[bit], mask | x, pattern | x, 0) ||
-                !qc_emit(c, QC_X, a->wires[bit], mask | y, pattern | y, 0) ||
-                !qc_emit(c, QC_X, b->wires[bit], mask | x, pattern | x, 0)) {
+            qc_mask active = mask, value = pattern;
+            if (selector) {
+                qc_mask wire = QC_WIRE(selector->wires[bit]);
+                // A contradictory Boolean outer guard makes this bit inactive.
+                if ((active & wire) && !(value & wire))
+                    continue;
+                active |= wire;
+                value |= wire;
+            }
+            if (!qc_emit(c, QC_X, b->wires[bit], active | x, value | x, 0) ||
+                !qc_emit(c, QC_X, a->wires[bit], active | y, value | y, 0) ||
+                !qc_emit(c, QC_X, b->wires[bit], active | x, value | x, 0)) {
                 swap_free_inverses(plans, count);
                 return 0;
             }
         }
     taint_controls(c, mask);
+    if (selector) {
+        qc_mask seen = 0;
+        taint_uniform(c, selector->id, &seen);
+    }
     unknown_support(a);
     unknown_support(b);
     for (unsigned i = 0; i < 2; ++i) {

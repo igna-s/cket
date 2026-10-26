@@ -1357,6 +1357,11 @@ static int collect_disposed(qc_context *c) {
             if (borrowed)
                 continue;
             uint32_t id = r->id;
+            // A finished fixed-basis output can be erased by its certified
+            // value. Its original recipe may mention old inputs transported
+            // through a later write, but no such inputs are needed here.
+            if (r->basis_known)
+                clear_definition(r);
             if (r->definition && !inverse_disposed(c, id))
                 goto failed;
             r = reg(c, id);
@@ -1735,9 +1740,18 @@ int qc_apply_token(qc_context *c,
             if (mask & (QC_WIRE(r->wires[b])))
                 return qc_fail(c, "XOR control aliases updated storage");
         int expr = cj_get(d, inst, "expr");
+        uint64_t old_zero_mask = r->zero_mask, operand_zero_mask = 0;
         if (has_argument && expr >= 0)
             return qc_fail(c, "runtime XOR argument conflicts with its expression");
         if (expr >= 0) {
+            qc_context proof = *c;
+            proof.symbolic_work = 0;
+            proof.error[0] = 0;
+            for (unsigned bit = 0; bit < r->width && !*proof.error; ++bit) {
+                bit_poly value;
+                if (expr_bit(&proof, d, expr, bit, &value, 0) && !value.count)
+                    operand_zero_mask |= UINT64_C(1) << bit;
+            }
             if (!c->structural && !impossible && !compute(c, d, expr, r, mask, pattern))
                 return 0;
             r = reg(c, (uint32_t)id);
@@ -1756,6 +1770,7 @@ int qc_apply_token(qc_context *c,
             } else {
                 if (!has_argument && !number(c, d, inst, "value", &argument))
                     return 0;
+                operand_zero_mask = bits_mask(r->width) & ~argument;
                 if (!impossible)
                     for (unsigned b = 0; b < r->width; ++b)
                         if (argument & (UINT64_C(1) << b))
@@ -1765,6 +1780,9 @@ int qc_apply_token(qc_context *c,
         }
         taint_controls(c, mask);
         unknown_support(r);
+        // XOR cannot change bits where its operand is proved zero. Preserve
+        // those existing zero facts without reading the simulated state.
+        r->zero_mask = impossible ? old_zero_mask : old_zero_mask & operand_zero_mask;
         r->clean = 0;
         ++r->epoch;
         return 1;
@@ -1941,6 +1959,14 @@ int qc_apply_token(qc_context *c,
                     r->basis_value = lower;
                     r->zero_mask = bits_mask(r->width) & ~lower;
                 }
+            }
+            qc_context proof = *c;
+            proof.symbolic_work = 0;
+            proof.error[0] = 0;
+            for (unsigned bit = 0; bit < r->width && !*proof.error; ++bit) {
+                bit_poly value;
+                if (expr_bit(&proof, d, expr, bit, &value, 0) && !value.count)
+                    r->zero_mask |= UINT64_C(1) << bit;
             }
         }
         ++r->epoch;

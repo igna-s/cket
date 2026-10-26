@@ -113,6 +113,9 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 fixed_patch_proof="$(mktemp -d "$PWD/build/fixed-patch-sanitized-proof.XXXXXX")"
 python3 scripts/validate-fixed-patches.py --compiler-root "$san_root" \
     --output "$fixed_patch_proof/sanitized" --levels O1 --sanitized
+string_write_proof="$(mktemp -d "$PWD/build/string-write-sanitized-proof.XXXXXX")"
+python3 scripts/validate-string-writes.py --compiler-root "$san_root" \
+    --output "$string_write_proof/sanitized" --levels O1 --sanitized
 heap_coherence_proof="$(mktemp -d "$san_root/build/heap-coherence-proof.XXXXXX")"
 python3 scripts/validate-heap-coherence.py --compiler-root "$san_root" \
     --output "$heap_coherence_proof/sanitized" --levels O1 --sanitized

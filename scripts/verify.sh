@@ -31,6 +31,9 @@ build/validate_patches 2>&1 | tee build/verify-patches.log
 fixed_patch_proof="$(mktemp -d "$PWD/build/fixed-patch-proof.XXXXXX")"
 python3 scripts/validate-fixed-patches.py --output "$fixed_patch_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-fixed-patch-states.log
+string_write_proof="$(mktemp -d "$PWD/build/string-write-proof.XXXXXX")"
+python3 scripts/validate-string-writes.py --output "$string_write_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-string-write-states.log
 heap_coherence_proof="$(mktemp -d "$PWD/build/heap-coherence-proof.XXXXXX")"
 python3 scripts/validate-heap-coherence.py --output "$heap_coherence_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-heap-coherence-states.log

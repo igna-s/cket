@@ -486,6 +486,116 @@ static void frontend(validation *v) {
 #include "selection_state.inc"
 #include "small_division_state.inc"
 
+/* C logical results have type int. Their branch facts must constrain the
+ * selected byte, without treating an arbitrary integer as its low bit. */
+static void string_guard_certificates(void) {
+    for (unsigned tables = 0; tables < 2; ++tables)
+        for (unsigned variant = 0; variant < 2; ++variant) {
+            qc_context *c = qc_create_sparse(7, 1024);
+            if (!c)
+                validation_fail("allocation failed");
+            qc_allow_tables(c, tables);
+            apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":16,\"signed\":false}");
+            apply(c, "{\"op\":\"qprepare\",\"id\":0,\"lower\":0,\"upper\":1}");
+            for (unsigned id = 1; id <= 2; ++id) {
+                char text[180];
+                validation_path(text,
+                                sizeof text,
+                                "{\"op\":\"qalloc\",\"id\":%u,\"width\":1,\"signed\":false}",
+                                id);
+                apply(c, text);
+                validation_path(text,
+                                sizeof text,
+                                "{\"op\":\"qprepare\",\"id\":%u,\"lower\":0,\"upper\":1}",
+                                id);
+                apply(c, text);
+            }
+            const char *word = "{\"op\":\"reg\",\"id\":0,\"bits\":16,\"signed\":false}";
+            const char *flag = "{\"op\":\"reg\",\"id\":1,\"bits\":1,\"signed\":false}";
+            const char *high = "{\"op\":\"reg\",\"id\":2,\"bits\":1,\"signed\":false}";
+            char operation[16000];
+            const char *shifted = node("select",
+                                       16,
+                                       0,
+                                       node("ne", 32, 1, high, constant(1, 0, 0), NULL),
+                                       constant(16, 0, 256),
+                                       constant(16, 0, 0));
+            validation_path(operation,
+                            sizeof operation,
+                            "{\"op\":\"qxor_inplace\",\"id\":0,\"expr\":%s}",
+                            shifted);
+            apply(c, operation);
+            if (qc_lookup(c, 0)->zero_mask != UINT64_C(0xfefe))
+                validation_fail("in-place XOR lost certified zero bits");
+            const char *byte = node("cast", 8, 0, word, NULL, NULL);
+            const char *guard = node("cast",
+                                     1,
+                                     0,
+                                     node("land",
+                                          32,
+                                          1,
+                                          node("ne", 32, 1, flag, constant(1, 0, 0), NULL),
+                                          node("eq", 32, 1, byte, constant(8, 0, 0), NULL),
+                                          NULL),
+                                     NULL,
+                                     NULL);
+            apply(c, "{\"op\":\"qalloc\",\"id\":3,\"width\":1,\"signed\":false}");
+            validation_path(
+                operation, sizeof operation, "{\"op\":\"qcompute\",\"id\":3,\"expr\":%s}", guard);
+            apply(c, operation);
+            const char *decision = "{\"op\":\"reg\",\"id\":3,\"bits\":1,\"signed\":false}";
+            const char *bad = node("div", 8, 0, constant(8, 0, 1), constant(8, 0, 0), NULL);
+            const char *value =
+                node("select",
+                     8,
+                     0,
+                     decision,
+                     variant ? node("select", 8, 0, word, constant(8, 0, 7), constant(8, 0, 0))
+                             : node("select",
+                                    8,
+                                    0,
+                                    node("ne", 1, 0, byte, constant(8, 0, 0), NULL),
+                                    bad,
+                                    constant(8, 0, 7)),
+                     constant(8, 0, 0));
+            apply(c, "{\"op\":\"qalloc\",\"id\":4,\"width\":8,\"signed\":false}");
+            validation_path(
+                operation, sizeof operation, "{\"op\":\"qcompute\",\"id\":4,\"expr\":%s}", value);
+            apply(c, operation);
+            if (qc_sparse_size(c) != 8)
+                validation_fail("guarded expression changed its input support");
+            for (size_t row = 0; row < 8; ++row) {
+                uint64_t low, high_bits;
+                double complex amplitude;
+                if (!qc_sparse_entry(c, row, &low, &high_bits, &amplitude))
+                    validation_fail("missing guarded expression row");
+                qc_mask actual = ((qc_mask)high_bits << 64) | low, expected = 0;
+                unsigned values[5] = {0};
+                for (unsigned id = 0; id < 3; ++id) {
+                    qc_register *r = qc_lookup(c, id);
+                    for (unsigned b = 0; b < r->width; ++b)
+                        values[id] |= !!(actual & QC_WIRE(r->wires[b])) << b;
+                }
+                values[3] = values[1] && !(values[0] & 255);
+                values[4] = values[3] && (!variant || values[0]) ? 7 : 0;
+                for (unsigned id = 0; id < 5; ++id) {
+                    qc_register *r = qc_lookup(c, id);
+                    for (unsigned b = 0; b < r->width; ++b)
+                        if (values[id] & (1u << b))
+                            expected |= QC_WIRE(r->wires[b]);
+                }
+                if (actual != expected || cabs(amplitude - 1 / sqrt(8.0)) > 1e-10)
+                    validation_fail("guard certificate changed C truth or quantum state");
+            }
+            apply(c, "{\"op\":\"quncompute\",\"id\":4,\"saved\":true}");
+            apply(c, "{\"op\":\"quncompute\",\"id\":3,\"saved\":true}");
+            qc_destroy(c);
+            clear();
+            ++checks;
+        }
+    puts("PASS string guard certificates: promoted C logic, zero-bit support and integer truth");
+}
+
 int main(int argc, char **argv) {
     if (argc != 1)
         validation_fail("usage: validate_expressions");
@@ -495,6 +605,7 @@ int main(int argc, char **argv) {
     small_remainder_states();
     selection_states();
     small_division_states();
+    string_guard_certificates();
     validation v;
     validation_init(&v, argv[0]);
     frontend(&v);

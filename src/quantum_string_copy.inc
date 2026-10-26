@@ -105,6 +105,7 @@ tree expand_string_copy(tree call) {
     tree running = boolean_true_node;
     tree terminated = boolean_false_node;
     std::vector<std::pair<tree, tree>> words;
+    std::map<tree, tree> bit_masks, mask_values;
     for (uint64_t i = 0; i < count; ++i) {
         tree byte =
             i < reads ? object_byte(source, i, at(call)) : build_zero_cst(integer_type_node);
@@ -113,10 +114,34 @@ tree expand_string_copy(tree call) {
         if (i < reads)
             terminated =
                 fold_build2_loc(at(call), TRUTH_ORIF_EXPR, boolean_type_node, terminated, zero);
-        tree tail =
-            bounded ? build_zero_cst(integer_type_node) : object_byte(destination, i, at(call));
-        tree selected =
-            fold_build3_loc(at(call), COND_EXPR, integer_type_node, running, byte, tail);
+        tree selected = bounded ? fold_build3_loc(at(call),
+                                                  COND_EXPR,
+                                                  integer_type_node,
+                                                  running,
+                                                  byte,
+                                                  build_zero_cst(integer_type_node))
+                                : byte;
+        uint64_t position = destination.offset + i;
+        tree target = destination.elements[(size_t)(position / destination.stride)];
+        tree type = unsigned_type_for(TREE_TYPE(target));
+        uint64_t mask = string_byte_mask(destination, position);
+        auto prior = bit_masks.find(target);
+        bit_masks[target] =
+            build_int_cstu(long_long_unsigned_type_node,
+                           mask | (prior == bit_masks.end() ? 0 : tree_to_uhwi(prior->second)));
+        if (!bounded) {
+            tree enabled = fold_build3_loc(at(call),
+                                           COND_EXPR,
+                                           type,
+                                           running,
+                                           build_int_cstu(type, mask),
+                                           build_zero_cst(type));
+            auto previous = mask_values.find(target);
+            mask_values[target] =
+                previous == mask_values.end()
+                    ? enabled
+                    : fold_build2_loc(at(call), BIT_IOR_EXPR, type, previous->second, enabled);
+        }
         running =
             fold_build2_loc(at(call),
                             TRUTH_ANDIF_EXPR,
@@ -126,5 +151,15 @@ tree expand_string_copy(tree call) {
         string_word_byte(destination, i, selected, words, at(call));
     }
     tree defined = !bounded || count > source_count ? terminated : boolean_true_node;
-    return make_quantum_value_program(call, words, defined);
+    std::vector<tree> prefix;
+    std::map<tree, tree> quantum_masks;
+    for (const auto &entry : mask_values)
+        quantum_masks[entry.first] =
+            quantum_value_capture(call,
+                                  entry.second,
+                                  "__cket_string_mask_",
+                                  prefix,
+                                  unsigned_type_for(TREE_TYPE(entry.first)));
+    return make_quantum_value_program(
+        call, words, defined, std::move(prefix), NULL_TREE, bit_masks, quantum_masks);
 }

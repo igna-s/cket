@@ -78,6 +78,8 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         if (!cj_u64(d, cj_get(d, e, "id"), &id))
             return 0;
         qc_register *r = reg(c, (uint32_t)id);
+        if (!r || !r->alive || !r->prepared)
+            return 0;
         if (r->basis_known)
             return !(r->basis_value & (UINT64_C(1) << bit)) || poly_toggle(c, out, 0);
         if (r->zero_mask & (UINT64_C(1) << bit))
@@ -104,8 +106,12 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     }
     if (cj_equal(d, op, "select") && n == 3) {
         uint64_t condition_width;
+        int condition_op = cj_get(d, nodes[0], "op");
         bit_poly condition, yes, no, difference;
-        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &condition_width) || condition_width != 1 ||
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &condition_width) ||
+            (condition_width != 1 && !cj_equal(d, condition_op, "eq") &&
+             !cj_equal(d, condition_op, "ne") && !cj_equal(d, condition_op, "not") &&
+             !cj_equal(d, condition_op, "land") && !cj_equal(d, condition_op, "lor")) ||
             !expr_bit(c, d, nodes[0], 0, &condition, depth + 1) ||
             !expr_bit(c, d, nodes[1], bit, &yes, depth + 1) ||
             !expr_bit(c, d, nodes[2], bit, &no, depth + 1))
@@ -123,7 +129,9 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         if (width == 1 && source_width > 1) {
             int child_op = cj_get(d, nodes[0], "op");
             /* C comparisons return int but already denote zero or one. */
-            if (cj_equal(d, child_op, "eq") || cj_equal(d, child_op, "ne"))
+            if (cj_equal(d, child_op, "eq") || cj_equal(d, child_op, "ne") ||
+                cj_equal(d, child_op, "not") || cj_equal(d, child_op, "land") ||
+                cj_equal(d, child_op, "lor"))
                 return expr_bit(c, d, nodes[0], 0, out, depth + 1);
             return 0; /* General Boolean conversion is a zero test below. */
         }
@@ -144,16 +152,25 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     }
     if (n == 2 && (cj_equal(d, op, "eq") || cj_equal(d, op, "ne"))) {
         uint64_t left_width, right_width;
-        bit_poly left, right;
-        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &left_width) || left_width != 1 ||
-            !cj_u64(d, cj_get(d, nodes[1], "bits"), &right_width) || right_width != 1 ||
-            !expr_bit(c, d, nodes[0], 0, &left, depth + 1) ||
-            !expr_bit(c, d, nodes[1], 0, &right, depth + 1))
+        if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &left_width) ||
+            !cj_u64(d, cj_get(d, nodes[1], "bits"), &right_width) || left_width != right_width ||
+            cj_bool(d, cj_get(d, nodes[0], "signed")) != cj_bool(d, cj_get(d, nodes[1], "signed")))
             return 0;
-        if (bit)
-            return 1;
-        *out = left;
-        return poly_xor(c, out, &right) && (!cj_equal(d, op, "eq") || poly_toggle(c, out, 0));
+        bit_poly equal = {.terms = {0}, .count = 1};
+        for (unsigned i = 0; i < left_width; ++i) {
+            bit_poly left, right, next;
+            // Prove both complete operands even when an earlier bit differs.
+            if (!expr_bit(c, d, nodes[0], i, &left, depth + 1) ||
+                !expr_bit(c, d, nodes[1], i, &right, depth + 1) || !poly_xor(c, &left, &right) ||
+                !poly_toggle(c, &left, 0) || !poly_product(c, &next, &equal, &left))
+                return 0;
+            equal = next;
+        }
+        if (cj_equal(d, op, "ne") && !poly_toggle(c, &equal, 0))
+            return 0;
+        if (!bit)
+            *out = equal;
+        return 1;
     }
     if (cj_equal(d, op, "shl") || cj_equal(d, op, "shr")) {
         uint64_t shift, source_width;
@@ -173,7 +190,36 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     }
     if (cj_equal(d, op, "bnot"))
         return expr_bit(c, d, nodes[0], bit, out, depth + 1) && poly_toggle(c, out, 0);
-    if (n != 2 || (!cj_equal(d, op, "band") && !cj_equal(d, op, "bor") && !cj_equal(d, op, "bxor")))
+    int logical_and = cj_equal(d, op, "land"), logical_or = cj_equal(d, op, "lor");
+    if ((logical_and || logical_or || cj_equal(d, op, "not"))) {
+        for (unsigned i = 0; i < n; ++i) {
+            uint64_t operand_width;
+            int operand_op = cj_get(d, nodes[i], "op");
+            if (!cj_u64(d, cj_get(d, nodes[i], "bits"), &operand_width) ||
+                (operand_width != 1 && !cj_equal(d, operand_op, "eq") &&
+                 !cj_equal(d, operand_op, "ne") && !cj_equal(d, operand_op, "not") &&
+                 !cj_equal(d, operand_op, "land") && !cj_equal(d, operand_op, "lor")))
+                return 0;
+        }
+        if (cj_equal(d, op, "not")) {
+            if (!expr_bit(c, d, nodes[0], 0, out, depth + 1) || !poly_toggle(c, out, 0))
+                return 0;
+            if (bit)
+                out->count = 0;
+            return 1;
+        }
+        bit_poly left, right;
+        if (!expr_bit(c, d, nodes[0], 0, &left, depth + 1) ||
+            !expr_bit(c, d, nodes[1], 0, &right, depth + 1) ||
+            !poly_product(c, out, &left, &right) ||
+            (logical_or && (!poly_xor(c, out, &left) || !poly_xor(c, out, &right))))
+            return 0;
+        if (bit)
+            out->count = 0;
+        return 1;
+    }
+    if (n != 2 || (!cj_equal(d, op, "band") && !cj_equal(d, op, "bor") &&
+                   !cj_equal(d, op, "bxor") && !logical_and && !logical_or))
         return 0;
     bit_poly a, b;
     if (!expr_bit(c, d, nodes[0], bit, &a, depth + 1) ||
@@ -185,7 +231,8 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     }
     if (!poly_product(c, out, &a, &b))
         return 0;
-    return !cj_equal(d, op, "bor") || (poly_xor(c, out, &a) && poly_xor(c, out, &b));
+    return (!cj_equal(d, op, "bor") && !logical_or) ||
+           (poly_xor(c, out, &a) && poly_xor(c, out, &b));
 }
 
 /* A literal is a constant, one wire or its complement. */

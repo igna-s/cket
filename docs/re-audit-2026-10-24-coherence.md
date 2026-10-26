@@ -195,3 +195,16 @@ historia y la referencia predice sus valores anteriores sin leer amplitudes.
 Este cierre finito no certifica todos los estados, vidas o alias generales, todos los adaptadores de
 cadenas ni todo el perfil cotidiano. Los recursos de 64 bits, papers y CI general requieren trabajo
 adicional. Las cápsulas históricas y sus fallos se conservan.
+
+## Seguimiento del 26 de octubre: escrituras de cadenas
+
+Se reproduce el mismo tipo de historial innecesario en `strncpy` de un byte y `strcpy` con fuente
+vacía: pureza conjunta 1 → 0,5, sin mediciones ni resets. Las máscaras clásicas y cuánticas de
+`qpatch` corrigen los casos reproducidos y seleccionan solamente los bytes realmente escritos. Las
+concatenaciones vacías validan el destino sin crear historial de escritura. La
+[nota de implementación](paper/string_writes_note.es.md) conserva el contrato y sus límites.
+
+La revisión también expone una referencia obsoleta en `validate_history`, reproducida en la
+construcción publicada de RC3: para `if(c) x=false`, toma el mismo dueño como valor viejo y como
+resultado. Ese fallo no se cuenta como una prueba aprobada. Hace falta actualizar su referencia
+independiente y auditar los demás perfiles; el cierre del CI general sigue abierto.
