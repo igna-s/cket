@@ -9,6 +9,12 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
+**Compilador listo para usar:** el [SDK de Windows/WSL](../output/sdk/README.es.md) incluye el
+compilador y 37 programas precompilados de los seis bloques. Ejecutá `output\sdk\run_sdk_demo.cmd`;
+para un archivo C propio usá `output\sdk\compile_and_run.cmd`. La
+[guía de entrega](entrega-utilizable-2026-10-26.es.md) resume capacidades y pendientes. Es una
+candidata utilizable; la integración general todavía está abierta.
+
 **Bloque de desarrollo posterior a RC3:** las escrituras fijas de `strcpy`, `strncpy`, `strcat` y
 `strncat` usan máscaras de los bytes realmente escritos. Un NUL cuántico selecciona esa máscara sin
 medirlo; las concatenaciones vacías no guardan una historia de escritura. La
@@ -61,9 +67,11 @@ biblioteca. El [informe](re-audit-2026-10-24-coherence.md) conserva cada revisi�
 explica la captura evitada, las variantes descartadas por coherencia o recursos y la calificación
 normal e instrumentada. La integración general conserva sus gates pendientes.
 
-La siguiente parada de integración está en `validate_memory_returns`, con el diagnóstico
-`unexpected memory return word history`, reproducido también sobre el compilador anterior. Queda por
-auditar ese caso y su referencia; la mejora del relleno no cierra ese gate.
+La parada posterior de `validate_memory_returns`, `unexpected memory return word history`, se cierra
+con la [referencia por máscara](audit-evidence/memory-return-reference-v1/README.es.md): pasan 290
+comprobaciones de retornos y 170 de distancias en normal y con sanitizadores. La referencia verifica
+los canales C sin exigir copias de bytes intactos e identifica por separado las inversas de puertas
+y las guardadas. La integración general sigue pendiente.
 
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la

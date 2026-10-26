@@ -498,18 +498,25 @@ static void native(validation *v) {
 }
 
 static void states(validation *v) {
-    unsigned count = 0, maximum = 0;
+    unsigned count = 0, words = 0, saved = 0, maximum = 0;
     for (unsigned profile = 0; profile < sizeof state_cases / sizeof *state_cases; ++profile)
         for (unsigned level = 0; level < 5; ++level)
             for (unsigned builtin = 0; builtin < 2; ++builtin) {
                 char *ir = compile_case(v, &state_cases[profile], level, builtin, 0);
-                count += memory_return_state_probe(ir, profile, &maximum);
+                unsigned circuits = memory_return_state_probe(ir, profile, &maximum);
+                count += circuits;
+                if (profile == 0 || profile == 2)
+                    words += circuits;
+                else
+                    saved += circuits;
                 free(ir);
             }
     checks += count;
     printf(
-        "PASS %u complete memory return basis-action circuits: known and coherent byte views, zero-count effects, pointer control, relative phases, saved inverses and private zeros; verified H preparations, both synthesis policies, maximum %u physical wires\n",
+        "PASS %u complete memory return basis-action circuits: %u word C channels/phases and independent complete gate inverses, %u Boolean paths with saved write/definition inverses; known/coherent byte views, zero-count effects and pointer control; verified H preparations, both synthesis policies, maximum %u physical wires\n",
         count,
+        words,
+        saved,
         maximum);
     fflush(stdout);
 }

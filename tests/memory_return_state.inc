@@ -11,10 +11,129 @@ static qc_mask memory_return_bits(const qc_register *r, unsigned value) {
     return result;
 }
 
-static void memory_return_compare(qc_context *c, unsigned profile, unsigned current, int inverse) {
-    unsigned count = profile == 2 ? 65536 : profile >= 3 ? 2 : 1;
+/* Whole-word identities need not name separate old/current registers after a
+ * masked exchange. Follow every prepared label, check C values and phases,
+ * and require exactly the history equivalence induced by the overwritten byte.
+ * In particular, retaining an untouched low byte would fail this channel test. */
+static void memory_return_word_action(qc_context *c, unsigned profile, unsigned current) {
+    unsigned count = profile == 2 ? 65536 : 1, preparation = profile == 2 ? 16 : 0;
+    qc_register *input = qc_lookup(c, 0), *output = qc_lookup(c, current);
+    if (!input || !output || !output->alive || input->width != 16 || output->width != 16)
+        validation_fail("memory return word input/output mapping changed");
+    qc_mask *states = calloc(count, sizeof *states);
+    double complex *amplitudes = malloc(count * sizeof *amplitudes);
+    if (!states || !amplitudes)
+        validation_fail("memory return word reference allocation failed");
+    for (unsigned label = 0; label < count; ++label)
+        amplitudes[label] = 1 / sqrt((double)count);
+    unsigned prepared = 0;
+    for (size_t i = 0; i < c->ngates; ++i) {
+        qc_gate g = c->gates[i];
+        if (g.kind == QC_H) {
+            if (prepared == preparation || g.mask || g.target != input->wires[prepared] ||
+                (states[0] & QC_WIRE(g.target)))
+                validation_fail("memory return word requires canonical H preparation");
+            for (unsigned label = 0; label < count; ++label)
+                if ((label >> prepared) & 1)
+                    states[label] |= QC_WIRE(g.target);
+            ++prepared;
+            continue;
+        }
+        if ((prepared && prepared != preparation) || (g.kind != QC_X && g.kind != QC_PHASE))
+            validation_fail("unexpected gate or channel in memory return word reference");
+        double complex phase = cexp(I * g.angle);
+        for (unsigned label = 0; label < count; ++label)
+            if ((states[label] & g.mask) == g.pattern) {
+                if (g.kind == QC_X)
+                    states[label] ^= QC_WIRE(g.target);
+                else
+                    amplitudes[label] *= phase;
+            }
+    }
+    if (prepared != preparation || c->measure || c->reset)
+        validation_fail("memory return word preparation or implicit channel mismatch");
+    qc_mask public_mask = memory_return_bits(output, UINT16_MAX), live_mask = 0;
+    for (size_t i = 0; i < c->nregisters; ++i) {
+        qc_register *r = &c->registers[i];
+        if (!r->alive)
+            continue;
+        if (r->id != current && !r->history)
+            validation_fail("memory return word left a nonhistory temporary alive");
+        for (unsigned bit = 0; bit < r->width; ++bit)
+            live_mask |= QC_WIRE(r->wires[bit]);
+    }
+    qc_mask history[256] = {0};
+    unsigned char seen[256] = {0};
+    for (unsigned label = 0; label < count; ++label) {
+        uint16_t original = profile == 2 ? (uint16_t)label : 0x1234, value = original;
+        unsigned history_class = profile == 2 ? ((unsigned char *)&original)[1] : 0;
+        void *pointer = memset((unsigned char *)&value + 1, 0xab, 1);
+        if (pointer != (unsigned char *)&value + 1 || memset(pointer, 0xcd, 1) != pointer)
+            validation_fail("ordinary C word-return reference failed");
+        double angle = profile == 2 ? .00001 * label + (value == 0xcd34 ? .17 : 0) : 0;
+        if ((states[label] & public_mask) != memory_return_bits(output, value) ||
+            (states[label] & ~live_mask) ||
+            cabs(amplitudes[label] - cexp(I * angle) / sqrt((double)count)) > 1e-10)
+            validation_fail("memory return word C value/phase/private-zero mismatch label=%u",
+                            label);
+        qc_mask private = states[label] & ~public_mask;
+        if (seen[history_class] && history[history_class] != private)
+            validation_fail("memory return word history copied an untouched byte");
+        seen[history_class] = 1;
+        history[history_class] = private;
+    }
+    for (unsigned a = 0; a < 256; ++a)
+        for (unsigned b = 0; b < a; ++b)
+            if (seen[a] && seen[b] && history[a] == history[b])
+                validation_fail("memory return word history lost overwritten information");
+
+    /* Independently invert the complete gate stream, including preparation and
+     * source phases. This is a gate inverse, not compiler-emitted scope cleanup
+     * or a saved qcompute inverse of a materialized patch. */
+    unsigned active = count;
+    double discarded = 0;
+    for (size_t i = c->ngates; i-- > 0;) {
+        qc_gate g = c->gates[i];
+        if (g.kind == QC_H) {
+            if (active < 2 || !prepared || g.target != input->wires[prepared - 1])
+                validation_fail("unexpected H in independent word-return inverse");
+            unsigned half = active / 2;
+            qc_mask bit = QC_WIRE(g.target);
+            for (unsigned row = 0; row < half; ++row) {
+                if ((states[row] & bit) || states[row + half] != (states[row] | bit))
+                    validation_fail("word-return inverse did not recover prepared labels");
+                double complex low = amplitudes[row], high = amplitudes[row + half];
+                amplitudes[row] = (low + high) / sqrt(2.0);
+                double complex residual = (low - high) / sqrt(2.0);
+                discarded += creal(residual * conj(residual));
+            }
+            active = half;
+            --prepared;
+            continue;
+        }
+        double complex phase = cexp(-I * g.angle);
+        for (unsigned row = 0; row < active; ++row)
+            if ((states[row] & g.mask) == g.pattern) {
+                if (g.kind == QC_X)
+                    states[row] ^= QC_WIRE(g.target);
+                else
+                    amplitudes[row] *= phase;
+            }
+    }
+    if (active != 1 || prepared || states[0] || cabs(amplitudes[0] - 1) > 1e-10 ||
+        discarded > 1e-20)
+        validation_fail("independent complete word-return inverse left a nonzero state");
+    free(amplitudes);
+    free(states);
+}
+
+static void
+memory_return_saved_action(qc_context *c, unsigned profile, unsigned current, int inverse) {
+    if (profile != 1 && profile != 3 && profile != 4)
+        validation_fail("unexpected saved-inverse memory return profile");
+    unsigned count = profile >= 3 ? 2 : 1;
     unsigned input_id = profile == 3 ? 2 : 0;
-    unsigned preparation = profile == 2 ? 16 : profile >= 3 ? 1 : 0;
+    unsigned preparation = profile >= 3 ? 1 : 0;
     qc_register *input = qc_lookup(c, input_id);
     if (!input || !input->alive || (preparation && input->width != preparation))
         validation_fail("memory return input mapping changed");
@@ -51,13 +170,6 @@ static void memory_return_compare(qc_context *c, unsigned profile, unsigned curr
     if (prepared != preparation || c->measure || c->reset)
         validation_fail("memory return preparation or implicit channel mismatch");
     for (unsigned label = 0; label < count; ++label) {
-        uint16_t original = profile == 2 ? (uint16_t)label : 0x1234;
-        uint16_t first = original;
-        void *pointer = memset((unsigned char *)&first + 1, 0xab, 1);
-        uint16_t last = first;
-        if (pointer != (unsigned char *)&first + 1 ||
-            memset((unsigned char *)&last + 1, 0xcd, 1) != (unsigned char *)&last + 1)
-            validation_fail("ordinary C memory return reference failed");
         unsigned old_bit = profile >= 3 ? label : 0;
         bool updated = (int)old_bit - 1;
         uint8_t bytes[2] = {5, 7}, controlled = 5;
@@ -66,29 +178,18 @@ static void memory_return_compare(qc_context *c, unsigned profile, unsigned curr
             validation_fail("ordinary C one-past zero-count reference failed");
         if (profile == 4 && old_bit && memset(&controlled, 17, 1) != &controlled)
             validation_fail("ordinary C controlled pointer reference failed");
-        double angle = profile == 2   ? .00001 * label + (last == 0xcd34 ? .17 : 0)
-                       : profile == 3 ? .31 * old_bit + .17 * updated
+        double angle = profile == 3   ? .31 * old_bit + .17 * updated
                        : profile == 4 ? .48 * old_bit
                                       : 0;
         qc_mask wanted = 0;
-        unsigned live = 0, intermediate = 0, guards = 0;
+        unsigned live = 0, guards = 0;
         for (size_t i = 0; i < c->nregisters; ++i) {
             const qc_register *r = &c->registers[i];
             if (!r->alive)
                 continue;
             ++live;
             unsigned value = 0, width = 0;
-            if (profile == 0 || profile == 2) {
-                width = 16;
-                if (r->id == 0)
-                    value = inverse || profile == 2 ? original : first;
-                else if (!inverse && r->id == current)
-                    value = last;
-                else if (!inverse && profile == 2 && r->history && r->definition && !intermediate++)
-                    value = first;
-                else
-                    validation_fail("unexpected memory return word history");
-            } else if (profile == 1 || profile == 3) {
+            if (profile == 1 || profile == 3) {
                 width = r->id < 2 ? 8 : 1;
                 if (r->id < 2)
                     value = bytes[r->id];
@@ -113,10 +214,7 @@ static void memory_return_compare(qc_context *c, unsigned profile, unsigned curr
                 validation_fail("memory return register width mismatch");
             wanted |= memory_return_bits(r, value);
         }
-        unsigned expected_live = profile == 0   ? (inverse ? 1 : 2)
-                                 : profile == 2 ? (inverse ? 1 : 3)
-                                 : profile == 4 ? 2 + guards
-                                                : (inverse ? 3 : 4);
+        unsigned expected_live = profile == 4 ? 2 + guards : (inverse ? 3 : 4);
         if (live != expected_live || states[label] != wanted ||
             cabs(amplitudes[label] - cexp(I * angle) / sqrt((double)count)) > 1e-10)
             validation_fail(
@@ -270,7 +368,18 @@ static unsigned memory_return_state_probe(const char *ir, unsigned profile, unsi
         if (!result || !result->alive || c->measure || c->reset)
             validation_fail("missing current value or implicit channel");
 
-        memory_return_compare(c, profile, current, 0);
+        if (profile == 0 || profile == 2) {
+            memory_return_word_action(c, profile, current);
+            for (unsigned i = 0; i < naction; ++i)
+                free(actions[i].inverse);
+            if (c->physical > *maximum)
+                *maximum = c->physical;
+            qc_destroy(c);
+            for (unsigned i = 0; i < return_nsaved; ++i)
+                free(return_saved[i].expression);
+            continue;
+        }
+        memory_return_saved_action(c, profile, current, 0);
         // Reverse semantic creation/write order: consumers of a known in-place
         // write must be inverted before that write's original basis is restored.
         while (naction) {
@@ -318,7 +427,7 @@ static unsigned memory_return_state_probe(const char *ir, unsigned profile, unsi
             if (c->registers[i].alive && c->registers[i].definition)
                 validation_fail("unrecorded live return_saved definition remains");
 
-        memory_return_compare(c, profile, current, 1);
+        memory_return_saved_action(c, profile, current, 1);
         if (c->physical > *maximum)
             *maximum = c->physical;
         qc_destroy(c);

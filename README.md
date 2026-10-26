@@ -11,6 +11,12 @@ expressions and coherent conditions, and let the compiler build reversible circu
 temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C
 statevector simulator, with dense and opt-in sparse execution modes.
 
+**Ready-to-run compiler package:** the [Windows/WSL SDK](output/sdk/README.es.md) includes the
+compiler and 37 prebuilt programs from six blocks. Run `output\sdk\run_sdk_demo.cmd`, or compile an
+independent C file with `output\sdk\compile_and_run.cmd program.c`. The
+[delivery guide](docs/entrega-utilizable-2026-10-26.es.md) lists working examples and open limits.
+This remains an experimental candidate with incomplete everyday-C integration.
+
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC
 11.4.0** as the reference configuration. This is an experimental candidate; the stable 1.0

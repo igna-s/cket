@@ -106,6 +106,14 @@ El validador recurrente de retornos incluye 290 comprobaciones por configuració
 incluye 170: 90 comprobaciones nativas, 40 diagnósticos y 40 circuitos de acción e inversa. Sus 45
 ejecuciones de referencia en C ordinario se cuentan aparte.
 
+La [referencia actual por máscara](audit-evidence/memory-return-reference-v1/README.es.md) corrige
+la suposición de dueños separados para la palabra original y el destino actualizado. Entre los cien
+circuitos de retornos, cuarenta comparan canales C de palabras, fases y una inversa completa
+independiente de puertas; sesenta conservan las inversas guardadas de escrituras y definiciones
+booleanas. Una copia histórica del byte intacto hace fallar la referencia. Las 290 y 170
+comprobaciones pasan en normal y ASan/UBSan sobre las 237 entradas identificadas en esa cápsula. El
+máximo de 49 cables usa acción etiquetada completa; no es simulación densa de ese tamaño.
+
 La corrección de condiciones tiene evidencia separada de 180 ejecuciones nativas y 30 diagnósticos
 por configuración, además de 800 comprobaciones independientes de estados complejos e inversas. Las
 capturas de prefijos CPU y las ejecuciones del motor son pruebas distintas. Los circuitos de hasta
