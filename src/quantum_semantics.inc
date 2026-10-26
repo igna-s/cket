@@ -2598,7 +2598,21 @@ tree lower_node(tree value) {
             bool aliases_fill = false;
             for (const auto &entry : operation.elements)
                 aliases_fill |= fill_dependencies.count(variables.at(entry.first).id) != 0;
-            if (aliases_fill) {
+            bool inline_fill = false;
+            if (!runtime_iteration && !runtime_memory_depth && controls.empty() &&
+                operation.elements.size() == 1) {
+                const auto &entry = operation.elements.front();
+                unsigned width = variables.at(entry.first).width;
+                uint64_t full = width == 64 ? UINT64_MAX : ((uint64_t{1} << width) - 1);
+                // Expanding at most two byte copies bounds repeated synthesis.
+                // Wider words keep one shared capture for their repeated byte.
+                inline_fill = entry.second == full && width <= 16;
+            }
+            // A single unconditional whole-word patch evaluates its complete
+            // byte expression into the patch workspace before the exchange.
+            // It needs no extra shared byte capture; the checked patch still
+            // transports old producer and borrower recipes across that exchange.
+            if (aliases_fill && !inline_fill) {
                 // Runtime assignments reuse public identities. Capture the
                 // once-evaluated fill before the first word replaces an input.
                 Variable capture{};

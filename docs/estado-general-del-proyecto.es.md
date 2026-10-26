@@ -56,6 +56,15 @@ bits y más combinaciones de escrituras repetidas. Flotantes, papers y CI genera
 pendientes. Los resultados finitos anteriores no son un porcentaje de C ni certifican toda la
 biblioteca. El [informe](re-audit-2026-10-24-coherence.md) conserva cada revisión histórica.
 
+**Mejora de composición de memoria:** un `memset` cuyo valor compara el mismo destino baja de 26 a
+18 cables físicos y ya ejecuta en el simulador denso. La [nota](paper/single_fill_note.es.md)
+explica la captura evitada, las variantes descartadas por coherencia o recursos y la calificación
+normal e instrumentada. La integración general conserva sus gates pendientes.
+
+La siguiente parada de integración está en `validate_memory_returns`, con el diagnóstico
+`unexpected memory return word history`, reproducido también sobre el compilador anterior. Queda por
+auditar ese caso y su referencia; la mejora del relleno no cierra ese gate.
+
 **Entrega lista para ejecutar:** desde la raíz en Windows, `output\demo\run_memory_demo.cmd` ejecuta
 tres casos verificados sin recompilar, mediante WSL. La [guía](../output/demo/README.es.md) y la
 [nota técnica de dos páginas](../output/pdf/cket_memoria_runtime_nota_tecnica.pdf) incluyen el

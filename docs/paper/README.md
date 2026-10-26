@@ -1,4 +1,4 @@
-**Seguimiento actual, 26 de octubre de 2026:** la candidata sigue siendo RC3, con dos bloques
+**Seguimiento actual, 26 de octubre de 2026:** la candidata sigue siendo RC3, con bloques
 posteriores publicados. Las correcciones se describen en notas separadas de los manuscritos
 históricos:
 
@@ -12,6 +12,11 @@ históricos:
 Estas campañas califican perfiles finitos de densidad, fases e inversas. La revisión general de
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
 fuentes originales; no se los recalifica automáticamente para el compilador actual.
+
+La [nota de relleno completo](single_fill_note.es.md) y su
+[evidencia](../audit-evidence/single-fill-v1/README.es.md) añaden una mejora de recursos: una
+comparación usada como valor de `memset` baja de 26 a 18 cables y ya ejecuta en modo denso,
+conservando la coherencia. La matriz finita mantiene explícitos dos límites de síntesis de 32 bits.
 
 El [seguimiento de integración y ejemplos](../audit-evidence/integration-cli-paper-v1/README.es.md)
 comprueba los tres bloques C exactos de ambos manuscritos con el compilador posterior a `be96caf`:

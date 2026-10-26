@@ -97,12 +97,13 @@ La [revisión del 24 de octubre](re-audit-2026-10-24-coherence.md) encontró pé
 por historia redundante y por limpieza incompleta, aun con cero mediciones y resets. Se corrigen los
 casos directos observados de buffers fijos y las identidades comprobadas del heap, con
 [evidencia de fases y estados conjuntos](audit-evidence/heap-identities-v1/README.es.md). Siguen
-abiertos los préstamos tras escrituras que pueden activarse y las copias coherentes no idénticas al
-heap. La [limpieza ante inactividad demostrada](audit-evidence/inactive-borrows-v1/README.es.md)
-conserva ahora la receta y deshace el temporal al salir del bloque, con su fase esperada. Los
-contratos anteriores y sus campañas finitas deben leerse con estos contraejemplos. La unitariedad
-del flujo completo conserva información global, pero también hay que comprobar el estado lógico y
-las correlaciones que cada operación promete conservar.
+abiertos en aquella revisión los préstamos tras escrituras que pueden activarse y las copias
+coherentes no idénticas al heap. Las correcciones finitas posteriores se describen debajo. La
+[limpieza ante inactividad demostrada](audit-evidence/inactive-borrows-v1/README.es.md) conserva
+ahora la receta y deshace el temporal al salir del bloque, con su fase esperada. Los contratos
+anteriores y sus campañas finitas deben leerse con estos contraejemplos. La unitariedad del flujo
+completo conserva información global, pero también hay que comprobar el estado lógico y las
+correlaciones que cada operación promete conservar.
 
 ## Limpieza después de una escritura que puede activarse
 
@@ -111,7 +112,8 @@ contraejemplos anteriores de temporales al salir del bloque, también bajo contr
 en los perfiles finitos publicados. El valor anterior se reconstruye desde uno u otro dueño según el
 control, y se usa en la inversa guardada; no se clonan amplitudes ni se mide para limpiar. La
 [nota técnica](paper/conditional_inverse_note.es.md) explica la fase conservada y las restricciones.
-Las vidas generales y el contraejemplo de copia coherente no idéntica al heap permanecen pendientes.
+Las vidas generales permanecen pendientes. El contraejemplo de copia coherente no idéntica al heap
+se corrigió después en RC2, con el alcance finito descrito a continuación.
 
 ## Bits intactos y copias coherentes del heap
 

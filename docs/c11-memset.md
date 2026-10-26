@@ -6,6 +6,13 @@ without redundant history. Three state profiles now use complete sparse states a
 inverses; the remaining dense and labeled-path profiles keep separate scopes. General
 library/lifetime qualification remains open.
 
+The [whole-word fill follow-up](paper/single_fill_note.es.md) removes an extra eight-bit capture for
+one unconditional full 8/16-bit word write. The existing checked patch still computes before
+exchanging owners and transports producer/borrow recipes. A comparison-filled byte case drops from
+26 to 18 physical wires and now executes in the dense simulator. Partial, controlled, repeated and
+multiword writes, and 32/64-bit words, keep their shared capture. The finite follow-up does not
+qualify general memory or lift the declared resource limits.
+
 This is an integrated partial adapter for checked integer storage. It does not establish complete
 C11 memory or library support. Its expression composition contract is described in
 [discarded memory-call sequences](c11-memory-sequences.md).
