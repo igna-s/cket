@@ -1,0 +1,27 @@
+{
+  "status": "passed-current-evidence-map-checks",
+  "date": "2026-10-26",
+  "base_commit": "487fd44",
+  "historical_evaluated_compiler": "1ebb2e308e61bed5632798ded5beecf77b6b9a9c",
+  "scope": "Cross-reference and source-identity checks only; no full scientific or PDF layout re-audit. General manuscript sources and PDF files remain unchanged.",
+  "claims": {
+    "sdk_programs": 37,
+    "sdk_example_checks": 1509,
+    "normal_c_validators": 17,
+    "sanitized_completed_validators": 10,
+    "qasm_state_comparisons": 64,
+    "qasm_sampled_channel_cases": 6
+  },
+  "checked_file_sha256": {
+    "docs/paper/c_ket_paper.md": "2d4def47348374e32c464cee7ad41dcfc8b7baecd96731b088ab036d92286a43",
+    "docs/paper/c_ket_paper_en.md": "861d9728cc6091bfac71ba3a3c7b33a56d74e7344285d5e1fef1cec1775ce97c",
+    "output/pdf/c_ket_paper.pdf": "156a7026e6b0c113208b474c81c69e67a4c9f197116bd5afb1eae852aaa9e6e9",
+    "output/pdf/c_ket_paper_en.pdf": "366adc000b818485da9ceca8eb97e9d7255ae3330f95e532785d0d0c2fa50967",
+    "output/sdk/sdk-audit.json": "0253dec26535a1b175a723ad9bbbe7bbd7ff124a034ab048894acd830f44b029",
+    "docs/audit-evidence/c-priority-integration-v1/summary.json": "01389506a669bcbc292849738f2f5e41ac225ecc611fe9d05a57f478067044c4",
+    "docs/audit-evidence/memory-return-reference-v1/summary.json": "0160618d0cf1bad24c8d4d3f730fb4dab050f00bcb039e2ba15252a415b53e11",
+    "docs/paper/README.md": "dc217c014591e834710d1cab08eea1f2d46c817d36710bd5cadf1b07ad85ba21",
+    "docs/paper/current-evidence-map-2026-10-26.es.md": "e7fe32739d82d75520d73c0cd699cabcfc47f7ddc8e03907447e099f3579e580",
+    "docs/perfil-c-cotidiano.es.md": "63e7d8c8247cba94f0f31089508eefbbb0ef2af76856ca9439daf19389c85288"
+  }
+}

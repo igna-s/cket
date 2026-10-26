@@ -13,6 +13,13 @@ Estas campañas califican perfiles finitos de densidad, fases e inversas. La rev
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
 fuentes originales; no se los recalifica automáticamente para el compilador actual.
 
+El [mapa de afirmaciones y evidencia actual](current-evidence-map-2026-10-26.es.md) explica cómo
+leer los manuscritos históricos junto con el SDK. La
+[campaña C posterior](../audit-evidence/c-priority-integration-v1/README.es.md) completa 2332
+comprobaciones de historial tanto normales como instrumentadas; no modifica el alcance histórico de
+los 355 casos dirigidos de la tabla. Distingue también las comparaciones de exportación QuEST, la
+semántica C, los diagnósticos de libc y los recursos lógicos frente al hardware físico.
+
 La [nota de relleno completo](single_fill_note.es.md) y su
 [evidencia](../audit-evidence/single-fill-v1/README.es.md) añaden una mejora de recursos: una
 comparación usada como valor de `memset` baja de 26 a 18 cables y ya ejecuta en modo denso,
