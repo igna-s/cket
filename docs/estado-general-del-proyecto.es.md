@@ -9,18 +9,28 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador actualizado listo para usar:** el
-[SDK nuevo](../output/sdk/immutable-locals/README.es.md) incluye el plugin corregido y 37 programas
-reconstruidos. Ejecutá `output\sdk\immutable-locals\run_coherent_demo.cmd` para compilar el ejemplo
-de retorno, limpieza e interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md)
-resume comandos y pendientes.
+**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/cpu-loops/README.es.md)
+incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
+`output\sdk\cpu-loops\run_coherent_demo.cmd` para compilar el ejemplo de retorno, limpieza e
+interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
+pendientes.
 
-**Locales CPU privados implementados:** se admiten `bool` y enteros automáticos inicializados con
-expresiones CPU puras, sin escrituras posteriores ni dirección tomada, dentro de llamadas
+**Locales mutables privados y bucles CPU implementados:** las llamadas coherentes admiten `for`,
+`while` y `do while` con condiciones CPU puras, contadores privados y retornos CPU. Las escrituras
+quedan dentro de la misma rama cuántica donde se declaró cada local. La
+[nota](paper/private_cpu_loops_note.es.md) y la
+[evidencia](audit-evidence/private-cpu-loops-v1/README.es.md) registran 1400 puntos de estado y 700
+inversas en normal; 280 y 140 con ASan/UBSan. El SDK recomendado comprueba también un parámetro CPU
+modificado por valor. Quedan condiciones/salidas cuánticas, saltos coherentes, efectos CPU anidados,
+vidas/alias/ABI generales e integración completa de estas fuentes.
+
+**Bloque anterior de locales CPU inmutables:** se admiten `bool` y enteros automáticos inicializados
+con expresiones CPU puras, sin escrituras posteriores ni dirección tomada, dentro de llamadas
 coherentes. La [nota](paper/private_cpu_locals_note.es.md) y la
 [evidencia](audit-evidence/immutable-cpu-locals-v1/README.es.md) registran 800 puntos de estado y
 400 inversas en normal; 160 y 80 con ASan/UBSan. El SDK recomendado incluye este plugin y el nuevo
-ejemplo. Siguen pendientes locales mutables, bucles coherentes y vidas generales.
+ejemplo de aquel bloque. La ampliación de bucles de arriba supera los límites de mutabilidad y
+bucles CPU; sus propias fuentes y resultados se identifican por separado.
 
 **Integración completa aprobada para `ac8f5bc`:** formato y toda la composición de
 `scripts/verify.sh` pasan en normal y ASan/UBSan sobre las 242 entradas identificadas del SDK

@@ -93,6 +93,9 @@ std::map<tree, std::pair<tree, uint64_t>> quantum_heap_byte_reads;
 std::set<tree> quantum_memory_cpu_branches;
 std::set<tree> procedure_cpu_flags, procedure_cpu_branches, cpu_argument_captures;
 std::set<tree> coherent_cpu_locals;
+std::map<tree, tree> coherent_cpu_updates;
+std::set<tree> coherent_cpu_branches, coherent_cpu_loops;
+std::set<tree> cpu_guarded_captures;
 std::set<tree> quantum_heap_borrows;
 std::set<tree> quantum_heap_queries;
 
@@ -540,6 +543,10 @@ void finish_function(void *event, void *) {
     procedure_cpu_branches.clear();
     cpu_argument_captures.clear();
     coherent_cpu_locals.clear();
+    coherent_cpu_updates.clear();
+    coherent_cpu_branches.clear();
+    coherent_cpu_loops.clear();
+    cpu_guarded_captures.clear();
     quantum_heap_borrows.clear();
     quantum_heap_queries.clear();
     indexed_expansions.clear();

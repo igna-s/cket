@@ -25,6 +25,18 @@ PROFILES = (
     '{unsigned local=n+2;if(x[0])phase(.03*local);}if(!x[0])phase(.05*local);',
     'bool stop=n==2;unsigned shift=n%2;if(stop)return;'
     'if((5u>>shift)&1)x[0]^=true;if(x[0])phase(.17);',
+    'int sum=(int)n;sum+=2;if(n&1)++sum;else sum-=1;if(sum==4)return;'
+    'if(x[0])phase(.03*sum);--sum;if(!x[0])phase(.07*sum);',
+    'for(unsigned i=0;i<n;++i){if(i==2)return;x[0]^=true;'
+    'if(x[0])phase(.11*(i+1));}if(!x[0])phase(.17);',
+    'unsigned k=n;while(k){if(k==2)return;if(x[0])phase(.09*k);--k;x[0]^=true;}'
+    'if(!x[0])phase(.13);',
+    'unsigned i=0;do{if(i==n)return;if(x[0])phase(.07*(i+1));++i;x[0]^=true;}'
+    'while(i<3);if(!x[0])phase(.17);',
+    'unsigned total=0;for(unsigned i=0;i<n;++i){unsigned limit=i+1;'
+    'for(unsigned j=0;j<limit;++j){++total;if(x[0])phase(.03*total);}}'
+    'if(!x[0])phase(.05*total);',
+    'for(unsigned i=0;i<n;++i){if(x[0]){unsigned offset=i+1;++offset;phase(.04*offset);}}',
 )
 
 
@@ -35,7 +47,7 @@ def source(profile):
         'static void inner(quant const bool*x,unsigned n){if(!n)return;if(x[0])phase(.17);}\n'
         'static void rotate(quant const bool*x,double theta){if(!theta)return;if(x[0])phase(theta);}\n'
         'static void update(quant '
-        + ('' if profile in (0, 5, 7) else 'const ')
+        + ('' if profile in (0, 5, 7, 9, 10, 11) else 'const ')
         + 'bool*x,unsigned n){'
         + PROFILES[profile]
         + '}\n'
@@ -66,8 +78,40 @@ def effect(profile, n, value):
         return (middle, angle) if n == 3 else (middle ^ (((n + 1) >> 1) & 1), angle + 0.13)
     if profile == 6:
         return value, 0 if n == 2 else 0.03 * (n + 2) * value + 0.05 * (n + 1) * (not value)
-    current = value if n == 2 else value ^ ((5 >> (n % 2)) & 1)
-    return current, 0 if n == 2 else 0.17 * current
+    if profile == 7:
+        current = value if n == 2 else value ^ ((5 >> (n % 2)) & 1)
+        return current, 0 if n == 2 else 0.17 * current
+    if profile == 8:
+        total = n + (3 if n & 1 else 1)
+        return value, 0 if total == 4 else 0.03 * total * value + 0.07 * (total - 1) * (not value)
+    if profile == 9:
+        current, angle = value, 0
+        for i in range(n):
+            if i == 2:
+                return current, angle
+            current ^= 1
+            angle += 0.11 * (i + 1) * current
+        return current, angle + 0.17 * (not current)
+    if profile == 10:
+        current, angle = value, 0
+        for k in range(n, 0, -1):
+            if k == 2:
+                return current, angle
+            angle += 0.09 * k * current
+            current ^= 1
+        return current, angle + 0.13 * (not current)
+    if profile == 11:
+        current, angle = value, 0
+        for i in range(3):
+            if i == n:
+                return current, angle
+            angle += 0.07 * (i + 1) * current
+            current ^= 1
+        return current, angle + 0.17 * (not current)
+    if profile == 12:
+        total = n * (n + 1) // 2
+        return value, 0.03 * total * (total + 1) / 2 * value + 0.05 * total * (not value)
+    return value, 0.04 * n * (n + 3) / 2 * value
 
 
 def check(points, profile, n):
@@ -171,7 +215,45 @@ def boundaries():
             'void update(quant bool x,int n){int local=1;++local;if(n)return;x^=local;}',
             'int n=argc;quant bool c=superposition(0,1),x=false;if(c)update(x,n);'
             'measure(x);measure(c);return 0;',
+            None,
+        ),
+        (
+            'indirect-cpu-effect',
+            'static void cpu(void){}static void(*callback)(void)=cpu;'
+            'void update(quant bool x,int n){callback();if(n)return;x^=true;}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'classical calls and I/O cannot execute coherently',
+        ),
+        (
+            'quantum-dependent-local-write',
+            'void update(quant bool x,int n){int local=1;if(x)++local;'
+            'if(n)return;phase(.1*local);}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
             'classical storage cannot be created coherently',
+        ),
+        (
+            'effectful-loop-condition',
+            'void update(quant bool x,int n){int local=0;while(local++<n)x^=true;}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'classical storage cannot be created coherently',
+        ),
+        (
+            'inactive-for-local',
+            'void update(quant bool x,int n){int limit=10/n;'
+            'for(unsigned i=0;i<(unsigned)limit;++i)x^=true;}',
+            'int n=argc>1?argv[1][0]-\'0\':0;quant bool c=false,x=false;'
+            'if(c)update(x,n);return measure(x)||measure(c);',
+            None,
+        ),
+        (
+            'inactive-do-update',
+            'void update(quant bool x,int n){int local=1;' 'do{local=10/n;x^=true;}while(local);}',
+            'int n=argc>1?argv[1][0]-\'0\':0;quant bool c=false,x=false;'
+            'if(c)update(x,n);return measure(x)||measure(c);',
+            None,
         ),
         (
             'addressed-user-local',
@@ -325,7 +407,7 @@ def main():
         complete_gate_inverses=inverses,
         native_boundary_executions=native,
         compile_rejections=rejected,
-        scope='Pure CPU early exits composed with coherent callers; four-label states, relative/global controlled phases, X, nested calls and private-zero cleanup. Arbitrary CFG, quantum-controlled exits, coherent loops and user local lifetimes remain pending.',
+        scope='Pure CPU early exits, private integer locals and CPU for/while/do loops composed with coherent callers; four-label states, controlled phases, X, nested calls/loops, private-zero cleanup and inverses. Private writes stay within their declaration quantum branch and pure statement boundaries. Arbitrary CFG, quantum-dependent exits/iteration/local writes, escaping addresses and general lifetimes remain pending.',
     )
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary))

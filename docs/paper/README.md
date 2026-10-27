@@ -205,3 +205,9 @@ inmutables y sin alias desde llamadores coherentes. Las 244 entradas tienen hash
 [integración completa de 242 entradas](../audit-evidence/full-ci-cpu-returns-v1/README.es.md)
 terminó aprobada. Los pendientes de CI de los párrafos históricos conservan su contexto; la
 integración completa de los cambios posteriores sigue pendiente.
+
+La [nota de locales mutables y bucles CPU](private_cpu_loops_note.es.md) y su
+[cápsula](../audit-evidence/private-cpu-loops-v1/README.es.md) amplían el bloque inmutable con
+análisis de ramas, condiciones CPU puras y retornos dentro de bucles desde llamadores coherentes.
+Conservan identidades propias, el rechazo previo y estados/fases/inversas normales e instrumentados;
+la integración completa de estas fuentes sigue pendiente.

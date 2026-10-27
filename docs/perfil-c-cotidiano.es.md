@@ -112,3 +112,8 @@ Los [locales enteros CPU privados](paper/private_cpu_locals_note.es.md) ya puede
 expresiones puras dentro de una llamada coherente. Se excluyen escrituras posteriores, direcciones
 tomadas, almacenamiento estático, `volatile`, `_Atomic`, punteros y agregados. El SDK actualizado
 ejecuta el ejemplo; los locales mutables y los bucles coherentes siguen abiertos.
+
+La [ampliación de bucles CPU](paper/private_cpu_loops_note.es.md) supera el límite anterior: permite
+escrituras a esos enteros privados y bucles CPU puros dentro de la misma rama cuántica de
+declaración. Incluye retornos y bucles anidados. No permite que el local registre otra decisión
+cuántica, ni habilita direcciones escapadas, efectos CPU anidados o saltos coherentes.

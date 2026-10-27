@@ -81,6 +81,8 @@ bool quantum_pure_expression(tree value) {
     if (!value)
         return true;
     auto code = TREE_CODE(value);
+    if (cpu_guarded_captures.count(value))
+        return true;
     auto heap = quantum_heap_accesses.find(value);
     if (heap != quantum_heap_accesses.end())
         return quantum_pure_expression(heap->second.index);

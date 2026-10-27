@@ -175,10 +175,9 @@ bool pure_cpu_capture(tree value) {
            quantum_pure_expression(value);
 }
 
-// An initialized, unaliased CPU scalar that is never written again can
-// select a circuit without storing any information about quantum branches.
-// Inspect the expanded body, including declaration initializers, so an
-// address escape or later write anywhere revokes this permission.
+// A private CPU scalar can select gates and count classical iterations, but
+// cannot record which quantum branch ran. Every write must remain in the
+// quantum branch where the scalar was declared. Addresses may not escape.
 void discover_coherent_cpu_locals(tree body) {
     auto declarations = [](tree *node, int *walk, void *) -> tree {
         if (TREE_CODE(*node) == DECL_EXPR) {
@@ -187,7 +186,8 @@ void discover_coherent_cpu_locals(tree body) {
                 !TREE_STATIC(decl) && !DECL_EXTERNAL(decl) && !TREE_ADDRESSABLE(decl) &&
                 !TREE_THIS_VOLATILE(decl) && INTEGRAL_TYPE_P(TREE_TYPE(decl)) &&
                 !TYPE_VOLATILE(TREE_TYPE(decl)) && !TYPE_ATOMIC(TREE_TYPE(decl)) &&
-                !quantum(decl) && DECL_INITIAL(decl) && pure_cpu_capture(DECL_INITIAL(decl)) &&
+                !quantum(decl) && !procedure_cpu_flags.count(decl) && DECL_INITIAL(decl) &&
+                pure_cpu_capture(DECL_INITIAL(decl)) &&
                 !lookup_attribute("cleanup", DECL_ATTRIBUTES(decl)))
                 coherent_cpu_locals.insert(decl);
         }
@@ -196,38 +196,134 @@ void discover_coherent_cpu_locals(tree body) {
         return NULL_TREE;
     };
     walk_tree_without_duplicates(&body, declarations, nullptr);
-    auto revoke = [](tree *node, int *walk, void *) -> tree {
-        if (DECL_P(*node)) {
-            coherent_cpu_locals.erase(*node);
-            *walk = 0;
-        } else if (TYPE_P(*node))
-            *walk = 0;
-        return NULL_TREE;
-    };
 
     struct Inspect {
-        decltype(revoke) &revoke_local;
+        using Frame = std::vector<std::pair<tree, unsigned>>;
+        Frame frame;
+        std::map<tree, Frame> declared;
+        std::set<tree> invalid;
 
-        static tree visit(tree *node, int *walk, void *data) {
-            auto &self = *static_cast<Inspect *>(data);
-            auto code = TREE_CODE(*node);
+        bool visit(tree value, bool statement) {
+            if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value))
+                return false;
+            auto code = TREE_CODE(value);
+            if (code == BIND_EXPR)
+                return visit(BIND_EXPR_BODY(value), true);
+            if (code == STATEMENT_LIST) {
+                bool needed = false;
+                for (auto it = tsi_start(value); !tsi_end_p(it); tsi_next(&it))
+                    needed |= visit(tsi_stmt(it), true);
+                return needed;
+            }
             if (code == DECL_EXPR) {
-                tree initial = DECL_INITIAL(DECL_EXPR_DECL(*node));
-                if (initial)
-                    walk_tree_without_duplicates(&initial, visit, data);
-                *walk = 0;
-            } else if (code == ADDR_EXPR || code == MODIFY_EXPR || code == INIT_EXPR ||
-                       code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
-                       code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR) {
-                tree target = TREE_OPERAND(*node, 0);
-                walk_tree_without_duplicates(&target, self.revoke_local, nullptr);
-            } else if (DECL_P(*node) || TYPE_P(*node))
-                *walk = 0;
-            return NULL_TREE;
-        }
-    } inspect{revoke};
+                tree decl = DECL_EXPR_DECL(value);
+                if (coherent_cpu_locals.count(decl))
+                    declared[decl] = frame;
+                visit(DECL_INITIAL(decl), false);
+                return false;
+            }
+            if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+                visit(TREE_OPERAND(value, 0), false);
+                bool quantum_branch = has_quantum(TREE_OPERAND(value, 0));
+                bool needed = false;
+                for (unsigned arm = 1; arm <= 2; ++arm) {
+                    if (quantum_branch)
+                        frame.emplace_back(value, arm);
+                    needed |= visit(TREE_OPERAND(value, arm), true);
+                    if (quantum_branch)
+                        frame.pop_back();
+                }
+                if (needed && !quantum_branch)
+                    coherent_cpu_branches.insert(value);
+                return needed;
+            }
+            if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT) {
+                if (code == FOR_STMT)
+                    visit(FOR_INIT_STMT(value), true);
+                tree condition = code == WHILE_STMT ? WHILE_COND(value)
+                                 : code == DO_STMT  ? DO_COND(value)
+                                                    : FOR_COND(value);
+                visit(condition, false);
+                visit(code == WHILE_STMT ? WHILE_BODY(value)
+                      : code == DO_STMT  ? DO_BODY(value)
+                                         : FOR_BODY(value),
+                      true);
+                if (code == FOR_STMT)
+                    visit(FOR_EXPR(value), true);
+                if (!has_quantum(condition) && (!condition || pure_cpu_capture(condition)))
+                    coherent_cpu_loops.insert(value);
+                return true;
+            }
+            bool needed = false;
+            if (code == MODIFY_EXPR || code == INIT_EXPR || code == PREINCREMENT_EXPR ||
+                code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
+                code == POSTDECREMENT_EXPR) {
+                tree target = strip(TREE_OPERAND(value, 0));
+                if (coherent_cpu_locals.count(target)) {
+                    auto local = declared.find(target);
+                    bool pure = code != MODIFY_EXPR && code != INIT_EXPR
+                                    ? true
+                                    : pure_cpu_capture(TREE_OPERAND(value, 1));
+                    if (!statement || local == declared.end() || local->second != frame || !pure)
+                        invalid.insert(target);
+                    else {
+                        coherent_cpu_updates[value] = target;
+                        needed = true;
+                    }
+                }
+            }
+            if (code == ADDR_EXPR) {
+                tree target = TREE_OPERAND(value, 0);
+                auto escape = [](tree *node, int *walk, void *data) -> tree {
+                    if (DECL_P(*node)) {
+                        static_cast<Inspect *>(data)->invalid.insert(*node);
+                        *walk = 0;
+                    } else if (TYPE_P(*node))
+                        *walk = 0;
+                    return NULL_TREE;
+                };
+                walk_tree_without_duplicates(&target, escape, this);
+            }
 
-    walk_tree_without_duplicates(&body, Inspect::visit, &inspect);
+            // Let GCC enumerate variable-arity children without treating a
+            // nested expression update as a complete CPU statement.
+            struct Children {
+                Inspect *self;
+                bool first = true;
+                bool needed = false;
+            } children{this};
+
+            auto descend = [](tree *node, int *walk, void *data) -> tree {
+                auto &state = *static_cast<Children *>(data);
+                if (state.first)
+                    state.first = false;
+                else {
+                    state.needed |= state.self->visit(*node, false);
+                    *walk = 0;
+                }
+                return NULL_TREE;
+            };
+            walk_tree(&value, descend, &children, nullptr);
+            return needed || children.needed;
+        }
+    } inspect;
+
+    inspect.visit(body, true);
+    for (tree decl : inspect.invalid)
+        coherent_cpu_locals.erase(decl);
+}
+
+tree coherent_cpu_enabled(location_t loc) {
+    std::string envelope = "{\"op\":\"qphase\",\"angle\":0" + control_json() + '}';
+    tree query = build_fn_decl("__cket_controls_possible",
+                               build_function_type_list(long_long_unsigned_type_node,
+                                                        build_pointer_type(char_type_node),
+                                                        NULL_TREE));
+    TREE_PUBLIC(query) = DECL_EXTERNAL(query) = DECL_ARTIFICIAL(query) = 1;
+    return fold_convert(
+        boolean_type_node,
+        build_call_expr_loc(
+            loc, query, 1, build_string_literal(envelope.size() + 1, envelope.c_str())));
 }
 
 tree guarded_cpu_binding(tree value, location_t loc, bool lower = true, bool predicate = false) {
@@ -248,22 +344,19 @@ tree guarded_cpu_binding(tree value, location_t loc, bool lower = true, bool pre
     if (controls.empty() || (!load && !predicate) || has_quantum(value) ||
         !(predicate ? pure_cpu_capture(value) : quantum_pure_expression(value)))
         return lower ? lower_node(value) : value;
-    std::string envelope = "{\"op\":\"qphase\",\"angle\":0" + control_json() + '}';
-    tree query = build_fn_decl("__cket_controls_possible",
-                               build_function_type_list(long_long_unsigned_type_node,
-                                                        build_pointer_type(char_type_node),
-                                                        NULL_TREE));
-    TREE_PUBLIC(query) = DECL_EXTERNAL(query) = DECL_ARTIFICIAL(query) = 1;
-    tree enabled = build_call_expr_loc(
-        loc, query, 1, build_string_literal(envelope.size() + 1, envelope.c_str()));
     // Leave GCC's own CPU address/UBSan tree inside the selected C arm.
     // The false arm substitutes a value used only by an inactive operation.
-    return build3_loc(loc,
-                      COND_EXPR,
-                      TREE_TYPE(value),
-                      fold_convert(boolean_type_node, enabled),
-                      value,
-                      build_zero_cst(TREE_TYPE(value)));
+    tree guarded = build3_loc(loc,
+                              COND_EXPR,
+                              TREE_TYPE(value),
+                              coherent_cpu_enabled(loc),
+                              value,
+                              build_zero_cst(TREE_TYPE(value)));
+    // CPU branch choices and SAVE_EXPR operands may share this tree. Its
+    // original expression was checked above; keep the generated query opaque
+    // on later visits rather than treating it as an arbitrary user call.
+    cpu_guarded_captures.insert(guarded);
+    return guarded;
 }
 
 tree emit_operation(std::string operation, location_t loc, tree argument = NULL_TREE) {
@@ -2487,6 +2580,8 @@ tree lower_expression_measurement(tree value) {
 tree lower_node(tree value) {
     if (!value)
         return value;
+    if (cpu_guarded_captures.count(value))
+        return value;
     auto code = TREE_CODE(value);
     if (!controls.empty() && cpu_argument_captures.count(value)) {
         if (!pure_cpu_capture(value)) {
@@ -2504,6 +2599,15 @@ tree lower_node(tree value) {
                      "|c>: private procedure exit flags only accept a return transition");
         return value;
     }
+    auto cpu_update = coherent_cpu_updates.find(value);
+    if (!controls.empty() && cpu_update != coherent_cpu_updates.end() &&
+        coherent_cpu_locals.count(cpu_update->second))
+        return build3_loc(at(value),
+                          COND_EXPR,
+                          void_type_node,
+                          coherent_cpu_enabled(at(value)),
+                          fold_convert(void_type_node, value),
+                          build_empty_stmt(at(value)));
     if (quantum_native_memory.count(value))
         return lower_native_memory(value);
     if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&
@@ -3126,8 +3230,9 @@ tree lower_node(tree value) {
     // A pure CPU predicate inside a coherent region is a circuit input.
     // Lower its typed arithmetic under the existing quantum controls, keeping
     // inactive division/shift domains lazy instead of executing them on CPU.
-    bool checked_cpu_branch =
-        quantum_memory_cpu_branches.count(value) || procedure_cpu_branches.count(value);
+    bool checked_cpu_branch = quantum_memory_cpu_branches.count(value) ||
+                              procedure_cpu_branches.count(value) ||
+                              coherent_cpu_branches.count(value);
     bool coherent_cpu_condition = code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
                                   !checked_cpu_branch && !controls.empty() &&
                                   quantum_pure_expression(TREE_OPERAND(value, 0));
@@ -3207,9 +3312,10 @@ tree lower_node(tree value) {
             return value;
         }
         tree condition = TREE_OPERAND(value, 0);
-        if (procedure_cpu_branches.count(value) && !controls.empty()) {
+        if ((procedure_cpu_branches.count(value) || coherent_cpu_branches.count(value)) &&
+            !controls.empty()) {
             if (!pure_cpu_capture(condition)) {
-                error_at(at(value), "|c>: a private return branch requires a pure CPU predicate");
+                error_at(at(value), "|c>: a private CPU branch requires a pure CPU predicate");
                 return value;
             }
             condition = guarded_cpu_binding(condition, at(value), false, true);
@@ -3289,7 +3395,8 @@ tree lower_node(tree value) {
                          : code == DO_STMT  ? DO_COND(value)
                          : code == FOR_STMT ? FOR_COND(value)
                                             : TREE_OPERAND(value, 0);
-        if (has_quantum(condition) || !controls.empty()) {
+        bool coherent_loop = !controls.empty() && coherent_cpu_loops.count(value);
+        if (has_quantum(condition) || (!controls.empty() && !coherent_loop)) {
             error_at(
                 at(value),
                 "|c>: quantum while/for requires a proven finite reversible iteration bound; no implicit measurement is allowed");
@@ -3299,15 +3406,21 @@ tree lower_node(tree value) {
         auto incoming = variables;
         instructions.push_back("{\"op\":\"cloop_begin\"}");
         ++dynamic_depth;
+        auto loop_condition = [coherent_loop, value](tree condition) {
+            return coherent_loop
+                       ? guarded_cpu_binding(
+                             condition ? condition : boolean_true_node, at(value), false, true)
+                       : lower_node(condition);
+        };
         if (code == WHILE_STMT) {
-            WHILE_COND(value) = lower_node(WHILE_COND(value));
+            WHILE_COND(value) = loop_condition(WHILE_COND(value));
             WHILE_BODY(value) = lower_node(WHILE_BODY(value));
         } else if (code == DO_STMT) {
-            DO_COND(value) = lower_node(DO_COND(value));
+            DO_COND(value) = loop_condition(DO_COND(value));
             DO_BODY(value) = lower_node(DO_BODY(value));
         } else if (code == FOR_STMT) {
             FOR_INIT_STMT(value) = lower_node(FOR_INIT_STMT(value));
-            FOR_COND(value) = lower_node(FOR_COND(value));
+            FOR_COND(value) = loop_condition(FOR_COND(value));
             FOR_BODY(value) = lower_node(FOR_BODY(value));
             FOR_EXPR(value) = lower_node(FOR_EXPR(value));
         } else
@@ -3807,8 +3920,11 @@ tree lower_node(tree value) {
         if (quantum_heap_queries.count(get_callee_fndecl(value)))
             return value;
         if (!controls.empty()) {
-            error_at(at(value),
-                     "|c>: classical calls and I/O cannot execute coherently inside a quantum if");
+            error_at(
+                at(value),
+                "|c>: classical calls and I/O cannot execute coherently inside a quantum if (%s)",
+                get_callee_fndecl(value) ? name_of(get_callee_fndecl(value)).c_str()
+                                         : "<indirect>");
             return value;
         }
         if (has_quantum(value)) {
