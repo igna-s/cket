@@ -56,6 +56,11 @@ escalares y de buffers fijos. Rechaza las escrituras por casts antes de perder e
 préstamo. Su evidencia de 239 entradas distingue los casos comprobados de las combinaciones
 generales de alias y vidas que siguen pendientes.
 
+La [ampliación de retornos CPU](c11-procedure-returns.md) implementa salidas anticipadas de
+procedimientos `void` en bloques y bucles, con limpieza léxica y continuación del llamador. Sus
+estados, fases e inversas tienen evidencia propia; los resultados propios anticipados y el CFG
+general siguen pendientes.
+
 ## Orden de trabajo
 
 1. Integrar los enteros y sus consumidores con funciones, arrays y structs básicos.

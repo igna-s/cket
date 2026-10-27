@@ -390,11 +390,17 @@ std::string register_expression(const Variable &var) {
     unsigned active = 0;
     for (uint64_t value = var.range_max; value; value >>= 1)
         ++active;
+    // Native CPU arms start from their incoming state, but structural QIR
+    // validation visits both arms. Do not export path-local range/known-value
+    // certificates as unconditional facts about that serialized traversal.
+    bool conditional = !cpu_branches.empty();
+    if (conditional)
+        active = var.width;
     return "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
            ",\"bits\":" + std::to_string(var.width) +
            ",\"signed\":" + (var.is_signed ? "true" : "false") +
            ",\"active\":" + std::to_string(active) +
-           (var.basis_known ? ",\"known\":" + std::to_string(var.lower) : "") + '}';
+           (var.basis_known && !conditional ? ",\"known\":" + std::to_string(var.lower) : "") + '}';
 }
 
 struct QuantumAccesses {

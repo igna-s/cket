@@ -29,6 +29,12 @@ Estas campañas califican perfiles finitos de densidad, fases e inversas. La rev
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
 fuentes originales; no se los recalifica automáticamente para el compilador actual.
 
+La [nota de retornos CPU](../c11-procedure-returns.md) y su
+[cápsula de 242 entradas](../audit-evidence/procedure-returns-v1/README.es.md) añaden retornos
+anticipados en procedimientos y corrigen certificados de ramas CPU. El SDK nuevo incluye ese
+frontend. Sus fórmulas C, estados, fases e inversas califican programas finitos; los manuscritos
+históricos mantienen sus resultados anteriores.
+
 El [mapa de afirmaciones y evidencia actual](current-evidence-map-2026-10-26.es.md) explica cómo
 leer los manuscritos históricos junto con el SDK. La
 [campaña C posterior](../audit-evidence/c-priority-integration-v1/README.es.md) completa 2332

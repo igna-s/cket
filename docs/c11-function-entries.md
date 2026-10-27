@@ -26,5 +26,9 @@ forward declarations, global/local pointers, arrays and structs of pointers, cal
 nonvoid results and automatic callbacks. The dynamic case is a Linux/glibc boundary check, not
 support for quantum function pointers.
 
+[Structured CPU early returns](c11-procedure-returns.md) are supported in void procedures, including
+CPU loops. They finish lexical cleanup before continuing the caller; owned early results and general
+control flow keep their separate restrictions.
+
 Recursion, general indirect quantum calls and cross-unit quantum linking remain pending. The
 complete integration gate also remains open; these checks do not qualify all C programs.

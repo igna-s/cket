@@ -8,15 +8,15 @@ publicadas. La 1.0 estable y el núcleo cotidiano completo continúan pendientes
 Desde la raíz del repositorio en Windows:
 
 ```cmd
-output\sdk\checked-entry\run_sdk_demo.cmd
-output\sdk\checked-entry\run_checked_demo.cmd
-output\sdk\checked-entry\compile_and_run.cmd output\sdk\checked-entry\example_heap.c
+output\sdk\cpu-returns\run_sdk_demo.cmd
+output\sdk\cpu-returns\run_return_demo.cmd
+output\sdk\cpu-returns\compile_and_run.cmd output\sdk\cpu-returns\example_heap.c
 ```
 
-El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con alias de
-lectura y comprueba interferencia: `scalar=1 vector=0,1`. El tercero compila un programa de heap.
-Podés editar una copia y pasar su ruta al mismo lanzador. La
-[guía del SDK actualizado](../output/sdk/checked-entry/README.es.md) explica los requisitos y la CLI
+El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con retornos CPU
+y limpieza, y comprueba interferencia: `limit=2 visited=2 result=0 interference=0`. El tercero
+compila un programa de heap. Podés editar una copia y pasar su ruta al mismo lanzador. La
+[guía del SDK actualizado](../output/sdk/cpu-returns/README.es.md) explica los requisitos y la CLI
 en Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
 directorio padre con su propia identidad.
 
@@ -39,10 +39,16 @@ conserva la información necesaria como historia o la limpia mediante una invers
 
 ## Qué se comprobó en esta entrega
 
-El SDK actualizado conserva las 240 entradas exactas del compilador y pruebas, ejecutables, headers
+El SDK actualizado conserva las 242 entradas exactas del compilador y pruebas, ejecutables, headers
 y fuentes. Los seis runners reconstruyen los 37 programas y sus exportaciones estáticas admitidas.
 La suite de ejemplos pasa 1509 comprobaciones normales en cinco niveles de GCC. Los lanzadores
-Windows ejecutan el paquete y compilan el ejemplo nuevo de alias e interferencia.
+Windows ejecutan el paquete y compilan los ejemplos de retornos/interferencia y del heap.
+
+La [ampliación de retornos](c11-procedure-returns.md) implementa `return;` CPU anticipado en
+procedimientos `void`, incluidos bucles, sin salir del llamador ni omitir su limpieza léxica. Su
+[evidencia](audit-evidence/procedure-returns-v1/README.es.md) distingue 840 ejecuciones frente a C
+de 600 puntos de estado complejo y 300 inversas completas, normales e instrumentadas. Se conservan
+las restricciones sobre resultados propios, control cuántico y CFG general.
 
 La [corrección de entradas de función](c11-function-entries.md) añade 90 contratos normales e
 instrumentados para llamadas, prototipos y punteros. Evita que una llamada clásica no comprobada
@@ -51,9 +57,10 @@ termine en un stub vacío.
 El fallo anterior `unmodelled retained version` se reproduce y corrige en la
 [referencia de memoria runtime](audit-evidence/runtime-memory-reference-v1/README.es.md). Pasan 900
 puntos de estado complejo y 270 inversas completas en normal y ASan/UBSan; tres mutaciones unitarias
-de datos, fase y guarda se rechazan. Solo cambia el validador Python del checkout: el compilador y
-los binarios del SDK siguen iguales. El archivo del SDK conserva su validador y hashes originales.
-Esta corrección dirigida no equivale a una ejecución general de CI aprobada.
+de datos, fase y guarda se rechazan. Aquella campaña solo cambió el validador Python; su SDK
+anterior conserva el archivo y hashes originales. El SDK nuevo de 242 entradas incluye la referencia
+corregida y la ampliación de retornos. Cada campaña conserva su propia identidad; la integración
+general sigue pendiente.
 
 La [corrección de préstamos](c11-readonly-borrows.md) permite alias de lectura y rechaza escrituras
 mediante casts. Su [cápsula](audit-evidence/readonly-borrows-v1/README.es.md) registra 305

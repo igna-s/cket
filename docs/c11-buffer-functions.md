@@ -63,6 +63,10 @@ snapshots retain their original status. The runner exports the two static buffer
 CPU-loop scans produce native executables, since dynamic CPU loops cannot be flattened into QASM.
 Arbitrary extents, exhaustive resource boundaries and broader integration remain open.
 
+Void procedures also support [structured CPU early returns](c11-procedure-returns.md), including CPU
+loops. They finish their lexical cleanup and continue the caller without measuring a quantum
+predicate. Value results, general jumps and other lifetimes keep their separate restrictions.
+
 General CPU address expressions, pointer rebinding/escape, arbitrary layouts, general function ABI,
 loop lifetimes and coherent external I/O remain incomplete. Dynamic extents and allocation have a
 separate [native heap contract](c11-heap.md), including expanded same-unit buffer calls; they are

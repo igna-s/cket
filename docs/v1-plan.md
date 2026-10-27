@@ -122,8 +122,10 @@ borrows, and changes to pending dependencies.
 
 Current analysis conservatively joins branches/loops and invalidates ranges before dynamic CPU
 control. It supports these combinations, terminal owned scalar returns, and pure conditional
-returns. Dynamic owners, early returns with pending lifetimes, `goto`, `switch`, branch-dependent
-identities, and complete CFG reconstruction remain pending. **P3 is partial.**
+returns. Structured [CPU early returns in void procedures](c11-procedure-returns.md) now continue
+the caller after lexical cleanup, including returns inside CPU loops. Dynamic owners, general early
+result transfer and lifetimes, `goto`, `switch`, branch-dependent identities, and complete CFG
+reconstruction remain pending. **P3 is partial.**
 
 ## P4: functions and ABI
 

@@ -418,6 +418,102 @@ tree modified_value_parameter(tree *node, int *walk, void *data) {
     return NULL_TREE;
 }
 
+bool procedure_has_return(tree body) {
+    auto inspect = [](tree *node, int *walk, void *) -> tree {
+        if (TREE_CODE(*node) == RETURN_EXPR)
+            return *node;
+        if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    return body && walk_tree(&body, inspect, nullptr, nullptr);
+}
+
+// An expanded procedure must finish its lexical cleanup before the caller
+// continues. A CPU flag transports structured early exits without a jump past
+// that cleanup or a return from the caller. No quantum predicate is observed.
+bool rewrite_procedure_returns(tree *slot, tree active, unsigned depth = 0) {
+    tree value = *slot;
+    if (!value || DECL_P(value) || TYPE_P(value))
+        return false;
+    if (depth > 128) {
+        error_at(at(value), "|c>: procedure return analysis exceeds 128 nested statements");
+        return false;
+    }
+    auto code = TREE_CODE(value);
+    auto guard = [active](tree statement) {
+        return build3_loc(at(statement),
+                          COND_EXPR,
+                          void_type_node,
+                          active,
+                          statement,
+                          build_empty_stmt(at(statement)));
+    };
+    if (code == RETURN_EXPR && !TREE_OPERAND(value, 0)) {
+        *slot = build2_loc(at(value), MODIFY_EXPR, boolean_type_node, active, boolean_false_node);
+        return true;
+    }
+    if (code == BIND_EXPR)
+        return rewrite_procedure_returns(&BIND_EXPR_BODY(value), active, depth + 1);
+    if (code == STATEMENT_LIST) {
+        bool exits = false;
+        for (auto it = tsi_start(value); !tsi_end_p(it); tsi_next(&it)) {
+            tree *statement = tsi_stmt_ptr(it);
+            bool current = rewrite_procedure_returns(statement, active, depth + 1);
+            if (exits)
+                *statement = guard(*statement);
+            exits |= current;
+        }
+        return exits;
+    }
+    if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+        bool first = rewrite_procedure_returns(&TREE_OPERAND(value, 1), active, depth + 1);
+        bool second = rewrite_procedure_returns(&TREE_OPERAND(value, 2), active, depth + 1);
+        if ((first || second) && has_quantum(TREE_OPERAND(value, 0)))
+            error_at(at(value),
+                     "|c>: an early procedure return cannot depend on unmeasured quantum control");
+        return first || second;
+    }
+    if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT) {
+        tree *body = code == WHILE_STMT ? &WHILE_BODY(value)
+                     : code == DO_STMT  ? &DO_BODY(value)
+                                        : &FOR_BODY(value);
+        if (!rewrite_procedure_returns(body, active, depth + 1))
+            return false;
+        tree *condition = code == WHILE_STMT ? &WHILE_COND(value)
+                          : code == DO_STMT  ? &DO_COND(value)
+                                             : &FOR_COND(value);
+        *condition = build2_loc(at(value),
+                                TRUTH_ANDIF_EXPR,
+                                boolean_type_node,
+                                active,
+                                *condition ? fold_convert(boolean_type_node, *condition)
+                                           : boolean_true_node);
+        // C does not execute the for increment after returning from its body.
+        if (code == FOR_STMT && FOR_EXPR(value))
+            FOR_EXPR(value) = guard(FOR_EXPR(value));
+        return true;
+    }
+    // Switches and arbitrary jumps still require their own lifetime analysis.
+    // Leave any return there for the explicit unsupported-flow diagnostic.
+    return false;
+}
+
+tree expand_cpu_procedure_returns(tree body, location_t location) {
+    if (!procedure_has_return(body))
+        return body;
+    tree active = build_decl(
+        location, VAR_DECL, get_identifier("__cket_procedure_active"), boolean_type_node);
+    DECL_CONTEXT(active) = active_function;
+    DECL_ARTIFICIAL(active) = 1;
+    DECL_INITIAL(active) = boolean_true_node;
+    rewrite_procedure_returns(&body, active);
+    tree list = alloc_stmt_list();
+    append(&list, build1_loc(location, DECL_EXPR, void_type_node, active));
+    append(&list, body);
+    return build3(BIND_EXPR, void_type_node, active, list, NULL_TREE);
+}
+
 tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     tree fn = get_callee_fndecl(call);
     auto found = quantum_functions.find(name_of(fn));
@@ -676,7 +772,10 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                     *walk = 0;
                 return NULL_TREE;
             };
-            // Early/conditional returns are rejected rather than discarded.
+            expanded = expand_quantum_program(expanded);
+            if (!function.owned_result)
+                expanded = expand_cpu_procedure_returns(expanded, at(call));
+            // Returns in unsupported control-flow nodes remain diagnosed.
             auto check_return = [](tree *node, int *walk, void *) -> tree {
                 if (TREE_CODE(*node) == RETURN_EXPR)
                     error_at(
@@ -688,7 +787,6 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
             };
             walk_tree(&expanded, check_return, nullptr, nullptr);
             walk_tree(&expanded, remove_return, nullptr, nullptr);
-            expanded = expand_quantum_program(expanded);
             auto check_consumption = [](tree *node, int *walk, void *data) -> tree {
                 auto &loans = *static_cast<std::set<tree> *>(data);
                 if (TREE_CODE(*node) == DECL_EXPR) {

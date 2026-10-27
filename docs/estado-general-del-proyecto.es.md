@@ -9,11 +9,18 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/checked-entry/README.es.md)
+**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/cpu-returns/README.es.md)
 incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
-`output\sdk\checked-entry\run_checked_demo.cmd` para compilar el ejemplo de fase e interferencia con
-alias de lectura. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
+`output\sdk\cpu-returns\run_return_demo.cmd` para compilar el ejemplo de retorno, limpieza e
+interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
 pendientes.
+
+**Retornos CPU implementados:** los procedimientos `void` admiten `return;` anticipado en bloques,
+condiciones y bucles CPU. Terminan su limpieza léxica y continúan el llamador. También se corrige un
+rechazo de ramas CPU causado por certificados de valores conocidos fuera de su camino. La
+[nota](c11-procedure-returns.md) y su
+[evidencia de 242 entradas](audit-evidence/procedure-returns-v1/README.es.md) distinguen resultados
+C, efectos, fases, auxiliares limpios e inversas de los flujos generales todavía pendientes.
 
 **Entradas de funciones comprobadas:** se rechazan prototipos clásicos y punteros que podían
 alcanzar un stub vacío de una función `quant`. La entrada nativa restante devuelve un error
@@ -25,9 +32,9 @@ normales e instrumentados, regresiones y el SDK reconstruido.
 `unmodelled retained version`: faltaba modelar una guarda privada cero en un `memset` de longitud
 cero. La [nueva evidencia](audit-evidence/runtime-memory-reference-v1/README.es.md) registra 900
 puntos de estado complejo y 270 inversas completas, normales e instrumentadas. Rechaza además tres
-mutaciones unitarias de datos, fase y guarda. No cambian el compilador ni sus binarios; el SDK
-conserva su referencia original. Se cierra ese fallo concreto; la integración completa sigue
-pendiente.
+mutaciones unitarias de datos, fase y guarda. Aquella corrección no cambió el compilador ni sus
+binarios; el SDK anterior conserva su referencia original. El SDK nuevo incluye la referencia
+corregida. Se cierra ese fallo concreto; la integración completa sigue pendiente.
 
 **Continuación de integración:** las dos matrices siguientes, escrituras coherentes y buffers fijos
 en bucles, pasan en normal y ASan/UBSan: 540 puntos de estado y 210 inversas completas en la

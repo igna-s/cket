@@ -84,8 +84,8 @@ static void memory_cases(void) {
          "#include <quantum.h>\nvoid add(quant uint8_t x){x+=1;}\nvoid bad(quant const uint8_t x){add(x);}\nint main(void){quant uint8_t x=7;bad(x);measure(x);}\n"},
         {"read-only pointer loan forwarded to mutator",
          "#include <quantum.h>\nvoid add(quant uint8_t *x){*x+=1;}\nvoid bad(quant const uint8_t *x){add((uint8_t*)x);}\nint main(void){quant uint8_t x=7;bad(&x);measure(x);}\n"},
-        {"conditional early procedure return",
-         "#include <quantum.h>\nvoid bad(quant uint8_t x,int c){if(c)return;x+=1;}\nint main(void){quant uint8_t x=7;bad(x,1);measure(x);}\n"}};
+        {"unmeasured quantum early procedure return",
+         "#include <quantum.h>\nvoid bad(quant uint8_t x,quant const bool c){if(c)return;x+=1;}\nint main(void){quant uint8_t x=7;quant bool c=superposition(0,1);bad(x,c);measure(x);measure(c);}\n"}};
 
     for (unsigned i = 0; i < sizeof invalid / sizeof *invalid; ++i) {
         char name[160];
