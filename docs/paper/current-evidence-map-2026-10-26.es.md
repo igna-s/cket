@@ -38,11 +38,15 @@ originales. La [continuación de memoria](../audit-evidence/memory-integration-t
 añade 540 puntos y 210 inversas de escrituras coherentes y bucles fijos, con los mismos productores.
 Los alcances se solapan con campañas anteriores y no se suman como cobertura independiente.
 
-La [integración de `183169a`](https://github.com/igna-s/cket/actions/runs/40500449856) se inició el
-27 de octubre. Al guardar este seguimiento, formato y contratos del formateador pasaron; la
-verificación general sigue en curso. No se presenta como una ejecución completa aprobada de
-`scripts/verify.sh`.
+La [integración completa de `ac8f5bc`](../audit-evidence/full-ci-cpu-returns-v1/README.es.md), con
+242 entradas verificadas contra Git, terminó aprobada el 27 de octubre: formato y toda la
+composición de `scripts/verify.sh`, normal y ASan/UBSan. Se conservan los 58 archivos de artefactos
+y los logs completos. La integración de `183169a` también terminó aprobada. Estas ejecuciones
+cierran los pendientes de aquellas fuentes; no recalifican el SDK de 244 entradas, cuya
+[integración](https://github.com/igna-s/cket/actions/runs/40549661037) sigue en curso al guardar
+este seguimiento. Los resultados anteriores mantienen sus exclusiones y alcances.
 
 Siguen pendientes el cierre del perfil cotidiano, vidas/alias/ABI generales, flotantes cuánticos,
-perfiles excluidos por recursos, integración completa y revisión científica general de los papers.
-La candidata continúa siendo `1.0.0-rc.3`. La ciberseguridad permanece clásica.
+perfiles excluidos por recursos, integración de los cambios posteriores y revisión científica
+general de los papers. La candidata continúa siendo `1.0.0-rc.3`. La ciberseguridad permanece
+clásica.

@@ -94,3 +94,9 @@ Los manuscritos generales conservan su evaluación histórica; las notas nuevas 
 actuales. No hay demostración de QPU física ni de aceleración frente a CPU. Esta entrega permite
 usar los bloques comprobados y compilar programas propios dentro de sus contratos; no declara todo
 C11 ni toda libc cuánticamente implementados. La ciberseguridad permanece clásica.
+
+La [integración completa de 242 entradas](audit-evidence/full-ci-cpu-returns-v1/README.es.md)
+terminó aprobada con productores normales e instrumentados. Las fuentes se verifican contra
+`ac8f5bc`; no se atribuye ese resultado al compilador posterior de 244 entradas. Este último
+conserva sus pruebas dirigidas y su SDK comprobado; su CI completo sigue en curso al guardar esta
+nota.

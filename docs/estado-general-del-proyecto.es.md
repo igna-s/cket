@@ -15,6 +15,14 @@ reconstruidos. Ejecutá `output\sdk\coherent-returns\run_coherent_demo.cmd` para
 de retorno, limpieza e interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md)
 resume comandos y pendientes.
 
+**Integración completa aprobada para `ac8f5bc`:** formato y toda la composición de
+`scripts/verify.sh` pasan en normal y ASan/UBSan sobre las 242 entradas identificadas del SDK
+anterior. La [cápsula de CI](audit-evidence/full-ci-cpu-returns-v1/README.es.md) conserva los logs y
+vincula los hashes con los blobs Git. Esto cierra el pendiente de integración de aquellas fuentes.
+El compilador de 244 entradas tiene su propia campaña dirigida aprobada; su
+[CI completo](https://github.com/igna-s/cket/actions/runs/40549661037) sigue en curso al guardar
+este seguimiento. Las menciones de CI pendiente más abajo pertenecen a campañas anteriores.
+
 **Retornos desde un llamador coherente:** los predicados CPU puros de salida ya seleccionan puertas
 bajo el control cuántico del llamador. Solo se habilitan la bandera y ramas privadas del compilador;
 siguen rechazados los efectos CPU observables y las salidas decididas por datos cuánticos sin medir.
