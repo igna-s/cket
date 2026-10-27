@@ -65,6 +65,9 @@ python3 scripts/validate-coherent-overwrites.py --output "$coherent_store_proof/
 fixed_memory_proof="$(mktemp -d "$PWD/build/fixed-memory-proof.XXXXXX")"
 python3 scripts/validate-fixed-memory-loops.py --output "$fixed_memory_proof/normal" --levels O0 O2 \
     2>&1 | tee build/verify-fixed-memory-loops.log
+memory_jump_proof="$(mktemp -d "$PWD/build/memory-jump-proof.XXXXXX")"
+python3 scripts/validate-memory-loop-jumps.py --output "$memory_jump_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-memory-loop-jumps.log
 build/validate_ctype 2>&1 | tee build/verify-ctype.log
 build/validate_profiles 2>&1 | tee build/verify-profiles.log
 build/validate_numeric_locale 2>&1 | tee build/verify-numeric-locale.log

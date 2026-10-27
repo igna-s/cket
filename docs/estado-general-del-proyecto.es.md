@@ -15,6 +15,20 @@ incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
 interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
 pendientes.
 
+**Memoria con saltos CPU verificada:** `memcpy`, `memmove` y `memset` conservan máscaras, historia y
+fases en cinco formas de salto/bucle. La [nota](paper/memory_loop_jumps_note.es.md) y su
+[cápsula](audit-evidence/memory-loop-jumps-v1/README.es.md) registran 4740 puntos de estado y 1200
+inversas en normal; 2370 y 600 instrumentados. La densidad del bit intacto de una palabra parcial
+también se conserva; se rechaza un mutante que lo copia a un auxiliar. La campaña tiene 245 entradas
+y reutiliza exactamente los binarios de `5f12080`: el SDK recomendado conserva su identidad. No se
+amplía su soporte de operaciones ni se afirma que estas familias de memoria ya estén calificadas con
+un llamador coherente exterior.
+
+**CI completo de llamadas coherentes aprobado:** la
+[cápsula de `cba9759`](audit-evidence/full-ci-coherent-returns-v1/README.es.md) conserva 59
+artefactos, logs y la comprobación de 244 blobs Git. Cierra el pendiente de aquella revisión; los
+locales, bucles y saltos posteriores mantienen sus propios CI y fuentes.
+
 **Break y continue CPU implementados:** se transportan con permisos privados y se llega a la
 limpieza del bloque antes de salir o continuar. `continue` conserva el incremento del `for`; `break`
 lo omite. La [nota](paper/loop_jumps_note.es.md) y la
@@ -45,10 +59,9 @@ bucles CPU; sus propias fuentes y resultados se identifican por separado.
 `scripts/verify.sh` pasan en normal y ASan/UBSan sobre las 242 entradas identificadas del SDK
 anterior. La [cápsula de CI](audit-evidence/full-ci-cpu-returns-v1/README.es.md) conserva los logs y
 vincula los hashes con los blobs Git. Esto cierra el pendiente de integración de aquellas fuentes.
-El compilador de llamadas coherentes `cba9759`, anterior al bloque de locales privados, tiene su
-campaña dirigida aprobada; su [CI completo](https://github.com/igna-s/cket/actions/runs/40549661037)
-sigue en curso al guardar este seguimiento. Las menciones de CI pendiente más abajo pertenecen a
-campañas anteriores.
+El compilador de llamadas coherentes `cba9759`, anterior al bloque de locales privados, tiene ahora
+su [CI completo aprobado](audit-evidence/full-ci-coherent-returns-v1/README.es.md). Las menciones de
+CI pendiente más abajo pertenecen a campañas anteriores.
 
 **Retornos desde un llamador coherente:** los predicados CPU puros de salida ya seleccionan puertas
 bajo el control cuántico del llamador. Siguen rechazados los efectos CPU observables y las salidas

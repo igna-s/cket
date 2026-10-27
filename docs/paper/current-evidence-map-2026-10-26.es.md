@@ -38,13 +38,12 @@ originales. La [continuación de memoria](../audit-evidence/memory-integration-t
 añade 540 puntos y 210 inversas de escrituras coherentes y bucles fijos, con los mismos productores.
 Los alcances se solapan con campañas anteriores y no se suman como cobertura independiente.
 
-La [integración completa de `ac8f5bc`](../audit-evidence/full-ci-cpu-returns-v1/README.es.md), con
-242 entradas verificadas contra Git, terminó aprobada el 27 de octubre: formato y toda la
-composición de `scripts/verify.sh`, normal y ASan/UBSan. Se conservan los 58 archivos de artefactos
-y los logs completos. La integración de `183169a` también terminó aprobada. Estas ejecuciones
-cierran los pendientes de aquellas fuentes; no recalifican el SDK de 244 entradas, cuya
-[integración](https://github.com/igna-s/cket/actions/runs/40549661037) sigue en curso al guardar
-este seguimiento. Los resultados anteriores mantienen sus exclusiones y alcances.
+La [integración completa de `ac8f5bc`](../audit-evidence/full-ci-cpu-returns-v1/README.es.md), de
+242 entradas, y la de
+[llamadas coherentes `cba9759`](../audit-evidence/full-ci-coherent-returns-v1/README.es.md), de 244
+entradas, terminaron aprobadas. Ambas conservan logs, artefactos e identidades Git. El CI de
+`183169a` también terminó aprobado. No recalifican las revisiones posteriores de locales, bucles o
+saltos; una misma cantidad de archivos no identifica las mismas fuentes.
 
 Siguen pendientes el cierre del perfil cotidiano, vidas/alias/ABI generales, flotantes cuánticos,
 perfiles excluidos por recursos, integración de los cambios posteriores y revisión científica
@@ -68,3 +67,10 @@ identidades de fuente. Su [cápsula](../audit-evidence/loop-jumps-v1/README.es.m
 comparaciones C normales de 1900 puntos de estado con llamador coherente y sus inversas; ambas
 matrices pasan también instrumentadas con sus propios recuentos. Quedan saltos cuánticos,
 flujo/vidas generales e integración completa de estas fuentes.
+
+La [auditoría de memoria con saltos](memory_loop_jumps_note.es.md) añade 245 entradas de campaña,
+con fuentes de producción y binarios iguales a `5f12080`. Su
+[cápsula](../audit-evidence/memory-loop-jumps-v1/README.es.md) registra estados/inversas y
+densidades 2×2 del bit preparado en el byte intacto; no es una prueba de estados arbitrarios de un
+byte ni de estas familias con un llamador coherente exterior. La integración nueva permanece
+pendiente de su CI completo.

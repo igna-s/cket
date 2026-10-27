@@ -912,3 +912,10 @@ For implementation details, read the [language contract](docs/language.md),
 The project uses the [MIT license](LICENSE). Contributions follow
 [CONTRIBUTING.md](CONTRIBUTING.md); vulnerability reports follow [SECURITY.md](SECURITY.md).
 Repository documentation is primarily in English.
+
+The [memory/jump audit](docs/paper/memory_loop_jumps_note.es.md) adds C-derived byte masks, complete
+states/inverses and an independent untouched-bit density check for memcpy/memmove/memset through CPU
+jumps. Its [245-input campaign](docs/audit-evidence/memory-loop-jumps-v1/README.es.md) reuses the
+published compiler binaries; the SDK is unchanged. The
+[full CI at cba9759](docs/audit-evidence/full-ci-coherent-returns-v1/README.es.md) passed for that
+earlier source identity. Later revisions and this new integration retain their own pending CI.

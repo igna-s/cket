@@ -216,3 +216,10 @@ La [nota de break/continue CPU](loop_jumps_note.es.md) y su
 [cápsula](../audit-evidence/loop-jumps-v1/README.es.md) amplían los bucles con permisos privados,
 limpieza y reglas de incremento verificadas contra C. Incluyen matrices normales e instrumentadas de
 efectos CPU, estados complejos e inversas; no recalifican los manuscritos históricos.
+
+La [nota de memoria con saltos CPU](memory_loop_jumps_note.es.md) y su
+[cápsula de 245 entradas](../audit-evidence/memory-loop-jumps-v1/README.es.md) contrastan máscaras
+derivadas de C, historia, estados, fases, densidad del bit intacto e inversas; los productores son
+los mismos de `5f12080`. El
+[CI completo de `cba9759`](../audit-evidence/full-ci-coherent-returns-v1/README.es.md) terminó
+aprobado, con otra identidad de fuentes. Los manuscritos históricos mantienen sus resultados.

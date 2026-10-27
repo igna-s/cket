@@ -118,3 +118,10 @@ más próximo y el incremento de `for`. La [evidencia](audit-evidence/loop-jumps
 identifica sus fuentes y comprobaciones C/estados/inversas. Los límites anteriores de saltos CPU se
 superan para ese perfil; permanecen decisiones cuánticas, flujo/vidas generales y el CI completo de
 la ampliación.
+
+La [auditoría de memoria con saltos](paper/memory_loop_jumps_note.es.md) pasa con los mismos
+binarios del SDK, sin cambiarlo. Comprueba máscaras C, estados, historia, fases e inversas,
+incluyendo la coherencia de un bit del byte intacto. Se añade al verificador normal e instrumentado;
+el CI completo de esa integración queda pendiente. El
+[CI de `cba9759`](audit-evidence/full-ci-coherent-returns-v1/README.es.md) terminó aprobado para las
+fuentes anteriores de llamadas coherentes y no recalifica las revisiones posteriores.

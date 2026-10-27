@@ -34,6 +34,46 @@ def source_hashes():
     }
 
 
+def memory_loop_jump_results(content):
+    rows = []
+    for line in content.splitlines():
+        if not line.startswith('{'):
+            continue
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict) and value.get('scope', '').startswith(
+            'Finite runtime byte prefixes through CPU break/continue:'
+        ):
+            rows.append(value)
+    results = {}
+    for sanitized, label, counts, levels in (
+        (False, 'normal', (4740, 1200, 948, 1), ['O0', 'O2']),
+        (True, 'ASan/UBSan', (2370, 600, 474, 1), ['O1']),
+    ):
+        matches = [row for row in rows if row.get('sanitized') is sanitized]
+        if len(matches) != 1:
+            raise SystemExit('Missing or repeated memory loop jump matrix: ' + label)
+        row = matches[0]
+        keys = (
+            'full_state_checkpoints',
+            'complete_gate_inverses',
+            'untouched_low_byte_density_comparisons',
+            'unwanted_low_bit_copy_mutations_rejected',
+        )
+        if (
+            row.get('status') != 'passed'
+            or tuple(row.get(key) for key in keys) != counts
+            or row.get('levels') != levels
+        ):
+            raise SystemExit('Incomplete memory loop jump matrix: ' + label)
+        results[label] = row
+    if len(rows) != 2:
+        raise SystemExit('Unexpected memory loop jump matrix configuration')
+    return results
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
@@ -95,6 +135,7 @@ def main():
         'function_entries': r'^90 function entry checks passed; 30 native C/quantum compositions, 55 compile-time ABI rejections and 5 explicit runtime entry rejections\.$',
         'procedure_returns': r'^Structured CPU procedure returns passed; finite native/state/inverse scopes recorded in summary\.json\.$',
         'coherent_returns': r'^Coherent caller CPU returns passed; finite state, inverse and inactive-operand scopes recorded in summary\.json\.$',
+        'memory_loop_jumps': r'^Memory loop jumps passed; finite states, C byte masks and complete inverses recorded\.$',
         'history': r'^2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
         'heap': r'^16878 heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes\.$',
         'runtime_versions': r'^15 runtime history contracts passed; finite states, schema guards and resource bounds have separate scopes\.$',
@@ -107,6 +148,7 @@ def main():
     for name, pattern in patterns.items():
         if len(re.findall(pattern, content, re.M)) != 2:
             raise SystemExit('Missing normal/sanitized result: ' + name)
+    memory_jumps = memory_loop_jump_results(content)
     if len(re.findall(r'^PASS locale sanitizer boundary:', content, re.M)) != 1:
         raise SystemExit('Missing scoped locale sanitizer guard.')
     if re.search(
@@ -156,6 +198,7 @@ def main():
         },
         'command': 'CC=gcc-11 CXX=g++-11 CKET_FUZZ_CASES=128 CKET_FUZZ_SEED=20261012 bash scripts/verify.sh',
         'configurations': ['normal', 'ASan/UBSan'],
+        'configuration_specific_results': {'memory_loop_jumps': memory_jumps},
         'counts_per_configuration': {
             'native': 395,
             'example_checks': 1509,
