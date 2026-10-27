@@ -92,6 +92,7 @@ std::map<tree, QuantumNativeMemory> quantum_native_memory;
 std::map<tree, std::pair<tree, uint64_t>> quantum_heap_byte_reads;
 std::set<tree> quantum_memory_cpu_branches;
 std::set<tree> procedure_cpu_flags, procedure_cpu_branches, cpu_argument_captures;
+std::set<tree> coherent_cpu_locals;
 std::set<tree> quantum_heap_borrows;
 std::set<tree> quantum_heap_queries;
 
@@ -493,8 +494,10 @@ void finish_function(void *event, void *) {
                 at(effect),
                 "|c>: a helper with quantum effects must declare a quantum procedure or parameter");
         // Ordinary helper loops/branches must not enter the quantum IR.
-    } else
+    } else {
+        discover_coherent_cpu_locals(DECL_SAVED_TREE(fn));
         DECL_SAVED_TREE(fn) = lower_node(DECL_SAVED_TREE(fn));
+    }
     if (cpu_patch_locals) {
         DECL_SAVED_TREE(fn) =
             build3(BIND_EXPR, void_type_node, cpu_patch_locals, DECL_SAVED_TREE(fn), NULL_TREE);
@@ -536,6 +539,7 @@ void finish_function(void *event, void *) {
     procedure_cpu_flags.clear();
     procedure_cpu_branches.clear();
     cpu_argument_captures.clear();
+    coherent_cpu_locals.clear();
     quantum_heap_borrows.clear();
     quantum_heap_queries.clear();
     indexed_expansions.clear();

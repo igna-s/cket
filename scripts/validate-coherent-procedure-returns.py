@@ -18,6 +18,13 @@ PROFILES = (
     'inner(x,n);if(x[0])phase(.23);if(n==2)return;if(!x[0])phase(.31);',
     'if(n==3){if(x[0])phase(.11);}if(!n)return;if(x[0])phase(.17);',
     'rotate(x,n*.13);if(n==2)return;if(x[0])phase(.17);',
+    'unsigned amount=n+1;int direction=n==2?-1:1;if(!n)return;'
+    'if(amount&1)x[0]^=true;if(x[0])phase(.09*direction);if(n==3)return;'
+    'if((amount>>1)&1)x[0]^=true;phase(.13);',
+    'unsigned local=n+1;if(n==2)return;'
+    '{unsigned local=n+2;if(x[0])phase(.03*local);}if(!x[0])phase(.05*local);',
+    'bool stop=n==2;unsigned shift=n%2;if(stop)return;'
+    'if((5u>>shift)&1)x[0]^=true;if(x[0])phase(.17);',
 )
 
 
@@ -28,7 +35,7 @@ def source(profile):
         'static void inner(quant const bool*x,unsigned n){if(!n)return;if(x[0])phase(.17);}\n'
         'static void rotate(quant const bool*x,double theta){if(!theta)return;if(x[0])phase(theta);}\n'
         'static void update(quant '
-        + ('' if profile == 0 else 'const ')
+        + ('' if profile in (0, 5, 7) else 'const ')
         + 'bool*x,unsigned n){'
         + PROFILES[profile]
         + '}\n'
@@ -49,7 +56,18 @@ def effect(profile, n, value):
         return value, (0.23 + 0.17 * (n != 0)) * value + 0.31 * (n != 2) * (not value)
     if profile == 3:
         return value, (0.11 * (n == 3) + 0.17 * (n != 0)) * value
-    return value, (n * 0.13 + 0.17 * (n != 2)) * value
+    if profile == 4:
+        return value, (n * 0.13 + 0.17 * (n != 2)) * value
+    if profile == 5:
+        if not n:
+            return value, 0
+        middle = value ^ ((n + 1) & 1)
+        angle = 0.09 * (-1 if n == 2 else 1) * middle
+        return (middle, angle) if n == 3 else (middle ^ (((n + 1) >> 1) & 1), angle + 0.13)
+    if profile == 6:
+        return value, 0 if n == 2 else 0.03 * (n + 2) * value + 0.05 * (n + 1) * (not value)
+    current = value if n == 2 else value ^ ((5 >> (n % 2)) & 1)
+    return current, 0 if n == 2 else 0.17 * current
 
 
 def check(points, profile, n):
@@ -121,6 +139,20 @@ def boundaries():
             None,
         ),
         (
+            'inactive-local-division',
+            'void update(quant bool x,int n){int local=10/n;if(local)return;x^=true;}',
+            'int n=argc>1?argv[1][0]-\'0\':0;quant bool c=false,x=false;'
+            'if(c)update(x,n);return measure(x)||measure(c);',
+            None,
+        ),
+        (
+            'inactive-local-load',
+            'void update(quant bool x,const int*p){int local=*p;if(local)return;x^=true;}',
+            'const int*p=0;quant bool c=false,x=false;if(c)update(x,p);'
+            'return measure(x)||measure(c);',
+            None,
+        ),
+        (
             'argument-effect',
             'void update(quant bool x,int n){if(n)return;x^=true;}',
             'int n=0;quant bool c=superposition(0,1),x=false;if(c)update(x,n++);'
@@ -135,11 +167,32 @@ def boundaries():
             'classical side effects cannot execute inside coherent quantum control',
         ),
         (
-            'user-local',
-            'void update(quant bool x,int n){int local=1;if(n)return;x^=local;}',
+            'mutable-user-local',
+            'void update(quant bool x,int n){int local=1;++local;if(n)return;x^=local;}',
             'int n=argc;quant bool c=superposition(0,1),x=false;if(c)update(x,n);'
             'measure(x);measure(c);return 0;',
             'classical storage cannot be created coherently',
+        ),
+        (
+            'addressed-user-local',
+            'void update(quant bool x,int n){int local=1;int*p=&local;if(n)return;x^=*p;}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'classical storage cannot be created coherently',
+        ),
+        (
+            'volatile-user-local',
+            'void update(quant bool x,int n){volatile int local=1;if(n)return;x^=local;}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'classical storage cannot be created coherently',
+        ),
+        (
+            'quantum-user-local',
+            'void update(quant bool x,int n){int local=x;if(n)return;x^=local;}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'classical initialization cannot read a quantum value',
         ),
         (
             'quantum-exit',

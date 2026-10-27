@@ -8,15 +8,15 @@ publicadas. La 1.0 estable y el núcleo cotidiano completo continúan pendientes
 Desde la raíz del repositorio en Windows:
 
 ```cmd
-output\sdk\coherent-returns\run_sdk_demo.cmd
-output\sdk\coherent-returns\run_coherent_demo.cmd
-output\sdk\coherent-returns\compile_and_run.cmd output\sdk\coherent-returns\example_heap.c
+output\sdk\immutable-locals\run_sdk_demo.cmd
+output\sdk\immutable-locals\run_coherent_demo.cmd
+output\sdk\immutable-locals\compile_and_run.cmd output\sdk\immutable-locals\example_heap.c
 ```
 
 El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con retornos CPU
-y limpieza, y comprueba interferencia: `count=1 control=1 target=0`. El tercero compila un programa
+y limpieza, y comprueba interferencia: `count=3 control=1 target=0`. El tercero compila un programa
 de heap. Podés editar una copia y pasar su ruta al mismo lanzador. La
-[guía del SDK actualizado](../output/sdk/coherent-returns/README.es.md) explica los requisitos y la
+[guía del SDK actualizado](../output/sdk/immutable-locals/README.es.md) explica los requisitos y la
 CLI en Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
 directorio padre con su propia identidad.
 
@@ -100,3 +100,9 @@ terminó aprobada con productores normales e instrumentados. Las fuentes se veri
 `ac8f5bc`; no se atribuye ese resultado al compilador posterior de 244 entradas. Este último
 conserva sus pruebas dirigidas y su SDK comprobado; su CI completo sigue en curso al guardar esta
 nota.
+
+El SDK recomendado añade locales enteros CPU privados, puros e inmutables. Su
+[nota](paper/private_cpu_locals_note.es.md) y
+[evidencia](audit-evidence/immutable-cpu-locals-v1/README.es.md) identifican las fuentes y los
+límites. Su integración completa queda pendiente; el CI de `cba9759` enlazado arriba corresponde al
+compilador anterior de llamadas coherentes.

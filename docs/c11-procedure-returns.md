@@ -63,10 +63,12 @@ restricciones existentes.
 ## Llamadas desde control coherente
 
 Los retornos decididos por predicados CPU puros ya se componen con un llamador dentro de un `if`
-cuántico. Solo la bandera privada del compilador recibe permiso para crear almacenamiento y cambiar
-su valor. Las sentencias que aplican operaciones cuánticas conservan el control del llamador. Los
-predicados y argumentos se protegen de la evaluación cuando los controles se prueban inactivos,
-mediante certificados simbólicos y sin consultar amplitudes.
+cuántico. La bandera privada del compilador puede cambiar su valor al retornar. También se admiten
+locales enteros CPU privados, inicializados una vez y sin escrituras posteriores ni dirección
+tomada; su [nota técnica](paper/private_cpu_locals_note.es.md) detalla el análisis. Las sentencias
+que aplican operaciones cuánticas conservan el control del llamador. Los predicados y argumentos se
+protegen de la evaluación cuando los controles se prueban inactivos, mediante certificados
+simbólicos y sin consultar amplitudes.
 
 El [ejemplo coherente](../examples/coherent_returns.c) comprueba X y la fase global de una llamada
 que se convierte en fase relativa bajo control. La [nota técnica](paper/coherent_returns_note.es.md)

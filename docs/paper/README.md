@@ -197,3 +197,11 @@ El archivo `evidence/environment.txt` describe el entorno de pruebas C; `editori
 describe el entorno Python de publicación. El manifiesto SHA-256 vincula PDF, fuente, figuras,
 datos, logs y archivos relevantes del proyecto. La auditoría detallada incluye su alcance y las
 correcciones.
+
+La [nota de locales CPU privados](private_cpu_locals_note.es.md) y su
+[cápsula](../audit-evidence/immutable-cpu-locals-v1/README.es.md) califican locales enteros puros,
+inmutables y sin alias desde llamadores coherentes. Las 244 entradas tienen hashes distintos de las
+244 de la ampliación anterior; la cantidad de archivos no es una identidad. La
+[integración completa de 242 entradas](../audit-evidence/full-ci-cpu-returns-v1/README.es.md)
+terminó aprobada. Los pendientes de CI de los párrafos históricos conservan su contexto; la
+integración completa de los cambios posteriores sigue pendiente.

@@ -175,6 +175,61 @@ bool pure_cpu_capture(tree value) {
            quantum_pure_expression(value);
 }
 
+// An initialized, unaliased CPU scalar that is never written again can
+// select a circuit without storing any information about quantum branches.
+// Inspect the expanded body, including declaration initializers, so an
+// address escape or later write anywhere revokes this permission.
+void discover_coherent_cpu_locals(tree body) {
+    auto declarations = [](tree *node, int *walk, void *) -> tree {
+        if (TREE_CODE(*node) == DECL_EXPR) {
+            tree decl = DECL_EXPR_DECL(*node);
+            if (TREE_CODE(decl) == VAR_DECL && DECL_CONTEXT(decl) == active_function &&
+                !TREE_STATIC(decl) && !DECL_EXTERNAL(decl) && !TREE_ADDRESSABLE(decl) &&
+                !TREE_THIS_VOLATILE(decl) && INTEGRAL_TYPE_P(TREE_TYPE(decl)) &&
+                !TYPE_VOLATILE(TREE_TYPE(decl)) && !TYPE_ATOMIC(TREE_TYPE(decl)) &&
+                !quantum(decl) && DECL_INITIAL(decl) && pure_cpu_capture(DECL_INITIAL(decl)) &&
+                !lookup_attribute("cleanup", DECL_ATTRIBUTES(decl)))
+                coherent_cpu_locals.insert(decl);
+        }
+        if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree_without_duplicates(&body, declarations, nullptr);
+    auto revoke = [](tree *node, int *walk, void *) -> tree {
+        if (DECL_P(*node)) {
+            coherent_cpu_locals.erase(*node);
+            *walk = 0;
+        } else if (TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+
+    struct Inspect {
+        decltype(revoke) &revoke_local;
+
+        static tree visit(tree *node, int *walk, void *data) {
+            auto &self = *static_cast<Inspect *>(data);
+            auto code = TREE_CODE(*node);
+            if (code == DECL_EXPR) {
+                tree initial = DECL_INITIAL(DECL_EXPR_DECL(*node));
+                if (initial)
+                    walk_tree_without_duplicates(&initial, visit, data);
+                *walk = 0;
+            } else if (code == ADDR_EXPR || code == MODIFY_EXPR || code == INIT_EXPR ||
+                       code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
+                       code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR) {
+                tree target = TREE_OPERAND(*node, 0);
+                walk_tree_without_duplicates(&target, self.revoke_local, nullptr);
+            } else if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        }
+    } inspect{revoke};
+
+    walk_tree_without_duplicates(&body, Inspect::visit, &inspect);
+}
+
 tree guarded_cpu_binding(tree value, location_t loc, bool lower = true, bool predicate = false) {
     predicate |= cpu_argument_captures.count(value);
     auto memory = [](tree *node, int *walk, void *) -> tree {
@@ -3016,7 +3071,8 @@ tree lower_node(tree value) {
         tree decl = DECL_EXPR_DECL(value);
         if (variables.count(decl))
             return lower_quantum_decl(variables.at(decl));
-        if (!controls.empty() && !procedure_cpu_flags.count(decl))
+        if (!controls.empty() && !procedure_cpu_flags.count(decl) &&
+            !coherent_cpu_locals.count(decl))
             error_at(at(decl),
                      "|c>: classical storage cannot be created coherently inside a quantum if");
         if (DECL_INITIAL(decl) && has_quantum(DECL_INITIAL(decl))) {
@@ -3026,7 +3082,9 @@ tree lower_node(tree value) {
             return value;
         }
         if (DECL_INITIAL(decl))
-            DECL_INITIAL(decl) = lower_node(DECL_INITIAL(decl));
+            DECL_INITIAL(decl) = coherent_cpu_locals.count(decl)
+                                     ? guarded_cpu_binding(DECL_INITIAL(decl), at(decl), true, true)
+                                     : lower_node(DECL_INITIAL(decl));
         return value;
     }
     if (code == RETURN_EXPR) {

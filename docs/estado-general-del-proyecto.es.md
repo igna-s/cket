@@ -10,23 +10,30 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 ciberseguridad permanece clásica y sin cambios.
 
 **Compilador actualizado listo para usar:** el
-[SDK nuevo](../output/sdk/coherent-returns/README.es.md) incluye el plugin corregido y 37 programas
-reconstruidos. Ejecutá `output\sdk\coherent-returns\run_coherent_demo.cmd` para compilar el ejemplo
+[SDK nuevo](../output/sdk/immutable-locals/README.es.md) incluye el plugin corregido y 37 programas
+reconstruidos. Ejecutá `output\sdk\immutable-locals\run_coherent_demo.cmd` para compilar el ejemplo
 de retorno, limpieza e interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md)
 resume comandos y pendientes.
+
+**Locales CPU privados implementados:** se admiten `bool` y enteros automáticos inicializados con
+expresiones CPU puras, sin escrituras posteriores ni dirección tomada, dentro de llamadas
+coherentes. La [nota](paper/private_cpu_locals_note.es.md) y la
+[evidencia](audit-evidence/immutable-cpu-locals-v1/README.es.md) registran 800 puntos de estado y
+400 inversas en normal; 160 y 80 con ASan/UBSan. El SDK recomendado incluye este plugin y el nuevo
+ejemplo. Siguen pendientes locales mutables, bucles coherentes y vidas generales.
 
 **Integración completa aprobada para `ac8f5bc`:** formato y toda la composición de
 `scripts/verify.sh` pasan en normal y ASan/UBSan sobre las 242 entradas identificadas del SDK
 anterior. La [cápsula de CI](audit-evidence/full-ci-cpu-returns-v1/README.es.md) conserva los logs y
 vincula los hashes con los blobs Git. Esto cierra el pendiente de integración de aquellas fuentes.
-El compilador de 244 entradas tiene su propia campaña dirigida aprobada; su
-[CI completo](https://github.com/igna-s/cket/actions/runs/40549661037) sigue en curso al guardar
-este seguimiento. Las menciones de CI pendiente más abajo pertenecen a campañas anteriores.
+El compilador de llamadas coherentes `cba9759`, anterior al bloque de locales privados, tiene su
+campaña dirigida aprobada; su [CI completo](https://github.com/igna-s/cket/actions/runs/40549661037)
+sigue en curso al guardar este seguimiento. Las menciones de CI pendiente más abajo pertenecen a
+campañas anteriores.
 
 **Retornos desde un llamador coherente:** los predicados CPU puros de salida ya seleccionan puertas
-bajo el control cuántico del llamador. Solo se habilitan la bandera y ramas privadas del compilador;
-siguen rechazados los efectos CPU observables y las salidas decididas por datos cuánticos sin medir.
-La [nota técnica](paper/coherent_returns_note.es.md) y su
+bajo el control cuántico del llamador. Siguen rechazados los efectos CPU observables y las salidas
+decididas por datos cuánticos sin medir. La [nota técnica](paper/coherent_returns_note.es.md) y su
 [evidencia de 244 entradas](audit-evidence/coherent-returns-v1/README.es.md) registran estados,
 fases e inversas normales e instrumentados. El SDK nuevo incluye el ejemplo de interferencia.
 

@@ -1,6 +1,6 @@
 **Paquete actualizado:** usá el
-[SDK con retornos y llamadas coherentes](coherent-returns/README.es.md). Incluye el plugin
-corregido, 37 programas reconstruidos y el ejemplo de retorno, limpieza e interferencia. Este
+[SDK con locales CPU privados y llamadas coherentes](immutable-locals/README.es.md). Incluye el
+plugin corregido, 37 programas reconstruidos y el ejemplo de retorno, limpieza e interferencia. Este
 directorio conserva el paquete anterior de 237 entradas con sus hashes y límites originales.
 
 # C Ket listo para ejecutar y compilar

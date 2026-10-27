@@ -107,3 +107,8 @@ estado actual todavía no cumple ese cierre.
 Los contratos precisos se conservan en la [matriz de capacidades](c-coverage.md), los
 [bloques entregados](entregas-incrementales.es.md) y el
 [estado general](estado-general-del-proyecto.es.md).
+
+Los [locales enteros CPU privados](paper/private_cpu_locals_note.es.md) ya pueden inicializarse con
+expresiones puras dentro de una llamada coherente. Se excluyen escrituras posteriores, direcciones
+tomadas, almacenamiento estático, `volatile`, `_Atomic`, punteros y agregados. El SDK actualizado
+ejecuta el ejemplo; los locales mutables y los bucles coherentes siguen abiertos.
