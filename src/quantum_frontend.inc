@@ -442,12 +442,14 @@ bool rewrite_procedure_returns(tree *slot, tree active, unsigned depth = 0) {
     }
     auto code = TREE_CODE(value);
     auto guard = [active](tree statement) {
-        return build3_loc(at(statement),
-                          COND_EXPR,
-                          void_type_node,
-                          active,
-                          statement,
-                          build_empty_stmt(at(statement)));
+        tree branch = build3_loc(at(statement),
+                                 COND_EXPR,
+                                 void_type_node,
+                                 active,
+                                 statement,
+                                 build_empty_stmt(at(statement)));
+        procedure_cpu_branches.insert(branch);
+        return branch;
     };
     if (code == RETURN_EXPR && !TREE_OPERAND(value, 0)) {
         *slot = build2_loc(at(value), MODIFY_EXPR, boolean_type_node, active, boolean_false_node);
@@ -472,6 +474,8 @@ bool rewrite_procedure_returns(tree *slot, tree active, unsigned depth = 0) {
         if ((first || second) && has_quantum(TREE_OPERAND(value, 0)))
             error_at(at(value),
                      "|c>: an early procedure return cannot depend on unmeasured quantum control");
+        else if ((first || second) && quantum_pure_expression(TREE_OPERAND(value, 0)))
+            procedure_cpu_branches.insert(value);
         return first || second;
     }
     if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT) {
@@ -507,6 +511,7 @@ tree expand_cpu_procedure_returns(tree body, location_t location) {
     DECL_CONTEXT(active) = active_function;
     DECL_ARTIFICIAL(active) = 1;
     DECL_INITIAL(active) = boolean_true_node;
+    procedure_cpu_flags.insert(active);
     rewrite_procedure_returns(&body, active);
     tree list = alloc_stmt_list();
     append(&list, build1_loc(location, DECL_EXPR, void_type_node, active));
@@ -694,6 +699,7 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                 bindings[param] = argument;
             else {
                 tree saved = save_expr(argument);
+                cpu_argument_captures.insert(saved);
                 bindings[param] = saved;
                 append(&prefix, saved); // Evaluate CPU arguments once, before effects.
             }

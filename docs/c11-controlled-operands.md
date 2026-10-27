@@ -18,6 +18,11 @@ interferencia. Las cargas volátiles o atómicas y las llamadas reales generales
 Los efectos CPU bajo control coherente se rechazan con diagnósticos explícitos. Estos contratos y
 sus rechazos no completan C11.
 
+Los [retornos CPU desde llamadores coherentes](paper/coherent_returns_note.es.md) protegen también
+argumentos y predicados CPU puros mediante esa consulta simbólica. La protección cubre la evaluación
+previa del argumento, no solo su consumidor final. No habilita efectos CPU visibles ni lecturas
+implícitas de datos cuánticos.
+
 ## División en una actualización inactiva
 
 Este programa conserva `x == 5` cuando la división no pertenece a una rama activa. No mide el

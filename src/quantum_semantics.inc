@@ -162,7 +162,21 @@ std::string control_json() {
 // controls are provably inactive. The runtime query uses only saved value
 // and epoch certificates. Unknown support stays possible, without observing
 // amplitudes or measuring a control.
-tree guarded_cpu_binding(tree value, location_t loc, bool lower = true) {
+bool pure_cpu_capture(tree value) {
+    if (!value || has_quantum(value))
+        return false;
+    tree source = value;
+    while (CONVERT_EXPR_P(source) || TREE_CODE(source) == NON_LVALUE_EXPR ||
+           TREE_CODE(source) == SAVE_EXPR)
+        source = TREE_OPERAND(source, 0);
+    // Taking a CPU object's address does not read its payload. Effects in
+    // an address/index still prevent capture under coherent control.
+    return (TREE_CODE(source) == ADDR_EXPR && !TREE_SIDE_EFFECTS(source)) ||
+           quantum_pure_expression(value);
+}
+
+tree guarded_cpu_binding(tree value, location_t loc, bool lower = true, bool predicate = false) {
+    predicate |= cpu_argument_captures.count(value);
     auto memory = [](tree *node, int *walk, void *) -> tree {
         if (DECL_P(*node) || TYPE_P(*node)) {
             *walk = 0;
@@ -176,7 +190,8 @@ tree guarded_cpu_binding(tree value, location_t loc, bool lower = true) {
     };
     tree probe = value;
     bool load = walk_tree_without_duplicates(&probe, memory, nullptr);
-    if (controls.empty() || !load || has_quantum(value) || !quantum_pure_expression(value))
+    if (controls.empty() || (!load && !predicate) || has_quantum(value) ||
+        !(predicate ? pure_cpu_capture(value) : quantum_pure_expression(value)))
         return lower ? lower_node(value) : value;
     std::string envelope = "{\"op\":\"qphase\",\"angle\":0" + control_json() + '}';
     tree query = build_fn_decl("__cket_controls_possible",
@@ -2418,6 +2433,22 @@ tree lower_node(tree value) {
     if (!value)
         return value;
     auto code = TREE_CODE(value);
+    if (!controls.empty() && cpu_argument_captures.count(value)) {
+        if (!pure_cpu_capture(value)) {
+            error_at(at(value),
+                     "|c>: classical function arguments under coherent control must be pure");
+            return value;
+        }
+        return guarded_cpu_binding(value, at(value), false, true);
+    }
+    if ((code == MODIFY_EXPR || code == INIT_EXPR) &&
+        procedure_cpu_flags.count(strip(TREE_OPERAND(value, 0)))) {
+        tree source = strip(TREE_OPERAND(value, 1));
+        if (TREE_CODE(source) != INTEGER_CST || !integer_zerop(source))
+            error_at(at(value),
+                     "|c>: private procedure exit flags only accept a return transition");
+        return value;
+    }
     if (quantum_native_memory.count(value))
         return lower_native_memory(value);
     if ((CONVERT_EXPR_P(value) || code == NON_LVALUE_EXPR) &&
@@ -2985,7 +3016,7 @@ tree lower_node(tree value) {
         tree decl = DECL_EXPR_DECL(value);
         if (variables.count(decl))
             return lower_quantum_decl(variables.at(decl));
-        if (!controls.empty())
+        if (!controls.empty() && !procedure_cpu_flags.count(decl))
             error_at(at(decl),
                      "|c>: classical storage cannot be created coherently inside a quantum if");
         if (DECL_INITIAL(decl) && has_quantum(DECL_INITIAL(decl))) {
@@ -3037,8 +3068,10 @@ tree lower_node(tree value) {
     // A pure CPU predicate inside a coherent region is a circuit input.
     // Lower its typed arithmetic under the existing quantum controls, keeping
     // inactive division/shift domains lazy instead of executing them on CPU.
+    bool checked_cpu_branch =
+        quantum_memory_cpu_branches.count(value) || procedure_cpu_branches.count(value);
     bool coherent_cpu_condition = code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
-                                  !quantum_memory_cpu_branches.count(value) && !controls.empty() &&
+                                  !checked_cpu_branch && !controls.empty() &&
                                   quantum_pure_expression(TREE_OPERAND(value, 0));
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node &&
         (has_quantum(TREE_OPERAND(value, 0)) || coherent_cpu_condition)) {
@@ -3110,13 +3143,21 @@ tree lower_node(tree value) {
         return list;
     }
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
-        if (!controls.empty() && !quantum_memory_cpu_branches.count(value)) {
+        if (!controls.empty() && !checked_cpu_branch) {
             error_at(at(value),
                      "|c>: classical branch inside quantum control is not supported yet");
             return value;
         }
-        tree choice =
-            save_expr(fold_convert(boolean_type_node, lower_node(TREE_OPERAND(value, 0))));
+        tree condition = TREE_OPERAND(value, 0);
+        if (procedure_cpu_branches.count(value) && !controls.empty()) {
+            if (!pure_cpu_capture(condition)) {
+                error_at(at(value), "|c>: a private return branch requires a pure CPU predicate");
+                return value;
+            }
+            condition = guarded_cpu_binding(condition, at(value), false, true);
+        } else
+            condition = lower_node(condition);
+        tree choice = save_expr(fold_convert(boolean_type_node, condition));
         TREE_OPERAND(value, 0) = choice;
         // A CPU branch does not itself change quantum storage. Each arm starts
         // with the incoming certificates; writes invalidate their own values

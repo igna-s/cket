@@ -111,6 +111,9 @@ export UBSAN_OPTIONS="halt_on_error=1:print_stacktrace=1"
 procedure_return_proof="$(mktemp -d "$san_root/build/procedure-return-proof.XXXXXX")"
 python3 scripts/validate-procedure-returns.py --compiler-root "$san_root" \
     --output "$procedure_return_proof/sanitized" --levels O1 --sanitized
+coherent_return_proof="$(mktemp -d "$san_root/build/coherent-return-proof.XXXXXX")"
+python3 scripts/validate-coherent-procedure-returns.py --compiler-root "$san_root" \
+    --output "$coherent_return_proof/sanitized" --levels O1 --sanitized
 "$san_root/build/validate_history"
 "$san_root/build/validate_heap"
 "$san_root/build/validate_heap_identities"

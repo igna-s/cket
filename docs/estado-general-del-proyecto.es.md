@@ -9,11 +9,18 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/cpu-returns/README.es.md)
-incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
-`output\sdk\cpu-returns\run_return_demo.cmd` para compilar el ejemplo de retorno, limpieza e
-interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
-pendientes.
+**Compilador actualizado listo para usar:** el
+[SDK nuevo](../output/sdk/coherent-returns/README.es.md) incluye el plugin corregido y 37 programas
+reconstruidos. Ejecutá `output\sdk\coherent-returns\run_coherent_demo.cmd` para compilar el ejemplo
+de retorno, limpieza e interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md)
+resume comandos y pendientes.
+
+**Retornos desde un llamador coherente:** los predicados CPU puros de salida ya seleccionan puertas
+bajo el control cuántico del llamador. Solo se habilitan la bandera y ramas privadas del compilador;
+siguen rechazados los efectos CPU observables y las salidas decididas por datos cuánticos sin medir.
+La [nota técnica](paper/coherent_returns_note.es.md) y su
+[evidencia de 244 entradas](audit-evidence/coherent-returns-v1/README.es.md) registran estados,
+fases e inversas normales e instrumentados. El SDK nuevo incluye el ejemplo de interferencia.
 
 **Retornos CPU implementados:** los procedimientos `void` admiten `return;` anticipado en bloques,
 condiciones y bucles CPU. Terminan su limpieza léxica y continúan el llamador. También se corrige un

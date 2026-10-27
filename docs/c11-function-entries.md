@@ -28,7 +28,9 @@ support for quantum function pointers.
 
 [Structured CPU early returns](c11-procedure-returns.md) are supported in void procedures, including
 CPU loops. They finish lexical cleanup before continuing the caller; owned early results and general
-control flow keep their separate restrictions.
+control flow keep their separate restrictions. Pure CPU exit predicates also compose with a coherent
+caller; [the technical note](paper/coherent_returns_note.es.md) records the new phase and inverse
+scope.
 
 Recursion, general indirect quantum calls and cross-unit quantum linking remain pending. The
 complete integration gate also remains open; these checks do not qualify all C programs.

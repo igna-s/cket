@@ -12,9 +12,9 @@ temporary workspace. Classical C code still runs on the CPU; quantum operations 
 statevector simulator, with dense and opt-in sparse execution modes.
 
 **Ready-to-run compiler package:** the
-[updated Windows/WSL SDK](output/sdk/cpu-returns/README.es.md) includes the corrected compiler and
-37 rebuilt programs. Run `output\sdk\cpu-returns\run_sdk_demo.cmd`, or compile a C file with
-`output\sdk\cpu-returns\compile_and_run.cmd program.c`. The
+[updated Windows/WSL SDK](output/sdk/coherent-returns/README.es.md) includes the corrected compiler
+and 37 rebuilt programs. Run `output\sdk\coherent-returns\run_sdk_demo.cmd`, or compile a C file
+with `output\sdk\coherent-returns\compile_and_run.cmd program.c`. The
 [read-only borrow correction](docs/c11-readonly-borrows.md) allows shared read-only aliases and
 rejects writes through casts. Its example checks phase interference. The
 [delivery guide](docs/entrega-utilizable-2026-10-26.es.md) lists working examples and open limits.
@@ -27,9 +27,15 @@ classical behavior. The general integration gate remains open.
 
 [Structured CPU early returns](docs/c11-procedure-returns.md) now work in void quantum procedures,
 including CPU loops. They finish lexical cleanup and continue the caller. Run
-`output\sdk\cpu-returns\run_return_demo.cmd` for the new example with phase interference. A separate
-correction removes path-local known-value claims that caused valid CPU branches to fail structural
-verification. General CFG and owned early results remain pending.
+`output\sdk\coherent-returns\run_coherent_demo.cmd` for the new example with phase interference. A
+separate correction removes path-local known-value claims that caused valid CPU branches to fail
+structural verification. General CFG and owned early results remain pending.
+
+Pure CPU exit predicates now compose with a coherent caller. The
+[technical note](docs/paper/coherent_returns_note.es.md) explains controlled global phase, private
+CPU flags, and inactive operands. The
+[244-input evidence](docs/audit-evidence/coherent-returns-v1/README.es.md) records complete states,
+independent gate inverses and directed normal/sanitized regressions.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC

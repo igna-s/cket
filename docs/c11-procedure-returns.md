@@ -60,9 +60,21 @@ adicional. Los diagnósticos correspondientes se conservan. La transformación c
 128 niveles de anidamiento; las declaraciones, préstamos y vidas dentro del flujo siguen sus
 restricciones existentes.
 
-Las llamadas que necesitan la bandera de retorno todavía se rechazan dentro de un `if` cuántico:
-falta componer ese flujo con la frontera de efectos CPU. Esto es una restricción de la
-implementación, no una imposibilidad física de controlar una operación unitaria.
+## Llamadas desde control coherente
+
+Los retornos decididos por predicados CPU puros ya se componen con un llamador dentro de un `if`
+cuántico. Solo la bandera privada del compilador recibe permiso para crear almacenamiento y cambiar
+su valor. Las sentencias que aplican operaciones cuánticas conservan el control del llamador. Los
+predicados y argumentos se protegen de la evaluación cuando los controles se prueban inactivos,
+mediante certificados simbólicos y sin consultar amplitudes.
+
+El [ejemplo coherente](../examples/coherent_returns.c) comprueba X y la fase global de una llamada
+que se convierte en fase relativa bajo control. La [nota técnica](paper/coherent_returns_note.es.md)
+y su [evidencia](audit-evidence/coherent-returns-v1/README.es.md) detallan fórmulas, estados e
+inversas. Si el control sigue siendo posible, los operandos CPU deben estar definidos. Los efectos
+CPU del usuario, los retornos dependientes de datos cuánticos sin medir, los bucles coherentes y las
+vidas generales conservan sus restricciones. El SDK de 242 entradas mantiene el comportamiento
+anterior; el de 244 incluye esta ampliación.
 
 Esta entrega no cierra todos los flujos C ni toda la ABI, no demuestra ejecución en QPU física ni
 aceleración. La ciberseguridad permanece clásica.

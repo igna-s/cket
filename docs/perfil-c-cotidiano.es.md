@@ -61,6 +61,10 @@ procedimientos `void` en bloques y bucles, con limpieza léxica y continuación 
 estados, fases e inversas tienen evidencia propia; los resultados propios anticipados y el CFG
 general siguen pendientes.
 
+La [composición con un llamador coherente](paper/coherent_returns_note.es.md) ya admite esos
+retornos cuando los predicados CPU son puros. No habilita salidas decididas por datos cuánticos,
+efectos CPU observables, bucles coherentes ni vidas generales.
+
 ## Orden de trabajo
 
 1. Integrar los enteros y sus consumidores con funciones, arrays y structs básicos.

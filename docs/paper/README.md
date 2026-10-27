@@ -35,6 +35,12 @@ anticipados en procedimientos y corrigen certificados de ramas CPU. El SDK nuevo
 frontend. Sus fórmulas C, estados, fases e inversas califican programas finitos; los manuscritos
 históricos mantienen sus resultados anteriores.
 
+La [nota de llamadas coherentes y retornos CPU](coherent_returns_note.es.md) añade la selección por
+predicados CPU puros desde un llamador cuántico. Explica cuándo una fase global del procedimiento se
+vuelve relativa y mantiene los límites de control, efectos y vidas. Su
+[cápsula de 244 entradas](../audit-evidence/coherent-returns-v1/README.es.md) registra estados,
+inversas y regresiones; no modifica los manuscritos históricos.
+
 El [mapa de afirmaciones y evidencia actual](current-evidence-map-2026-10-26.es.md) explica cómo
 leer los manuscritos históricos junto con el SDK. La
 [campaña C posterior](../audit-evidence/c-priority-integration-v1/README.es.md) completa 2332

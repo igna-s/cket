@@ -94,6 +94,7 @@ def main():
         'readonly_borrows': r'^305 readonly borrow checks passed; 30 IR compilations, 30 native executions, 60 C states, 60 independent gate states, 60 complete inverses and 65 mutation/ownership rejections\.$',
         'function_entries': r'^90 function entry checks passed; 30 native C/quantum compositions, 55 compile-time ABI rejections and 5 explicit runtime entry rejections\.$',
         'procedure_returns': r'^Structured CPU procedure returns passed; finite native/state/inverse scopes recorded in summary\.json\.$',
+        'coherent_returns': r'^Coherent caller CPU returns passed; finite state, inverse and inactive-operand scopes recorded in summary\.json\.$',
         'history': r'^2332 versioned history checks passed; retained outputs, known basis cleanup and resource bounds remain distinct\.$',
         'heap': r'^16878 heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes\.$',
         'runtime_versions': r'^15 runtime history contracts passed; finite states, schema guards and resource bounds have separate scopes\.$',
