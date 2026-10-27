@@ -457,6 +457,7 @@ void finish_function(void *event, void *) {
     }
     DECL_SAVED_TREE(fn) = expand_quantum_program(DECL_SAVED_TREE(fn));
     DECL_SAVED_TREE(fn) = normalize_quantum_saves(DECL_SAVED_TREE(fn));
+    DECL_SAVED_TREE(fn) = expand_cpu_loop_jumps(DECL_SAVED_TREE(fn));
     walk_tree_without_duplicates(&DECL_SAVED_TREE(fn), discover_declarations, nullptr);
     bool has_quantum = false;
     for (const auto &item : variables)

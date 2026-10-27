@@ -27,6 +27,18 @@ NATIVE = (
     'unsigned i=0;while((++*visits,i++<n)){if(i==2)return;x[0]^=true;}',
     'unsigned i=0;do{if(i++==n)return;x[0]^=true;}while((++*visits,i<4));x[0]^=true;',
     'for(unsigned i=0;i<4;++i){inner(x,i,visits);if(i==n)return;}x[0]^=true;',
+    'for(unsigned i=0;i<4;++i,++*visits){if(i==n)break;x[0]^=true;}x[0]^=true;',
+    'for(unsigned i=0;i<4;++i,++*visits){if(i==n)continue;x[0]^=true;++*visits;}x[0]^=true;',
+    'unsigned i=0;while((++*visits,i++<4)){if(i==n)break;x[0]^=true;}x[0]^=true;',
+    'unsigned i=0;do{++i;if(i==n)continue;x[0]^=true;++*visits;}'
+    'while((++*visits,i<4));x[0]^=true;',
+    'for(unsigned i=0;i<3;++i){for(unsigned j=0;j<4;++j){'
+    'if(j==n)break;if(i==n)continue;x[0]^=true;++*visits;}++*visits;}',
+    'for(unsigned i=0;i<4;++i){inner(x,i,visits);if(i==n)continue;'
+    'if(i==2)break;x[0]^=true;}++*visits;',
+    'for(unsigned i=0;i<4;++i){if(i==n)continue;unsigned snapshot=++*visits;'
+    'x[0]^=snapshot&1;}x[0]^=true;',
+    'for(unsigned i=0;i<4;++i){if(i==n){break;}x[0]^=true;++*visits;}x[0]^=true;',
 )
 PHASE = (
     'quant bool scratch=!x[0];if(scratch)phase(.17);if(n==0)return;if(scratch)phase(.23);',
@@ -34,6 +46,15 @@ PHASE = (
     'if(n){if(n==2)return;if(x[0])phase(.11);}else{if(x[0])phase(.07);}if(!x[0])phase(.19);',
     'inner(x,n);if(x[0])phase(.23);if(n==2)return;if(!x[0])phase(.31);',
     'for(unsigned i=0;i<4;++i){if(i==n)return;x[0]^=true;if(x[0])phase(.13);}if(x[0])phase(.29);',
+    'for(unsigned i=0;i<4;++i){if(i==n)continue;if(x[0])phase(.07*(i+1));}' 'if(!x[0])phase(.13);',
+    'for(unsigned i=0;i<4;++i){if(i==n)break;if(x[0])phase(.09*(i+1));}' 'if(!x[0])phase(.17);',
+    'unsigned i=0;while(i<4){++i;if(i==n)continue;if(i==3)break;'
+    'if(!x[0])phase(.11*i);}if(x[0])phase(.19);',
+    'unsigned i=0;do{++i;if(i==n)continue;if(i==3)break;'
+    'if(x[0])phase(.05*i);}while(i<4);if(!x[0])phase(.23);',
+    'for(unsigned i=0;i<3;++i){for(unsigned j=0;j<3;++j){'
+    'if(j==n)break;if(i==n)continue;if(x[0])phase(.03*(i*3+j+1));}}'
+    'if(!x[0])phase(.29);',
 )
 
 
@@ -82,11 +103,38 @@ def phase_expected(profile, n, x):
         return 0 if n == 2 else (0.11 if n else 0.07) * x + 0.19 * (not x)
     if profile == 3:
         return (0.23 + 0.17 * (n != 0)) * x + 0.31 * (n != 2) * (not x)
-    angle = 0
-    for _ in range(min(n, 4)):
-        x ^= 1
-        angle += 0.13 * x
-    return angle + 0.29 * (n >= 4) * x
+    if profile == 4:
+        angle = 0
+        for _ in range(min(n, 4)):
+            x ^= 1
+            angle += 0.13 * x
+        return angle + 0.29 * (n >= 4) * x
+    if profile == 5:
+        return sum(0.07 * (i + 1) for i in range(4) if i != n) * x + 0.13 * (not x)
+    if profile == 6:
+        return 0.09 * sum(range(1, min(n, 4) + 1)) * x + 0.17 * (not x)
+    if profile in (7, 8):
+        weight = 0
+        for i in range(1, 5):
+            if i == n:
+                continue
+            if i == 3:
+                break
+            weight += i
+        return (
+            0.11 * weight * (not x) + 0.19 * x
+            if profile == 7
+            else 0.05 * weight * x + 0.23 * (not x)
+        )
+    angle = 0.29 * (not x)
+    for i in range(3):
+        for j in range(3):
+            if j == n:
+                break
+            if i == n:
+                continue
+            angle += 0.03 * (i * 3 + j + 1) * x
+    return angle
 
 
 def check(points, profile, n):

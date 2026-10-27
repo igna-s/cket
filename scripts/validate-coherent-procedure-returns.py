@@ -37,6 +37,17 @@ PROFILES = (
     'for(unsigned j=0;j<limit;++j){++total;if(x[0])phase(.03*total);}}'
     'if(!x[0])phase(.05*total);',
     'for(unsigned i=0;i<n;++i){if(x[0]){unsigned offset=i+1;++offset;phase(.04*offset);}}',
+    'for(unsigned i=0;i<4;++i){if(i==n)continue;if(i==2)break;'
+    'x[0]^=true;if(x[0])phase(.07*(i+1));}if(x[0])phase(.13);',
+    'unsigned i=0;while(i<4){++i;if(i==n)continue;if(i==3)break;'
+    'if(x[0])phase(.09*i);x[0]^=true;}if(!x[0])phase(.17);',
+    'unsigned i=0;do{++i;if(i==n)continue;if(i==3)break;'
+    'x[0]^=true;if(x[0])phase(.05*i);}while(i<4);if(x[0])phase(.19);',
+    'for(unsigned i=0;i<3;++i){for(unsigned j=0;j<3;++j){'
+    'if(j==n)break;if(i==n)continue;if(x[0])phase(.03*(i*3+j+1));}}'
+    'if(!x[0])phase(.11);',
+    'for(unsigned i=0;i<4;++i){inner(x,i);{if(i==n)continue;if(i==2)break;}'
+    'if(x[0])phase(.13);}if(!x[0])phase(.17);',
 )
 
 
@@ -47,7 +58,7 @@ def source(profile):
         'static void inner(quant const bool*x,unsigned n){if(!n)return;if(x[0])phase(.17);}\n'
         'static void rotate(quant const bool*x,double theta){if(!theta)return;if(x[0])phase(theta);}\n'
         'static void update(quant '
-        + ('' if profile in (0, 5, 7, 9, 10, 11) else 'const ')
+        + ('' if profile in (0, 5, 7, 9, 10, 11, 14, 15, 16) else 'const ')
         + 'bool*x,unsigned n){'
         + PROFILES[profile]
         + '}\n'
@@ -111,7 +122,51 @@ def effect(profile, n, value):
     if profile == 12:
         total = n * (n + 1) // 2
         return value, 0.03 * total * (total + 1) / 2 * value + 0.05 * total * (not value)
-    return value, 0.04 * n * (n + 3) / 2 * value
+    if profile == 13:
+        return value, 0.04 * n * (n + 3) / 2 * value
+    if profile == 14:
+        current, angle = value, 0
+        for i in range(4):
+            if i == n:
+                continue
+            if i == 2:
+                break
+            current ^= 1
+            angle += 0.07 * (i + 1) * current
+        return current, angle + 0.13 * current
+    if profile in (15, 16):
+        current, angle = value, 0
+        for i in range(1, 5):
+            if i == n:
+                continue
+            if i == 3:
+                break
+            if profile == 15:
+                angle += 0.09 * i * current
+                current ^= 1
+            else:
+                current ^= 1
+                angle += 0.05 * i * current
+        return current, angle + (0.17 * (not current) if profile == 15 else 0.19 * current)
+    if profile == 17:
+        angle = 0.11 * (not value)
+        for i in range(3):
+            for j in range(3):
+                if j == n:
+                    break
+                if i == n:
+                    continue
+                angle += 0.03 * (i * 3 + j + 1) * value
+        return value, angle
+    angle = 0.17 * (not value)
+    for i in range(4):
+        angle += 0.17 * (i != 0) * value
+        if i == n:
+            continue
+        if i == 2:
+            break
+        angle += 0.13 * value
+    return value, angle
 
 
 def check(points, profile, n):
@@ -215,6 +270,36 @@ def boundaries():
             'void update(quant bool x,int n){int local=1;++local;if(n)return;x^=local;}',
             'int n=argc;quant bool c=superposition(0,1),x=false;if(c)update(x,n);'
             'measure(x);measure(c);return 0;',
+            None,
+        ),
+        (
+            'quantum-break',
+            'void update(quant bool x,int n){for(unsigned i=0;i<4;++i){if(x)break;x^=true;}}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'a loop jump cannot depend on unmeasured quantum control',
+        ),
+        (
+            'quantum-continue',
+            'void update(quant bool x,int n){for(unsigned i=0;i<4;++i){if(x)continue;x^=true;}}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'a loop jump cannot depend on unmeasured quantum control',
+        ),
+        (
+            'switch-continue',
+            'void update(quant bool x,int n){for(unsigned i=0;i<4;++i){'
+            'switch(n){case 0:continue;default:break;}x^=true;}}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'loop continue through switch needs CFG lifetime analysis',
+        ),
+        (
+            'inactive-do-jump',
+            'void update(quant bool x,int n){unsigned i=0;do{'
+            'if(10/n)continue;++i;x^=true;}while(i<4);}',
+            'int n=argc>1?argv[1][0]-\'0\':0;quant bool c=false,x=false;'
+            'if(c)update(x,n);return measure(x)||measure(c);',
             None,
         ),
         (
@@ -407,7 +492,7 @@ def main():
         complete_gate_inverses=inverses,
         native_boundary_executions=native,
         compile_rejections=rejected,
-        scope='Pure CPU early exits, private integer locals and CPU for/while/do loops composed with coherent callers; four-label states, controlled phases, X, nested calls/loops, private-zero cleanup and inverses. Private writes stay within their declaration quantum branch and pure statement boundaries. Arbitrary CFG, quantum-dependent exits/iteration/local writes, escaping addresses and general lifetimes remain pending.',
+        scope='Pure CPU returns, break/continue, private integer locals and CPU for/while/do loops composed with coherent callers; four-label states, controlled phases, X, nearest-loop jumps, nested calls/loops, private-zero cleanup and inverses. Private writes stay within their declaration quantum branch. Arbitrary CFG, switch-crossing continue, quantum-dependent jumps/iteration/local writes, escaping addresses and general lifetimes remain pending.',
     )
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')
     print(json.dumps(summary))

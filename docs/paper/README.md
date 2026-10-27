@@ -211,3 +211,8 @@ La [nota de locales mutables y bucles CPU](private_cpu_loops_note.es.md) y su
 análisis de ramas, condiciones CPU puras y retornos dentro de bucles desde llamadores coherentes.
 Conservan identidades propias, el rechazo previo y estados/fases/inversas normales e instrumentados;
 la integración completa de estas fuentes sigue pendiente.
+
+La [nota de break/continue CPU](loop_jumps_note.es.md) y su
+[cápsula](../audit-evidence/loop-jumps-v1/README.es.md) amplían los bucles con permisos privados,
+limpieza y reglas de incremento verificadas contra C. Incluyen matrices normales e instrumentadas de
+efectos CPU, estados complejos e inversas; no recalifican los manuscritos históricos.

@@ -8,15 +8,15 @@ publicadas. La 1.0 estable y el núcleo cotidiano completo continúan pendientes
 Desde la raíz del repositorio en Windows:
 
 ```cmd
-output\sdk\cpu-loops\run_sdk_demo.cmd
-output\sdk\cpu-loops\run_coherent_demo.cmd
-output\sdk\cpu-loops\compile_and_run.cmd output\sdk\cpu-loops\example_heap.c
+output\sdk\loop-jumps\run_sdk_demo.cmd
+output\sdk\loop-jumps\run_coherent_demo.cmd
+output\sdk\loop-jumps\compile_and_run.cmd output\sdk\loop-jumps\example_heap.c
 ```
 
 El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con retornos CPU
-y limpieza, y comprueba interferencia: `count=1 control=1 target=0`. El tercero compila un programa
+y limpieza, y comprueba interferencia: `skip=2 control=1 target=0`. El tercero compila un programa
 de heap. Podés editar una copia y pasar su ruta al mismo lanzador. La
-[guía del SDK actualizado](../output/sdk/cpu-loops/README.es.md) explica los requisitos y la CLI en
+[guía del SDK actualizado](../output/sdk/loop-jumps/README.es.md) explica los requisitos y la CLI en
 Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
 directorio padre con su propia identidad.
 
@@ -112,3 +112,9 @@ El paquete recomendado amplía aquel bloque con
 [cápsula](audit-evidence/private-cpu-loops-v1/README.es.md) identifica otros hashes de fuente,
 estados/inversas y el ejemplo de parámetro por valor. Sus condiciones son CPU puras; no incluye
 bucles con decisión cuántica, saltos coherentes ni vidas generales. Su CI completo queda pendiente.
+
+El SDK actual añade [break/continue CPU](paper/loop_jumps_note.es.md): respeta la limpieza, el bucle
+más próximo y el incremento de `for`. La [evidencia](audit-evidence/loop-jumps-v1/README.es.md)
+identifica sus fuentes y comprobaciones C/estados/inversas. Los límites anteriores de saltos CPU se
+superan para ese perfil; permanecen decisiones cuánticas, flujo/vidas generales y el CI completo de
+la ampliación.

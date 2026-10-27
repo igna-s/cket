@@ -108,12 +108,10 @@ Los contratos precisos se conservan en la [matriz de capacidades](c-coverage.md)
 [bloques entregados](entregas-incrementales.es.md) y el
 [estado general](estado-general-del-proyecto.es.md).
 
-Los [locales enteros CPU privados](paper/private_cpu_locals_note.es.md) ya pueden inicializarse con
-expresiones puras dentro de una llamada coherente. Se excluyen escrituras posteriores, direcciones
-tomadas, almacenamiento estático, `volatile`, `_Atomic`, punteros y agregados. El SDK actualizado
-ejecuta el ejemplo; los locales mutables y los bucles coherentes siguen abiertos.
-
-La [ampliación de bucles CPU](paper/private_cpu_loops_note.es.md) supera el límite anterior: permite
-escrituras a esos enteros privados y bucles CPU puros dentro de la misma rama cuántica de
-declaración. Incluye retornos y bucles anidados. No permite que el local registre otra decisión
-cuántica, ni habilita direcciones escapadas, efectos CPU anidados o saltos coherentes.
+Los [locales CPU privados y bucles](paper/private_cpu_loops_note.es.md) admiten inicializadores
+puros, escrituras dentro de la misma rama cuántica de declaración y condiciones de iteración CPU
+puras. Se excluyen direcciones tomadas, almacenamiento estático, `volatile`, `_Atomic`, punteros y
+agregados privados. Los [saltos CPU estructurados](paper/loop_jumps_note.es.md) añaden `break` y
+`continue`, con la limpieza y los incrementos de C. Quedan decisiones cuánticas de salto o
+iteración, `continue` a través de `switch`, efectos CPU anidados y vidas/alias/ABI generales. Las
+notas y cápsulas anteriores mantienen sus propias identidades y alcances.

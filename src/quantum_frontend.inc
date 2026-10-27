@@ -434,6 +434,17 @@ bool procedure_has_return(tree body) {
 // An expanded procedure must finish its lexical cleanup before the caller
 // continues. A CPU flag transports structured early exits without a jump past
 // that cleanup or a return from the caller. No quantum predicate is observed.
+tree private_cpu_branch(tree condition, tree statement) {
+    tree branch = build3_loc(at(statement),
+                             COND_EXPR,
+                             void_type_node,
+                             condition,
+                             statement,
+                             build_empty_stmt(at(statement)));
+    procedure_cpu_branches.insert(branch);
+    return branch;
+}
+
 bool rewrite_procedure_returns(tree *slot, tree active, unsigned depth = 0) {
     tree value = *slot;
     if (!value || DECL_P(value) || TYPE_P(value))
@@ -443,16 +454,7 @@ bool rewrite_procedure_returns(tree *slot, tree active, unsigned depth = 0) {
         return false;
     }
     auto code = TREE_CODE(value);
-    auto guard = [active](tree statement) {
-        tree branch = build3_loc(at(statement),
-                                 COND_EXPR,
-                                 void_type_node,
-                                 active,
-                                 statement,
-                                 build_empty_stmt(at(statement)));
-        procedure_cpu_branches.insert(branch);
-        return branch;
-    };
+    auto guard = [active](tree statement) { return private_cpu_branch(active, statement); };
     if (code == RETURN_EXPR && !TREE_OPERAND(value, 0)) {
         *slot = build2_loc(at(value), MODIFY_EXPR, boolean_type_node, active, boolean_false_node);
         return true;
@@ -519,6 +521,181 @@ tree expand_cpu_procedure_returns(tree body, location_t location) {
     append(&list, build1_loc(location, DECL_EXPR, void_type_node, active));
     append(&list, body);
     return build3(BIND_EXPR, void_type_node, active, list, NULL_TREE);
+}
+
+// Nested loops own their jumps. A switch owns break but not continue;
+// transporting a continue through a switch still needs separate CFG analysis.
+unsigned target_loop_jumps(tree body) {
+    unsigned found = 0;
+    auto inspect = [](tree *node, int *walk, void *data) -> tree {
+        auto &found = *static_cast<unsigned *>(data);
+        auto code = TREE_CODE(*node);
+        if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT || DECL_P(*node) ||
+            TYPE_P(*node))
+            *walk = 0;
+        else if (code == BREAK_STMT)
+            found |= 1;
+        else if (code == CONTINUE_STMT)
+            found |= 2;
+        else if (code == SWITCH_STMT) {
+            auto crossing = [](tree *node, int *walk, void *) -> tree {
+                auto code = TREE_CODE(*node);
+                if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT || DECL_P(*node) ||
+                    TYPE_P(*node))
+                    *walk = 0;
+                return code == CONTINUE_STMT ? *node : NULL_TREE;
+            };
+            tree value = *node;
+            if (walk_tree_without_duplicates(&value, crossing, nullptr))
+                found |= 4;
+            *walk = 0;
+        }
+        return NULL_TREE;
+    };
+    walk_tree_without_duplicates(&body, inspect, &found);
+    return found;
+}
+
+bool rewrite_loop_jumps(tree *slot, tree running, tree iteration, unsigned depth = 0) {
+    tree value = *slot;
+    if (!value || DECL_P(value) || TYPE_P(value))
+        return false;
+    if (depth > 128) {
+        error_at(at(value), "|c>: loop jump analysis exceeds 128 nested statements");
+        return false;
+    }
+    auto code = TREE_CODE(value);
+    if (code == BREAK_STMT || code == CONTINUE_STMT) {
+        tree list = alloc_stmt_list();
+        append(
+            &list,
+            build2_loc(at(value), MODIFY_EXPR, boolean_type_node, iteration, boolean_false_node));
+        if (code == BREAK_STMT)
+            append(
+                &list,
+                build2_loc(at(value), MODIFY_EXPR, boolean_type_node, running, boolean_false_node));
+        *slot = list;
+        return true;
+    }
+    if (code == BIND_EXPR)
+        return rewrite_loop_jumps(&BIND_EXPR_BODY(value), running, iteration, depth + 1);
+    if (code == STATEMENT_LIST) {
+        bool jumps = false;
+        for (auto it = tsi_start(value); !tsi_end_p(it); tsi_next(&it)) {
+            tree *statement = tsi_stmt_ptr(it);
+            bool current = rewrite_loop_jumps(statement, running, iteration, depth + 1);
+            if (jumps)
+                *statement = private_cpu_branch(iteration, *statement);
+            jumps |= current;
+        }
+        return jumps;
+    }
+    if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+        bool first = rewrite_loop_jumps(&TREE_OPERAND(value, 1), running, iteration, depth + 1);
+        bool second = rewrite_loop_jumps(&TREE_OPERAND(value, 2), running, iteration, depth + 1);
+        if ((first || second) && has_quantum(TREE_OPERAND(value, 0)))
+            error_at(at(value), "|c>: a loop jump cannot depend on unmeasured quantum control");
+        else if ((first || second) && quantum_pure_expression(TREE_OPERAND(value, 0)))
+            procedure_cpu_branches.insert(value);
+        return first || second;
+    }
+    return false;
+}
+
+tree expand_cpu_loop_jumps(tree body) {
+    struct Pass {
+        void visit(tree *slot, bool coherent) {
+            tree value = *slot;
+            if (!value || DECL_P(value) || TYPE_P(value))
+                return;
+            auto code = TREE_CODE(value);
+            if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+                bool nested = coherent || has_quantum(TREE_OPERAND(value, 0));
+                visit(&TREE_OPERAND(value, 1), nested);
+                visit(&TREE_OPERAND(value, 2), nested);
+                return;
+            }
+            if (code == WHILE_STMT || code == DO_STMT || code == FOR_STMT) {
+                tree *loop_body = code == WHILE_STMT ? &WHILE_BODY(value)
+                                  : code == DO_STMT  ? &DO_BODY(value)
+                                                     : &FOR_BODY(value);
+                visit(loop_body, coherent);
+                auto effect = [](tree *node, int *walk, void *) -> tree {
+                    std::string kind = intrinsic(*node);
+                    if (quantum_native_memory.count(*node) ||
+                        (!kind.empty() && kind.compare(0, 6, "ctype:") != 0))
+                        return *node;
+                    if (DECL_P(*node) || TYPE_P(*node))
+                        *walk = 0;
+                    return NULL_TREE;
+                };
+                tree probe = *loop_body;
+                if (!coherent && !has_quantum(value) &&
+                    !walk_tree_without_duplicates(&probe, effect, nullptr))
+                    return;
+                unsigned jumps = target_loop_jumps(*loop_body);
+                if (jumps & 4) {
+                    error_at(at(value),
+                             "|c>: loop continue through switch needs CFG lifetime analysis");
+                    return;
+                }
+                if (!jumps)
+                    return;
+                auto flag = [value](const char *name) {
+                    tree decl =
+                        build_decl(at(value), VAR_DECL, get_identifier(name), boolean_type_node);
+                    DECL_CONTEXT(decl) = active_function;
+                    DECL_ARTIFICIAL(decl) = 1;
+                    DECL_INITIAL(decl) = boolean_true_node;
+                    procedure_cpu_flags.insert(decl);
+                    return decl;
+                };
+                tree running = flag("__cket_loop_active"),
+                     iteration = flag("__cket_iteration_active");
+                rewrite_loop_jumps(loop_body, running, iteration);
+                tree statements = alloc_stmt_list();
+                append(&statements, build1_loc(at(value), DECL_EXPR, void_type_node, iteration));
+                append(&statements, *loop_body);
+                *loop_body = build3(BIND_EXPR, void_type_node, iteration, statements, NULL_TREE);
+                tree *condition = code == WHILE_STMT ? &WHILE_COND(value)
+                                  : code == DO_STMT  ? &DO_COND(value)
+                                                     : &FOR_COND(value);
+                *condition = build2_loc(at(value),
+                                        TRUTH_ANDIF_EXPR,
+                                        boolean_type_node,
+                                        running,
+                                        *condition ? fold_convert(boolean_type_node, *condition)
+                                                   : boolean_true_node);
+                if (code == FOR_STMT && FOR_EXPR(value))
+                    FOR_EXPR(value) = private_cpu_branch(running, FOR_EXPR(value));
+                statements = alloc_stmt_list();
+                append(&statements, build1_loc(at(value), DECL_EXPR, void_type_node, running));
+                append(&statements, value);
+                *slot = build3(BIND_EXPR, void_type_node, running, statements, NULL_TREE);
+                return;
+            }
+
+            struct Children {
+                Pass *self;
+                bool coherent, first = true;
+            } children{this, coherent};
+
+            auto descend = [](tree *node, int *walk, void *data) -> tree {
+                auto &state = *static_cast<Children *>(data);
+                if (state.first)
+                    state.first = false;
+                else {
+                    state.self->visit(node, state.coherent);
+                    *walk = 0;
+                }
+                return NULL_TREE;
+            };
+            walk_tree(slot, descend, &children, nullptr);
+        }
+    } pass;
+
+    pass.visit(&body, false);
+    return body;
 }
 
 tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {

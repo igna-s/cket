@@ -11,10 +11,10 @@ expressions and coherent conditions, and let the compiler build reversible circu
 temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C
 statevector simulator, with dense and opt-in sparse execution modes.
 
-**Ready-to-run compiler package:** the [updated Windows/WSL SDK](output/sdk/cpu-loops/README.es.md)
+**Ready-to-run compiler package:** the [updated Windows/WSL SDK](output/sdk/loop-jumps/README.es.md)
 includes the corrected compiler and 37 rebuilt programs. Run
-`output\sdk\cpu-loops\run_sdk_demo.cmd`, or compile a C file with
-`output\sdk\cpu-loops\compile_and_run.cmd program.c`. The
+`output\sdk\loop-jumps\run_sdk_demo.cmd`, or compile a C file with
+`output\sdk\loop-jumps\compile_and_run.cmd program.c`. The
 [read-only borrow correction](docs/c11-readonly-borrows.md) allows shared read-only aliases and
 rejects writes through casts. Its example checks phase interference. The
 [delivery guide](docs/entrega-utilizable-2026-10-26.es.md) lists working examples and open limits.
@@ -27,9 +27,9 @@ classical behavior. The general integration gate remains open.
 
 [Structured CPU early returns](docs/c11-procedure-returns.md) now work in void quantum procedures,
 including CPU loops. They finish lexical cleanup and continue the caller. Run
-`output\sdk\cpu-loops\run_coherent_demo.cmd` for the new example with phase interference. A separate
-correction removes path-local known-value claims that caused valid CPU branches to fail structural
-verification. General CFG and owned early results remain pending.
+`output\sdk\loop-jumps\run_coherent_demo.cmd` for the new example with phase interference. A
+separate correction removes path-local known-value claims that caused valid CPU branches to fail
+structural verification. General CFG and owned early results remain pending.
 
 Pure CPU exit predicates now compose with a coherent caller. The
 [technical note](docs/paper/coherent_returns_note.es.md) explains controlled global phase, private
@@ -42,7 +42,13 @@ remain in the quantum branch where the local was declared; their addresses may n
 [note](docs/paper/private_cpu_loops_note.es.md) and
 [evidence](docs/audit-evidence/private-cpu-loops-v1/README.es.md) identify the compiler, finite
 normal/sanitized states and inverses, and checked Windows SDK workflows. Quantum-dependent
-iteration, coherent break/continue, nested CPU effects and general lifetimes remain pending.
+iteration, nested CPU effects and general lifetimes remain pending; the next block adds CPU jumps.
+
+Structured CPU break/continue now preserve loop cleanup and the for increment rules, including calls
+from coherent control. The [note](docs/paper/loop_jumps_note.es.md) and
+[evidence](docs/audit-evidence/loop-jumps-v1/README.es.md) distinguish finite C effects, complex
+states and complete inverses from arbitrary flow/lifetime support. Quantum-dependent jumps and
+continue through switch remain pending.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC

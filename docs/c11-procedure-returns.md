@@ -76,8 +76,13 @@ que se convierte en fase relativa bajo control. La [nota técnica](paper/coheren
 y su [evidencia](audit-evidence/coherent-returns-v1/README.es.md) detallan fórmulas, estados e
 inversas. Si el control sigue siendo posible, los operandos CPU deben estar definidos. Los efectos
 CPU observables, los retornos y condiciones de bucle dependientes de datos cuánticos sin medir, los
-saltos coherentes y las vidas generales conservan sus restricciones. El SDK de 242 entradas mantiene
+saltos generales y las vidas generales conservan sus restricciones. El SDK de 242 entradas mantiene
 el comportamiento anterior; el de 244 incluye esta ampliación.
 
 Esta entrega no cierra todos los flujos C ni toda la ABI, no demuestra ejecución en QPU física ni
 aceleración. La ciberseguridad permanece clásica.
+
+Los [saltos CPU estructurados de bucle](paper/loop_jumps_note.es.md) ya permiten `break` y
+`continue` en ese perfil, también desde llamadores coherentes. Llegan a la limpieza y conservan las
+reglas de incremento/condición de C. Se rechazan decisiones cuánticas sin medir y `continue` a
+través de `switch`; los saltos y vidas generales continúan pendientes.

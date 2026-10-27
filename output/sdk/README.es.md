@@ -1,6 +1,6 @@
 **Paquete actualizado:** usá el
-[SDK con locales privados y bucles CPU coherentes](cpu-loops/README.es.md). Incluye el plugin
-corregido, 37 programas reconstruidos y el ejemplo de retorno, limpieza e interferencia. Este
+[SDK con break y continue CPU desde llamadores coherentes](loop-jumps/README.es.md). Incluye el
+plugin corregido, 37 programas reconstruidos y el ejemplo de retorno, limpieza e interferencia. Este
 directorio conserva el paquete anterior de 237 entradas con sus hashes y límites originales.
 
 # C Ket listo para ejecutar y compilar

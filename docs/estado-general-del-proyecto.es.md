@@ -9,15 +9,24 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/cpu-loops/README.es.md)
+**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/loop-jumps/README.es.md)
 incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
-`output\sdk\cpu-loops\run_coherent_demo.cmd` para compilar el ejemplo de retorno, limpieza e
+`output\sdk\loop-jumps\run_coherent_demo.cmd` para compilar el ejemplo de retorno, limpieza e
 interferencia. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
 pendientes.
 
-**Locales mutables privados y bucles CPU implementados:** las llamadas coherentes admiten `for`,
-`while` y `do while` con condiciones CPU puras, contadores privados y retornos CPU. Las escrituras
-quedan dentro de la misma rama cuántica donde se declaró cada local. La
+**Break y continue CPU implementados:** se transportan con permisos privados y se llega a la
+limpieza del bloque antes de salir o continuar. `continue` conserva el incremento del `for`; `break`
+lo omite. La [nota](paper/loop_jumps_note.es.md) y la
+[evidencia](audit-evidence/loop-jumps-v1/README.es.md) registran 1900 puntos de estado y 950
+inversas con llamador coherente en normal; 380 y 190 con ASan/UBSan. La comparación con C nativo
+pasa 1100 ejecuciones normales y 220 instrumentadas. El SDK recomendado incluye el ejemplo. Quedan
+saltos/iteración cuánticos, `continue` a través de `switch`, flujo y vidas/alias/ABI generales e
+integración completa de estas fuentes.
+
+**Bloque anterior de locales mutables y bucles CPU:** las llamadas coherentes admiten `for`, `while`
+y `do while` con condiciones CPU puras, contadores privados y retornos CPU. Las escrituras quedan
+dentro de la misma rama cuántica donde se declaró cada local. La
 [nota](paper/private_cpu_loops_note.es.md) y la
 [evidencia](audit-evidence/private-cpu-loops-v1/README.es.md) registran 1400 puntos de estado y 700
 inversas en normal; 280 y 140 con ASan/UBSan. El SDK recomendado comprueba también un parámetro CPU
