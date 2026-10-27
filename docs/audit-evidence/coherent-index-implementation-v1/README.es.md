@@ -9,7 +9,7 @@ Esta tentativa registra un **fallo de construcción, con código 1**: faltaba un
 adelantada del guardia de dominio tras extraer los helpers comunes. El proceso se detuvo antes de
 compilar los ejemplos. No se ejecutó ningún programa ni suite.
 
-El archivo conserva las fuentes y el log de ese fallo. Las tentativas posteriores tienen sus
-propias fuentes y resultados; esta no aporta evidencia de compilación exitosa ni de funcionamiento.
-La validación de ejecución sigue aplazada por indicación del usuario y la ciberseguridad permanece
+El archivo conserva las fuentes y el log de ese fallo. Las tentativas posteriores tienen sus propias
+fuentes y resultados; esta no aporta evidencia de compilación exitosa ni de funcionamiento. La
+validación de ejecución sigue aplazada por indicación del usuario y la ciberseguridad permanece
 clásica.
