@@ -9,11 +9,19 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador listo para usar:** el [SDK de Windows/WSL](../output/sdk/README.es.md) incluye el
-compilador y 37 programas precompilados de los seis bloques. Ejecutá `output\sdk\run_sdk_demo.cmd`;
-para un archivo C propio usá `output\sdk\compile_and_run.cmd`. La
-[guía de entrega](entrega-utilizable-2026-10-26.es.md) resume capacidades y pendientes. Es una
-candidata utilizable; la integración general todavía está abierta.
+**Compilador actualizado listo para usar:** el
+[SDK nuevo](../output/sdk/readonly-borrows/README.es.md) incluye el plugin corregido y 37 programas
+reconstruidos. Ejecutá `output\sdk\readonly-borrows\run_readonly_demo.cmd` para compilar el ejemplo
+de fase e interferencia con alias de lectura. La
+[guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y pendientes.
+
+**Préstamos de lectura compartidos:** se admite pasar el mismo dueño a varios parámetros `const`; se
+siguen rechazando solapamientos mutables. Se corrige además una escritura por cast que escapaba del
+ámbito de lectura. La [nota](c11-readonly-borrows.md) y la
+[evidencia de 239 entradas](audit-evidence/readonly-borrows-v1/README.es.md) registran 305
+comprobaciones dirigidas, bindings (519) y núcleo (395) normales e instrumentados, y 1509 de
+ejemplos normales. Los recuentos de las campañas anteriores que siguen abajo conservan sus propias
+fuentes; no recalifican automáticamente este plugin. La integración completa sigue abierta.
 
 **Bloque de desarrollo posterior a RC3:** las escrituras fijas de `strcpy`, `strncpy`, `strcat` y
 `strncat` usan máscaras de los bytes realmente escritos. Un NUL cuántico selecciona esa máscara sin
@@ -33,7 +41,7 @@ conserva su alcance original. Al llegar a los casos antes ocultos se corrigieron
 anteriores que no se transportaban y vidas de inversas en brazos inactivos. El CI general sigue
 pendiente.
 
-**Integración C prioritaria comprobada:** pasan los 17 validadores C normales listados en la nueva
+**Campaña anterior de 237 entradas:** pasan los 17 validadores C normales listados en la nueva
 cápsula y diez completos con ASan/UBSan. La pasada instrumentada de capturas de bytes se interrumpe
 por tiempo; los seis validadores que venían después quedan pendientes. En normal también pasan 145
 compilaciones del fuzzer, 24 circuitos de crecimiento, cinco comparaciones clásicas y 70

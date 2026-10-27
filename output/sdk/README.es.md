@@ -1,3 +1,7 @@
+**Paquete actualizado:** usá el [SDK con préstamos de lectura](readonly-borrows/README.es.md).
+Incluye el plugin corregido, 37 programas reconstruidos y el ejemplo nuevo de interferencia. Este
+directorio conserva el paquete anterior de 237 entradas con sus hashes y límites originales.
+
 # C Ket listo para ejecutar y compilar
 
 El paquete incluye el compilador, su plugin GCC, el runtime C, las fuentes y **37 programas

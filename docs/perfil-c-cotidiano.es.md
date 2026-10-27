@@ -51,6 +51,11 @@ generales, retornos ni flujos arbitrarios de propiedad. Los
 [tamaños CPU de ejecución](c11-runtime-memory.md) ya seleccionan prefijos de buffers fijos
 comprobados; `buffer_lengths.c` pasa esa longitud a una función y observa los resultados.
 
+La [corrección de préstamos de lectura](c11-readonly-borrows.md) admite alias `const` en parámetros
+escalares y de buffers fijos. Rechaza las escrituras por casts antes de perder el ámbito del
+préstamo. Su evidencia de 239 entradas distingue los casos comprobados de las combinaciones
+generales de alias y vidas que siguen pendientes.
+
 ## Orden de trabajo
 
 1. Integrar los enteros y sus consumidores con funciones, arrays y structs básicos.

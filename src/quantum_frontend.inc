@@ -388,6 +388,14 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
     auto previous_heap_borrows = quantum_heap_borrows;
     std::map<tree, tree> bindings;
     std::set<tree> borrowed;
+    std::set<tree> mutable_borrowed;
+    auto borrow_storage = [&borrowed, &mutable_borrowed](tree storage, bool mutates) {
+        bool conflict = borrowed.count(storage) && (mutates || mutable_borrowed.count(storage));
+        borrowed.insert(storage);
+        if (mutates)
+            mutable_borrowed.insert(storage);
+        return !conflict;
+    };
     tree prefix = alloc_stmt_list();
     tree argument_locals = NULL_TREE;
     unsigned index = 0;
@@ -444,7 +452,8 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
             }
             if (!function.result || function.owned_result)
                 for (size_t i = (size_t)reference.offset; i < reference.elements.size(); ++i)
-                    if (!borrowed.insert(reference.elements[i]).second) {
+                    if (!borrow_storage(reference.elements[i],
+                                        !TYPE_READONLY(TREE_TYPE(TREE_TYPE(param))))) {
                         error_at(
                             at(call),
                             "|c>: mutable quantum pointer parameters cannot overlap other borrowed storage");
@@ -480,7 +489,8 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                 valid = false;
                 break;
             }
-            if ((!function.result || function.owned_result) && !borrowed.insert(storage).second) {
+            if ((!function.result || function.owned_result) &&
+                !borrow_storage(storage, !TYPE_READONLY(TREE_TYPE(param)))) {
                 error_at(at(call),
                          "|c>: mutable quantum parameters cannot alias the same register");
                 valid = false;
@@ -1332,8 +1342,17 @@ bool readonly_quantum_access(tree value) {
     if (TREE_CODE(storage) == INDIRECT_REF || TREE_CODE(storage) == ARRAY_REF) {
         QuantumReference reference;
         tree pointer = TREE_OPERAND(storage, 0);
-        if (resolve_quantum_reference(pointer, reference))
-            return TYPE_READONLY(reference.element_type);
+        if (resolve_quantum_reference(pointer, reference)) {
+            if (TYPE_READONLY(reference.element_type))
+                return true;
+            size_t first = (size_t)reference.offset;
+            size_t end = TREE_CODE(storage) == INDIRECT_REF
+                             ? std::min(first + 1, reference.elements.size())
+                             : reference.elements.size();
+            for (size_t i = first; i < end; ++i)
+                if (readonly_quantum_borrows.count(reference.elements[i]))
+                    return true;
+        }
     }
     return quantum(storage) && TYPE_READONLY(TREE_TYPE(value));
 }
@@ -1568,6 +1587,12 @@ tree expand_quantum_program(tree value) {
     if (code == MODIFY_EXPR || code == INIT_EXPR || code == PREINCREMENT_EXPR ||
         code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR) {
         tree target = strip(TREE_OPERAND(value, 0));
+        // Check while the callee's borrow scope is active, before resolving
+        // a const pointer view back to its mutable caller storage.
+        if (code != INIT_EXPR && readonly_quantum_access(target)) {
+            error_at(at(value), "|c>: assignment cannot modify a read-only quantum borrow");
+            return build_zero_cst(TREE_TYPE(value));
+        }
         if ((TREE_CODE(target) == INDIRECT_REF || TREE_CODE(target) == ARRAY_REF) &&
             memory_return_in_address(TREE_OPERAND(target, 0), true)) {
             error_at(at(value),

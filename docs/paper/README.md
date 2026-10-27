@@ -9,6 +9,12 @@ históricos:
 | Escrituras de cadenas                      | [Nota](string_writes_note.es.md), [237 entradas](../audit-evidence/string-writes-v1/README.es.md)   | Máscaras de los bytes realmente escritos, con catorce exclusiones por recursos.                                                      |
 | Valores anteriores y efectos seleccionados | [Nota](lazy_values_note.es.md), [237 entradas](../audit-evidence/lazy-pending-v1/README.es.md)      | Corrige operandos pendientes y vidas de inversas. Pasan 2332 comprobaciones normales de historial y 355 dirigidas con sanitizadores. |
 
+La [nota de préstamos de lectura](../c11-readonly-borrows.md) y su
+[cápsula de 239 entradas](../audit-evidence/readonly-borrows-v1/README.es.md) corrigen otro rechazo
+de composición y una escritura mediante cast. El SDK nuevo incluye ese plugin; las campañas de 237
+entradas mantienen su alcance anterior. La nota distingue las referencias al mismo dueño de una
+copia de estado y califica fases, auxiliares e inversas en programas finitos.
+
 Estas campañas califican perfiles finitos de densidad, fases e inversas. La revisión general de
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
 fuentes originales; no se los recalifica automáticamente para el compilador actual.

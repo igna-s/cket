@@ -51,6 +51,7 @@ ar rcs build/libcket_quantum.a build/json.o build/quantum.o build/verify.o build
 "$gcc_compiler" "${flags[@]}" tests/validate_byte_snapshots.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_byte_snapshots
 "$gcc_compiler" "${flags[@]}" tests/validate_division.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_division
 "$gcc_compiler" "${flags[@]}" tests/validate_bindings.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_bindings
+"$gcc_compiler" "${flags[@]}" tests/validate_readonly_borrows.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_readonly_borrows
 "$gcc_compiler" "${flags[@]}" tests/validate_history.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_history
 "$gcc_compiler" "${flags[@]}" tests/validate_heap.c tests/validation.c build/libcket_quantum.a -lm -o build/validate_heap
 "$gcc_compiler" "${flags[@]}" tests/validate_heap_identities.c build/libcket_quantum.a -lm -o build/validate_heap_identities

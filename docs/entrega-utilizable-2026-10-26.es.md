@@ -8,15 +8,17 @@
 Desde la raíz del repositorio en Windows:
 
 ```cmd
-output\sdk\run_sdk_demo.cmd
-output\sdk\compile_and_run.cmd output\sdk\example_functions.c
-output\sdk\compile_and_run.cmd output\sdk\example_heap.c
+output\sdk\readonly-borrows\run_sdk_demo.cmd
+output\sdk\readonly-borrows\run_readonly_demo.cmd
+output\sdk\readonly-borrows\compile_and_run.cmd output\sdk\example_heap.c
 ```
 
-El primer comando ejecuta 37 programas ya compilados. Los otros compilan y ejecutan archivos C
-mediante el compilador incluido. Podés editar una copia de esos archivos y pasar su ruta al mismo
-comando. La [guía del SDK](../output/sdk/README.es.md) explica los requisitos y la CLI en Linux. Usa
-WSL `Ubuntu2204` sin montar unidades Windows.
+El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con alias de
+lectura y comprueba interferencia: `scalar=1 vector=0,1`. El tercero compila un programa de heap.
+Podés editar una copia y pasar su ruta al mismo lanzador. La
+[guía del SDK actualizado](../output/sdk/readonly-borrows/README.es.md) explica los requisitos y la
+CLI en Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
+directorio padre con su propia identidad.
 
 ## Qué podés escribir dentro del perfil actual
 
@@ -37,23 +39,25 @@ conserva la información necesaria como historia o la limpia mediante una invers
 
 ## Qué se comprobó en esta entrega
 
-El SDK conserva las 237 entradas exactas del compilador y pruebas, ejecutables, headers y fuentes.
-Los seis runners produjeron los 37 programas y las exportaciones estáticas admitidas. La suite de
-ejemplos pasó 1509 comprobaciones en cinco niveles de GCC. El lanzador de Windows ejecutó el paquete
-y compiló de nuevo los ejemplos de funciones y heap.
+El SDK actualizado conserva las 239 entradas exactas del compilador y pruebas, ejecutables, headers
+y fuentes. Los seis runners reconstruyen los 37 programas y sus exportaciones estáticas admitidas.
+La suite de ejemplos pasa 1509 comprobaciones normales en cinco niveles de GCC. Los lanzadores
+Windows ejecutan el paquete y compilan el ejemplo nuevo de alias e interferencia.
 
-Las referencias de retornos de memoria y distancias pasan 290 y 170 comprobaciones en normal y
-ASan/UBSan. La [cápsula](audit-evidence/memory-return-reference-v1/README.es.md) distingue valores
-nativos, acciones etiquetadas completas, fases, canales de historial e inversas. Las salidas medidas
-de la demo no se presentan como prueba de todos los estados posibles.
+La [corrección de préstamos](c11-readonly-borrows.md) permite alias de lectura y rechaza escrituras
+mediante casts. Su [cápsula](audit-evidence/readonly-borrows-v1/README.es.md) registra 305
+comprobaciones en normal y ASan/UBSan: compilaciones, ejecuciones, estados completos contra fórmulas
+C, evolución independiente de puertas, inversas y diagnósticos. También pasan bindings (519) y
+núcleo (395) en ambas configuraciones. Estos programas finitos no prueban todos los alias, vidas o
+tipos.
 
-La [campaña C posterior](audit-evidence/c-priority-integration-v1/README.es.md) pasa sus 17
-validadores normales y diez completos con ASan/UBSan, incluido el historial completo de 2332 casos.
-La pasada instrumentada de capturas de bytes queda interrumpida por tiempo; los seis validadores que
-venían después permanecen pendientes. Además pasan en normal 145 compilaciones del fuzzer, 24
-circuitos de crecimiento y las 70 exportaciones verificadas por QuEST: 64 estados y seis canales. La
-corrección posterior afecta solo al test QASM; el paquete conserva los mismos binarios del
-compilador y su snapshot original. La campaña no es una ejecución completa de `scripts/verify.sh`.
+Las campañas anteriores de 237 entradas conservan sus fuentes: la
+[referencia de retornos](audit-evidence/memory-return-reference-v1/README.es.md), la
+[integración C prioritaria](audit-evidence/c-priority-integration-v1/README.es.md) y la
+[continuación de locale](audit-evidence/c-locale-sanitized-v1/README.es.md). Entre esas dos últimas
+pasaron 17 validadores normales y doce completos instrumentados; quedaron cinco pendientes. Sus
+cifras de fuzzer, QuEST y memoria no recalifican automáticamente este plugin nuevo. La ejecución
+completa de `scripts/verify.sh` sigue pendiente.
 
 ## Qué falta
 
