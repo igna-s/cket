@@ -19,8 +19,15 @@ pendientes.
 alcanzar un stub vacío de una función `quant`. La entrada nativa restante devuelve un error
 explícito en lugar de simular éxito. La [nota](c11-function-entries.md) y su
 [evidencia de 240 entradas](audit-evidence/function-entries-v1/README.es.md) registran 90 contratos
-normales e instrumentados, regresiones y el SDK reconstruido. El CI de la revisión anterior se
-detuvo con `unmodelled retained version` en memoria runtime; ese gate sigue abierto.
+normales e instrumentados, regresiones y el SDK reconstruido.
+
+**Referencia de memoria runtime corregida:** se reproduce el fallo del CI anterior,
+`unmodelled retained version`: faltaba modelar una guarda privada cero en un `memset` de longitud
+cero. La [nueva evidencia](audit-evidence/runtime-memory-reference-v1/README.es.md) registra 900
+puntos de estado complejo y 270 inversas completas, normales e instrumentadas. Rechaza además tres
+mutaciones unitarias de datos, fase y guarda. No cambian el compilador ni sus binarios; el SDK
+conserva su referencia original. Se cierra ese fallo concreto; la integración completa sigue
+pendiente.
 
 **Préstamos de lectura compartidos:** se admite pasar el mismo dueño a varios parámetros `const`; se
 siguen rechazando solapamientos mutables. Se corrige además una escritura por cast que escapaba del

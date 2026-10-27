@@ -178,6 +178,12 @@ def check(profile, points, length, rounds):
             assign(names['word'], word)
         if 'saved' in names:
             assign(names['saved'], saved)
+        # Valid calls in these C fixtures have a zero-valued preflight guard.
+        # Model that private output explicitly, without trusting known-value
+        # certificates or accepting arbitrary unmodelled registers.
+        for name, register in names.items():
+            if name.startswith('__cket_string_domain_'):
+                assign(register, [0, 0])
         previous_wires = {name: register['wires'] for name, register in names.items()}
         alive = {wire for register in point['registers'] for wire in register['wires']}
         assert alive <= wire_values.keys(), 'unmodelled retained version'

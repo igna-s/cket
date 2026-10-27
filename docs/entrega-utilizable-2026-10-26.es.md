@@ -46,8 +46,14 @@ Windows ejecutan el paquete y compilan el ejemplo nuevo de alias e interferencia
 
 La [corrección de entradas de función](c11-function-entries.md) añade 90 contratos normales e
 instrumentados para llamadas, prototipos y punteros. Evita que una llamada clásica no comprobada
-termine en un stub vacío. El CI anterior mantiene abierto un fallo de la referencia de memoria
-runtime (`unmodelled retained version`); no es una ejecución general aprobada.
+termine en un stub vacío.
+
+El fallo anterior `unmodelled retained version` se reproduce y corrige en la
+[referencia de memoria runtime](audit-evidence/runtime-memory-reference-v1/README.es.md). Pasan 900
+puntos de estado complejo y 270 inversas completas en normal y ASan/UBSan; tres mutaciones unitarias
+de datos, fase y guarda se rechazan. Solo cambia el validador Python del checkout: el compilador y
+los binarios del SDK siguen iguales. El archivo del SDK conserva su validador y hashes originales.
+Esta corrección dirigida no equivale a una ejecución general de CI aprobada.
 
 La [corrección de préstamos](c11-readonly-borrows.md) permite alias de lectura y rechaza escrituras
 mediante casts. Su [cápsula](audit-evidence/readonly-borrows-v1/README.es.md) registra 305

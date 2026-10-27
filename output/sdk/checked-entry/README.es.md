@@ -30,5 +30,9 @@ El modo denso tiene un límite de 24 qubits; el disperso y la representación ll
 presupuestos de soporte y trabajo. No hay calificación de QPU física ni de aceleración. La
 ciberseguridad permanece clásica.
 
-El CI anterior se detuvo en la referencia de memoria runtime con `unmodelled retained version`; ese
-gate sigue abierto y no se presenta como una calificación aprobada de esta entrega.
+El CI anterior se detuvo con `unmodelled retained version`. La
+[corrección posterior de la referencia](../../../docs/audit-evidence/runtime-memory-reference-v1/README.es.md)
+modela explícitamente una guarda privada cero: pasan 900 puntos de estado y 270 inversas completas.
+Solo cambia el validador Python del checkout; los binarios y el archivo de este SDK conservan sus
+identidades. El validador incluido en el archivo es el original. La integración completa sigue
+pendiente.

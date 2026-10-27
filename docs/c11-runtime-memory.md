@@ -64,14 +64,14 @@ The [later quantum audit](re-audit-2026-10-24-coherence.md) found that selecting
 into another public register could dephase an inactive unknown destination. The direct fixed-store
 route now computes the active value into zero storage and exchanges it under the quantum controls.
 History is zero on inactive branches. Saved GCC expressions use a conditional old-owner view.
-Computed borrows whose inverses would read changed wires are retained as roots; their general scope
-cleanup remains an open quantum-correctness issue when the write can activate. A
+Computed borrows whose inverses would read changed wires were retained as roots in that revision. A
 [later finite correction](audit-evidence/inactive-borrows-v1/README.es.md) keeps inverse recipes
 when saved typed certificates prove the write globally inactive; those scoped temporaries clean with
 the expected phase kickback. Heap identity writes now have a bounded symbolic proof and
-[directed evidence](audit-evidence/heap-identities-v1/README.es.md); coherent nonidentity heap
-copies still have an open coherence finding. Passing the finite campaigns below does not close the
-remaining findings.
+[directed evidence](audit-evidence/heap-identities-v1/README.es.md). The later
+[RC2 correction](audit-evidence/heap-coherence-v1/README.es.md) closes the published nonidentity
+heap-copy counterexamples. Conditional inverse transport is described below. These finite
+corrections leave general lifetime, alias and ABI qualification open.
 
 The [delivery evidence](audit-evidence/runtime-memory-v1/README.es.md) records source identity and
 separates complete complex states/inverses, native observations, boundary rejections and preflight
@@ -92,6 +92,24 @@ from stable roots so their physical copies can clean while declared borrowers re
 control masks, acyclicity and proof budgets are checked before the exchange. Complete complex states
 are checked before/during/after cleanup, including negative signed values and phase kickback. This
 finite correction does not qualify general repeated frontend writes, derived destinations,
-correlated range proofs, 64-bit scope cleanup or nonidentity coherent heap copies. The latter still
-has a reproduced inactive-sector coherence failure. See the
-[candidate scope](releases/v1.0.0-rc.1.es.md).
+correlated range proofs or 64-bit scope cleanup. Nonidentity heap copies were still failing in RC1;
+the [RC2 evidence](audit-evidence/heap-coherence-v1/README.es.md) records their subsequent finite
+correction. See the [historical RC1 scope](releases/v1.0.0-rc.1.es.md).
+
+## Reference update on 27 October 2026
+
+The CI failure `unmodelled retained version` is reproduced with the old reference. A zero-length
+`memset` that reads its destination retains both its fill capture and a private domain guard. The
+reference already modeled the fill but omitted the guard. All calls in these finite C fixtures are
+within the defined domain, so the guard must be zero. The updated reference assigns that expected
+output explicitly; it does not read the engine's known-value certificates or permit arbitrary
+unmodeled registers.
+
+The [new evidence](audit-evidence/runtime-memory-reference-v1/README.es.md) identifies 240 source
+inputs, with only this Python validator changed since the checked-entry SDK. Production sources and
+normal/instrumented compiler binaries are unchanged. Normal O0/O2 and ASan/UBSan O1 pass 900
+complete complex-state checkpoints and 270 complete gate inverses. Three valid-unitary mutations of
+a public value, relative phase and private guard are rejected by the C reference even though their
+gate evolution and inverses agree. This closes that reproduced reference failure, not the full
+integration gate or general C semantics. The SDK archive retains its original validator and hashes;
+the corrected validator belongs to the current checkout.
