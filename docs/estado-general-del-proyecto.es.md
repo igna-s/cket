@@ -29,6 +29,13 @@ mutaciones unitarias de datos, fase y guarda. No cambian el compilador ni sus bi
 conserva su referencia original. Se cierra ese fallo concreto; la integración completa sigue
 pendiente.
 
+**Continuación de integración:** las dos matrices siguientes, escrituras coherentes y buffers fijos
+en bucles, pasan en normal y ASan/UBSan: 540 puntos de estado y 210 inversas completas en la
+[nueva evidencia](audit-evidence/memory-integration-tail-v1/README.es.md). La
+[integración de `183169a`](https://github.com/igna-s/cket/actions/runs/40500449856) se inició el 27
+de octubre; al guardar este seguimiento, formato y contratos del formateador pasaron y la
+verificación general sigue en curso.
+
 **Préstamos de lectura compartidos:** se admite pasar el mismo dueño a varios parámetros `const`; se
 siguen rechazando solapamientos mutables. Se corrige además una escritura por cast que escapaba del
 ámbito de lectura. La [nota](c11-readonly-borrows.md) y la

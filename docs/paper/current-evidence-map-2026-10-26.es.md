@@ -1,7 +1,7 @@
 # Cómo leer los papers junto con la entrega actual
 
-26 de octubre de 2026. Esta nota relaciona las afirmaciones y las fuentes de evidencia; no es una
-recalificación completa de los manuscritos ni cambia sus PDF históricos.
+Actualizado el 27 de octubre de 2026. Esta nota relaciona las afirmaciones y las fuentes de
+evidencia; no es una recalificación completa de los manuscritos ni cambia sus PDF históricos.
 
 Los dos manuscritos generales estudian el prototipo fijado en
 `1ebb2e308e61bed5632798ded5beecf77b6b9a9c`. Sus cifras de 354 pruebas nativas, 426 comprobaciones de
@@ -11,7 +11,7 @@ Una cifra mayor no convierte una campaña anterior en evidencia del nuevo compil
 
 | Afirmación                                       | Evidencia disponible y límite                                                                                                                                                                                                                                                                                                                                                                 |
 | ------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Se puede usar el compilador actual.              | El [SDK](../../output/sdk/README.es.md) ejecuta 37 programas; su suite registra 1509 comprobaciones normales. Los lanzadores Windows ejecutan el paquete y compilan dos archivos C independientes. Esto prueba esos programas y flujos, no todo C.                                                                                                                                            |
+| Se puede usar el compilador actual.              | El [SDK de entradas comprobadas](../../output/sdk/checked-entry/README.es.md), con 240 entradas, ejecuta 37 programas; su suite registra 1509 comprobaciones normales. Los lanzadores Windows ejecutan el paquete y compilan dos archivos C independientes. Esto prueba esos programas y flujos, no todo C.                                                                                   |
 | Las copias respetan la no clonación.             | Los [contratos de propiedad](../no-clonacion.es.md) distinguen movimiento, préstamo y correlación en la base computacional. Las cápsulas de heap, buffers y cadenas contrastan densidades, estados conjuntos e inversas de perfiles finitos. No prueban todos los alias y vidas.                                                                                                              |
 | Se conserva el historial necesario.              | La [referencia de retornos](../audit-evidence/memory-return-reference-v1/README.es.md) rechaza una historia redundante que copia un byte intacto. No exige identificadores separados para el dueño anterior y el actual. Los casos de palabras comprueban la inversa completa de puertas, no una inversa guardada del patch emitida por el compilador.                                        |
 | La limpieza de temporales funciona.              | La [campaña C](../audit-evidence/c-priority-integration-v1/README.es.md) completa 2332 comprobaciones de historial normales e instrumentadas. Las pruebas identifican qué inversas y estados verifican. Esto no demuestra limpieza para cualquier flujo C ni que todo historial desconocido pueda liberarse.                                                                                  |
@@ -20,10 +20,28 @@ Una cifra mayor no convierte una campaña anterior en evidencia del nuevo compil
 | El sistema ejecuta operaciones cuánticas reales. | El compilador genera puertas y canales cuánticos y el simulador C evoluciona amplitudes complejas. No se ha demostrado ejecución en una QPU física. El número de cables de un circuito o de qubits de un simulador no es una cantidad de qubits de hardware utilizados.                                                                                                                       |
 | Los recursos indican el costo de hardware.       | Los conteos son lógicos: una MCX se cuenta antes de su descomposición física. No incorporan conectividad, ruido ni corrección de errores. En el prototipo histórico, «qubits físicos» de la tabla de simulación designa cables asignados del modelo ideal, no un procesador físico. No hay demostración de aceleración frente a CPU.                                                          |
 
-La pasada más reciente tiene 17 validadores C normales aprobados y diez completos con ASan/UBSan. La
-pasada instrumentada de capturas de bytes se interrumpió por tiempo; los seis validadores que venían
-después no se ejecutaron. Las 70 comprobaciones QuEST de esa campaña son normales. No debe
-presentarse como una ejecución completa de `scripts/verify.sh`.
+La campaña de 237 entradas tiene 17 validadores C normales aprobados y diez completos con
+ASan/UBSan. La
+[continuación de perfiles y locale](../audit-evidence/c-locale-sanitized-v1/README.es.md) añade dos
+instrumentados; quedan cinco de aquella campaña. Las 70 comprobaciones QuEST de esas fuentes son
+normales. Estos resultados no recalifican automáticamente los cambios posteriores.
+
+Las campañas nuevas de [préstamos de lectura](../audit-evidence/readonly-borrows-v1/README.es.md),
+con 239 entradas, y [entradas de funciones](../audit-evidence/function-entries-v1/README.es.md), con
+240, identifican sus fuentes y regresiones normales e instrumentadas. Se distinguen las llamadas
+cuánticas comprobadas de una ABI clásica que podía terminar sin ejecutar la operación.
+
+La [referencia de memoria corregida](../audit-evidence/runtime-memory-reference-v1/README.es.md)
+cierra el fallo reproducido `unmodelled retained version`, con 900 puntos de estado complejo y 270
+inversas completas. Solo cambia un validador Python; el SDK conserva sus fuentes y hashes
+originales. La [continuación de memoria](../audit-evidence/memory-integration-tail-v1/README.es.md)
+añade 540 puntos y 210 inversas de escrituras coherentes y bucles fijos, con los mismos productores.
+Los alcances se solapan con campañas anteriores y no se suman como cobertura independiente.
+
+La [integración de `183169a`](https://github.com/igna-s/cket/actions/runs/40500449856) se inició el
+27 de octubre. Al guardar este seguimiento, formato y contratos del formateador pasaron; la
+verificación general sigue en curso. No se presenta como una ejecución completa aprobada de
+`scripts/verify.sh`.
 
 Siguen pendientes el cierre del perfil cotidiano, vidas/alias/ABI generales, flotantes cuánticos,
 perfiles excluidos por recursos, integración completa y revisión científica general de los papers.

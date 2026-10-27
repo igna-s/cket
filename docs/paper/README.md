@@ -1,4 +1,4 @@
-**Seguimiento actual, 26 de octubre de 2026:** la candidata sigue siendo RC3, con bloques
+**Seguimiento actual, 27 de octubre de 2026:** la candidata sigue siendo RC3, con bloques
 posteriores publicados. Las correcciones se describen en notas separadas de los manuscritos
 históricos:
 
@@ -18,8 +18,12 @@ copia de estado y califica fases, auxiliares e inversas en programas finitos.
 La [nota de entradas comprobadas](../c11-function-entries.md) corrige casos que alcanzaban un stub
 clásico vacío de una función cuántica. Su
 [campaña de 240 entradas](../audit-evidence/function-entries-v1/README.es.md) distingue los rechazos
-de ABI de una implementación cuántica. La integración general conserva un fallo abierto en la
-referencia de memoria runtime; el SDK nuevo no se presenta como una 1.0 estable.
+de ABI de una implementación cuántica. La
+[referencia de memoria runtime](../audit-evidence/runtime-memory-reference-v1/README.es.md) corrige
+después la guarda privada omitida que detuvo el CI anterior; no cambia el compilador. La
+[continuación](../audit-evidence/memory-integration-tail-v1/README.es.md) comprueba las dos matrices
+de memoria posteriores a ese gate. La integración general sigue pendiente; el SDK nuevo no se
+presenta como una 1.0 estable.
 
 Estas campañas califican perfiles finitos de densidad, fases e inversas. La revisión general de
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
