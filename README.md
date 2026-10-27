@@ -12,13 +12,18 @@ temporary workspace. Classical C code still runs on the CPU; quantum operations 
 statevector simulator, with dense and opt-in sparse execution modes.
 
 **Ready-to-run compiler package:** the
-[updated Windows/WSL SDK](output/sdk/readonly-borrows/README.es.md) includes the corrected compiler
-and 37 rebuilt programs. Run `output\sdk\readonly-borrows\run_sdk_demo.cmd`, or compile a C file
-with `output\sdk\readonly-borrows\compile_and_run.cmd program.c`. The
+[updated Windows/WSL SDK](output/sdk/checked-entry/README.es.md) includes the corrected compiler and
+37 rebuilt programs. Run `output\sdk\checked-entry\run_sdk_demo.cmd`, or compile a C file with
+`output\sdk\checked-entry\compile_and_run.cmd program.c`. The
 [read-only borrow correction](docs/c11-readonly-borrows.md) allows shared read-only aliases and
 rejects writes through casts. Its example checks phase interference. The
 [delivery guide](docs/entrega-utilizable-2026-10-26.es.md) lists working examples and open limits.
 This remains an experimental candidate with incomplete everyday-C integration.
+
+The [checked function-entry correction](docs/c11-function-entries.md) rejects classical prototypes
+and pointers that could reach an empty quantum template stub. A remaining native entry reports an
+explicit error when called through a foreign/dynamic ABI. Ordinary CPU callbacks keep their
+classical behavior. The general integration gate remains open.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC

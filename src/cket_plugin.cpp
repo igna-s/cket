@@ -602,6 +602,8 @@ int plugin_init(plugin_name_args *info, plugin_gcc_version *version) {
         }
     }
     register_callback(info->base_name, PLUGIN_ATTRIBUTES, register_attributes, nullptr);
+    register_callback(
+        info->base_name, PLUGIN_FINISH_DECL, record_global_function_references, nullptr);
     register_callback(info->base_name, PLUGIN_PRE_GENERICIZE, finish_function, nullptr);
     register_callback(info->base_name, PLUGIN_GGC_MARKING, mark_quantum_trees, nullptr);
     register_callback(info->base_name, PLUGIN_FINISH, finish, nullptr);

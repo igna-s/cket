@@ -15,6 +15,12 @@ de composición y una escritura mediante cast. El SDK nuevo incluye ese plugin; 
 entradas mantienen su alcance anterior. La nota distingue las referencias al mismo dueño de una
 copia de estado y califica fases, auxiliares e inversas en programas finitos.
 
+La [nota de entradas comprobadas](../c11-function-entries.md) corrige casos que alcanzaban un stub
+clásico vacío de una función cuántica. Su
+[campaña de 240 entradas](../audit-evidence/function-entries-v1/README.es.md) distingue los rechazos
+de ABI de una implementación cuántica. La integración general conserva un fallo abierto en la
+referencia de memoria runtime; el SDK nuevo no se presenta como una 1.0 estable.
+
 Estas campañas califican perfiles finitos de densidad, fases e inversas. La revisión general de
 papers y la validación integrada siguen pendientes. Los PDF y resultados históricos conservan sus
 fuentes originales; no se los recalifica automáticamente para el compilador actual.

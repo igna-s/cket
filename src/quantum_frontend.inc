@@ -12,6 +12,42 @@ bool standard_memory_set(tree fn);
 bool standard_memory_copy(tree fn, bool &move);
 std::string standard_ctype(tree call);
 std::map<tree, std::map<std::string, tree>> quantum_products;
+// An ordinary prototype can precede a later quant definition. Retain the
+// classical uses by assembler symbol so that redeclarations cannot hide them.
+std::map<std::string, location_t> classical_function_references;
+
+std::string function_symbol(tree fn) {
+    return IDENTIFIER_POINTER(DECL_ASSEMBLER_NAME(fn));
+}
+
+void record_classical_function_reference(tree fn, location_t location, bool address) {
+    if (!fn || TREE_CODE(fn) != FUNCTION_DECL || !DECL_NAME(fn) ||
+        lookup_attribute("cket_intrinsic", DECL_ATTRIBUTES(fn)))
+        return;
+    if (quantum_function(fn)) {
+        if (address)
+            error_at(location,
+                     "|c>: quantum function pointers need a checked quantum calling convention");
+        return;
+    }
+    classical_function_references.emplace(function_symbol(fn), location);
+}
+
+void record_global_function_references(void *event, void *) {
+    tree decl = static_cast<tree>(event);
+    if (TREE_CODE(decl) != VAR_DECL || !DECL_INITIAL(decl) ||
+        (DECL_CONTEXT(decl) && TREE_CODE(DECL_CONTEXT(decl)) == FUNCTION_DECL))
+        return;
+    auto reference = [](tree *node, int *walk, void *) -> tree {
+        if (TREE_CODE(*node) == ADDR_EXPR && TREE_CODE(TREE_OPERAND(*node, 0)) == FUNCTION_DECL) {
+            record_classical_function_reference(TREE_OPERAND(*node, 0), at(*node), true);
+            *walk = 0;
+        } else if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree_without_duplicates(&DECL_INITIAL(decl), reference, nullptr);
+}
 
 struct QuantumReference {
     std::vector<tree> elements;
@@ -290,6 +326,18 @@ tree *terminal_return_slot(tree *body) {
 }
 
 void capture_quantum_function(tree fn) {
+    auto prior = classical_function_references.find(function_symbol(fn));
+    if (prior != classical_function_references.end()) {
+        error_at(
+            prior->second,
+            "|c>: quantum function was used through a classical declaration before its definition");
+        inform(at(fn), "|c>: quantum definition requires checked calls with quantum arguments");
+    }
+    if (lookup_attribute("constructor", DECL_ATTRIBUTES(fn)) ||
+        lookup_attribute("destructor", DECL_ATTRIBUTES(fn))) {
+        error_at(at(fn), "|c>: quantum templates cannot be classical constructors or destructors");
+        return;
+    }
     if (name_of(fn) == "main") {
         error_at(
             at(fn),
@@ -336,12 +384,20 @@ void capture_quantum_function(tree fn) {
         }
     }
     quantum_functions[name_of(fn)] = {fn, body, quantum_result, owned_result};
-    // No CPU entry point may execute the template with classical integer bits.
-    // All direct calls are expanded; addresses and indirect calls are rejected.
+    // Checked direct calls expand the saved template. Any remaining CPU entry
+    // (including a foreign/dynamic lookup) must fail rather than return a fake
+    // classical result without executing the quantum operations.
+    tree reject = build_fn_decl(
+        "__cket_reject_quantum_entry",
+        build_function_type(void_type_node, tree_cons(NULL_TREE, void_type_node, NULL_TREE)));
+    TREE_PUBLIC(reject) = DECL_EXTERNAL(reject) = DECL_ARTIFICIAL(reject) = 1;
     tree operand = result == void_type_node
                        ? NULL_TREE
                        : build2(MODIFY_EXPR, result, DECL_RESULT(fn), build_zero_cst(result));
-    DECL_SAVED_TREE(fn) = build1(RETURN_EXPR, void_type_node, operand);
+    tree entry = alloc_stmt_list();
+    append(&entry, build_call_expr_loc(at(fn), reject, 0));
+    append(&entry, build1(RETURN_EXPR, void_type_node, operand));
+    DECL_SAVED_TREE(fn) = entry;
 }
 
 tree modified_value_parameter(tree *node, int *walk, void *data) {
@@ -1864,6 +1920,8 @@ tree expand_quantum_program(tree value) {
         bool standard_abs = standard_integer_absolute(fn);
         if (standard_abs && call_expr_nargs(value) == 1 && has_quantum(CALL_EXPR_ARG(value, 0)))
             return build1_loc(at(value), ABS_EXPR, TREE_TYPE(value), CALL_EXPR_ARG(value, 0));
+        if (effect.empty())
+            record_classical_function_reference(fn, at(value), false);
         return value;
     }
     if (code == INDIRECT_REF) {
@@ -1929,9 +1987,8 @@ tree expand_quantum_program(tree value) {
             return found->second;
         }
     }
-    if (code == ADDR_EXPR && quantum_function(TREE_OPERAND(value, 0))) {
-        error_at(at(value),
-                 "|c>: quantum function pointers need a checked quantum calling convention");
+    if (code == ADDR_EXPR && TREE_CODE(TREE_OPERAND(value, 0)) == FUNCTION_DECL) {
+        record_classical_function_reference(TREE_OPERAND(value, 0), at(value), true);
         return value;
     }
     if (code == VAR_DECL && quantum_products.count(value))

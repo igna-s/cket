@@ -1,23 +1,23 @@
 # Entrega utilizable de C Ket
 
-26 de octubre de 2026. Compilador experimental **1.0.0-rc.3**, con las correcciones publicadas. La
-1.0 estable y el núcleo cotidiano completo continúan pendientes.
+Actualizado el 27 de octubre de 2026. Compilador experimental **1.0.0-rc.3**, con las correcciones
+publicadas. La 1.0 estable y el núcleo cotidiano completo continúan pendientes.
 
 ## Usarlo ahora
 
 Desde la raíz del repositorio en Windows:
 
 ```cmd
-output\sdk\readonly-borrows\run_sdk_demo.cmd
-output\sdk\readonly-borrows\run_readonly_demo.cmd
-output\sdk\readonly-borrows\compile_and_run.cmd output\sdk\example_heap.c
+output\sdk\checked-entry\run_sdk_demo.cmd
+output\sdk\checked-entry\run_checked_demo.cmd
+output\sdk\checked-entry\compile_and_run.cmd output\sdk\checked-entry\example_heap.c
 ```
 
 El primer comando ejecuta 37 programas reconstruidos. El segundo compila un ejemplo con alias de
 lectura y comprueba interferencia: `scalar=1 vector=0,1`. El tercero compila un programa de heap.
 Podés editar una copia y pasar su ruta al mismo lanzador. La
-[guía del SDK actualizado](../output/sdk/readonly-borrows/README.es.md) explica los requisitos y la
-CLI en Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
+[guía del SDK actualizado](../output/sdk/checked-entry/README.es.md) explica los requisitos y la CLI
+en Linux. Usa WSL `Ubuntu2204` sin montar unidades Windows. El SDK anterior se conserva en el
 directorio padre con su propia identidad.
 
 ## Qué podés escribir dentro del perfil actual
@@ -39,10 +39,15 @@ conserva la información necesaria como historia o la limpia mediante una invers
 
 ## Qué se comprobó en esta entrega
 
-El SDK actualizado conserva las 239 entradas exactas del compilador y pruebas, ejecutables, headers
+El SDK actualizado conserva las 240 entradas exactas del compilador y pruebas, ejecutables, headers
 y fuentes. Los seis runners reconstruyen los 37 programas y sus exportaciones estáticas admitidas.
 La suite de ejemplos pasa 1509 comprobaciones normales en cinco niveles de GCC. Los lanzadores
 Windows ejecutan el paquete y compilan el ejemplo nuevo de alias e interferencia.
+
+La [corrección de entradas de función](c11-function-entries.md) añade 90 contratos normales e
+instrumentados para llamadas, prototipos y punteros. Evita que una llamada clásica no comprobada
+termine en un stub vacío. El CI anterior mantiene abierto un fallo de la referencia de memoria
+runtime (`unmodelled retained version`); no es una ejecución general aprobada.
 
 La [corrección de préstamos](c11-readonly-borrows.md) permite alias de lectura y rechaza escrituras
 mediante casts. Su [cápsula](audit-evidence/readonly-borrows-v1/README.es.md) registra 305

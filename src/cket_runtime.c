@@ -12,6 +12,11 @@
 static qc_context *engine;
 static void shutdown_heap(void);
 
+_Noreturn void __cket_reject_quantum_entry(void) {
+    fputs("|c> runtime: quantum function cannot use the classical calling convention\n", stderr);
+    exit(EXIT_FAILURE);
+}
+
 static void shutdown_engine(void) {
     shutdown_heap();
     qc_destroy(engine);

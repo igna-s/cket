@@ -23,6 +23,7 @@ build/validate_byte_snapshots 2>&1 | tee build/verify-byte-snapshots.log
 build/validate_division 2>&1 | tee build/verify-division.log
 build/validate_bindings 2>&1 | tee build/verify-bindings.log
 build/validate_readonly_borrows 2>&1 | tee build/verify-readonly-borrows.log
+build/validate_function_entries 2>&1 | tee build/verify-function-entries.log
 build/validate_history 2>&1 | tee build/verify-history.log
 build/validate_heap 2>&1 | tee build/verify-heap.log
 build/validate_heap_identities 2>&1 | tee build/verify-heap-identities.log

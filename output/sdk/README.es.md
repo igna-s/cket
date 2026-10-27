@@ -1,6 +1,6 @@
-**Paquete actualizado:** usá el [SDK con préstamos de lectura](readonly-borrows/README.es.md).
-Incluye el plugin corregido, 37 programas reconstruidos y el ejemplo nuevo de interferencia. Este
-directorio conserva el paquete anterior de 237 entradas con sus hashes y límites originales.
+**Paquete actualizado:** usá el [SDK con entradas comprobadas](checked-entry/README.es.md). Incluye
+el plugin corregido, 37 programas reconstruidos y el ejemplo nuevo de interferencia. Este directorio
+conserva el paquete anterior de 237 entradas con sus hashes y límites originales.
 
 # C Ket listo para ejecutar y compilar
 

@@ -1,6 +1,6 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 26 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 27 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
 informes de cada campaña conservan sus resultados y fuentes originales.
 
@@ -9,11 +9,18 @@ informes de cada campaña conservan sus resultados y fuentes originales.
 [demo de buffer fijo](../output/demo/README-fixed.es.md) está lista para Windows/WSL. La
 ciberseguridad permanece clásica y sin cambios.
 
-**Compilador actualizado listo para usar:** el
-[SDK nuevo](../output/sdk/readonly-borrows/README.es.md) incluye el plugin corregido y 37 programas
-reconstruidos. Ejecutá `output\sdk\readonly-borrows\run_readonly_demo.cmd` para compilar el ejemplo
-de fase e interferencia con alias de lectura. La
-[guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y pendientes.
+**Compilador actualizado listo para usar:** el [SDK nuevo](../output/sdk/checked-entry/README.es.md)
+incluye el plugin corregido y 37 programas reconstruidos. Ejecutá
+`output\sdk\checked-entry\run_checked_demo.cmd` para compilar el ejemplo de fase e interferencia con
+alias de lectura. La [guía de entrega](entrega-utilizable-2026-10-26.es.md) resume comandos y
+pendientes.
+
+**Entradas de funciones comprobadas:** se rechazan prototipos clásicos y punteros que podían
+alcanzar un stub vacío de una función `quant`. La entrada nativa restante devuelve un error
+explícito en lugar de simular éxito. La [nota](c11-function-entries.md) y su
+[evidencia de 240 entradas](audit-evidence/function-entries-v1/README.es.md) registran 90 contratos
+normales e instrumentados, regresiones y el SDK reconstruido. El CI de la revisión anterior se
+detuvo con `unmodelled retained version` en memoria runtime; ese gate sigue abierto.
 
 **Préstamos de lectura compartidos:** se admite pasar el mismo dueño a varios parámetros `const`; se
 siguen rechazando solapamientos mutables. Se corrige además una escritura por cast que escapaba del
