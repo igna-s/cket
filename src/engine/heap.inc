@@ -852,6 +852,11 @@ static int register_patch(qc_context *c, const cj_doc *d, int inst) {
         free(value);
         if (!ok)
             return 0;
+        // The placeholder expression validates inputs, not the runtime
+        // history value. A real patch can exchange old bits into this slot
+        // or leave an inverse on an identity path. Neither recipe is known
+        // here; retaining the placeholder would borrow the owner's old epoch.
+        clear_definition(reg(c, (uint32_t)history));
         r = reg(c, (uint32_t)owner);
         clear_definition(r);
         unknown_support(r);

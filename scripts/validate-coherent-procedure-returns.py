@@ -48,6 +48,10 @@ PROFILES = (
     'if(!x[0])phase(.11);',
     'for(unsigned i=0;i<4;++i){inner(x,i);{if(i==n)continue;if(i==2)break;}'
     'if(x[0])phase(.13);}if(!x[0])phase(.17);',
+    'for(unsigned i=0;i<4;++i){switch(i==n?0:i==2?1:2){case 0:continue;case 1:return;'
+    'default:break;}x[0]^=true;if(x[0])phase(.07*(i+1));}if(x[0])phase(.13);',
+    'if(n==1)return;switch(x[0]){case false:phase(.09*(n+1));break;'
+    'default:phase(.11*(n+1));break;}if(n==2)return;if(!x[0])phase(.17);',
 )
 
 
@@ -58,7 +62,7 @@ def source(profile):
         'static void inner(quant const bool*x,unsigned n){if(!n)return;if(x[0])phase(.17);}\n'
         'static void rotate(quant const bool*x,double theta){if(!theta)return;if(x[0])phase(theta);}\n'
         'static void update(quant '
-        + ('' if profile in (0, 5, 7, 9, 10, 11, 14, 15, 16) else 'const ')
+        + ('' if profile in (0, 5, 7, 9, 10, 11, 14, 15, 16, 19) else 'const ')
         + 'bool*x,unsigned n){'
         + PROFILES[profile]
         + '}\n'
@@ -158,15 +162,29 @@ def effect(profile, n, value):
                     continue
                 angle += 0.03 * (i * 3 + j + 1) * value
         return value, angle
-    angle = 0.17 * (not value)
-    for i in range(4):
-        angle += 0.17 * (i != 0) * value
-        if i == n:
-            continue
-        if i == 2:
-            break
-        angle += 0.13 * value
-    return value, angle
+    if profile == 18:
+        angle = 0.17 * (not value)
+        for i in range(4):
+            angle += 0.17 * (i != 0) * value
+            if i == n:
+                continue
+            if i == 2:
+                break
+            angle += 0.13 * value
+        return value, angle
+    if profile == 19:
+        current, angle = value, 0
+        for i in range(4):
+            if i == n:
+                continue
+            if i == 2:
+                return current, angle
+            current ^= 1
+            angle += 0.07 * (i + 1) * current
+        return current, angle + 0.13 * current
+    if not value:
+        return value, 0 if n == 1 else (0.09 * (n + 1) + (0 if n == 2 else 0.17))
+    return value, 0 if n == 1 else 0.11 * (n + 1)
 
 
 def check(points, profile, n):
@@ -289,10 +307,41 @@ def boundaries():
         (
             'switch-continue',
             'void update(quant bool x,int n){for(unsigned i=0;i<4;++i){'
-            'switch(n){case 0:continue;default:break;}x^=true;}}',
+            'switch(n){case 0:x^=true;default:continue;}x^=true;}}',
             'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
             'measure(x);measure(c);return 0;',
             'loop continue through switch needs CFG lifetime analysis',
+        ),
+        (
+            'fallthrough-switch',
+            'void update(quant bool x,int n){switch(n){case 0:x^=true;default:x^=true;break;}}',
+            'quant bool c=superposition(0,1),x=false;if(c)update(x,argc);'
+            'measure(x);measure(c);return 0;',
+            'switch with quantum effects requires structured cases ending in break, return or continue without fallthrough',
+        ),
+        (
+            'coherent-quantum-switch-and-guard-values',
+            'quant uint8_t guard_pick(quant uint8_t a,quant uint8_t b,quant uint8_t m){'
+            'if(m==0)return a+1;if(m==1)return b^3;return a^b;}'
+            'quant uint8_t switch_pick(quant uint8_t a,quant uint8_t b,quant uint8_t m){'
+            'switch(m){case 0:return a+2;case 1 ... 2:return b^5;}return a+b;}',
+            'quant uint8_t a=3,b=6,m0=0,m1=2,m2=3;'
+            'quant uint8_t g0=guard_pick(a,b,m0),g1=guard_pick(a,b,m2);'
+            'quant uint8_t s0=switch_pick(a,b,m0),s1=switch_pick(a,b,m1),s2=switch_pick(a,b,m2);'
+            'quant uint8_t x=0;switch(m1){case 0:x^=1;break;case 2:x^=9;break;default:x^=3;break;}'
+            'unsigned rg0=measure(g0),rg1=measure(g1),rs0=measure(s0),rs1=measure(s1),rs2=measure(s2),rx=measure(x);'
+            'measure(a);measure(b);measure(m0);measure(m1);measure(m2);'
+            'return rg0!=4||rg1!=5||rs0!=5||rs1!=3||rs2!=9||rx!=9;',
+            None,
+        ),
+        (
+            'inactive-runtime-memory',
+            '#include <string.h>\nvoid update(quant uint8_t*a,size_t n){'
+            'for(unsigned i=0;i<2;++i){if(i==1)break;memcpy((void*)(a+2),(const void*)a,n);}}',
+            'size_t n=99;quant bool c=false;quant uint8_t a[4]={3,5,7,11};'
+            'if(c)update(a,n);unsigned r0=measure(a[0]),r1=measure(a[1]),r2=measure(a[2]),r3=measure(a[3]),rc=measure(c);'
+            'return r0!=3||r1!=5||r2!=7||r3!=11||rc!=0;',
+            None,
         ),
         (
             'inactive-do-jump',

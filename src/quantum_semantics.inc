@@ -3948,6 +3948,12 @@ tree lower_node(tree value) {
             "|c>: goto with quantum storage requires control-flow lifetime analysis and is not supported yet");
         return value;
     }
+    if (code == SWITCH_STMT && (has_quantum(value) || !controls.empty())) {
+        error_at(
+            at(value),
+            "|c>: switch with quantum effects requires structured cases ending in break, return or continue without fallthrough");
+        return value;
+    }
     if (has_quantum(value)) {
         error_at(
             at(value),

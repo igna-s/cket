@@ -206,6 +206,321 @@ tree clone_quantum_tree(tree value, std::map<tree, tree> &bindings) {
     return result;
 }
 
+bool empty_switch_stmt(tree value) {
+    return !value || (TREE_CODE(value) == NOP_EXPR && TREE_TYPE(value) == void_type_node);
+}
+
+void collect_switch_body_statements(tree body, std::vector<tree> &stmts) {
+    if (!body)
+        return;
+    if (TREE_CODE(body) == STATEMENT_LIST) {
+        for (auto it = tsi_start(body); !tsi_end_p(it); tsi_next(&it))
+            collect_switch_body_statements(tsi_stmt(it), stmts);
+        return;
+    }
+    stmts.push_back(body);
+}
+
+void count_switch_hazards(tree value, unsigned &breaks, unsigned &cases) {
+    if (!value)
+        return;
+
+    struct Counters {
+        unsigned *breaks;
+        unsigned *cases;
+    } counters{&breaks, &cases};
+
+    auto inspect = [](tree *node, int *walk, void *data) -> tree {
+        auto &c = *static_cast<Counters *>(data);
+        auto code = TREE_CODE(*node);
+        if (code == BREAK_STMT)
+            ++*c.breaks;
+        else if (code == CASE_LABEL_EXPR)
+            ++*c.cases;
+        if (DECL_P(*node) || TYPE_P(*node) || code == WHILE_STMT || code == DO_STMT ||
+            code == FOR_STMT || code == LOOP_EXPR || code == SWITCH_STMT)
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree(&value, inspect, &counters, nullptr);
+}
+
+bool can_terminate_switch_branch(tree node, bool allow_implicit_end, unsigned &stripped_breaks) {
+    if (empty_switch_stmt(node))
+        return allow_implicit_end;
+    auto code = TREE_CODE(node);
+    if (code == BREAK_STMT) {
+        ++stripped_breaks;
+        return true;
+    }
+    if (code == RETURN_EXPR || code == CONTINUE_STMT)
+        return true;
+    if (code == BIND_EXPR)
+        return can_terminate_switch_branch(
+            BIND_EXPR_BODY(node), allow_implicit_end, stripped_breaks);
+    if (code == STATEMENT_LIST) {
+        tree last = NULL_TREE;
+        for (auto it = tsi_start(node); !tsi_end_p(it); tsi_next(&it))
+            if (!empty_switch_stmt(tsi_stmt(it)))
+                last = tsi_stmt(it);
+        if (!last)
+            return allow_implicit_end;
+        return can_terminate_switch_branch(last, allow_implicit_end, stripped_breaks);
+    }
+    if (code == COND_EXPR && TREE_TYPE(node) == void_type_node) {
+        unsigned yes_breaks = 0, no_breaks = 0;
+        if (can_terminate_switch_branch(TREE_OPERAND(node, 1), false, yes_breaks) &&
+            can_terminate_switch_branch(TREE_OPERAND(node, 2), false, no_breaks)) {
+            stripped_breaks += yes_breaks + no_breaks;
+            return true;
+        }
+        return allow_implicit_end;
+    }
+    return allow_implicit_end;
+}
+
+bool terminate_switch_branch(tree &node, bool allow_implicit_end) {
+    if (empty_switch_stmt(node))
+        return allow_implicit_end;
+    auto code = TREE_CODE(node);
+    if (code == BREAK_STMT) {
+        node = build_empty_stmt(at(node));
+        return true;
+    }
+    if (code == RETURN_EXPR || code == CONTINUE_STMT)
+        return true;
+    if (code == BIND_EXPR)
+        return terminate_switch_branch(BIND_EXPR_BODY(node), allow_implicit_end);
+    if (code == STATEMENT_LIST) {
+        tree *last = nullptr;
+        for (auto it = tsi_start(node); !tsi_end_p(it); tsi_next(&it))
+            if (!empty_switch_stmt(tsi_stmt(it)))
+                last = tsi_stmt_ptr(it);
+        if (!last)
+            return allow_implicit_end;
+        return terminate_switch_branch(*last, allow_implicit_end);
+    }
+    if (code == COND_EXPR && TREE_TYPE(node) == void_type_node) {
+        tree yes = TREE_OPERAND(node, 1), no = TREE_OPERAND(node, 2);
+        unsigned yes_breaks = 0, no_breaks = 0;
+        if (can_terminate_switch_branch(yes, false, yes_breaks) &&
+            can_terminate_switch_branch(no, false, no_breaks)) {
+            terminate_switch_branch(yes, false);
+            terminate_switch_branch(no, false);
+            TREE_OPERAND(node, 1) = yes;
+            TREE_OPERAND(node, 2) = no;
+            return true;
+        }
+        return allow_implicit_end;
+    }
+    return allow_implicit_end;
+}
+
+tree expand_structured_switches(tree value);
+
+tree expand_structured_switch(tree value) {
+    if (!value || TREE_CODE(value) != SWITCH_STMT)
+        return value;
+    SWITCH_STMT_BODY(value) = expand_structured_switches(SWITCH_STMT_BODY(value));
+    tree cond = SWITCH_STMT_COND(value);
+    if (!cond || !INTEGRAL_TYPE_P(TREE_TYPE(cond)))
+        return value;
+    if (has_quantum(cond) && !quantum_pure_expression(cond))
+        return value;
+    tree body = SWITCH_STMT_BODY(value);
+    while (body && TREE_CODE(body) == BIND_EXPR) {
+        if (BIND_EXPR_VARS(body))
+            return value;
+        body = BIND_EXPR_BODY(body);
+    }
+    std::vector<tree> flat;
+    collect_switch_body_statements(body, flat);
+
+    struct CaseGroup {
+        std::vector<tree> labels;
+        std::vector<tree> stmts;
+        bool is_default = false;
+    };
+
+    std::vector<CaseGroup> groups;
+    bool seen_default = false;
+    for (tree stmt : flat) {
+        if (TREE_CODE(stmt) == CASE_LABEL_EXPR) {
+            if ((CASE_LOW(stmt) && TREE_CODE(CASE_LOW(stmt)) != INTEGER_CST) ||
+                (CASE_HIGH(stmt) && TREE_CODE(CASE_HIGH(stmt)) != INTEGER_CST))
+                return value;
+            if (groups.empty() || !groups.back().stmts.empty())
+                groups.emplace_back();
+            if (!CASE_LOW(stmt)) {
+                if (seen_default)
+                    return value;
+                seen_default = true;
+                groups.back().is_default = true;
+            }
+            groups.back().labels.push_back(stmt);
+        } else {
+            if (groups.empty()) {
+                if (empty_switch_stmt(stmt))
+                    continue;
+                return value;
+            }
+            groups.back().stmts.push_back(stmt);
+        }
+    }
+    if (groups.empty())
+        return build_empty_stmt(at(value));
+    std::vector<tree> group_bodies(groups.size(), NULL_TREE);
+    for (size_t i = 0; i < groups.size(); ++i) {
+        tree list = alloc_stmt_list();
+        unsigned breaks = 0, cases = 0, stripped = 0;
+        for (tree stmt : groups[i].stmts) {
+            count_switch_hazards(stmt, breaks, cases);
+            append(&list, stmt);
+        }
+        bool allow_implicit = (i + 1 == groups.size());
+        if (cases != 0 || !can_terminate_switch_branch(list, allow_implicit, stripped) ||
+            stripped != breaks)
+            return value;
+        group_bodies[i] = list;
+    }
+    for (size_t i = 0; i < groups.size(); ++i)
+        terminate_switch_branch(group_bodies[i], i + 1 == groups.size());
+    bool save_cond = TREE_SIDE_EFFECTS(cond) && !has_quantum(cond);
+    tree saved = save_cond ? save_expr(cond) : NULL_TREE;
+    bool used_cond = false;
+    auto cond_instance = [cond, saved, &used_cond]() {
+        used_cond = true;
+        if (saved)
+            return saved;
+        std::map<tree, tree> bindings;
+        return clone_quantum_tree(cond, bindings);
+    };
+    tree result = build_empty_stmt(at(value));
+    for (size_t i = 0; i < groups.size(); ++i)
+        if (groups[i].is_default)
+            result = group_bodies[i];
+    for (size_t i = groups.size(); i > 0; --i) {
+        const auto &group = groups[i - 1];
+        if (group.is_default)
+            continue;
+        tree group_cond = NULL_TREE;
+        for (tree label : group.labels) {
+            tree low = fold_convert(TREE_TYPE(cond), CASE_LOW(label));
+            tree match = NULL_TREE;
+            if (CASE_HIGH(label)) {
+                tree high = fold_convert(TREE_TYPE(cond), CASE_HIGH(label));
+                tree ge =
+                    fold_build2_loc(at(label), GE_EXPR, boolean_type_node, cond_instance(), low);
+                tree le =
+                    fold_build2_loc(at(label), LE_EXPR, boolean_type_node, cond_instance(), high);
+                match = fold_build2_loc(at(label), TRUTH_ANDIF_EXPR, boolean_type_node, ge, le);
+            } else {
+                match =
+                    fold_build2_loc(at(label), EQ_EXPR, boolean_type_node, cond_instance(), low);
+            }
+            group_cond = group_cond
+                             ? fold_build2_loc(
+                                   at(label), TRUTH_ORIF_EXPR, boolean_type_node, group_cond, match)
+                             : match;
+        }
+        result = build3_loc(at(group.labels.front()),
+                            COND_EXPR,
+                            void_type_node,
+                            group_cond,
+                            group_bodies[i - 1],
+                            result);
+    }
+    if (saved && !used_cond) {
+        tree sequence = alloc_stmt_list();
+        append(&sequence, saved);
+        append(&sequence, result);
+        return sequence;
+    }
+    return result;
+}
+
+tree expand_structured_switches(tree value) {
+    if (!value || DECL_P(value) || TYPE_P(value) || CONSTANT_CLASS_P(value))
+        return value;
+    auto code = TREE_CODE(value);
+    if (code == BIND_EXPR) {
+        BIND_EXPR_BODY(value) = expand_structured_switches(BIND_EXPR_BODY(value));
+        return value;
+    }
+    if (code == STATEMENT_LIST) {
+        tree result = alloc_stmt_list();
+        for (auto it = tsi_start(value); !tsi_end_p(it); tsi_next(&it))
+            append(&result, expand_structured_switches(tsi_stmt(it)));
+        return result;
+    }
+    if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+        TREE_OPERAND(value, 1) = expand_structured_switches(TREE_OPERAND(value, 1));
+        TREE_OPERAND(value, 2) = expand_structured_switches(TREE_OPERAND(value, 2));
+        return value;
+    }
+    if (code == WHILE_STMT) {
+        WHILE_BODY(value) = expand_structured_switches(WHILE_BODY(value));
+        return value;
+    }
+    if (code == DO_STMT) {
+        DO_BODY(value) = expand_structured_switches(DO_BODY(value));
+        return value;
+    }
+    if (code == FOR_STMT) {
+        FOR_INIT_STMT(value) = expand_structured_switches(FOR_INIT_STMT(value));
+        FOR_BODY(value) = expand_structured_switches(FOR_BODY(value));
+        return value;
+    }
+    if (code == SWITCH_STMT)
+        return expand_structured_switch(value);
+    return value;
+}
+
+tree attach_guard_fallback(tree node, tree fallback, bool &attached) {
+    if (!node)
+        return node;
+    if (TREE_CODE(node) == BIND_EXPR && !BIND_EXPR_VARS(node))
+        return build3_loc(at(node),
+                          BIND_EXPR,
+                          void_type_node,
+                          NULL_TREE,
+                          attach_guard_fallback(BIND_EXPR_BODY(node), fallback, attached),
+                          NULL_TREE);
+    if (TREE_CODE(node) == STATEMENT_LIST) {
+        std::vector<tree> items;
+        for (auto it = tsi_start(node); !tsi_end_p(it); tsi_next(&it))
+            if (!empty_switch_stmt(tsi_stmt(it)))
+                items.push_back(tsi_stmt(it));
+        if (items.size() == 1)
+            return attach_guard_fallback(items.front(), fallback, attached);
+        return node;
+    }
+    if (TREE_CODE(node) == COND_EXPR && TREE_TYPE(node) == void_type_node) {
+        tree else_arm = TREE_OPERAND(node, 2);
+        if (empty_switch_stmt(else_arm)) {
+            attached = true;
+            return build3_loc(at(node),
+                              COND_EXPR,
+                              void_type_node,
+                              TREE_OPERAND(node, 0),
+                              TREE_OPERAND(node, 1),
+                              fallback);
+        }
+        bool inner = false;
+        tree updated = attach_guard_fallback(else_arm, fallback, inner);
+        if (inner) {
+            attached = true;
+            return build3_loc(at(node),
+                              COND_EXPR,
+                              void_type_node,
+                              TREE_OPERAND(node, 0),
+                              TREE_OPERAND(node, 1),
+                              updated);
+        }
+    }
+    return node;
+}
+
 tree returned_expression(tree body, bool &valid, unsigned &returns) {
     if (!body)
         return NULL_TREE;
@@ -215,6 +530,23 @@ tree returned_expression(tree body, bool &valid, unsigned &returns) {
         return returned_expression(BIND_EXPR_BODY(body), valid, returns);
     }
     if (TREE_CODE(body) == STATEMENT_LIST) {
+        if (valid) {
+            std::vector<tree> items;
+            for (auto it = tsi_start(body); !tsi_end_p(it); tsi_next(&it))
+                if (!empty_switch_stmt(tsi_stmt(it)))
+                    items.push_back(tsi_stmt(it));
+            if (items.size() > 1) {
+                tree combined = items.back();
+                bool folded = true;
+                for (size_t i = items.size(); folded && i > 1; --i) {
+                    bool attached = false;
+                    combined = attach_guard_fallback(items[i - 2], combined, attached);
+                    folded = attached;
+                }
+                if (folded)
+                    return returned_expression(combined, valid, returns);
+            }
+        }
         tree result = NULL_TREE;
         for (auto it = tsi_start(body); !tsi_end_p(it); tsi_next(&it)) {
             tree found = returned_expression(tsi_stmt(it), valid, returns);
@@ -346,7 +678,8 @@ void capture_quantum_function(tree fn) {
             "|c>: main must have a classical C return; declare quant storage inside it and measure explicitly");
         return;
     }
-    tree result = TREE_TYPE(TREE_TYPE(fn)), body = DECL_SAVED_TREE(fn);
+    tree result = TREE_TYPE(TREE_TYPE(fn)), body = expand_structured_switches(DECL_SAVED_TREE(fn));
+    DECL_SAVED_TREE(fn) = body;
     bool quantum_result =
         lookup_attribute("cket_quant", DECL_ATTRIBUTES(fn)) && result != void_type_node;
     if (result != void_type_node && !quantum_result) {
@@ -1817,6 +2150,7 @@ tree expand_static_for_block(tree block) {
         return NULL_TREE;
     // Unroll only when it enables currently unsupported product/control lives.
     bool useful = false, safe = true;
+    FOR_BODY(loop) = expand_structured_switches(FOR_BODY(loop));
     tree content = FOR_BODY(loop);
 
     struct Scan {
@@ -1951,6 +2285,14 @@ tree expand_quantum_program(tree value) {
         for (auto it = tsi_start(value); !tsi_end_p(it); tsi_next(&it))
             append(&result, expand_quantum_program(tsi_stmt(it)));
         return result;
+    }
+    if (code == SWITCH_STMT) {
+        tree expanded = expand_structured_switch(value);
+        if (expanded != value)
+            return expand_quantum_program(expanded);
+        SWITCH_STMT_COND(value) = expand_quantum_program(SWITCH_STMT_COND(value));
+        SWITCH_STMT_BODY(value) = expand_quantum_program(SWITCH_STMT_BODY(value));
+        return value;
     }
     if (code == DECL_EXPR) {
         tree decl = DECL_EXPR_DECL(value), type = TREE_TYPE(decl);

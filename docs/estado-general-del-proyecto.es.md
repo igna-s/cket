@@ -1,8 +1,23 @@
 # Qué está hecho y qué falta en Quantum / `|c>`
 
-**Estado actualizado el 27 de octubre de 2026.** Este documento resume el árbol principal y
+**Estado actualizado el 28 de octubre de 2026.** Este documento resume el árbol principal y
 distingue los cambios que todavía están en pruebas. Es una fotografía del estado actual; los
-informes de cada campaña conservan sus resultados y fuentes originales.
+informes de cada campaña conservan sus resultados y fuentes originales. Para consultar rápidamente
+dónde está cada subsistema, función e instrucción del IR cuántico sin recorrer todo el repositorio,
+véase el [índice maestro del código](indice-del-codigo.es.md).
+
+**Flujo C cotidiano (`switch` y retornos con guardas) y memoria con llamador coherente:** se
+implementa la expansión estructurada y reversible de sentencias `switch` (tanto clásicas CPU
+`switch (n)` como coherentes cuánticas `switch (q)`, con `case LOW:`, rangos `case LOW ... HIGH:`,
+etiquetas apiladas, `default:`, `break;`, `continue;` hacia el bucle exterior y `return;` /
+`return expr;`, rechazando explícitamente el *fallthrough* no estructurado con efectos cuánticos) y
+las funciones `quant` de valor con cláusulas de guarda y múltiples `return`. Además, se corrige la
+limpieza de definiciones previas en [`register_patch`](../src/engine/heap.inc) para parches
+parciales de registros revinculados (`55155` comprobaciones en `validate_patches`) y se califica la
+composición de `memcpy`, `memmove` (adelante/atrás), `memset` y parches parciales con bucles CPU,
+`break`, `continue` y `return;` bajo un llamador coherente `if (control)`: `9480` puntos de estado,
+`2400` inversas completas y `1896` comprobaciones de matriz densidad reducida del byte intacto en
+modo normal (`O0`/`O2`), y `4740`, `1200` y `948` con ASan/UBSan (`O1`).
 
 **Candidata actual: 1.0.0-rc.3. La 1.0 estable sigue pendiente.** La
 [guía de versión](releases/v1.0.0-rc.3.es.md) resume lo implementado y lo que falta. La

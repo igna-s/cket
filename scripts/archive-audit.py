@@ -44,13 +44,13 @@ def memory_loop_jump_results(content):
         except json.JSONDecodeError:
             continue
         if isinstance(value, dict) and value.get('scope', '').startswith(
-            'Finite runtime byte prefixes through CPU break/continue:'
+            'Finite runtime byte prefixes through CPU break/continue'
         ):
             rows.append(value)
     results = {}
     for sanitized, label, counts, levels in (
-        (False, 'normal', (4740, 1200, 948, 1), ['O0', 'O2']),
-        (True, 'ASan/UBSan', (2370, 600, 474, 1), ['O1']),
+        (False, 'normal', (9480, 2400, 1896, 1), ['O0', 'O2']),
+        (True, 'ASan/UBSan', (4740, 1200, 948, 1), ['O1']),
     ):
         matches = [row for row in rows if row.get('sanitized') is sanitized]
         if len(matches) != 1:

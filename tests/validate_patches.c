@@ -401,12 +401,30 @@ static void rejected_quantum_masks(void) {
     }
 }
 
+static void structural_patch_rebinds(void) {
+    qc_context *c = qc_create_sparse(7, 1024);
+    require(c != NULL, "structural patch context", c);
+    c->validation = c->structural = 1;
+    allocate(c, 0, 8, 0, -1);
+    allocate(c, 1, 8, 0, 0);
+    allocate(c, 2, 8, 0, 0);
+    allocate(c, 3, 8, 0, 0);
+    apply(
+        c,
+        "{\"op\":\"qpatch\",\"id\":1,\"history\":0,\"bit_mask\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":255},\"expr\":{\"op\":\"reg\",\"id\":2,\"bits\":8,\"signed\":false}}");
+    require(qc_lookup(c, 0)->definition == NULL, "retained history kept inverse definition", c);
+    apply(c, "{\"op\":\"qadd_inplace\",\"id\":2,\"value\":1}");
+    apply(c, "{\"op\":\"qswap\",\"id\":0,\"other\":3,\"rebind\":true}");
+    qc_destroy(c);
+}
+
 int main(void) {
     complete_states();
     rejected_masks();
     quantum_masks();
     derived_mask_inputs();
     rejected_quantum_masks();
+    structural_patch_rebinds();
     printf(
         "%u register patch checks passed; classical/quantum masks, history identity zero, phased root/producer states, cleanup and full gate inverses have finite scopes.\n",
         checks);

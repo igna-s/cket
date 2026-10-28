@@ -39,6 +39,10 @@ NATIVE = (
     'for(unsigned i=0;i<4;++i){if(i==n)continue;unsigned snapshot=++*visits;'
     'x[0]^=snapshot&1;}x[0]^=true;',
     'for(unsigned i=0;i<4;++i){if(i==n){break;}x[0]^=true;++*visits;}x[0]^=true;',
+    'switch(n){case 0:return;case 1:case 2:x[0]^=true;break;default:++*visits;break;}'
+    'x[0]^=true;++*visits;',
+    'for(unsigned i=0;i<4;++i){switch(i){case 1:continue;case 2:if(n==2)return;break;'
+    'default:break;}x[0]^=true;++*visits;}x[0]^=true;',
 )
 PHASE = (
     'quant bool scratch=!x[0];if(scratch)phase(.17);if(n==0)return;if(scratch)phase(.23);',
@@ -55,6 +59,8 @@ PHASE = (
     'for(unsigned i=0;i<3;++i){for(unsigned j=0;j<3;++j){'
     'if(j==n)break;if(i==n)continue;if(x[0])phase(.03*(i*3+j+1));}}'
     'if(!x[0])phase(.29);',
+    'for(unsigned i=0;i<4;++i){switch(i==n?0:i==3?1:2){case 0:continue;case 1:return;'
+    'default:break;}if(x[0])phase(.07*(i+1));}if(!x[0])phase(.19);',
 )
 
 
@@ -126,6 +132,15 @@ def phase_expected(profile, n, x):
             if profile == 7
             else 0.05 * weight * x + 0.23 * (not x)
         )
+    if profile == 10:
+        angle = 0
+        for i in range(4):
+            if i == n:
+                continue
+            if i == 3:
+                return angle
+            angle += 0.07 * (i + 1) * x
+        return angle + 0.19 * (not x)
     angle = 0.29 * (not x)
     for i in range(3):
         for j in range(3):
@@ -240,7 +255,7 @@ def main():
             'unmeasured quantum control',
         ),
         (
-            'void update(quant bool x,unsigned n){switch(n){case 0:return;default:break;}x^=true;}',
+            'void update(quant bool x,unsigned n){switch(n){case 0:x^=true;default:return;}x^=true;}',
             'quant bool x=false;update(x,0);',
             'early or conditional returns in quantum procedures',
         ),
