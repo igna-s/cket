@@ -64,29 +64,28 @@ tree capture_coherent_index(tree original,
     tree promoted =
         TYPE_PRECISION(type) < TYPE_PRECISION(integer_type_node) ? integer_type_node : type;
     tree index = fold_convert(promoted, access.index);
-    tree valid = fold_build2_loc(at(original),
-                                 LT_EXPR,
-                                 boolean_type_node,
-                                 index,
-                                 build_int_cstu(promoted, access.elements.size()));
-    if (!TYPE_UNSIGNED(promoted))
-        valid = fold_build2_loc(
+    tree valid = build2_loc(at(original),
+                            LT_EXPR,
+                            boolean_type_node,
+                            index,
+                            build_int_cstu(promoted, access.elements.size()));
+    if (!TYPE_UNSIGNED(type))
+        valid = build2_loc(
             at(original),
             TRUTH_ANDIF_EXPR,
             boolean_type_node,
-            fold_build2_loc(
-                at(original), GE_EXPR, boolean_type_node, index, build_zero_cst(promoted)),
+            build2_loc(at(original), GE_EXPR, boolean_type_node, index, build_zero_cst(promoted)),
             valid);
     unsigned bits = 1;
     while ((uint64_t{1} << bits) < access.elements.size())
         ++bits;
     tree saved_type = build_nonstandard_integer_type(bits, true);
-    tree guarded = fold_build3_loc(at(original),
-                                   COND_EXPR,
-                                   saved_type,
-                                   valid,
-                                   fold_convert(saved_type, index),
-                                   missing_string_terminator(saved_type, at(original)));
+    tree guarded = build3_loc(at(original),
+                              COND_EXPR,
+                              saved_type,
+                              valid,
+                              fold_convert(saved_type, index),
+                              missing_string_terminator(saved_type, at(original)));
     return quantum_value_capture(original, guarded, "__cket_index_", prefix, saved_type);
 }
 
@@ -195,6 +194,31 @@ tree expand_coherent_index_write(tree value) {
             build_one_cst(promoted));
     } else {
         assigned = expand_quantum_program(TREE_OPERAND(value, 1));
+
+        // Read-only value programs (coherent indexed reads, string reads) are
+        // private captures plus a pure result. Sequence their captures before
+        // this store so the stored value remains one ordered pure expression.
+        struct Inline {
+            std::vector<tree> *prefix;
+        } state{&prefix};
+
+        auto inline_reads = [](tree *node, int *walk, void *data) -> tree {
+            auto found = quantum_value_programs.find(*node);
+            if (found != quantum_value_programs.end() && found->second.updates.empty() &&
+                found->second.result) {
+                auto &out = *static_cast<Inline *>(data)->prefix;
+                out.insert(out.end(), found->second.prefix.begin(), found->second.prefix.end());
+                tree result = fold_convert(TREE_TYPE(*node), found->second.result);
+                quantum_value_programs.erase(found);
+                *node = result;
+                *walk = 0;
+                return NULL_TREE;
+            }
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        walk_tree(&assigned, inline_reads, &state, nullptr);
         if (!quantum_pure_expression(assigned))
             return reject(
                 "|c>: coherent indexed assignment requires an ordered pure value; sequence other effects before the store");

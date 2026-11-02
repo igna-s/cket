@@ -31,7 +31,7 @@ tree make_quantum_value_program(tree call,
                                 tree result_value = NULL_TREE,
                                 const std::map<tree, tree> &bit_masks = {},
                                 const std::map<tree, tree> &quantum_masks = {}) {
-    if (!quantum_masks.empty() || words.empty()) {
+    if ((!quantum_masks.empty() || words.empty()) && (!defined || !integer_onep(defined))) {
         // Check the whole call before any destination write, including calls
         // whose first destination mask is zero on some amplitudes.
         tree checked =

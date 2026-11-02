@@ -241,8 +241,10 @@ tree quantum_attribute(tree *node, tree, tree, int, bool *no_add) {
     }
     if (TREE_CODE(decl) == PARM_DECL) {
         tree type = TREE_TYPE(decl);
-        if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) &&
-            TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
+        if (TREE_CODE(type) == POINTER_TYPE &&
+            ((INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) <= 64) ||
+             (TREE_CODE(TREE_TYPE(type)) == RECORD_TYPE &&
+              quantum_product_type(TYPE_MAIN_VARIANT(TREE_TYPE(type)))))) {
             TREE_TYPE(decl) = build_pointer_type(build_qualified_type(
                 TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
             return NULL_TREE;
@@ -266,8 +268,10 @@ tree quantum_attribute(tree *node, tree, tree, int, bool *no_add) {
         return NULL_TREE;
     }
     tree type = TREE_TYPE(decl);
-    if (TREE_CODE(type) == POINTER_TYPE && INTEGRAL_TYPE_P(TREE_TYPE(type)) &&
-        TYPE_PRECISION(TREE_TYPE(type)) <= 64) {
+    if (TREE_CODE(type) == POINTER_TYPE &&
+        ((INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) <= 64) ||
+         (TREE_CODE(TREE_TYPE(type)) == RECORD_TYPE &&
+          quantum_product_type(TYPE_MAIN_VARIANT(TREE_TYPE(type)))))) {
         TREE_TYPE(decl) = build_pointer_type(build_qualified_type(
             TREE_TYPE(type), TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE));
         return NULL_TREE;

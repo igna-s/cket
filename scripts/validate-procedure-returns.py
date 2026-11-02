@@ -260,7 +260,7 @@ def main():
             'early or conditional returns in quantum procedures',
         ),
         (
-            'quant bool update(quant const bool x,unsigned n){quant bool t=!x;if(n)return t;t^=true;return t;}',
+            'quant bool update(quant const bool x,unsigned n){quant bool t=!x;switch(n){case 0:t^=true;default:return t;}return t;}',
             'volatile unsigned n=0;quant bool x=false;quant bool y=update(x,n);measure(y);measure(x);',
             'early or conditional returns in quantum procedures',
         ),

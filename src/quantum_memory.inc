@@ -204,7 +204,7 @@ bool resolve_byte_range(tree value, QuantumByteRange &range) {
         return true;
     }
     QuantumReference reference;
-    if (resolve_quantum_reference(value, reference)) {
+    if (resolve_quantum_reference(value, reference) && !reference.product_root) {
         range.quantum = true;
         range.elements = reference.elements;
         range.element_type = reference.element_type;

@@ -52,8 +52,16 @@ void record_global_function_references(void *event, void *) {
 struct QuantumReference {
     std::vector<tree> elements;
     int64_t offset = 0;
+    uint64_t leaves_per_element = 1;
     tree element_type = NULL_TREE;
     tree address = NULL_TREE;
+    tree product_root = NULL_TREE;
+    std::string product_prefix;
+    uint64_t product_count = 0;
+
+    size_t count() const {
+        return leaves_per_element ? elements.size() / leaves_per_element : elements.size();
+    }
 };
 
 std::map<tree, QuantumReference> quantum_references;
@@ -651,10 +659,15 @@ tree *terminal_return_slot(tree *body) {
     while (*body && TREE_CODE(*body) == BIND_EXPR)
         body = &BIND_EXPR_BODY(*body);
     if (*body && TREE_CODE(*body) == STATEMENT_LIST) {
-        auto last = tsi_last(*body);
-        if (tsi_end_p(last))
-            return nullptr;
-        body = tsi_stmt_ptr(last);
+        for (auto it = tsi_last(*body); !tsi_end_p(it); tsi_prev(&it)) {
+            if (!empty_switch_stmt(tsi_stmt(it))) {
+                tree *slot = tsi_stmt_ptr(it);
+                while (*slot && TREE_CODE(*slot) == BIND_EXPR)
+                    slot = &BIND_EXPR_BODY(*slot);
+                return *slot && TREE_CODE(*slot) == RETURN_EXPR ? slot : nullptr;
+            }
+        }
+        return nullptr;
     }
     return *body && TREE_CODE(*body) == RETURN_EXPR ? body : nullptr;
 }
@@ -696,22 +709,40 @@ void capture_quantum_function(tree fn) {
         if (!valid) {
             tree copy = body;
             tree *slot = terminal_return_slot(&copy);
-            if (slot && returns == 1) {
+            if (slot && returns >= 1) {
                 expr = TREE_OPERAND(*slot, 0);
                 if (expr && (TREE_CODE(expr) == MODIFY_EXPR || TREE_CODE(expr) == INIT_EXPR))
                     expr = TREE_OPERAND(expr, 1);
                 owned_result = expr && INTEGRAL_TYPE_P(result);
             }
         }
-        if ((!valid && !owned_result) || returns != 1 || !expr ||
+        bool borrow_consumed = expr && initializer_consumes_borrow(strip(expr));
+        if (owned_result) {
+            auto check_returns = [](tree *node, int *walk, void *data) -> tree {
+                if (TREE_CODE(*node) == RETURN_EXPR) {
+                    tree ret = TREE_OPERAND(*node, 0);
+                    if (ret && (TREE_CODE(ret) == MODIFY_EXPR || TREE_CODE(ret) == INIT_EXPR))
+                        ret = TREE_OPERAND(ret, 1);
+                    if (!ret || initializer_consumes_borrow(strip(ret))) {
+                        *static_cast<bool *>(data) = true;
+                        return *node;
+                    }
+                }
+                if (DECL_P(*node) || TYPE_P(*node))
+                    *walk = 0;
+                return NULL_TREE;
+            };
+            tree probe = body;
+            walk_tree(&probe, check_returns, &borrow_consumed, nullptr);
+        }
+        if ((!valid && !owned_result) || (!owned_result && returns != 1) || !expr ||
             (!owned_result && !quantum_return_is_pure(expr))) {
             error_at(
                 at(fn),
                 "|c>: quantum value functions currently require one pure return expression; statement bodies use void procedures");
             return;
         }
-        tree direct = strip(expr);
-        if (initializer_consumes_borrow(direct)) {
+        if (borrow_consumed) {
             error_at(
                 at(fn),
                 "|c>: returning a borrowed quantum parameter directly would ambiguously copy or consume it; compute an expression instead");
@@ -1031,7 +1062,7 @@ tree expand_cpu_loop_jumps(tree body) {
     return body;
 }
 
-tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
+tree instantiate_quantum_call(tree call, tree destination = NULL_TREE, bool declaration = true) {
     tree fn = get_callee_fndecl(call);
     auto found = quantum_functions.find(name_of(fn));
     if (found == quantum_functions.end()) {
@@ -1120,7 +1151,9 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                 break;
             }
             if (!function.result || function.owned_result)
-                for (size_t i = (size_t)reference.offset; i < reference.elements.size(); ++i)
+                for (size_t i = (size_t)reference.offset * reference.leaves_per_element;
+                     i < reference.elements.size();
+                     ++i)
                     if (!borrow_storage(reference.elements[i],
                                         !TYPE_READONLY(TREE_TYPE(TREE_TYPE(param))))) {
                         error_at(
@@ -1128,7 +1161,9 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                             "|c>: mutable quantum pointer parameters cannot overlap other borrowed storage");
                         valid = false;
                     }
-            for (size_t i = (size_t)reference.offset; i < reference.elements.size(); ++i) {
+            for (size_t i = (size_t)reference.offset * reference.leaves_per_element;
+                 i < reference.elements.size();
+                 ++i) {
                 tree storage = reference.elements[i];
                 if ((!function.result || function.owned_result) &&
                     !TYPE_READONLY(TREE_TYPE(TREE_TYPE(param))) &&
@@ -1259,13 +1294,120 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
             };
             walk_tree(&body, inspect, &function.owned_result, nullptr);
             tree expanded = clone_quantum_tree(body, bindings);
+            tree deferred_destination = NULL_TREE;
+            tree *deferred_list = nullptr;
             if (function.owned_result) {
                 tree *slot = terminal_return_slot(&expanded);
-                tree result = TREE_OPERAND(*slot, 0);
-                if (TREE_CODE(result) == MODIFY_EXPR || TREE_CODE(result) == INIT_EXPR)
-                    result = TREE_OPERAND(result, 1);
-                DECL_INITIAL(destination) = fold_convert(TREE_TYPE(destination), result);
-                *slot = build1(DECL_EXPR, void_type_node, destination);
+                tree terminal_stmt = *slot;
+                tree term_result = TREE_OPERAND(terminal_stmt, 0);
+                if (TREE_CODE(term_result) == MODIFY_EXPR || TREE_CODE(term_result) == INIT_EXPR)
+                    term_result = TREE_OPERAND(term_result, 1);
+                *slot = build_empty_stmt(at(terminal_stmt));
+                bool has_early = procedure_has_return(expanded);
+                tree local_owner = strip(term_result);
+                if (!local_owner || TREE_CODE(local_owner) != VAR_DECL ||
+                    !lookup_attribute("cket_quant", DECL_ATTRIBUTES(local_owner)) ||
+                    borrowed.count(local_owner)) {
+                    local_owner = NULL_TREE;
+                    tree top = expanded;
+                    while (top && TREE_CODE(top) == BIND_EXPR) {
+                        for (tree v = BIND_EXPR_VARS(top); v; v = DECL_CHAIN(v))
+                            if (TREE_CODE(v) == VAR_DECL &&
+                                lookup_attribute("cket_quant", DECL_ATTRIBUTES(v))) {
+                                local_owner = v;
+                                break;
+                            }
+                        if (local_owner)
+                            break;
+                        top = BIND_EXPR_BODY(top);
+                    }
+                }
+                if (!declaration && local_owner) {
+                    error_at(
+                        at(call),
+                        "|c>: owned quantum function results require a new scalar quant initializer");
+                } else if (!has_early && declaration) {
+                    DECL_INITIAL(destination) = fold_convert(TREE_TYPE(destination), term_result);
+                    *slot = build1(DECL_EXPR, void_type_node, destination);
+                } else if (local_owner && declaration) {
+                    if (strip(term_result) != local_owner)
+                        *slot = build2_loc(at(terminal_stmt),
+                                           MODIFY_EXPR,
+                                           TREE_TYPE(local_owner),
+                                           local_owner,
+                                           fold_convert(TREE_TYPE(local_owner), term_result));
+                    auto rewrite_early = [](tree *node, int *walk, void *data) -> tree {
+                        tree owner = static_cast<tree>(data);
+                        if (TREE_CODE(*node) == SWITCH_STMT || DECL_P(*node) || TYPE_P(*node)) {
+                            *walk = 0;
+                            return NULL_TREE;
+                        }
+                        if (TREE_CODE(*node) == RETURN_EXPR && TREE_OPERAND(*node, 0)) {
+                            tree op = TREE_OPERAND(*node, 0);
+                            if (TREE_CODE(op) == MODIFY_EXPR || TREE_CODE(op) == INIT_EXPR)
+                                op = TREE_OPERAND(op, 1);
+                            if (strip(op) == owner) {
+                                *node =
+                                    build1_loc(at(*node), RETURN_EXPR, void_type_node, NULL_TREE);
+                            } else {
+                                tree seq = alloc_stmt_list();
+                                append(&seq,
+                                       build2_loc(at(*node),
+                                                  MODIFY_EXPR,
+                                                  TREE_TYPE(owner),
+                                                  owner,
+                                                  fold_convert(TREE_TYPE(owner), op)));
+                                append(
+                                    &seq,
+                                    build1_loc(at(*node), RETURN_EXPR, void_type_node, NULL_TREE));
+                                *node = seq;
+                            }
+                            *walk = 0;
+                        }
+                        return NULL_TREE;
+                    };
+                    walk_tree(&expanded, rewrite_early, local_owner, nullptr);
+                    tree *cursor = &expanded;
+                    while (TREE_CODE(*cursor) == BIND_EXPR)
+                        cursor = &BIND_EXPR_BODY(*cursor);
+                    deferred_list = cursor;
+                    DECL_INITIAL(destination) = fold_convert(TREE_TYPE(destination), local_owner);
+                    deferred_destination =
+                        build1_loc(at(terminal_stmt), DECL_EXPR, void_type_node, destination);
+                } else {
+                    *slot = terminal_stmt;
+                    if (declaration) {
+                        DECL_INITIAL(destination) = build_zero_cst(TREE_TYPE(destination));
+                        append(&prefix,
+                               expand_quantum_program(
+                                   build1_loc(at(call), DECL_EXPR, void_type_node, destination)));
+                    }
+                    auto rewrite_all = [](tree *node, int *walk, void *data) -> tree {
+                        tree target = static_cast<tree>(data);
+                        if (TREE_CODE(*node) == SWITCH_STMT || DECL_P(*node) || TYPE_P(*node)) {
+                            *walk = 0;
+                            return NULL_TREE;
+                        }
+                        if (TREE_CODE(*node) == RETURN_EXPR && TREE_OPERAND(*node, 0)) {
+                            tree op = TREE_OPERAND(*node, 0);
+                            if (TREE_CODE(op) == MODIFY_EXPR || TREE_CODE(op) == INIT_EXPR)
+                                op = TREE_OPERAND(op, 1);
+                            tree seq = alloc_stmt_list();
+                            append(&seq,
+                                   build2_loc(at(*node),
+                                              MODIFY_EXPR,
+                                              TREE_TYPE(target),
+                                              target,
+                                              fold_convert(TREE_TYPE(target), op)));
+                            append(&seq,
+                                   build1_loc(at(*node), RETURN_EXPR, void_type_node, NULL_TREE));
+                            *node = seq;
+                            *walk = 0;
+                        }
+                        return NULL_TREE;
+                    };
+                    walk_tree(&expanded, rewrite_all, destination, nullptr);
+                }
             }
             tree *terminal_slot = &expanded;
             while (TREE_CODE(*terminal_slot) == BIND_EXPR)
@@ -1291,8 +1433,9 @@ tree instantiate_quantum_call(tree call, tree destination = NULL_TREE) {
                 return NULL_TREE;
             };
             expanded = expand_quantum_program(expanded);
-            if (!function.owned_result)
-                expanded = expand_cpu_procedure_returns(expanded, at(call));
+            expanded = expand_cpu_procedure_returns(expanded, at(call));
+            if (deferred_destination && deferred_list)
+                append(deferred_list, expand_quantum_program(deferred_destination));
             // Returns in unsupported control-flow nodes remain diagnosed.
             auto check_return = [](tree *node, int *walk, void *) -> tree {
                 if (TREE_CODE(*node) == RETURN_EXPR)
@@ -1377,8 +1520,9 @@ tree constructor_element(tree init, tree key, uint64_t number, bool array) {
     unsigned i;
     tree index, element;
     FOR_EACH_CONSTRUCTOR_ELT(CONSTRUCTOR_ELTS(init), i, index, element) {
-        if ((!array && index == key) ||
-            (array && index && TREE_CODE(index) == INTEGER_CST && tree_to_uhwi(index) == number))
+        if ((!array && (index == key || (!index && i == number))) ||
+            (array && index && TREE_CODE(index) == INTEGER_CST && tree_to_uhwi(index) == number) ||
+            (array && !index && i == number))
             return element;
         if (array && index && TREE_CODE(index) == RANGE_EXPR) {
             tree lo = TREE_OPERAND(index, 0), hi = TREE_OPERAND(index, 1);
@@ -1432,6 +1576,7 @@ void product_leaves(
                            list,
                            vars);
     } else if (TREE_CODE(type) == RECORD_TYPE) {
+        uint64_t field_idx = 0;
         for (tree f = TYPE_FIELDS(type); f; f = DECL_CHAIN(f))
             if (TREE_CODE(f) == FIELD_DECL) {
                 if (!DECL_NAME(f)) {
@@ -1441,7 +1586,7 @@ void product_leaves(
                 }
                 product_leaves(original,
                                TREE_TYPE(f),
-                               constructor_element(init, f, 0, false),
+                               constructor_element(init, f, field_idx++, false),
                                path + "." + name_of(f),
                                list,
                                vars);
@@ -1462,31 +1607,93 @@ void product_leaves(
     }
 }
 
-bool product_path(tree node, tree &root, std::string &path) {
+bool product_path_impl(tree node, tree &root, std::string &path, bool silent) {
     if (!node)
         return false;
     if (TREE_CODE(node) == VAR_DECL) {
+        if (!quantum_products.count(node))
+            return false;
         root = node;
-        return quantum_products.count(root);
+        return true;
+    }
+    if (TREE_CODE(node) == INDIRECT_REF) {
+        QuantumReference ref;
+        if (!resolve_quantum_reference(TREE_OPERAND(node, 0), ref) || !ref.product_root)
+            return false;
+        root = ref.product_root;
+        if (ref.product_count == 0) {
+            if (ref.offset != 0) {
+                if (!silent)
+                    error_at(at(node),
+                             "|c>: quantum pointer dereference is outside borrowed storage");
+                return false;
+            }
+            path = ref.product_prefix;
+            return true;
+        }
+        if (ref.offset < 0 || (uint64_t)ref.offset >= ref.product_count) {
+            if (!silent)
+                error_at(at(node), "|c>: quantum pointer dereference is outside borrowed storage");
+            return false;
+        }
+        path = ref.product_prefix + "[" + std::to_string(ref.offset) + "]";
+        return true;
     }
     if (TREE_CODE(node) == COMPONENT_REF) {
-        if (!product_path(TREE_OPERAND(node, 0), root, path))
+        if (!product_path_impl(TREE_OPERAND(node, 0), root, path, silent))
             return false;
         path += "." + name_of(TREE_OPERAND(node, 1));
         return true;
     }
     if (TREE_CODE(node) == ARRAY_REF) {
-        if (!product_path(TREE_OPERAND(node, 0), root, path))
+        if (!product_path_impl(TREE_OPERAND(node, 0), root, path, silent))
             return false;
         tree index = strip(fold(TREE_OPERAND(node, 1)));
         if (TREE_CODE(index) != INTEGER_CST || !tree_fits_uhwi_p(index)) {
-            error_at(
-                at(node),
-                "|c>: quantum array access currently requires a constant index or a statically bounded for loop");
+            if (!silent)
+                error_at(
+                    at(node),
+                    "|c>: quantum array access currently requires a constant index or a statically bounded for loop");
             return false;
         }
         path += "[" + std::to_string(tree_to_uhwi(index)) + "]";
         return true;
+    }
+    return false;
+}
+
+bool product_path(tree node, tree &root, std::string &path) {
+    return product_path_impl(node, root, path, false);
+}
+
+bool collect_product_leaves(tree root,
+                            tree type,
+                            const std::string &prefix,
+                            std::vector<tree> &out) {
+    if (INTEGRAL_TYPE_P(type)) {
+        auto leaf = quantum_products[root].find(prefix);
+        if (leaf == quantum_products[root].end())
+            return false;
+        out.push_back(leaf->second);
+        return true;
+    }
+    if (TREE_CODE(type) == ARRAY_TYPE) {
+        if (!TYPE_DOMAIN(type) || !TYPE_MAX_VALUE(TYPE_DOMAIN(type)))
+            return false;
+        uint64_t count = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
+        for (uint64_t i = 0; i < count; ++i)
+            if (!collect_product_leaves(
+                    root, TREE_TYPE(type), prefix + "[" + std::to_string(i) + "]", out))
+                return false;
+        return true;
+    }
+    if (TREE_CODE(type) == RECORD_TYPE) {
+        size_t before = out.size();
+        for (tree field = TYPE_FIELDS(type); field; field = DECL_CHAIN(field))
+            if (TREE_CODE(field) == FIELD_DECL &&
+                !collect_product_leaves(root, TREE_TYPE(field), prefix + "." + name_of(field), out))
+                return false;
+        return out.size() > before;
     }
     return false;
 }
@@ -1525,45 +1732,74 @@ bool resolve_quantum_reference(tree value, QuantumReference &reference) {
         if (steps > 4096 || steps < -4096)
             return false;
         reference.offset += steps;
-        return reference.offset >= 0 && reference.offset <= (int64_t)reference.elements.size();
+        return reference.offset >= 0 && reference.offset <= (int64_t)reference.count();
     }
     if (TREE_CODE(value) != ADDR_EXPR)
         return false;
     tree storage = strip(TREE_OPERAND(value, 0));
-    if (TREE_CODE(storage) == VAR_DECL && quantum_products.count(storage) &&
-        TREE_CODE(TREE_TYPE(storage)) == ARRAY_TYPE &&
-        INTEGRAL_TYPE_P(TREE_TYPE(TREE_TYPE(storage)))) {
-        reference.element_type = TREE_TYPE(TREE_TYPE(storage));
-        reference.offset = 0;
-        uint64_t size = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(TREE_TYPE(storage)))) + 1;
-        for (uint64_t i = 0; i < size; ++i) {
-            auto leaf = quantum_products[storage].find("[" + std::to_string(i) + "]");
-            if (leaf == quantum_products[storage].end())
-                return false;
-            reference.elements.push_back(leaf->second);
-        }
-        return true;
-    }
-    if (TREE_CODE(storage) == ARRAY_REF) {
-        tree array = strip(TREE_OPERAND(storage, 0)), index = strip(fold(TREE_OPERAND(storage, 1)));
-        if (TREE_CODE(array) == VAR_DECL && quantum_products.count(array) &&
-            TREE_CODE(TREE_TYPE(array)) == ARRAY_TYPE &&
-            INTEGRAL_TYPE_P(TREE_TYPE(TREE_TYPE(array))) && TREE_CODE(index) == INTEGER_CST &&
-            tree_fits_uhwi_p(index)) {
-            uint64_t size = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(TREE_TYPE(array)))) + 1;
-            uint64_t offset = tree_to_uhwi(index);
-            if (offset > size)
-                return false;
-            reference.element_type = TREE_TYPE(TREE_TYPE(array));
-            reference.offset = (int64_t)offset;
-            for (uint64_t i = 0; i < size; ++i) {
-                auto leaf = quantum_products[array].find("[" + std::to_string(i) + "]");
-                if (leaf == quantum_products[array].end())
+    tree root = NULL_TREE;
+    std::string prefix;
+    if (TREE_CODE(TREE_TYPE(storage)) == ARRAY_TYPE &&
+        product_path_impl(storage, root, prefix, true)) {
+        tree elem_type = TREE_TYPE(TREE_TYPE(storage));
+        if (INTEGRAL_TYPE_P(elem_type) || TREE_CODE(elem_type) == RECORD_TYPE) {
+            uint64_t size = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(TREE_TYPE(storage)))) + 1;
+            for (uint64_t i = 0; i < size; ++i)
+                if (!collect_product_leaves(root,
+                                            elem_type,
+                                            prefix + "[" + std::to_string(i) + "]",
+                                            reference.elements))
                     return false;
-                reference.elements.push_back(leaf->second);
+            reference.element_type = elem_type;
+            reference.offset = 0;
+            reference.leaves_per_element = reference.elements.size() / size;
+            if (TREE_CODE(elem_type) == RECORD_TYPE) {
+                reference.product_root = root;
+                reference.product_prefix = prefix;
+                reference.product_count = size;
             }
             return true;
         }
+    }
+    if (TREE_CODE(storage) == ARRAY_REF) {
+        tree array = strip(TREE_OPERAND(storage, 0)), index = strip(fold(TREE_OPERAND(storage, 1)));
+        if (TREE_CODE(TREE_TYPE(array)) == ARRAY_TYPE && TREE_CODE(index) == INTEGER_CST &&
+            tree_fits_uhwi_p(index) && product_path_impl(array, root, prefix, true)) {
+            tree elem_type = TREE_TYPE(TREE_TYPE(array));
+            if (INTEGRAL_TYPE_P(elem_type) || TREE_CODE(elem_type) == RECORD_TYPE) {
+                uint64_t size = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(TREE_TYPE(array)))) + 1;
+                uint64_t offset = tree_to_uhwi(index);
+                if (offset > size)
+                    return false;
+                for (uint64_t i = 0; i < size; ++i)
+                    if (!collect_product_leaves(root,
+                                                elem_type,
+                                                prefix + "[" + std::to_string(i) + "]",
+                                                reference.elements))
+                        return false;
+                reference.element_type = elem_type;
+                reference.offset = (int64_t)offset;
+                reference.leaves_per_element = reference.elements.size() / size;
+                if (TREE_CODE(elem_type) == RECORD_TYPE) {
+                    reference.product_root = root;
+                    reference.product_prefix = prefix;
+                    reference.product_count = size;
+                }
+                return true;
+            }
+        }
+    }
+    if (TREE_CODE(TREE_TYPE(storage)) == RECORD_TYPE &&
+        product_path_impl(storage, root, prefix, true)) {
+        if (!collect_product_leaves(root, TREE_TYPE(storage), prefix, reference.elements))
+            return false;
+        reference.element_type = TREE_TYPE(storage);
+        reference.offset = 0;
+        reference.leaves_per_element = reference.elements.size();
+        reference.product_root = root;
+        reference.product_prefix = prefix;
+        reference.product_count = 0;
+        return true;
     }
     if (TREE_CODE(storage) == INDIRECT_REF)
         return resolve_quantum_reference(TREE_OPERAND(storage, 0), reference);
@@ -1572,12 +1808,13 @@ bool resolve_quantum_reference(tree value, QuantumReference &reference) {
         return false;
     reference.elements = {storage};
     reference.offset = 0;
+    reference.leaves_per_element = 1;
     reference.element_type = TREE_TYPE(storage);
     return true;
 }
 
 tree reference_element(tree value) {
-    if (TREE_CODE(value) != INDIRECT_REF)
+    if (TREE_CODE(value) != INDIRECT_REF || TREE_CODE(TREE_TYPE(value)) == RECORD_TYPE)
         return NULL_TREE;
     QuantumReference reference;
     if (!resolve_quantum_reference(TREE_OPERAND(value, 0), reference))
@@ -2011,16 +2248,22 @@ bool readonly_quantum_access(tree value) {
         return quantum_indexed_accesses.at(storage).readonly;
     if (quantum_coherent_accesses.count(storage))
         return quantum_coherent_accesses.at(storage).readonly;
-    if (TREE_CODE(storage) == INDIRECT_REF || TREE_CODE(storage) == ARRAY_REF) {
+    tree base = storage;
+    while (base && (TREE_CODE(base) == COMPONENT_REF ||
+                    (TREE_CODE(base) == ARRAY_REF &&
+                     TREE_CODE(TREE_TYPE(TREE_OPERAND(base, 0))) == ARRAY_TYPE)))
+        base = strip(TREE_OPERAND(base, 0));
+    if (base && (TREE_CODE(base) == INDIRECT_REF || TREE_CODE(base) == ARRAY_REF)) {
         QuantumReference reference;
-        tree pointer = TREE_OPERAND(storage, 0);
+        tree pointer = TREE_OPERAND(base, 0);
         if (resolve_quantum_reference(pointer, reference)) {
             if (TYPE_READONLY(reference.element_type))
                 return true;
-            size_t first = (size_t)reference.offset;
-            size_t end = TREE_CODE(storage) == INDIRECT_REF
-                             ? std::min(first + 1, reference.elements.size())
-                             : reference.elements.size();
+            size_t first = (size_t)reference.offset * reference.leaves_per_element;
+            size_t end =
+                TREE_CODE(base) == INDIRECT_REF
+                    ? std::min(first + reference.leaves_per_element, reference.elements.size())
+                    : reference.elements.size();
             for (size_t i = first; i < end; ++i)
                 if (readonly_quantum_borrows.count(reference.elements[i]))
                     return true;
@@ -2033,20 +2276,153 @@ tree dynamic_product_access(tree value) {
     auto existing = indexed_expansions.find(value);
     if (existing != indexed_expansions.end())
         return existing->second;
-    if (TREE_CODE(value) == ARRAY_REF) {
-        tree array = strip(TREE_OPERAND(value, 0)), type = TREE_TYPE(array);
-        tree index = strip(fold(TREE_OPERAND(value, 1)));
-        if (TREE_CODE(array) != VAR_DECL || !quantum_products.count(array) ||
-            TREE_CODE(type) != ARRAY_TYPE || !INTEGRAL_TYPE_P(TREE_TYPE(type)) ||
-            TREE_CODE(index) == INTEGER_CST)
-            return NULL_TREE;
-        std::vector<tree> elements;
-        uint64_t count = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
-        for (uint64_t i = 0; i < count; ++i)
-            elements.push_back(quantum_products.at(array).at("[" + std::to_string(i) + "]"));
-        tree selected = indexed_access(value, elements, TREE_OPERAND(value, 1), false);
-        indexed_expansions[value] = selected;
-        return selected;
+    if ((TREE_CODE(value) == ARRAY_REF || TREE_CODE(value) == COMPONENT_REF) &&
+        INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+        std::string suffix;
+        tree cursor = value;
+        bool suffix_ok = true;
+        while (cursor && (TREE_CODE(cursor) == COMPONENT_REF || TREE_CODE(cursor) == ARRAY_REF)) {
+            if (TREE_CODE(cursor) == COMPONENT_REF) {
+                suffix = "." + name_of(TREE_OPERAND(cursor, 1)) + suffix;
+                cursor = strip(TREE_OPERAND(cursor, 0));
+                continue;
+            }
+            tree idx = strip(fold(TREE_OPERAND(cursor, 1)));
+            if (TREE_CODE(idx) != INTEGER_CST)
+                break;
+            tree arr_type = TREE_TYPE(TREE_OPERAND(cursor, 0));
+            if (TREE_CODE(arr_type) != ARRAY_TYPE || !TYPE_DOMAIN(arr_type) ||
+                !TYPE_MAX_VALUE(TYPE_DOMAIN(arr_type)) || !tree_fits_shwi_p(idx) ||
+                tree_to_shwi(idx) < 0 ||
+                (uint64_t)tree_to_shwi(idx) > tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(arr_type)))) {
+                suffix_ok = false;
+                break;
+            }
+            suffix = "[" + std::to_string(tree_to_uhwi(idx)) + "]" + suffix;
+            cursor = strip(TREE_OPERAND(cursor, 0));
+        }
+        if (suffix_ok && cursor && TREE_CODE(cursor) == ARRAY_REF) {
+            tree base = strip(TREE_OPERAND(cursor, 0)), type = TREE_TYPE(base);
+            tree index = strip(fold(TREE_OPERAND(cursor, 1)));
+            tree root = NULL_TREE;
+            std::string prefix;
+            if (TREE_CODE(type) == ARRAY_TYPE && TYPE_DOMAIN(type) &&
+                TYPE_MAX_VALUE(TYPE_DOMAIN(type)) && TREE_CODE(index) != INTEGER_CST &&
+                product_path_impl(base, root, prefix, true)) {
+                std::vector<tree> elements;
+                uint64_t count = tree_to_uhwi(TYPE_MAX_VALUE(TYPE_DOMAIN(type))) + 1;
+                const auto &leaves = quantum_products.at(root);
+                for (uint64_t i = 0; i < count; ++i) {
+                    auto found = leaves.find(prefix + "[" + std::to_string(i) + "]" + suffix);
+                    if (found == leaves.end()) {
+                        elements.clear();
+                        break;
+                    }
+                    elements.push_back(found->second);
+                }
+                if (!elements.empty()) {
+                    bool ro = TYPE_READONLY(TREE_TYPE(value)) || readonly_quantum_access(base);
+                    tree selected = indexed_access(value, elements, TREE_OPERAND(cursor, 1), ro);
+                    indexed_expansions[value] = selected;
+                    return selected;
+                }
+            }
+        }
+        if (suffix_ok && !suffix.empty() && cursor && TREE_CODE(cursor) == INDIRECT_REF) {
+            tree pointer = strip(TREE_OPERAND(cursor, 0));
+            if (TREE_CODE(pointer) == POINTER_PLUS_EXPR) {
+                QuantumReference reference;
+                if (resolve_quantum_reference(TREE_OPERAND(pointer, 0), reference) &&
+                    reference.product_root && reference.product_count > 0) {
+                    tree bytes = TREE_OPERAND(pointer, 1),
+                         size = TYPE_SIZE_UNIT(reference.element_type);
+                    if (TREE_CODE(strip(fold(bytes))) != INTEGER_CST && size &&
+                        tree_fits_uhwi_p(size)) {
+                        std::vector<tree> field_elements;
+                        const auto &leaves = quantum_products.at(reference.product_root);
+                        for (uint64_t i = 0; i < reference.product_count; ++i) {
+                            auto found = leaves.find(reference.product_prefix + "[" +
+                                                     std::to_string(i) + "]" + suffix);
+                            if (found == leaves.end()) {
+                                field_elements.clear();
+                                break;
+                            }
+                            field_elements.push_back(found->second);
+                        }
+                        if (!field_elements.empty()) {
+                            if (has_quantum(bytes)) {
+                                tree index =
+                                    unscaled_quantum_pointer_index(bytes, tree_to_uhwi(size));
+                                if (!index || reference.offset < 0 ||
+                                    reference.offset >= (int64_t)field_elements.size()) {
+                                    error_at(
+                                        at(value),
+                                        "|c>: coherent pointer indexing requires a checked nonempty borrow and the original nonnegative element index before pointer-byte scaling");
+                                    return build_zero_cst(TREE_TYPE(value));
+                                }
+                                std::vector<tree> slice(field_elements.begin() + reference.offset,
+                                                        field_elements.end());
+                                tree selected =
+                                    indexed_access(value,
+                                                   slice,
+                                                   index,
+                                                   TYPE_READONLY(reference.element_type) ||
+                                                       TYPE_READONLY(TREE_TYPE(value)));
+                                indexed_expansions[value] = selected;
+                                return selected;
+                            }
+                            tree index = fold_build2(
+                                TRUNC_DIV_EXPR,
+                                long_long_integer_type_node,
+                                fold_convert(long_long_integer_type_node, bytes),
+                                build_int_cst(long_long_integer_type_node, tree_to_uhwi(size)));
+                            index = fold_build2(
+                                PLUS_EXPR,
+                                long_long_integer_type_node,
+                                index,
+                                build_int_cst(long_long_integer_type_node, reference.offset));
+                            tree selected = indexed_access(value,
+                                                           field_elements,
+                                                           index,
+                                                           TYPE_READONLY(reference.element_type) ||
+                                                               TYPE_READONLY(TREE_TYPE(value)));
+                            tree unscaled =
+                                unscaled_quantum_pointer_index(bytes, tree_to_uhwi(size));
+                            tree read_index = NULL_TREE;
+                            if (unscaled && reference.offset >= 0 &&
+                                reference.offset < (int64_t)field_elements.size()) {
+                                tree raw =
+                                    save_expr(fold_convert(long_long_unsigned_type_node, unscaled));
+                                tree valid = fold_build2_loc(
+                                    at(value),
+                                    LT_EXPR,
+                                    boolean_type_node,
+                                    raw,
+                                    build_int_cstu(long_long_unsigned_type_node,
+                                                   field_elements.size() - reference.offset));
+                                tree absolute = fold_build2_loc(
+                                    at(value),
+                                    PLUS_EXPR,
+                                    long_long_unsigned_type_node,
+                                    raw,
+                                    build_int_cstu(long_long_unsigned_type_node, reference.offset));
+                                read_index = save_expr(
+                                    fold_build3_loc(at(value),
+                                                    COND_EXPR,
+                                                    long_long_unsigned_type_node,
+                                                    valid,
+                                                    absolute,
+                                                    build_int_cstu(long_long_unsigned_type_node,
+                                                                   field_elements.size())));
+                            }
+                            quantum_indexed_read_indices[selected] = read_index;
+                            indexed_expansions[value] = selected;
+                            return selected;
+                        }
+                    }
+                }
+            }
+        }
     }
     if (TREE_CODE(value) == INDIRECT_REF) {
         tree pointer = strip(TREE_OPERAND(value, 0));
@@ -2137,7 +2513,42 @@ tree expand_static_for_block(tree block) {
     if (stmts.size() != 2 || TREE_CODE(stmts[0]) != DECL_EXPR ||
         DECL_EXPR_DECL(stmts[0]) != counter || TREE_CODE(stmts[1]) != FOR_STMT)
         return NULL_TREE;
-    tree loop = stmts[1], cond = FOR_COND(loop), step = FOR_EXPR(loop);
+    tree loop = stmts[1], raw_cond = FOR_COND(loop), cond = raw_cond, quantum_guard = NULL_TREE,
+         step = FOR_EXPR(loop);
+    if (cond && TREE_CODE(cond) == TRUTH_ANDIF_EXPR) {
+        tree left = TREE_OPERAND(cond, 0), right = TREE_OPERAND(cond, 1);
+        if (COMPARISON_CLASS_P(left) && strip(TREE_OPERAND(left, 0)) == counter &&
+            TREE_CODE(strip(TREE_OPERAND(left, 1))) == INTEGER_CST) {
+            cond = left;
+            quantum_guard = right;
+        } else if (COMPARISON_CLASS_P(right) && strip(TREE_OPERAND(right, 0)) == counter &&
+                   TREE_CODE(strip(TREE_OPERAND(right, 1))) == INTEGER_CST) {
+            cond = right;
+            quantum_guard = left;
+        }
+    }
+    if (quantum_guard) {
+        auto guard_quantum_storage = [](tree *node, int *walk, void *) -> tree {
+            if (quantum(*node) || quantum_products.count(*node) || quantum_references.count(*node))
+                return *node;
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        auto guard_impure = [](tree *node, int *walk, void *) -> tree {
+            auto code = TREE_CODE(*node);
+            if (code == CALL_EXPR || code == MODIFY_EXPR || code == INIT_EXPR ||
+                code == COMPOUND_EXPR || code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
+                code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR || code == ADDR_EXPR)
+                return *node;
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        if (!walk_tree(&quantum_guard, guard_quantum_storage, nullptr, nullptr) ||
+            walk_tree(&quantum_guard, guard_impure, nullptr, nullptr))
+            return NULL_TREE;
+    }
     if (FOR_INIT_STMT(loop) || !cond || !step || !COMPARISON_CLASS_P(cond) ||
         strip(TREE_OPERAND(cond, 0)) != counter ||
         TREE_CODE(strip(TREE_OPERAND(cond, 1))) != INTEGER_CST)
@@ -2149,9 +2560,25 @@ tree expand_static_for_block(tree block) {
     if (!increment || strip(TREE_OPERAND(step, 0)) != counter)
         return NULL_TREE;
     // Unroll only when it enables currently unsupported product/control lives.
-    bool useful = false, safe = true;
+    bool useful = quantum_guard != NULL_TREE, safe = true;
     FOR_BODY(loop) = expand_structured_switches(FOR_BODY(loop));
     tree content = FOR_BODY(loop);
+    bool guard_uses_counter = quantum_guard && references_storage(quantum_guard, counter);
+    if (guard_uses_counter) {
+        std::set<tree> guard_vars;
+        auto collect_guard_vars = [](tree *node, int *walk, void *data) -> tree {
+            if (TREE_CODE(*node) == VAR_DECL || TREE_CODE(*node) == PARM_DECL)
+                static_cast<std::set<tree> *>(data)->insert(*node);
+            if (DECL_P(*node) || TYPE_P(*node))
+                *walk = 0;
+            return NULL_TREE;
+        };
+        walk_tree(&quantum_guard, collect_guard_vars, &guard_vars, nullptr);
+        guard_vars.erase(counter);
+        for (tree gv : guard_vars)
+            if (walk_tree(&content, modified_value_parameter, gv, nullptr))
+                return NULL_TREE;
+    }
 
     struct Scan {
         tree counter;
@@ -2242,10 +2669,36 @@ tree expand_static_for_block(tree block) {
         indices.push_back(i);
     }
     tree result = alloc_stmt_list();
+    tree cumulative_guard = NULL_TREE;
     for (int64_t index : indices) {
         std::map<tree, tree> bindings;
         bindings[counter] = build_int_cst(TREE_TYPE(counter), index);
-        append(&result, expand_quantum_program(clone_quantum_tree(FOR_BODY(loop), bindings)));
+        tree iter_body = clone_quantum_tree(FOR_BODY(loop), bindings);
+        if (quantum_guard) {
+            tree iter_guard =
+                fold_convert(boolean_type_node, clone_quantum_tree(quantum_guard, bindings));
+            if (guard_uses_counter && cumulative_guard)
+                cumulative_guard = build2_loc(at(loop),
+                                              TRUTH_ANDIF_EXPR,
+                                              boolean_type_node,
+                                              clone_quantum_tree(cumulative_guard, bindings),
+                                              iter_guard);
+            else
+                cumulative_guard = iter_guard;
+            tree expanded_guard =
+                expand_quantum_program(clone_quantum_tree(cumulative_guard, bindings));
+            if (!has_quantum(expanded_guard) || !quantum_pure_expression(expanded_guard))
+                return NULL_TREE;
+            iter_body = build3_loc(at(loop),
+                                   COND_EXPR,
+                                   void_type_node,
+                                   expanded_guard,
+                                   expand_quantum_program(iter_body),
+                                   build_empty_stmt(at(loop)));
+            append(&result, iter_body);
+            continue;
+        }
+        append(&result, expand_quantum_program(iter_body));
     }
     return result;
 }
@@ -2271,6 +2724,17 @@ tree expand_quantum_program(tree value) {
             error_at(at(value),
                      "|c>: memory-return writes require a checked local destination borrow");
             return build_zero_cst(TREE_TYPE(value));
+        }
+        tree rhs = strip(TREE_OPERAND(value, 1));
+        if (rhs && TREE_CODE(rhs) == CALL_EXPR) {
+            tree fn = get_callee_fndecl(rhs);
+            auto found = fn ? quantum_functions.find(name_of(fn)) : quantum_functions.end();
+            if (found != quantum_functions.end() && found->second.owned_result) {
+                tree lhs = expand_quantum_program(TREE_OPERAND(value, 0));
+                if (quantum(strip(lhs)))
+                    return instantiate_quantum_call(rhs, strip(lhs), false);
+                TREE_OPERAND(value, 0) = lhs;
+            }
         }
     }
     if (code == BIND_EXPR) {
@@ -2611,6 +3075,8 @@ tree expand_quantum_program(tree value) {
             }
             return found->second;
         }
+        if (root)
+            return build_zero_cst(TREE_TYPE(value));
     }
     if (code == ADDR_EXPR && TREE_CODE(TREE_OPERAND(value, 0)) == FUNCTION_DECL) {
         record_classical_function_reference(TREE_OPERAND(value, 0), at(value), true);
@@ -2658,7 +3124,9 @@ tree expand_quantum_program(tree value) {
             return TREE_OPERAND(value, 1);
         if (has_quantum(TREE_OPERAND(value, 0)) &&
             quantum_pure_expression(TREE_OPERAND(value, 0)) &&
-            TREE_CODE(strip(TREE_OPERAND(value, 1))) == MODIFY_EXPR)
+            (TREE_CODE(strip(TREE_OPERAND(value, 1))) == MODIFY_EXPR ||
+             quantum_value_programs.count(strip(TREE_OPERAND(value, 1))) ||
+             quantum_heap_updates.count(strip(TREE_OPERAND(value, 1)))))
             return TREE_OPERAND(value, 1);
         return value;
     }

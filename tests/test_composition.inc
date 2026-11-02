@@ -40,7 +40,16 @@ static void composition_cases(void) {
         {"quantum register subtraction",
          "quant uint8_t x=2,y=7;x-=y;int a=measure(x),b=measure(y);return a!=251||b!=7;"},
         {"static for coherent condition",
-         "quant bool c=1;quant uint8_t x=0;for(int i=0;i<3;++i)if(c)x+=i+1;int a=measure(x),b=measure(c);return a!=6||b!=1;"}};
+         "quant bool c=1;quant uint8_t x=0;for(int i=0;i<3;++i)if(c)x+=i+1;int a=measure(x),b=measure(c);return a!=6||b!=1;"},
+        {"quantum struct pointer parameter and local borrowing",
+         "#include <quantum.h>\nstruct S{uint8_t x,y;};void swap_s(quant struct S *p){p->x^=p->y;p->y^=p->x;p->x^=p->y;}\nint main(void){quant struct S s={1,2};quant struct S *p=&s;swap_s(p);int a=measure(s.x),b=measure(s.y);return a!=2||b!=1;}\n"},
+        {"multidimensional array and struct array coherent quantum indexing", "#include <quantum.h>\nstruct P{bool x,y;};int main(void){quant bool m[2][2]={{0,1},{0,0}};quant bool c=1;m[1][c]^=1;quant struct P t[2]={{0,1},{1,0}};t[c].y^=t[c].x;int a=measure(m[1][1]),b=measure(m[1][0]),ty=measure(t[1].y),ty0=measure(t[0].y);measure(c);measure(m[0][0]);measure(m[0][1]);measure(t[0].x);measure(t[1].x);return a!=1||b!=0||ty!=1||ty0!=1;}\n"},
+        {"bounded quantum for loop with pure quantum guard",
+         "#include <quantum.h>\nint main(void){quant bool s[2]={1,0};quant bool n=0;for(int i=0;i<2&&s[i];++i)n^=1;int a=measure(n);measure(s[0]);measure(s[1]);return a!=1;}\n"},
+        {"imperative owned result with CPU loops and assignment",
+         "#include <quantum.h>\nquant uint8_t step(quant uint8_t *p,unsigned n){*p+=1;if(n)return *p+1;return *p+2;}\nquant uint8_t acc(quant const uint8_t x,unsigned n){quant uint8_t t=0;t+=x;for(unsigned i=0;i<n;++i){if(i==2)return t;t+=1;}return t;}\nint main(void){quant uint8_t s=1,r=0;r=step(&s,1);quant uint8_t a=acc(r,5);int ra=measure(a),rr=measure(r),rs=measure(s);return ra!=5||rs!=2||rr!=3;}\n"},
+        {"struct array member passed to standard string length",
+         "#include <quantum.h>\n#include <string.h>\nstruct Pkt{uint8_t data[2];};int main(void){quant struct Pkt p={0};p.data[0]+=97;quant uint8_t n=strlen((const char*)p.data);int a=measure(n),p0=measure(p.data[0]),p1=measure(p.data[1]);return a!=1||p0!=97||p1!=0;}\n"}};
 
     for (unsigned i = 0; i < sizeof valid / sizeof *valid; ++i)
         report(valid[i].name, compile(valid[i].source, "--run", 1));
