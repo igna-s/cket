@@ -107,7 +107,7 @@ def main():
     content = log.read_text(encoding='utf-8')
     # Each result must occur once in the normal run and once with sanitizers.
     patterns = {
-        'native': r'^395 passed, 0 failed \(native C tests, no external quantum SDK\)$',
+        'native': r'^408 passed, 0 failed \(native C tests, no external quantum SDK\)$',
         'examples': r'^1509 checks passed across 37 examples, five optimization levels and CLI/input contracts$',
         'classical': r'^5 finite integration comparisons passed across the 29 C11 header families; quantum-library coverage remains incomplete\.$',
         'frontend': r'^665 generated frontend compilations passed; seed=20261012 \(C generator, SplitMix64\)$',
@@ -200,7 +200,7 @@ def main():
         'configurations': ['normal', 'ASan/UBSan'],
         'configuration_specific_results': {'memory_loop_jumps': memory_jumps},
         'counts_per_configuration': {
-            'native': 395,
+            'native': 408,
             'example_checks': 1509,
             'examples': 37,
             'classical_header_integration': 5,

@@ -204,13 +204,44 @@ bool resolve_byte_range(tree value, QuantumByteRange &range) {
         return true;
     }
     QuantumReference reference;
-    if (resolve_quantum_reference(value, reference) && !reference.product_root) {
+    if (resolve_quantum_reference(value, reference)) {
         range.quantum = true;
         range.elements = reference.elements;
-        range.element_type = reference.element_type;
+        if (!reference.product_root) {
+            range.element_type = reference.element_type;
+            if (!byte_range_layout(range))
+                return false;
+            range.offset = (uint64_t)reference.offset * range.stride;
+            return range.offset <= range.size();
+        }
+        if (reference.elements.empty() || !reference.leaves_per_element) {
+            range.error =
+                "|c>: quantum byte comparison requires integer object bytes without padding; bool, floating and aggregate layouts need further implementation";
+            return false;
+        }
+        tree leaf_type = TYPE_MAIN_VARIANT(TREE_TYPE(reference.elements.front()));
+        for (tree elem : reference.elements)
+            if (TYPE_MAIN_VARIANT(TREE_TYPE(elem)) != leaf_type) {
+                range.error =
+                    "|c>: quantum byte comparison requires integer object bytes without padding; bool, floating and aggregate layouts need further implementation";
+                return false;
+            }
+        bool ro =
+            TYPE_READONLY(reference.element_type) || (TREE_CODE(TREE_TYPE(value)) == POINTER_TYPE &&
+                                                      TYPE_READONLY(TREE_TYPE(TREE_TYPE(value))));
+        if (ro)
+            leaf_type = build_qualified_type(leaf_type, TYPE_QUALS(leaf_type) | TYPE_QUAL_CONST);
+        range.element_type = leaf_type;
         if (!byte_range_layout(range))
             return false;
-        range.offset = (uint64_t)reference.offset * range.stride;
+        tree elem_size = TYPE_SIZE_UNIT(reference.element_type);
+        if (!elem_size || !tree_fits_uhwi_p(elem_size) ||
+            tree_to_uhwi(elem_size) != reference.leaves_per_element * range.stride) {
+            range.error =
+                "|c>: quantum byte comparison requires integer object bytes without padding; bool, floating and aggregate layouts need further implementation";
+            return false;
+        }
+        range.offset = (uint64_t)reference.offset * reference.leaves_per_element * range.stride;
         return range.offset <= range.size();
     }
     // Only addresses with known CPU storage enter this path. Unknown pointers
@@ -418,7 +449,7 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
     QuantumByteRange left, right;
     bool a = resolve_byte_range(CALL_EXPR_ARG(call, 0), left);
     bool b = resolve_byte_range(CALL_EXPR_ARG(call, 1), right);
-    if (!left.quantum && !right.quantum)
+    if (!left.quantum && !right.quantum && (unbounded || !has_quantum(CALL_EXPR_ARG(call, 2))))
         return NULL_TREE;
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);
@@ -431,6 +462,7 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
                 ? right.error
                 : "|c>: quantum byte comparison requires checked quantum storage or known CPU object storage; general pointers and dynamic layouts remain pending");
     uint64_t count;
+    tree quantum_bytes = NULL_TREE;
     if (unbounded) {
         uint64_t left_count = left.size() - left.offset, right_count = right.size() - right.offset;
         if (!left_count || !right_count)
@@ -438,6 +470,14 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
         if (left_count > 64 || right_count > 64)
             return reject("|c>: quantum strcmp exceeds the 64-byte expression synthesis bound");
         count = std::min(left_count, right_count);
+    } else if (has_quantum(CALL_EXPR_ARG(call, 2))) {
+        quantum_bytes = expand_quantum_program(CALL_EXPR_ARG(call, 2));
+        if (!quantum_bytes || !INTEGRAL_TYPE_P(TREE_TYPE(quantum_bytes)) ||
+            TYPE_PRECISION(TREE_TYPE(quantum_bytes)) > 64 ||
+            !quantum_pure_expression(quantum_bytes))
+            return reject(
+                "|c>: quantum byte comparison requires a pure integer byte count of at most 64 bits");
+        count = std::min(left.size() - left.offset, right.size() - right.offset);
     } else {
         tree bytes = strip(fold(CALL_EXPR_ARG(call, 2)));
         if (!bytes || TREE_CODE(bytes) != INTEGER_CST || !tree_fits_uhwi_p(bytes))
@@ -469,16 +509,23 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
                                 relation == LE_EXPR || relation == GE_EXPR || relation == EQ_EXPR);
     tree equal_result = result;
     for (uint64_t i = count; i; --i) {
+        tree active_byte = NULL_TREE;
+        if (quantum_bytes)
+            active_byte = fold_build2_loc(at(call),
+                                          GT_EXPR,
+                                          boolean_type_node,
+                                          fold_convert(long_long_unsigned_type_node, quantum_bytes),
+                                          build_int_cstu(long_long_unsigned_type_node, i - 1));
         tree x = object_byte(left, i - 1, at(call));
         tree y = object_byte(right, i - 1, at(call));
-        if (i == count && relation != EQ_EXPR && relation != NE_EXPR) {
+        if (!quantum_bytes && i == count && relation != EQ_EXPR && relation != NE_EXPR) {
             result =
                 fold_build2_loc(at(call), predicate ? relation : MINUS_EXPR, result_type, x, y);
             continue;
         }
         // strncmp stops at an equal NUL; unequal bytes still select their
         // own relation/difference before this suffix can contribute.
-        if (stop_at_zero && i < count) {
+        if (stop_at_zero && (i < count || quantum_bytes)) {
             tree zero = fold_build2_loc(
                 at(call), EQ_EXPR, boolean_type_node, x, build_zero_cst(integer_type_node));
             result = fold_build3_loc(at(call), COND_EXPR, result_type, zero, equal_result, result);
@@ -506,6 +553,9 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
             result =
                 fold_build3_loc(at(call), COND_EXPR, result_type, different, difference, result);
         }
+        if (active_byte)
+            result = fold_build3_loc(
+                at(call), COND_EXPR, result_type, active_byte, result, equal_result);
     }
     if (unbounded) {
         tree terminated = fold_build2_loc(at(call),
@@ -518,6 +568,24 @@ tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
         tree invalid =
             fold_convert(result_type, missing_string_terminator(integer_type_node, at(call)));
         result = fold_build3_loc(at(call), COND_EXPR, result_type, terminated, result, invalid);
+    } else if (quantum_bytes) {
+        tree q_type = TREE_TYPE(quantum_bytes);
+        tree in_bounds = fold_build2_loc(at(call),
+                                         LE_EXPR,
+                                         boolean_type_node,
+                                         fold_convert(long_long_unsigned_type_node, quantum_bytes),
+                                         build_int_cstu(long_long_unsigned_type_node, count));
+        if (!TYPE_UNSIGNED(q_type))
+            in_bounds = fold_build2_loc(
+                at(call),
+                TRUTH_ANDIF_EXPR,
+                boolean_type_node,
+                fold_build2_loc(
+                    at(call), GE_EXPR, boolean_type_node, quantum_bytes, build_zero_cst(q_type)),
+                in_bounds);
+        tree invalid =
+            fold_convert(result_type, missing_string_terminator(integer_type_node, at(call)));
+        result = fold_build3_loc(at(call), COND_EXPR, result_type, in_bounds, result, invalid);
     }
     return predicate ? result : fold_convert(TREE_TYPE(call), result);
 }
@@ -551,7 +619,7 @@ tree expand_memory_set(tree call) {
     QuantumByteRange range;
     bool resolved = resolve_byte_range(CALL_EXPR_ARG(call, 0), range);
     if (!range.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
-        !has_quantum(CALL_EXPR_ARG(call, 1)))
+        !has_quantum(CALL_EXPR_ARG(call, 1)) && !has_quantum(CALL_EXPR_ARG(call, 2)))
         return NULL_TREE; // Ordinary CPU storage and values keep their libc call.
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);

@@ -232,11 +232,45 @@ tree quantum_attribute(tree *node, tree, tree, int, bool *no_add) {
     tree decl = *node;
     if (TREE_CODE(decl) == FUNCTION_DECL) {
         tree result = TREE_TYPE(TREE_TYPE(decl));
-        if (result != void_type_node && (!INTEGRAL_TYPE_P(result) || TYPE_PRECISION(result) > 64)) {
+        bool valid_result =
+            result == void_type_node || (INTEGRAL_TYPE_P(result) && TYPE_PRECISION(result) <= 64) ||
+            (TREE_CODE(result) == RECORD_TYPE && quantum_product_type(TYPE_MAIN_VARIANT(result)));
+        if (!valid_result) {
             error_at(at(decl),
                      "|c>: quantum function results currently require a C integer or bool");
             *no_add = true;
         }
+        return NULL_TREE;
+    }
+    if (TREE_CODE(decl) == TYPE_DECL) {
+        tree type = TREE_TYPE(decl);
+        if (TREE_CODE(type) == POINTER_TYPE &&
+            ((INTEGRAL_TYPE_P(TREE_TYPE(type)) && TYPE_PRECISION(TREE_TYPE(type)) <= 64) ||
+             (TREE_CODE(TREE_TYPE(type)) == RECORD_TYPE &&
+              quantum_product_type(TYPE_MAIN_VARIANT(TREE_TYPE(type)))))) {
+            tree target = build_qualified_type(TREE_TYPE(type),
+                                               TYPE_QUALS(TREE_TYPE(type)) | TYPE_QUAL_VOLATILE);
+            tree ptr = build_pointer_type(target);
+            if (TYPE_NAME(type) == decl && TYPE_NAME(ptr) != decl) {
+                ptr = build_variant_type_copy(ptr);
+                TYPE_NAME(ptr) = decl;
+            }
+            TREE_TYPE(decl) = ptr;
+            return NULL_TREE;
+        }
+        if (!quantum_product_type(TYPE_MAIN_VARIANT(type)) || TYPE_READONLY(type)) {
+            error_at(
+                at(decl),
+                "|c>: quant requires integers/bools, fixed arrays or integer structures; pointers, unions, bitfields and floating point need further quantum semantics");
+            *no_add = true;
+            return NULL_TREE;
+        }
+        tree qualified = build_qualified_type(type, TYPE_QUALS(type) | TYPE_QUAL_VOLATILE);
+        if (TYPE_NAME(type) == decl && TYPE_NAME(qualified) != decl) {
+            qualified = build_variant_type_copy(qualified);
+            TYPE_NAME(qualified) = decl;
+        }
+        TREE_TYPE(decl) = qualified;
         return NULL_TREE;
     }
     if (TREE_CODE(decl) == PARM_DECL) {
@@ -307,6 +341,45 @@ const attribute_spec intrinsic_spec = {
 void register_attributes(void *, void *) {
     register_attribute(&quant_spec);
     register_attribute(&intrinsic_spec);
+}
+
+bool type_has_quant_typedef(tree type, bool allow_pointer = true, unsigned depth = 0) {
+    if (!type || type == error_mark_node || !TYPE_P(type) || depth > 8)
+        return false;
+    if (lookup_attribute("cket_quant", TYPE_ATTRIBUTES(type)))
+        return true;
+    if (TYPE_NAME(type) && TREE_CODE(TYPE_NAME(type)) == TYPE_DECL &&
+        lookup_attribute("cket_quant", DECL_ATTRIBUTES(TYPE_NAME(type))))
+        return true;
+    if (TREE_CODE(type) == POINTER_TYPE)
+        return allow_pointer && type_has_quant_typedef(TREE_TYPE(type), false, depth + 1);
+    if (TREE_CODE(type) == ARRAY_TYPE)
+        return type_has_quant_typedef(TREE_TYPE(type), false, depth + 1);
+    if (TREE_CODE(type) == RECORD_TYPE) {
+        for (tree f = TYPE_FIELDS(type); f; f = DECL_CHAIN(f))
+            if (TREE_CODE(f) == FIELD_DECL &&
+                type_has_quant_typedef(TREE_TYPE(f), false, depth + 1))
+                return true;
+    }
+    return false;
+}
+
+void propagate_typedef_quant(tree decl) {
+    if (!decl || decl == error_mark_node || !DECL_P(decl) ||
+        lookup_attribute("cket_quant", DECL_ATTRIBUTES(decl)))
+        return;
+    bool match = false;
+    if (TREE_CODE(decl) == FUNCTION_DECL && TREE_TYPE(decl))
+        match = type_has_quant_typedef(TREE_TYPE(TREE_TYPE(decl)));
+    else if (TREE_CODE(decl) == VAR_DECL || TREE_CODE(decl) == PARM_DECL)
+        match = type_has_quant_typedef(TREE_TYPE(decl));
+    if (!match)
+        return;
+    bool no_add = false;
+    quantum_attribute(&decl, get_identifier("cket_quant"), NULL_TREE, 0, &no_add);
+    if (!no_add)
+        DECL_ATTRIBUTES(decl) =
+            tree_cons(get_identifier("cket_quant"), NULL_TREE, DECL_ATTRIBUTES(decl));
 }
 
 tree runtime_function(const char *name, unsigned argc) {
@@ -383,7 +456,8 @@ void record_decl(void *event, void *) {
             error_at(at(decl), "|c>: superposition interval does not fit the quantum register");
             return;
         }
-        if (var.lower != var.upper && (var.lower != 0 || (var.upper & (var.upper + 1)) != 0)) {
+        uint64_t span = var.upper - var.lower;
+        if (var.lower != var.upper && span != UINT64_MAX && (span & (span + 1)) != 0) {
             error_at(
                 at(decl),
                 "|c>: uniform preparation currently supports [0, 2^k-1] or a single basis value");
@@ -405,7 +479,8 @@ void record_decl(void *event, void *) {
                         : var.upper;
     var.clean = !var.expression_init && !var.classical_init && var.upper == 0;
     var.basis_known = !var.expression_init && !var.classical_init && var.lower == var.upper;
-    var.pristine_uniform = !var.expression_init && !var.classical_init && var.lower != var.upper;
+    var.pristine_uniform =
+        !var.expression_init && !var.classical_init && var.lower == 0 && var.lower != var.upper;
     variables.emplace(decl, std::move(var));
 }
 
@@ -446,6 +521,20 @@ void finish_function(void *event, void *) {
         error_at(at(fn), "|c>: compiler intrinsics must not have C definitions");
         return;
     }
+    propagate_typedef_quant(fn);
+    for (tree p = DECL_ARGUMENTS(fn); p; p = DECL_CHAIN(p))
+        propagate_typedef_quant(p);
+    auto propagate_body = [](tree *node, int *walk, void *) -> tree {
+        if (TREE_CODE(*node) == DECL_EXPR)
+            propagate_typedef_quant(DECL_EXPR_DECL(*node));
+        else if (TREE_CODE(*node) == BIND_EXPR)
+            for (tree v = BIND_EXPR_VARS(*node); v; v = DECL_CHAIN(v))
+                propagate_typedef_quant(v);
+        else if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree_without_duplicates(&DECL_SAVED_TREE(fn), propagate_body, nullptr);
     if (ast_file) {
         fprintf(ast_file, "\n;; GCC C AST before |c> lowering: %s\n", name_of(fn).c_str());
         print_node(ast_file, "function", fn, 0, false);

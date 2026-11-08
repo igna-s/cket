@@ -35,7 +35,7 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
     bool resolved_pattern =
         !(set_search || substring) || resolve_byte_range(CALL_EXPR_ARG(call, 1), pattern);
     if (!string.quantum && !pattern.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
-        !has_quantum(CALL_EXPR_ARG(call, 1)))
+        !has_quantum(CALL_EXPR_ARG(call, 1)) && (!memory || !has_quantum(CALL_EXPR_ARG(call, 2))))
         return false;
     auto reject = [call](const char *message) {
         error_at(at(call), "%s", message);
@@ -49,14 +49,24 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
                 : "|c>: quantum search needs checked quantum bytes or known CPU object storage");
     uint64_t count = string.size() - string.offset;
     uint64_t pattern_count = set_search || substring ? pattern.size() - pattern.offset : 0;
+    tree quantum_length = NULL_TREE;
     if (memory) {
-        tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
-        if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
-            return reject("|c>: quantum memchr requires a constant checked byte count");
-        uint64_t requested = tree_to_uhwi(length);
-        if (requested > count)
-            return reject("|c>: quantum memchr exceeds its checked storage bounds");
-        count = requested;
+        if (has_quantum(CALL_EXPR_ARG(call, 2))) {
+            quantum_length = expand_quantum_program(CALL_EXPR_ARG(call, 2));
+            if (!quantum_length || !INTEGRAL_TYPE_P(TREE_TYPE(quantum_length)) ||
+                TYPE_PRECISION(TREE_TYPE(quantum_length)) > 64 ||
+                !quantum_pure_expression(quantum_length))
+                return reject(
+                    "|c>: quantum memchr requires a pure integer byte count of at most 64 bits");
+        } else {
+            tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
+            if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
+                return reject("|c>: quantum memchr requires a constant checked byte count");
+            uint64_t requested = tree_to_uhwi(length);
+            if (requested > count)
+                return reject("|c>: quantum memchr exceeds its checked storage bounds");
+            count = requested;
+        }
     } else if (!count || ((set_search || substring) && !pattern_count))
         return reject("|c>: quantum string search needs a NUL inside each checked string view");
     if (count > 64 || pattern_count > 64)
@@ -92,6 +102,13 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
     };
     tree found = boolean_false_node;
     for (uint64_t i = count; i; --i) {
+        tree in_prefix = NULL_TREE;
+        if (quantum_length)
+            in_prefix = fold_build2_loc(location,
+                                        GT_EXPR,
+                                        boolean_type_node,
+                                        fold_convert(long_long_unsigned_type_node, quantum_length),
+                                        build_int_cstu(long_long_unsigned_type_node, i - 1));
         tree byte = object_byte(string, i - 1, location), match;
         if (substring) {
             match = boolean_false_node;
@@ -111,6 +128,8 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
             match = byte_range_member(pattern, byte, location);
         else
             match = fold_build2_loc(location, EQ_EXPR, boolean_type_node, byte, character);
+        if (in_prefix)
+            match = both(in_prefix, match);
         tree continuation = memory ? found : both(nonzero(byte), found);
         if (set_search || substring)
             match = both(nonzero(byte), match);
@@ -144,6 +163,18 @@ bool expand_string_search(tree call, QuantumStringSearch &search, bool position)
         search.defined = byte_range_terminated(string, location);
         if (set_search || substring)
             search.defined = both(search.defined, byte_range_terminated(pattern, location));
+    } else if (quantum_length) {
+        tree q_type = TREE_TYPE(quantum_length);
+        search.defined = fold_build2_loc(location,
+                                         LE_EXPR,
+                                         boolean_type_node,
+                                         fold_convert(long_long_unsigned_type_node, quantum_length),
+                                         build_int_cstu(long_long_unsigned_type_node, count));
+        if (!TYPE_UNSIGNED(q_type))
+            search.defined = both(
+                fold_build2_loc(
+                    location, GE_EXPR, boolean_type_node, quantum_length, build_zero_cst(q_type)),
+                search.defined);
     }
     search.found = found;
     return true;

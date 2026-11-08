@@ -50,7 +50,7 @@ tree expand_string_copy(tree call) {
     bool resolved_destination = resolve_byte_range(CALL_EXPR_ARG(call, 0), destination);
     bool resolved_source = resolve_byte_range(CALL_EXPR_ARG(call, 1), source);
     if (!destination.quantum && !source.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
-        !has_quantum(CALL_EXPR_ARG(call, 1)))
+        !has_quantum(CALL_EXPR_ARG(call, 1)) && (!bounded || !has_quantum(CALL_EXPR_ARG(call, 2))))
         return NULL_TREE;
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);
@@ -69,19 +69,30 @@ tree expand_string_copy(tree call) {
     uint64_t available = destination.size() - destination.offset;
     uint64_t source_count = source.size() - source.offset;
     uint64_t count = std::min(available, source_count);
+    tree quantum_length = NULL_TREE;
     if (bounded) {
-        tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
-        if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
-            return reject("|c>: quantum strncpy requires a constant checked byte count");
-        count = tree_to_uhwi(length);
-        if (count > available)
-            return reject("|c>: quantum strncpy exceeds its checked destination bounds");
+        if (has_quantum(CALL_EXPR_ARG(call, 2))) {
+            quantum_length = expand_quantum_program(CALL_EXPR_ARG(call, 2));
+            if (!quantum_length || !INTEGRAL_TYPE_P(TREE_TYPE(quantum_length)) ||
+                TYPE_PRECISION(TREE_TYPE(quantum_length)) > 64 ||
+                !quantum_pure_expression(quantum_length))
+                return reject(
+                    "|c>: quantum strncpy requires a pure integer byte count of at most 64 bits");
+            count = available;
+        } else {
+            tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
+            if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
+                return reject("|c>: quantum strncpy requires a constant checked byte count");
+            count = tree_to_uhwi(length);
+            if (count > available)
+                return reject("|c>: quantum strncpy exceeds its checked destination bounds");
+        }
     } else if (!count)
         return reject("|c>: quantum strcpy needs a source NUL that fits the checked destination");
     if (count > 64 || (!bounded && source_count > 64))
         return reject("|c>: quantum string copy exceeds the 64-byte expression synthesis bound");
     uint64_t reads = std::min(count, source_count);
-    if (count && !reads)
+    if (count && !reads && !quantum_length)
         return reject("|c>: quantum string copy has no readable source byte");
     std::map<tree, uint64_t> source_masks;
     if (source.quantum)
@@ -104,9 +115,24 @@ tree expand_string_copy(tree call) {
     source.stop_at_zero = true;
     tree running = boolean_true_node;
     tree terminated = boolean_false_node;
+    std::vector<tree> prefix;
+    tree captured_length =
+        quantum_length
+            ? quantum_value_capture(call,
+                                    fold_convert(unsigned_char_type_node, quantum_length),
+                                    "__cket_strncpy_len_",
+                                    prefix)
+            : NULL_TREE;
     std::vector<std::pair<tree, tree>> words;
     std::map<tree, tree> bit_masks, mask_values;
     for (uint64_t i = 0; i < count; ++i) {
+        tree in_prefix = captured_length
+                             ? fold_build2_loc(at(call),
+                                               GT_EXPR,
+                                               boolean_type_node,
+                                               captured_length,
+                                               build_int_cstu(unsigned_char_type_node, i))
+                             : boolean_true_node;
         tree byte =
             i < reads ? object_byte(source, i, at(call)) : build_zero_cst(integer_type_node);
         tree zero = fold_build2_loc(
@@ -129,11 +155,11 @@ tree expand_string_copy(tree call) {
         bit_masks[target] =
             build_int_cstu(long_long_unsigned_type_node,
                            mask | (prior == bit_masks.end() ? 0 : tree_to_uhwi(prior->second)));
-        if (!bounded) {
+        if (!bounded || captured_length) {
             tree enabled = fold_build3_loc(at(call),
                                            COND_EXPR,
                                            type,
-                                           running,
+                                           captured_length ? in_prefix : running,
                                            build_int_cstu(type, mask),
                                            build_zero_cst(type));
             auto previous = mask_values.find(target);
@@ -150,8 +176,36 @@ tree expand_string_copy(tree call) {
                             fold_build1_loc(at(call), TRUTH_NOT_EXPR, boolean_type_node, zero));
         string_word_byte(destination, i, selected, words, at(call));
     }
-    tree defined = !bounded || count > source_count ? terminated : boolean_true_node;
-    std::vector<tree> prefix;
+    tree defined;
+    if (quantum_length) {
+        tree q_type = TREE_TYPE(quantum_length);
+        tree in_bounds = fold_build2_loc(at(call),
+                                         LE_EXPR,
+                                         boolean_type_node,
+                                         fold_convert(long_long_unsigned_type_node, quantum_length),
+                                         build_int_cstu(long_long_unsigned_type_node, available));
+        if (!TYPE_UNSIGNED(q_type))
+            in_bounds = fold_build2_loc(
+                at(call),
+                TRUTH_ANDIF_EXPR,
+                boolean_type_node,
+                fold_build2_loc(
+                    at(call), GE_EXPR, boolean_type_node, quantum_length, build_zero_cst(q_type)),
+                in_bounds);
+        tree source_valid =
+            fold_build2_loc(at(call),
+                            TRUTH_ORIF_EXPR,
+                            boolean_type_node,
+                            fold_build2_loc(at(call),
+                                            LE_EXPR,
+                                            boolean_type_node,
+                                            captured_length,
+                                            build_int_cstu(unsigned_char_type_node, source_count)),
+                            terminated);
+        defined =
+            fold_build2_loc(at(call), TRUTH_ANDIF_EXPR, boolean_type_node, in_bounds, source_valid);
+    } else
+        defined = !bounded || count > source_count ? terminated : boolean_true_node;
     std::map<tree, tree> quantum_masks;
     for (const auto &entry : mask_values)
         quantum_masks[entry.first] =

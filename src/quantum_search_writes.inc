@@ -1,7 +1,8 @@
 // A saved address selects checked object bytes, never a host pointer load.
 // Snapshot the assigned value before any candidate word changes. Retained
 // scalar histories preserve the selector's original source and overwritten bits.
-tree expand_search_byte_write(tree value, tree target, QuantumStringSearch search, int64_t delta) {
+tree expand_search_byte_write(
+    tree value, tree target, QuantumStringSearch search, int64_t delta, tree dynamic_delta) {
     auto reject = [value](const char *message) -> tree {
         error_at(at(value), "%s", message);
         return TREE_TYPE(value) == void_type_node ? build_empty_stmt(at(value))
@@ -17,16 +18,54 @@ tree expand_search_byte_write(tree value, tree target, QuantumStringSearch searc
             "|c>: a quantum-selected write into CPU storage needs an explicit memory-effect boundary");
     if (TYPE_READONLY(search.source.element_type))
         return reject("|c>: search-pointer write cannot modify a read-only source object");
+    QuantumByteRange current = search.source;
+    uint64_t origin = current.offset;
+    current.offset = 0;
+    current.stop_at_zero = false;
+    if (dynamic_delta) {
+        for (tree owner : current.elements)
+            if (readonly_quantum_borrows.count(owner))
+                return reject("|c>: search-pointer write cannot modify a read-only borrow");
+    }
     enum tree_code code = TREE_CODE(value);
     bool increment = code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR ||
                      code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR;
     bool postfix = code == POSTINCREMENT_EXPR || code == POSTDECREMENT_EXPR;
     std::vector<tree> prefix;
+    tree chosen_index = NULL_TREE, index_type = NULL_TREE;
+    if (dynamic_delta) {
+        unsigned index_bits = 1;
+        while ((uint64_t{1} << index_bits) <= current.size())
+            ++index_bits;
+        index_type = build_nonstandard_integer_type(index_bits, true);
+        tree base_pos =
+            fold_build2_loc(at(value),
+                            PLUS_EXPR,
+                            size_type_node,
+                            search.position,
+                            build_int_cstu(size_type_node, origin + static_cast<uint64_t>(delta)));
+        tree effective_pos =
+            build2_loc(at(value), PLUS_EXPR, size_type_node, base_pos, dynamic_delta);
+        tree in_bounds = build2_loc(at(value),
+                                    LT_EXPR,
+                                    boolean_type_node,
+                                    effective_pos,
+                                    build_int_cstu(size_type_node, current.size()));
+        tree encoded_index = build3_loc(at(value),
+                                        COND_EXPR,
+                                        index_type,
+                                        in_bounds,
+                                        fold_convert(index_type, effective_pos),
+                                        build_int_cstu(index_type, current.size()));
+        chosen_index =
+            quantum_value_capture(value, encoded_index, "__cket_search_index_", prefix, index_type);
+    }
     tree previous = NULL_TREE, assigned;
     if (increment) {
         previous = quantum_value_capture(
             value,
-            fold_convert(unsigned_char_type_node, expand_search_pointer_read(target)),
+            fold_convert(unsigned_char_type_node,
+                         expand_search_pointer_read_resolved(target, search, delta, dynamic_delta)),
             "__cket_search_previous_",
             prefix);
         tree promoted = fold_convert(integer_type_node, fold_convert(type, previous));
@@ -45,34 +84,53 @@ tree expand_search_byte_write(tree value, tree target, QuantumStringSearch searc
     assigned = fold_convert(unsigned_char_type_node, fold_convert(type, assigned));
     tree captured = quantum_value_capture(value, assigned, "__cket_search_write_", prefix);
     tree capture_assignment = prefix.back();
-    QuantumByteRange current = search.source;
-    uint64_t origin = current.offset;
-    current.offset = 0;
-    current.stop_at_zero = false;
     tree valid = boolean_false_node;
     std::vector<std::pair<tree, tree>> words;
-    for (uint64_t i = 0; i < search.positions; ++i) {
-        uint64_t address = origin + i;
-        if ((delta < 0 && (uint64_t)(-(delta + 1)) + 1 > address) ||
-            (delta >= 0 && (uint64_t)delta >= current.size() - address))
-            continue;
-        address = delta < 0 ? address - ((uint64_t)(-(delta + 1)) + 1) : address + (uint64_t)delta;
-        tree owner = current.elements[(size_t)(address / current.stride)];
-        if (readonly_quantum_borrows.count(owner))
-            return reject("|c>: search-pointer write cannot modify a read-only borrow");
-        tree selected = fold_build2_loc(at(value),
-                                        EQ_EXPR,
-                                        boolean_type_node,
-                                        search.position,
-                                        build_int_cstu(size_type_node, i));
-        valid = fold_build2_loc(at(value), TRUTH_ORIF_EXPR, boolean_type_node, selected, valid);
-        tree byte = fold_build3_loc(at(value),
-                                    COND_EXPR,
-                                    integer_type_node,
-                                    selected,
-                                    fold_convert(integer_type_node, captured),
-                                    object_byte(current, address, at(value)));
-        string_word_byte(current, address, byte, words, at(value));
+    if (dynamic_delta) {
+        valid = build2_loc(at(value),
+                           LT_EXPR,
+                           boolean_type_node,
+                           chosen_index,
+                           build_int_cstu(index_type, current.size()));
+        for (uint64_t address = 0; address < current.size(); ++address) {
+            tree selected = build2_loc(at(value),
+                                       EQ_EXPR,
+                                       boolean_type_node,
+                                       chosen_index,
+                                       build_int_cstu(index_type, address));
+            tree byte = build3_loc(at(value),
+                                   COND_EXPR,
+                                   integer_type_node,
+                                   selected,
+                                   fold_convert(integer_type_node, captured),
+                                   object_byte(current, address, at(value)));
+            string_word_byte(current, address, byte, words, at(value));
+        }
+    } else {
+        for (uint64_t i = 0; i < search.positions; ++i) {
+            uint64_t address = origin + i;
+            if ((delta < 0 && (uint64_t)(-(delta + 1)) + 1 > address) ||
+                (delta >= 0 && (uint64_t)delta >= current.size() - address))
+                continue;
+            address =
+                delta < 0 ? address - ((uint64_t)(-(delta + 1)) + 1) : address + (uint64_t)delta;
+            tree owner = current.elements[(size_t)(address / current.stride)];
+            if (readonly_quantum_borrows.count(owner))
+                return reject("|c>: search-pointer write cannot modify a read-only borrow");
+            tree selected = fold_build2_loc(at(value),
+                                            EQ_EXPR,
+                                            boolean_type_node,
+                                            search.position,
+                                            build_int_cstu(size_type_node, i));
+            valid = fold_build2_loc(at(value), TRUTH_ORIF_EXPR, boolean_type_node, selected, valid);
+            tree byte = fold_build3_loc(at(value),
+                                        COND_EXPR,
+                                        integer_type_node,
+                                        selected,
+                                        fold_convert(integer_type_node, captured),
+                                        object_byte(current, address, at(value)));
+            string_word_byte(current, address, byte, words, at(value));
+        }
     }
     tree defined = fold_build2_loc(
         at(value),

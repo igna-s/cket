@@ -509,7 +509,13 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     uint64_t zeros[2] = {(a->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected),
                          (b->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected)};
     uint64_t lower[2], upper[2];
-    if (!selector && selected == bits_mask(a->width)) {
+    if (!mask && a->basis_known && b->basis_known && (!selector || selector->basis_known)) {
+        uint64_t eff = selected & (selector ? selector->basis_value : bits_mask(a->width));
+        lower[0] = upper[0] = (a->basis_value & ~eff) | (b->basis_value & eff);
+        lower[1] = upper[1] = (b->basis_value & ~eff) | (a->basis_value & eff);
+        zeros[0] = bits_mask(a->width) & ~lower[0];
+        zeros[1] = bits_mask(b->width) & ~lower[1];
+    } else if (!selector && selected == bits_mask(a->width)) {
         lower[0] = lower[1] = lower_a < lower_b ? lower_a : lower_b;
         upper[0] = upper[1] = upper_a > upper_b ? upper_a : upper_b;
     } else {

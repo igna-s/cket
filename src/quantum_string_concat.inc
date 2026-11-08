@@ -29,7 +29,7 @@ tree expand_string_concat(tree call) {
     bool resolved_destination = resolve_byte_range(CALL_EXPR_ARG(call, 0), destination);
     bool resolved_source = resolve_byte_range(CALL_EXPR_ARG(call, 1), source);
     if (!destination.quantum && !source.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
-        !has_quantum(CALL_EXPR_ARG(call, 1)))
+        !has_quantum(CALL_EXPR_ARG(call, 1)) && (!bounded || !has_quantum(CALL_EXPR_ARG(call, 2))))
         return NULL_TREE;
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);
@@ -48,11 +48,22 @@ tree expand_string_concat(tree call) {
     uint64_t count = destination.size() - destination.offset;
     uint64_t available_source = source.size() - source.offset;
     uint64_t limit = available_source;
+    tree quantum_length = NULL_TREE;
     if (bounded) {
-        tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
-        if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
-            return reject("|c>: quantum strncat requires a constant checked append count");
-        limit = tree_to_uhwi(length);
+        if (has_quantum(CALL_EXPR_ARG(call, 2))) {
+            quantum_length = expand_quantum_program(CALL_EXPR_ARG(call, 2));
+            if (!quantum_length || !INTEGRAL_TYPE_P(TREE_TYPE(quantum_length)) ||
+                TYPE_PRECISION(TREE_TYPE(quantum_length)) > 64 ||
+                !quantum_pure_expression(quantum_length))
+                return reject(
+                    "|c>: quantum strncat requires a pure integer append count of at most 64 bits");
+            limit = available_source;
+        } else {
+            tree length = strip(fold(CALL_EXPR_ARG(call, 2)));
+            if (!length || TREE_CODE(length) != INTEGER_CST || !tree_fits_uhwi_p(length))
+                return reject("|c>: quantum strncat requires a constant checked append count");
+            limit = tree_to_uhwi(length);
+        }
     }
     if (!count || (!bounded && !available_source) || (limit && !available_source))
         return reject(
@@ -80,9 +91,50 @@ tree expand_string_concat(tree call) {
     source.stop_at_zero = true;
     tree invalid = missing_string_terminator(unsigned_char_type_node, at(call));
     tree destination_length = string_length_expression(destination, count, invalid, at(call));
-    tree source_fallback =
-        bounded && reads == limit ? build_int_cstu(unsigned_char_type_node, limit) : invalid;
-    tree source_length = string_length_expression(source, reads, source_fallback, at(call));
+    tree source_length;
+    if (quantum_length) {
+        tree raw_len = string_length_expression(
+            source, reads, build_int_cstu(unsigned_char_type_node, reads + 1), at(call));
+        tree q_u = fold_convert(long_long_unsigned_type_node, quantum_length);
+        tree raw_u = fold_convert(long_long_unsigned_type_node, raw_len);
+        tree use_q =
+            fold_build2_loc(at(call),
+                            TRUTH_ANDIF_EXPR,
+                            boolean_type_node,
+                            fold_build2_loc(at(call), LE_EXPR, boolean_type_node, q_u, raw_u),
+                            fold_build2_loc(at(call),
+                                            LE_EXPR,
+                                            boolean_type_node,
+                                            q_u,
+                                            build_int_cstu(long_long_unsigned_type_node, reads)));
+        tree has_nul = fold_build2_loc(at(call),
+                                       LE_EXPR,
+                                       boolean_type_node,
+                                       raw_len,
+                                       build_int_cstu(unsigned_char_type_node, reads));
+        if (!TYPE_UNSIGNED(TREE_TYPE(quantum_length))) {
+            tree nonneg = fold_build2_loc(at(call),
+                                          GE_EXPR,
+                                          boolean_type_node,
+                                          quantum_length,
+                                          build_zero_cst(TREE_TYPE(quantum_length)));
+            use_q = fold_build2_loc(at(call), TRUTH_ANDIF_EXPR, boolean_type_node, nonneg, use_q);
+            has_nul =
+                fold_build2_loc(at(call), TRUTH_ANDIF_EXPR, boolean_type_node, nonneg, has_nul);
+        }
+        source_length = fold_build3_loc(
+            at(call),
+            COND_EXPR,
+            unsigned_char_type_node,
+            use_q,
+            fold_convert(unsigned_char_type_node, quantum_length),
+            fold_build3_loc(
+                at(call), COND_EXPR, unsigned_char_type_node, has_nul, raw_len, invalid));
+    } else {
+        tree source_fallback =
+            bounded && reads == limit ? build_int_cstu(unsigned_char_type_node, limit) : invalid;
+        source_length = string_length_expression(source, reads, source_fallback, at(call));
+    }
     std::vector<tree> prefix;
     tree start = fold_convert(
         integer_type_node,

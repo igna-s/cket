@@ -7,11 +7,14 @@ bool standard_decimal_conversion(tree fn) {
         return false;
     std::string name = name_of(fn);
     return name == "atoi" || name == "atol" || name == "atoll" || name == "__cket_atoi" ||
-           name == "__cket_atol" || name == "__cket_atoll";
+           name == "__cket_atol" || name == "__cket_atoll" || name == "strtol" ||
+           name == "strtoll" || name == "strtoimax" || name == "__strtol_internal" ||
+           name == "__strtoll_internal";
 }
 
 tree expand_decimal_conversion(tree call) {
-    if (call_expr_nargs(call) != 1)
+    int nargs = call_expr_nargs(call);
+    if (nargs != 1 && nargs != 3 && nargs != 4)
         return NULL_TREE;
     QuantumByteRange source;
     bool resolved = resolve_byte_range(CALL_EXPR_ARG(call, 0), source);
@@ -21,6 +24,47 @@ tree expand_decimal_conversion(tree call) {
         error_at(at(call), "%s", message);
         return build_zero_cst(TREE_TYPE(call));
     };
+    tree end_decl = NULL_TREE;
+    uint64_t radix = 10;
+    if (nargs >= 3) {
+        tree endptr = strip(CALL_EXPR_ARG(call, 1));
+        if (!endptr)
+            return reject("|c>: quantum integer conversion requires a checked endptr argument");
+        if (!integer_zerop(endptr)) {
+            if (TREE_CODE(endptr) != ADDR_EXPR)
+                return reject(
+                    "|c>: quantum integer conversion endptr requires NULL or the address of a local character/void pointer");
+            tree target = strip(TREE_OPERAND(endptr, 0));
+            if (!target || TREE_CODE(target) != VAR_DECL ||
+                TREE_CODE(TREE_TYPE(target)) != POINTER_TYPE)
+                return reject(
+                    "|c>: quantum integer conversion endptr requires NULL or the address of a local character/void pointer");
+            tree ptr_type = TREE_TYPE(target), pointed = TREE_TYPE(ptr_type);
+            bool character = TYPE_MAIN_VARIANT(pointed) == char_type_node ||
+                             TYPE_MAIN_VARIANT(pointed) == signed_char_type_node ||
+                             TYPE_MAIN_VARIANT(pointed) == unsigned_char_type_node;
+            if ((TREE_CODE(pointed) != VOID_TYPE && !character) || TYPE_VOLATILE(pointed) ||
+                TYPE_ATOMIC(pointed) || TYPE_VOLATILE(ptr_type) || TYPE_ATOMIC(ptr_type) ||
+                TREE_STATIC(target) || DECL_EXTERNAL(target) || quantum(target) ||
+                lookup_attribute("cket_quant", DECL_ATTRIBUTES(target)))
+                return reject(
+                    "|c>: quantum integer conversion endptr requires a local nonvolatile character/void pointer");
+            if (quantum_search_pointers.count(target) || quantum_references.count(target) ||
+                quantum_pointer_aliases.count(target) || quantum_heap_pointers.count(target))
+                return reject(
+                    "|c>: quantum integer conversion endptr cannot rebind an existing quantum pointer");
+            end_decl = target;
+        }
+        tree base_arg = strip(CALL_EXPR_ARG(call, 2));
+        if (!base_arg || TREE_CODE(base_arg) != INTEGER_CST || !tree_fits_shwi_p(base_arg))
+            return reject("|c>: quantum integer conversion requires a constant radix in 2..36");
+        int64_t base_val = tree_to_shwi(base_arg);
+        if (base_val < 2 || base_val > 36)
+            return reject("|c>: quantum integer conversion requires a constant radix in 2..36");
+        if (nargs == 4 && !integer_zerop(strip(CALL_EXPR_ARG(call, 3))))
+            return reject("|c>: quantum integer conversion does not support locale grouping");
+        radix = static_cast<uint64_t>(base_val);
+    }
     if (!resolved)
         return reject(source.error
                           ? source.error
@@ -52,9 +96,11 @@ tree expand_decimal_conversion(tree call) {
     };
     tree unsigned_type = unsigned_type_for(type);
     uint64_t negative_limit = uint64_t{1} << (width - 1), positive_limit = negative_limit - 1;
+    uint64_t max_digit = radix - 1;
     tree phase_type = build_nonstandard_integer_type(2, true);
     tree phase = build_zero_cst(integer_type_node), negative = boolean_false_node;
     tree magnitude = build_zero_cst(unsigned_type);
+    tree end_offset = end_decl ? build_zero_cst(integer_type_node) : NULL_TREE;
     std::vector<tree> prefix;
     uint64_t bound = 0;
     for (uint64_t i = 0; i < count; ++i) {
@@ -66,8 +112,34 @@ tree expand_decimal_conversion(tree call) {
         tree skip = both(leading, space);
         tree available =
             both(running, fold_build1_loc(location, TRUTH_NOT_EXPR, boolean_type_node, skip));
-        tree digit = both(binary(GE_EXPR, byte, build_int_cst(integer_type_node, '0')),
-                          binary(LE_EXPR, byte, build_int_cst(integer_type_node, '9')));
+        int dec_max = radix <= 10 ? static_cast<int>('0' + radix - 1) : '9';
+        tree dec_digit = both(binary(GE_EXPR, byte, build_int_cst(integer_type_node, '0')),
+                              binary(LE_EXPR, byte, build_int_cst(integer_type_node, dec_max)));
+        tree digit = dec_digit;
+        tree raw_digit_value = fold_build2_loc(
+            location, MINUS_EXPR, integer_type_node, byte, build_int_cst(integer_type_node, '0'));
+        if (radix > 10) {
+            int alpha_span = static_cast<int>(radix - 11);
+            tree upper_digit =
+                both(binary(GE_EXPR, byte, build_int_cst(integer_type_node, 'A')),
+                     binary(LE_EXPR, byte, build_int_cst(integer_type_node, 'A' + alpha_span)));
+            tree lower_digit =
+                both(binary(GE_EXPR, byte, build_int_cst(integer_type_node, 'a')),
+                     binary(LE_EXPR, byte, build_int_cst(integer_type_node, 'a' + alpha_span)));
+            digit = either(dec_digit, either(upper_digit, lower_digit));
+            tree upper_val = fold_build2_loc(location,
+                                             MINUS_EXPR,
+                                             integer_type_node,
+                                             byte,
+                                             build_int_cst(integer_type_node, 'A' - 10));
+            tree lower_val = fold_build2_loc(location,
+                                             MINUS_EXPR,
+                                             integer_type_node,
+                                             byte,
+                                             build_int_cst(integer_type_node, 'a' - 10));
+            raw_digit_value =
+                choose(dec_digit, raw_digit_value, choose(upper_digit, upper_val, lower_val));
+        }
         tree take = both(available, digit);
         tree minus = binary(EQ_EXPR, byte, build_int_cst(integer_type_node, '-'));
         tree sign =
@@ -78,26 +150,23 @@ tree expand_decimal_conversion(tree call) {
             either(take, sign),
             build_int_cst(integer_type_node, 1),
             choose(skip, build_zero_cst(integer_type_node), build_int_cst(integer_type_node, 2)));
-        tree digit_value = fold_convert(unsigned_type,
-                                        fold_build2_loc(location,
-                                                        MINUS_EXPR,
-                                                        integer_type_node,
-                                                        byte,
-                                                        build_int_cst(integer_type_node, '0')));
+        tree digit_value = fold_convert(unsigned_type, raw_digit_value);
         tree remainder = choose(negative,
-                                build_int_cstu(unsigned_type, negative_limit % 10),
-                                build_int_cstu(unsigned_type, positive_limit % 10));
-        tree threshold = build_int_cstu(unsigned_type, positive_limit / 10);
+                                build_int_cstu(unsigned_type, negative_limit % radix),
+                                build_int_cstu(unsigned_type, positive_limit % radix));
+        tree threshold = build_int_cstu(unsigned_type, positive_limit / radix);
         tree safe = either(
             binary(LT_EXPR, magnitude, threshold),
             both(binary(EQ_EXPR, magnitude, threshold), binary(LE_EXPR, digit_value, remainder)));
-        tree next = fold_build2_loc(
-            location,
-            PLUS_EXPR,
-            unsigned_type,
-            fold_build2_loc(
-                location, MULT_EXPR, unsigned_type, magnitude, build_int_cstu(unsigned_type, 10)),
-            digit_value);
+        tree next = fold_build2_loc(location,
+                                    PLUS_EXPR,
+                                    unsigned_type,
+                                    fold_build2_loc(location,
+                                                    MULT_EXPR,
+                                                    unsigned_type,
+                                                    magnitude,
+                                                    build_int_cstu(unsigned_type, radix)),
+                                    digit_value);
         next = choose(take,
                       choose(safe, next, missing_string_terminator(unsigned_type, location)),
                       magnitude);
@@ -105,7 +174,8 @@ tree expand_decimal_conversion(tree call) {
             next = choose(byte_range_terminated(source, location),
                           next,
                           missing_string_terminator(unsigned_type, location));
-        bound = bound > (negative_limit - 9) / 10 ? negative_limit : bound * 10 + 9;
+        bound = bound > (negative_limit - max_digit) / radix ? negative_limit
+                                                             : bound * radix + max_digit;
         unsigned bits = 1;
         while (bits < width && (bound >> bits))
             ++bits;
@@ -116,11 +186,35 @@ tree expand_decimal_conversion(tree call) {
                                                     build_nonstandard_integer_type(bits, true));
         tree next_negative_value = quantum_value_capture(
             call, next_negative, "__cket_decimal_sign_", prefix, boolean_type_node);
+        if (end_decl) {
+            tree next_end = choose(take, build_int_cstu(integer_type_node, i + 1), end_offset);
+            unsigned end_bits = 1;
+            while ((uint64_t{1} << end_bits) <= i + 1)
+                ++end_bits;
+            tree end_step_type = build_nonstandard_integer_type(end_bits, true);
+            end_offset =
+                fold_convert(integer_type_node,
+                             quantum_value_capture(
+                                 call, next_end, "__cket_decimal_end_", prefix, end_step_type));
+        }
         phase = fold_convert(
             integer_type_node,
             quantum_value_capture(call, next_phase, "__cket_decimal_phase_", prefix, phase_type));
         negative = fold_convert(boolean_type_node, next_negative_value);
         magnitude = fold_convert(unsigned_type, next_magnitude);
+    }
+    if (end_decl) {
+        QuantumStringSearch search;
+        search.source = source;
+        search.source.stop_at_zero = true;
+        search.source.cpu_bytes.clear();
+        search.positions = count;
+        search.position = fold_convert(size_type_node, end_offset);
+        search.found = boolean_true_node;
+        search.defined = boolean_true_node;
+        quantum_search_pointers[end_decl] = search;
+        DECL_INITIAL(end_decl) = NULL_TREE;
+        procedure_cpu_flags.insert(end_decl);
     }
     tree signed_value = fold_convert(type, magnitude);
     tree negated = choose(binary(EQ_EXPR, magnitude, build_int_cstu(unsigned_type, negative_limit)),

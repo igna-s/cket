@@ -1221,11 +1221,20 @@ bool dependent(unsigned id) {
 void cleanup(tree *list) {
     if (dynamic_depth || !controls.empty())
         return;
+    std::vector<Variable *> ordered;
+    ordered.reserve(variables.size());
+    for (auto &entry : variables)
+        ordered.push_back(&entry.second);
+    std::sort(ordered.begin(), ordered.end(), [](const Variable *a, const Variable *b) {
+        if (a->optional_definition != b->optional_definition)
+            return a->optional_definition > b->optional_definition;
+        return a->id > b->id;
+    });
     bool changed;
     do {
         changed = false;
-        for (auto &entry : variables) {
-            auto &var = entry.second;
+        for (Variable *var_ptr : ordered) {
+            auto &var = *var_ptr;
             bool borrowed = false;
             for (const auto *frame : expression_frames)
                 borrowed |= frame->reads.count(var.id) != 0;

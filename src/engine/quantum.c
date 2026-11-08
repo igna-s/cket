@@ -1833,7 +1833,8 @@ int qc_apply_token(qc_context *c,
         }
         if (low > high || high > bits_mask(r->width))
             return qc_fail(c, "preparation interval is outside the C integer register");
-        if (low != high && (low || (high != UINT64_MAX && (high & (high + 1)))))
+        uint64_t span = high - low;
+        if (low != high && (span != UINT64_MAX && (span & (span + 1))))
             return qc_fail(c, "uniform preparation requires [0,2^k-1] or a single basis value");
         if (low != high && r->signed_type == 1 && high >= (UINT64_C(1) << (r->width - 1)))
             return qc_fail(c, "uniform interval is not nonnegative in its signed C type");
@@ -1841,20 +1842,31 @@ int qc_apply_token(qc_context *c,
             if (low == high && (low & (UINT64_C(1) << b))) {
                 if (!qc_emit(c, QC_X, r->wires[b], 0, 0, 0))
                     return 0;
-            } else if (low != high && (high & (UINT64_C(1) << b))) {
+            } else if (low != high && (span & (UINT64_C(1) << b))) {
                 if (!qc_emit(c, QC_H, r->wires[b], 0, 0, 0))
+                    return 0;
+            } else if (low != high && !(low & span) && (low & (UINT64_C(1) << b))) {
+                if (!qc_emit(c, QC_X, r->wires[b], 0, 0, 0))
                     return 0;
             }
         }
+        if (low != high && (low & span) && !c->structural && !add_constant(c, r, low, 0, 0))
+            return 0;
+        uint64_t nonzero = high;
+        if (low & span)
+            for (unsigned shift = 1; shift < 64; shift *= 2)
+                nonzero |= nonzero >> shift;
         r->prepared = 1;
         if (high)
             r->clean = 0;
         r->basis_known = low == high;
         r->basis_value = low;
-        r->zero_mask = bits_mask(r->width) & ~high;
-        r->uniform = low != high;
-        r->uniform_upper = high;
-        r->support_interval = 0;
+        r->zero_mask = bits_mask(r->width) & ~nonzero;
+        r->uniform = low != high && low == 0;
+        r->uniform_upper = low == 0 ? high : 0;
+        r->support_interval = low != high && low != 0;
+        r->support_lower = r->support_interval ? low : 0;
+        r->support_upper = r->support_interval ? high : 0;
         ++r->epoch;
         return 1;
     }
@@ -1919,6 +1931,8 @@ int qc_apply_token(qc_context *c,
             r->zero_mask = bits_mask(r->width);
             r->uniform = 0;
             r->support_interval = 0;
+            if (!collect_disposed(c))
+                return 0;
         } else {
             domain dom;
             if (!collect_domain(c, d, expr, &dom)) {
@@ -2120,8 +2134,9 @@ int qc_apply_token(qc_context *c,
         r->clean = r->basis_known = 1;
         r->basis_value = 0;
         r->zero_mask = bits_mask(r->width);
+        r->support_interval = r->support_lower = r->support_upper = 0;
         clear_definition(r);
-        return 1;
+        return collect_disposed(c);
     }
     if (cj_equal(d, op, "qmeasure") || cj_equal(d, op, "qobserve")) {
         int observation = cj_equal(d, op, "qobserve");
@@ -2148,8 +2163,11 @@ int qc_apply_token(qc_context *c,
         // Measuring a computed basis value projects its inputs onto a fiber of
         // that function. Their basis values remain unchanged, so the recorded
         // compute inverse can still clean this temporary after qobserve.
-        if (!observation)
+        if (!observation) {
             clear_definition(r);
+            if (!collect_disposed(c))
+                return 0;
+        }
         return 1;
     }
     if (c->structural && (cj_equal(d, op, "qfind") || cj_equal(d, op, "qsearch"))) {

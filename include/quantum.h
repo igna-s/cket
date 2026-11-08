@@ -56,6 +56,36 @@ void phase(double radians) __attribute__((cket_intrinsic("phase")));
 void fourier(uint64_t value) __attribute__((cket_intrinsic("fourier")));
 void inverse_fourier(uint64_t value) __attribute__((cket_intrinsic("inverse_fourier")));
 void reset(uint64_t value) __attribute__((cket_intrinsic("reset")));
+void __cket_reset_product(const volatile void *value)
+    __attribute__((cket_intrinsic("reset_product")));
+#define reset(value)                                                     \
+    (_Generic(*(__typeof__(value) *)0,                                   \
+        _Bool: reset,                                                    \
+        char: reset,                                                     \
+        signed char: reset,                                              \
+        unsigned char: reset,                                            \
+        short: reset,                                                    \
+        unsigned short: reset,                                           \
+        int: reset,                                                      \
+        unsigned int: reset,                                             \
+        long: reset,                                                     \
+        unsigned long: reset,                                            \
+        long long: reset,                                                \
+        unsigned long long: reset,                                       \
+        default: __cket_reset_product)(_Generic(*(__typeof__(value) *)0, \
+        _Bool: (value),                                                  \
+        char: (value),                                                   \
+        signed char: (value),                                            \
+        unsigned char: (value),                                          \
+        short: (value),                                                  \
+        unsigned short: (value),                                         \
+        int: (value),                                                    \
+        unsigned int: (value),                                           \
+        long: (value),                                                   \
+        unsigned long: (value),                                          \
+        long long: (value),                                              \
+        unsigned long long: (value),                                     \
+        default: &(value))))
 uint64_t find(uint64_t value, bool predicate) __attribute__((cket_intrinsic("find")));
 /* find assumes one solution. The count is a caller-supplied promise. */
 uint64_t find_known(uint64_t value, bool predicate, uint64_t solutions)

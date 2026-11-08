@@ -6,7 +6,7 @@ tree expand_byte_copy(tree call, bool move) {
     bool resolved_destination = resolve_byte_range(CALL_EXPR_ARG(call, 0), destination);
     bool resolved_source = resolve_byte_range(CALL_EXPR_ARG(call, 1), source);
     if (!destination.quantum && !source.quantum && !has_quantum(CALL_EXPR_ARG(call, 0)) &&
-        !has_quantum(CALL_EXPR_ARG(call, 1)))
+        !has_quantum(CALL_EXPR_ARG(call, 1)) && !has_quantum(CALL_EXPR_ARG(call, 2)))
         return NULL_TREE;
     auto reject = [call](const char *message) -> tree {
         error_at(at(call), "%s", message);
