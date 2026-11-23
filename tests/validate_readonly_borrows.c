@@ -12,7 +12,7 @@ static void reference_gate(double complex *state, size_t dimension, qc_gate gate
     if (gate.kind == QC_PHASE) {
         double complex factor = cexp(I * (inverse ? -gate.angle : gate.angle));
         for (size_t i = 0; i < dimension; ++i)
-            if (((qc_mask)i & gate.mask) == gate.pattern)
+            if (qc_mask_eq(qc_mask_and(qc_mask_from_u64(i), gate.mask), gate.pattern))
                 state[i] *= factor;
         return;
     }
@@ -20,7 +20,7 @@ static void reference_gate(double complex *state, size_t dimension, qc_gate gate
         validation_fail("readonly borrow reference encountered a nonunitary or unknown gate");
     size_t bit = (size_t)1 << gate.target;
     for (size_t i = 0; i < dimension; ++i) {
-        if ((i & bit) || ((qc_mask)i & gate.mask) != gate.pattern)
+        if ((i & bit) || !qc_mask_eq(qc_mask_and(qc_mask_from_u64(i), gate.mask), gate.pattern))
             continue;
         double complex a = state[i], b = state[i | bit];
         state[i] = gate.kind == QC_X ? b : (a + b) / sqrt(2.0);
@@ -223,6 +223,84 @@ static void negative(validation *v) {
     }
 }
 
+static void ir_readonly_enforcement(void) {
+    static const char *const bad_ops[] = {
+        "{\"op\":\"qcompute\",\"id\":0,\"expr\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1}}",
+        "{\"op\":\"quncompute\",\"id\":0,\"expr\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1}}",
+        "{\"op\":\"qinplace\",\"id\":0,\"expr\":{\"op\":\"bxor\",\"bits\":8,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":8,\"signed\":false},{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1}]}}",
+        "{\"op\":\"qadd_inplace\",\"id\":0,\"value\":1}",
+        "{\"op\":\"qadd_register\",\"id\":0,\"source\":1,\"subtract\":false}",
+        "{\"op\":\"qadd_expression\",\"id\":0,\"subtract\":false,\"expr\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1},\"checked\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1}}",
+        "{\"op\":\"qxor_inplace\",\"id\":0,\"value\":1}",
+        "{\"op\":\"qfourier\",\"id\":0,\"inverse\":false}",
+        "{\"op\":\"qmeasure\",\"id\":0}",
+        "{\"op\":\"qreset\",\"id\":0}",
+        "{\"op\":\"qswap\",\"id\":0,\"other\":1,\"rebind\":false}",
+        "{\"op\":\"qpatch\",\"id\":0,\"history\":1,\"bit_mask\":{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":1},\"expr\":{\"op\":\"const\",\"bits\":8,\"signed\":false,\"value\":1}}",
+        "{\"op\":\"qmodule\",\"ids\":[0],\"inverse\":false,\"circuit\":{\"format\":\"cket.qir\",\"version\":1,\"instructions\":[{\"op\":\"qborrow\",\"id\":0,\"width\":8,\"signed\":false},{\"op\":\"qadd_inplace\",\"id\":0,\"value\":1}]}}",
+    };
+    unsigned checks = 0;
+    unsigned nbad = (unsigned)(sizeof bad_ops / sizeof *bad_ops);
+    for (unsigned i = 0; i < nbad; ++i) {
+        qc_context *c = qc_create(0, 7);
+        if (!c ||
+            !qc_apply(
+                c,
+                "{\"op\":\"qborrow\",\"id\":0,\"width\":8,\"signed\":false,\"readonly\":true}",
+                NULL) ||
+            !qc_apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":8,\"signed\":false}", NULL) ||
+            (i == 10 &&
+             !qc_apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":0}", NULL)))
+            validation_fail("readonly IR test setup failed: %s", qc_error(c));
+        if (qc_apply(c, bad_ops[i], NULL) || !strstr(qc_error(c), "readonly"))
+            validation_fail("readonly borrow mutation accepted at case %u: %s", i, qc_error(c));
+        qc_destroy(c);
+        ++checks;
+    }
+    /* Read-only source, control, non-mutating module, and omitted readonly remain allowed. */
+    qc_context *c = qc_create_sparse(7, 256);
+    if (!c ||
+        !qc_apply(c,
+                  "{\"op\":\"qborrow\",\"id\":0,\"width\":1,\"signed\":false,\"readonly\":true}",
+                  NULL) ||
+        !qc_apply(c,
+                  "{\"op\":\"qborrow\",\"id\":1,\"width\":8,\"signed\":false,\"readonly\":true}",
+                  NULL) ||
+        !qc_apply(c, "{\"op\":\"qalloc\",\"id\":2,\"width\":8,\"signed\":false}", NULL) ||
+        !qc_apply(c, "{\"op\":\"qalloc\",\"id\":3,\"width\":8,\"signed\":false}", NULL) ||
+        !qc_apply(
+            c,
+            "{\"op\":\"qcompute\",\"id\":2,\"controls\":[{\"id\":0,\"value\":1}],\"expr\":{\"op\":\"reg\",\"id\":1,\"bits\":8,\"signed\":false}}",
+            NULL) ||
+        !qc_apply(
+            c,
+            "{\"op\":\"qadd_register\",\"id\":3,\"source\":1,\"subtract\":false,\"controls\":[{\"id\":0,\"value\":1}]}",
+            NULL) ||
+        !qc_apply(
+            c, "{\"op\":\"qphase\",\"angle\":0.5,\"controls\":[{\"id\":0,\"value\":1}]}", NULL) ||
+        !qc_apply(
+            c,
+            "{\"op\":\"qmodule\",\"ids\":[0],\"inverse\":false,\"circuit\":{\"format\":\"cket.qir\",\"version\":1,\"instructions\":[{\"op\":\"qborrow\",\"id\":0,\"width\":1,\"signed\":false,\"readonly\":true},{\"op\":\"qphase\",\"angle\":0.25,\"controls\":[{\"id\":0,\"value\":1}]}]}}",
+            NULL))
+        validation_fail("readonly borrow valid read/control failed: %s", qc_error(c));
+    qc_destroy(c);
+    ++checks;
+    /* Legacy qborrow without readonly remains mutable; qalloc rejects readonly. */
+    c = qc_create(0, 7);
+    if (!c || !qc_apply(c, "{\"op\":\"qborrow\",\"id\":0,\"width\":8,\"signed\":false}", NULL) ||
+        !qc_apply(c, "{\"op\":\"qadd_inplace\",\"id\":0,\"value\":1}", NULL))
+        validation_fail("omitted readonly backwards compatibility failed: %s", qc_error(c));
+    if (qc_apply(c,
+                 "{\"op\":\"qalloc\",\"id\":1,\"width\":8,\"signed\":false,\"readonly\":true}",
+                 NULL) ||
+        !*qc_error(c))
+        validation_fail("qalloc should reject readonly field");
+    qc_destroy(c);
+    checks += 2;
+    printf("PASS %u IR readonly borrow enforcement, read/control and compatibility checks\n",
+           checks);
+}
+
 int main(int argc, char **argv) {
     if (argc != 1)
         validation_fail("usage: validate_readonly_borrows");
@@ -230,6 +308,7 @@ int main(int argc, char **argv) {
     validation_init(&v, argv[0]);
     positive(&v);
     negative(&v);
+    ir_readonly_enforcement();
     validation_cleanup(&v);
     if (compiled != 30 || native != 30 || states != 60 || independent != 60 || inverses != 60 ||
         rejected != 65)

@@ -5,9 +5,10 @@
 static qc_mask memory_return_bits(const qc_register *r, unsigned value) {
     if (!r || !r->alive || r->width > 16 || value >= (1u << r->width))
         validation_fail("memory return register/value invariant failed");
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned bit = 0; bit < r->width; ++bit)
-        result |= (qc_mask)((value >> bit) & 1) << r->wires[bit];
+        if ((value >> bit) & 1)
+            result = qc_mask_or(result, QC_WIRE(r->wires[bit]));
     return result;
 }
 
@@ -30,12 +31,12 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
     for (size_t i = 0; i < c->ngates; ++i) {
         qc_gate g = c->gates[i];
         if (g.kind == QC_H) {
-            if (prepared == preparation || g.mask || g.target != input->wires[prepared] ||
-                (states[0] & QC_WIRE(g.target)))
+            if (prepared == preparation || qc_mask_any(g.mask) ||
+                g.target != input->wires[prepared] || qc_mask_test(states[0], g.target))
                 validation_fail("memory return word requires canonical H preparation");
             for (unsigned label = 0; label < count; ++label)
                 if ((label >> prepared) & 1)
-                    states[label] |= QC_WIRE(g.target);
+                    states[label] = qc_mask_or(states[label], QC_WIRE(g.target));
             ++prepared;
             continue;
         }
@@ -43,16 +44,16 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
             validation_fail("unexpected gate or channel in memory return word reference");
         double complex phase = cexp(I * g.angle);
         for (unsigned label = 0; label < count; ++label)
-            if ((states[label] & g.mask) == g.pattern) {
+            if (qc_mask_eq(qc_mask_and(states[label], g.mask), g.pattern)) {
                 if (g.kind == QC_X)
-                    states[label] ^= QC_WIRE(g.target);
+                    states[label] = qc_mask_xor(states[label], QC_WIRE(g.target));
                 else
                     amplitudes[label] *= phase;
             }
     }
     if (prepared != preparation || c->measure || c->reset)
         validation_fail("memory return word preparation or implicit channel mismatch");
-    qc_mask public_mask = memory_return_bits(output, UINT16_MAX), live_mask = 0;
+    qc_mask public_mask = memory_return_bits(output, UINT16_MAX), live_mask = qc_mask_zero();
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive)
@@ -60,7 +61,7 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
         if (r->id != current && !r->history)
             validation_fail("memory return word left a nonhistory temporary alive");
         for (unsigned bit = 0; bit < r->width; ++bit)
-            live_mask |= QC_WIRE(r->wires[bit]);
+            live_mask = qc_mask_or(live_mask, QC_WIRE(r->wires[bit]));
     }
     qc_mask history[256] = {0};
     unsigned char seen[256] = {0};
@@ -71,20 +72,21 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
         if (pointer != (unsigned char *)&value + 1 || memset(pointer, 0xcd, 1) != pointer)
             validation_fail("ordinary C word-return reference failed");
         double angle = profile == 2 ? .00001 * label + (value == 0xcd34 ? .17 : 0) : 0;
-        if ((states[label] & public_mask) != memory_return_bits(output, value) ||
-            (states[label] & ~live_mask) ||
+        if (!qc_mask_eq(qc_mask_and(states[label], public_mask),
+                        memory_return_bits(output, value)) ||
+            qc_mask_any(qc_mask_andnot(states[label], live_mask)) ||
             cabs(amplitudes[label] - cexp(I * angle) / sqrt((double)count)) > 1e-10)
             validation_fail("memory return word C value/phase/private-zero mismatch label=%u",
                             label);
-        qc_mask private = states[label] & ~public_mask;
-        if (seen[history_class] && history[history_class] != private)
+        qc_mask private = qc_mask_andnot(states[label], public_mask);
+        if (seen[history_class] && !qc_mask_eq(history[history_class], private))
             validation_fail("memory return word history copied an untouched byte");
         seen[history_class] = 1;
         history[history_class] = private;
     }
     for (unsigned a = 0; a < 256; ++a)
         for (unsigned b = 0; b < a; ++b)
-            if (seen[a] && seen[b] && history[a] == history[b])
+            if (seen[a] && seen[b] && qc_mask_eq(history[a], history[b]))
                 validation_fail("memory return word history lost overwritten information");
 
     /* Independently invert the complete gate stream, including preparation and
@@ -100,7 +102,8 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
             unsigned half = active / 2;
             qc_mask bit = QC_WIRE(g.target);
             for (unsigned row = 0; row < half; ++row) {
-                if ((states[row] & bit) || states[row + half] != (states[row] | bit))
+                if (qc_mask_test(states[row], g.target) ||
+                    !qc_mask_eq(states[row + half], qc_mask_or(states[row], bit)))
                     validation_fail("word-return inverse did not recover prepared labels");
                 double complex low = amplitudes[row], high = amplitudes[row + half];
                 amplitudes[row] = (low + high) / sqrt(2.0);
@@ -113,14 +116,14 @@ static void memory_return_word_action(qc_context *c, unsigned profile, unsigned 
         }
         double complex phase = cexp(-I * g.angle);
         for (unsigned row = 0; row < active; ++row)
-            if ((states[row] & g.mask) == g.pattern) {
+            if (qc_mask_eq(qc_mask_and(states[row], g.mask), g.pattern)) {
                 if (g.kind == QC_X)
-                    states[row] ^= QC_WIRE(g.target);
+                    states[row] = qc_mask_xor(states[row], QC_WIRE(g.target));
                 else
                     amplitudes[row] *= phase;
             }
     }
-    if (active != 1 || prepared || states[0] || cabs(amplitudes[0] - 1) > 1e-10 ||
+    if (active != 1 || prepared || qc_mask_any(states[0]) || cabs(amplitudes[0] - 1) > 1e-10 ||
         discarded > 1e-20)
         validation_fail("independent complete word-return inverse left a nonzero state");
     free(amplitudes);
@@ -147,12 +150,12 @@ memory_return_saved_action(qc_context *c, unsigned profile, unsigned current, in
     for (size_t i = 0; i < c->ngates; ++i) {
         const qc_gate *gate = &c->gates[i];
         if (gate->kind == QC_H) {
-            if (prepared >= preparation || gate->mask || gate->target != input->wires[prepared] ||
-                (states[0] & QC_WIRE(gate->target)))
+            if (prepared >= preparation || qc_mask_any(gate->mask) ||
+                gate->target != input->wires[prepared] || qc_mask_test(states[0], gate->target))
                 validation_fail("memory return requires canonical H preparation");
             for (unsigned label = 0; label < count; ++label)
                 if ((label >> prepared) & 1)
-                    states[label] |= QC_WIRE(gate->target);
+                    states[label] = qc_mask_or(states[label], QC_WIRE(gate->target));
             ++prepared;
             continue;
         }
@@ -160,9 +163,9 @@ memory_return_saved_action(qc_context *c, unsigned profile, unsigned current, in
             validation_fail("unexpected memory return preparation, suffix or channel");
         double complex phase = cexp(I * gate->angle);
         for (unsigned label = 0; label < count; ++label)
-            if ((states[label] & gate->mask) == gate->pattern) {
+            if (qc_mask_eq(qc_mask_and(states[label], gate->mask), gate->pattern)) {
                 if (gate->kind == QC_X)
-                    states[label] ^= QC_WIRE(gate->target);
+                    states[label] = qc_mask_xor(states[label], QC_WIRE(gate->target));
                 else
                     amplitudes[label] *= phase;
             }
@@ -181,7 +184,7 @@ memory_return_saved_action(qc_context *c, unsigned profile, unsigned current, in
         double angle = profile == 3   ? .31 * old_bit + .17 * updated
                        : profile == 4 ? .48 * old_bit
                                       : 0;
-        qc_mask wanted = 0;
+        qc_mask wanted = qc_mask_zero();
         unsigned live = 0, guards = 0;
         for (size_t i = 0; i < c->nregisters; ++i) {
             const qc_register *r = &c->registers[i];
@@ -212,10 +215,10 @@ memory_return_saved_action(qc_context *c, unsigned profile, unsigned current, in
             }
             if (r->width != width)
                 validation_fail("memory return register width mismatch");
-            wanted |= memory_return_bits(r, value);
+            wanted = qc_mask_or(wanted, memory_return_bits(r, value));
         }
         unsigned expected_live = profile == 4 ? 2 + guards : (inverse ? 3 : 4);
-        if (live != expected_live || states[label] != wanted ||
+        if (live != expected_live || !qc_mask_eq(states[label], wanted) ||
             cabs(amplitudes[label] - cexp(I * angle) / sqrt((double)count)) > 1e-10)
             validation_fail(
                 "memory return profile=%u inverse=%d label=%u result/phase/history/private-wire mismatch",

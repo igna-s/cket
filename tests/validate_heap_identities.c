@@ -20,11 +20,11 @@ static void apply(qc_context *c, const char *text) {
 
 static qc_mask value_bits(qc_context *c, uint32_t id, uint64_t value) {
     qc_register *r = qc_lookup(c, id);
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     require(r && r->alive, "live value owner", c);
     for (unsigned bit = 0; bit < r->width; ++bit)
         if ((value >> bit) & 1)
-            result |= QC_WIRE(r->wires[bit]);
+            result = qc_mask_or(result, QC_WIRE(r->wires[bit]));
     return result;
 }
 
@@ -37,8 +37,10 @@ static qc_context *fixture(unsigned width, int sign, int high, uint64_t *heap, u
     apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":0}");
     qc_register *r = qc_lookup(c, *owner), *reference = qc_lookup(c, 1);
     for (unsigned bit = 1; high && bit < width; ++bit)
-        require(qc_emit(c, QC_X, r->wires[bit], 0, 0, 0), "high preparation", c);
-    require(qc_emit(c, QC_H, r->wires[0], 0, 0, 0), "unknown low bit", c);
+        require(qc_emit(c, QC_X, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0),
+                "high preparation",
+                c);
+    require(qc_emit(c, QC_H, r->wires[0], qc_mask_zero(), qc_mask_zero(), 0), "unknown low bit", c);
     require(qc_emit(c, QC_X, reference->wires[0], QC_WIRE(r->wires[0]), QC_WIRE(r->wires[0]), 0),
             "entangled reference",
             c);
@@ -104,10 +106,11 @@ static void identity_states(void) {
                         uint64_t low, upper;
                         double complex amplitude;
                         require(qc_sparse_entry(c, row, &low, &upper, &amplitude), "state row", c);
-                        qc_mask basis = ((qc_mask)upper << 64) | low;
-                        unsigned bit = (unsigned)((basis >> qc_lookup(c, 1)->wires[0]) & 1);
-                        qc_mask wanted = value_bits(c, owner, base | bit) | value_bits(c, 1, bit);
-                        require(basis == wanted &&
+                        qc_mask basis = qc_mask_from_u128(low, upper);
+                        unsigned bit = (unsigned)qc_mask_test(basis, qc_lookup(c, 1)->wires[0]);
+                        qc_mask wanted =
+                            qc_mask_or(value_bits(c, owner, base | bit), value_bits(c, 1, bit));
+                        require(qc_mask_eq(basis, wanted) &&
                                     cabs(amplitude - cexp(I * (.61 * bit)) / sqrt(2.0)) < 1e-10,
                                 "identity changed complete joint amplitudes or left private data",
                                 c);
@@ -146,17 +149,15 @@ static void conditional_recipe(int guarded) {
         uint64_t low, high;
         double complex amplitude;
         require(qc_sparse_entry(c, row, &low, &high, &amplitude), "conditional row", c);
-        qc_mask basis = ((qc_mask)high << 64) | low;
-        unsigned bit = (unsigned)((basis >> qc_lookup(c, 1)->wires[0]) & 1);
-        unsigned flag = (unsigned)((basis >> qc_lookup(c, 2)->wires[0]) & 1);
-        qc_mask wanted = value_bits(c, owner, bit) | value_bits(c, 1, bit) |
-                         value_bits(c, 2, flag) | value_bits(c, 3, flag ? bit : 0) |
-                         value_bits(c,
-                                    current,
-                                    guarded ? bit
-                                    : flag  ? bit
-                                            : 0);
-        require(basis == wanted && cabs(amplitude - cexp(I * (.61 * bit)) / 2) < 1e-10,
+        qc_mask basis = qc_mask_from_u128(low, high);
+        unsigned bit = (unsigned)qc_mask_test(basis, qc_lookup(c, 1)->wires[0]);
+        unsigned flag = (unsigned)qc_mask_test(basis, qc_lookup(c, 2)->wires[0]);
+        qc_mask wanted = value_bits(c, owner, bit);
+        wanted = qc_mask_or(wanted, value_bits(c, 1, bit));
+        wanted = qc_mask_or(wanted, value_bits(c, 2, flag));
+        wanted = qc_mask_or(wanted, value_bits(c, 3, flag ? bit : 0));
+        wanted = qc_mask_or(wanted, value_bits(c, current, guarded ? bit : flag ? bit : 0));
+        require(qc_mask_eq(basis, wanted) && cabs(amplitude - cexp(I * (.61 * bit)) / 2) < 1e-10,
                 "conditional identity/nonidentity state",
                 c);
     }
@@ -183,7 +184,9 @@ static void stale_recipe(void) {
         owner);
     apply(c, text);
     qc_register *old = qc_lookup(c, owner);
-    require(qc_emit(c, QC_X, old->wires[0], 0, 0, 0), "controlled fixture mutation", c);
+    require(qc_emit(c, QC_X, old->wires[0], qc_mask_zero(), qc_mask_zero(), 0),
+            "controlled fixture mutation",
+            c);
     ++old->epoch; // Deliberately invalidate the saved inverse certificate.
     snprintf(
         text,
@@ -199,11 +202,14 @@ static void stale_recipe(void) {
         uint64_t low, high;
         double complex amplitude;
         require(qc_sparse_entry(c, row, &low, &high, &amplitude), "stale row", c);
-        qc_mask basis = ((qc_mask)high << 64) | low;
-        unsigned bit = (unsigned)((basis >> qc_lookup(c, 1)->wires[0]) & 1);
-        qc_mask wanted = value_bits(c, owner, bit ^ 1) | value_bits(c, 1, bit) |
-                         value_bits(c, 3, bit) | value_bits(c, current, bit);
-        require(basis == wanted && cabs(amplitude - cexp(I * (.61 * bit)) / sqrt(2.0)) < 1e-10,
+        qc_mask basis = qc_mask_from_u128(low, high);
+        unsigned bit = (unsigned)qc_mask_test(basis, qc_lookup(c, 1)->wires[0]);
+        qc_mask wanted = value_bits(c, owner, bit ^ 1);
+        wanted = qc_mask_or(wanted, value_bits(c, 1, bit));
+        wanted = qc_mask_or(wanted, value_bits(c, 3, bit));
+        wanted = qc_mask_or(wanted, value_bits(c, current, bit));
+        require(qc_mask_eq(basis, wanted) &&
+                    cabs(amplitude - cexp(I * (.61 * bit)) / sqrt(2.0)) < 1e-10,
                 "stale recipe changed real store semantics",
                 c);
     }

@@ -10,7 +10,7 @@ typedef struct {
 typedef struct {
     unsigned width;
     int sign;
-    ar_bit bit[64];
+    ar_bit bit[128];
 } ar_value;
 
 typedef struct {
@@ -36,15 +36,15 @@ typedef struct {
     ar_range *ranges;
     qc_gate *gates;
     size_t count, capacity;
-    uint32_t ids[512];
-    unsigned nids, work;
+    uint32_t *ids;
+    unsigned nids, id_capacity, work;
     const ar_fact *facts;
     ar_branch *branches;
     size_t branch_bytes;
 } ar_builder;
 
 static ar_bit ar_at(const ar_value *v, unsigned b) {
-    return b < v->width ? v->bit[b] : v->sign ? v->bit[v->width - 1] : (ar_bit){0, 0};
+    return b < v->width ? v->bit[b] : v->sign ? v->bit[v->width - 1] : (ar_bit){qc_mask_zero(), 0};
 }
 
 static __int128 ar_abs(__int128 value) {
@@ -58,8 +58,8 @@ static int ar_nonzero(ar_builder *p, int e, const ar_range *r) {
         bit_poly bit;
         qc_mask wire;
         int inverted;
-        if (expr_bit(p->c, p->d, e, b, &bit, 0) && poly_literal(&bit, &wire, &inverted) && !wire &&
-            inverted)
+        if (expr_bit(p->c, p->d, e, b, &bit, 0) && poly_literal(&bit, &wire, &inverted) &&
+            !qc_mask_any(wire) && inverted)
             return 1;
     }
     return 0;
@@ -176,7 +176,7 @@ static int ar_register_boolean_alias(
     if (!r || !r->alive || !r->prepared || r->width != 1)
         return 0;
     *source = r->id;
-    if (!r->definition || r->definition_mask)
+    if (!r->definition || qc_mask_any(r->definition_mask))
         return 1;
     for (unsigned j = 0; j < r->ndeps; ++j) {
         qc_register *input = reg(p->c, r->deps[j]);
@@ -227,20 +227,21 @@ static int ar_bit_truth_fact(ar_builder *p, int e, const ar_fact *fact, int *wan
     if (!ok)
         return 0;
     for (unsigned wire = 0; wire < QC_MAX_PHYSICAL; ++wire) {
-        if (!(r->definition_mask & QC_WIRE(wire)))
+        if (!qc_mask_test(r->definition_mask, wire))
             continue;
         bit_poly gate = {.terms = {QC_WIRE(wire)}, .count = 1}, next;
-        if (!(r->definition_pattern & QC_WIRE(wire)) && !poly_toggle(&proof, &gate, 0))
+        if (!qc_mask_test(r->definition_pattern, wire) &&
+            !poly_toggle(&proof, &gate, qc_mask_zero()))
             return 0;
         if (!poly_product(&proof, &next, &condition, &gate))
             return 0;
         condition = next;
     }
-    if (!(fact->wanted ^ inverted) && !poly_toggle(&proof, &condition, 0))
+    if (!(fact->wanted ^ inverted) && !poly_toggle(&proof, &condition, qc_mask_zero()))
         return 0;
     for (int candidate = 0; candidate < 2; ++candidate) {
         bit_poly difference = value, contradiction;
-        if ((candidate && !poly_toggle(&proof, &difference, 0)) ||
+        if ((candidate && !poly_toggle(&proof, &difference, qc_mask_zero())) ||
             !poly_product(&proof, &contradiction, &condition, &difference))
             return 0;
         if (!contradiction.count) {
@@ -288,12 +289,16 @@ static int ar_boolean_constant(ar_builder *p, const cj_doc *d, int e, int *value
         qc_context proof = *p->c;
         proof.symbolic_work = 0;
         proof.error[0] = 0;
-        bit_poly result;
-        if (expr_bit(&proof, d, e, 0, &result, 0) &&
-            (!result.count || (result.count == 1 && !result.terms[0]))) {
-            *value = result.count != 0;
+        bit_poly *result = malloc(sizeof *result);
+        if (!result)
+            return qc_fail(p->c, "out of memory in Boolean constant proof");
+        int ok = expr_bit(&proof, d, e, 0, result, 0) &&
+                 (!result->count || (result->count == 1 && !qc_mask_any(result->terms[0])));
+        if (ok)
+            *value = result->count != 0;
+        free(result);
+        if (ok)
             return 1;
-        }
     }
     if (cj_equal(d, op, "reg") && width == 1 && cj_u64(d, cj_get(d, e, "id"), &raw))
         return ar_register_boolean_constant(p, (uint32_t)raw, value, depth + 1);
@@ -336,7 +341,7 @@ static int ar_register_boolean_constant(ar_builder *p, uint32_t id, int *value, 
         *value = r->basis_value != 0;
         return 1;
     }
-    if (!r->definition || r->definition_mask)
+    if (!r->definition || qc_mask_any(r->definition_mask))
         return 0;
     for (unsigned j = 0; j < r->ndeps; ++j) {
         qc_register *input = reg(p->c, r->deps[j]);
@@ -476,6 +481,8 @@ static int ar_bound_arm(ar_builder *p,
 
 static int ar_bound(ar_builder *p, int e, unsigned depth) {
     if (depth > 128 || ++p->work > QC_ARITH_WORK)
+        return 0;
+    if (cj_bool(p->d, cj_get(p->d, e, "float")))
         return 0;
     ar_range *r = &p->ranges[e];
     if (r->valid)
@@ -835,7 +842,7 @@ static int ar_gate(ar_builder *p, unsigned target, qc_mask mask, qc_mask pattern
 
 static int
 ar_condition(ar_builder *p, unsigned target, const ar_bit *bits, const int *wanted, unsigned n) {
-    qc_mask mask = 0, pattern = 0;
+    qc_mask mask = qc_mask_zero(), pattern = qc_mask_zero();
     int possible = 1;
     for (unsigned j = 0; j < n; ++j)
         constrain(bits[j].wire, bits[j].inverted, wanted[j], &mask, &pattern, &possible);
@@ -843,24 +850,38 @@ ar_condition(ar_builder *p, unsigned target, const ar_bit *bits, const int *want
 }
 
 static int ar_temp(ar_builder *p, unsigned width, ar_value *v) {
-    if (p->nids == 512)
-        return qc_fail(p->c, "arithmetic temporary budget exceeded");
-    uint32_t id = UINT32_MAX;
-    while (reg(p->c, id) && reg(p->c, id)->alive)
-        --id;
-    if (!allocate(p->c, id, width, 1, 0))
-        return 0;
-    p->ids[p->nids++] = id;
-    qc_register *r = reg(p->c, id);
+    if (!width || width > 128)
+        return qc_fail(p->c, "arithmetic temporary width out of range");
     *v = (ar_value){.width = width};
-    for (unsigned b = 0; b < width; ++b)
-        v->bit[b].wire = QC_WIRE(r->wires[b]);
+    unsigned offset = 0;
+    while (offset < width) {
+        unsigned chunk = width - offset > 64 ? 64 : width - offset;
+        if (p->nids == p->id_capacity) {
+            unsigned next_cap = p->id_capacity ? p->id_capacity * 2u : 128u;
+            if (next_cap > 8192u)
+                return qc_fail(p->c, "arithmetic temporary budget exceeded");
+            uint32_t *grown = realloc(p->ids, (size_t)next_cap * sizeof *p->ids);
+            if (!grown)
+                return qc_fail(p->c, "out of memory tracking arithmetic temporaries");
+            p->ids = grown;
+            p->id_capacity = next_cap;
+        }
+        uint32_t id = UINT32_MAX;
+        while (reg(p->c, id) && reg(p->c, id)->alive)
+            --id;
+        if (!allocate(p->c, id, chunk, 1, 0))
+            return 0;
+        p->ids[p->nids++] = id;
+        qc_register *r = reg(p->c, id);
+        for (unsigned b = 0; b < chunk; ++b)
+            v->bit[offset + b].wire = QC_WIRE(r->wires[b]);
+        offset += chunk;
+    }
     return 1;
 }
 
 static unsigned ar_wire(ar_bit b) {
-    return (uint64_t)b.wire ? (unsigned)__builtin_ctzll((uint64_t)b.wire)
-                            : 64 + (unsigned)__builtin_ctzll((uint64_t)(b.wire >> 64));
+    return qc_mask_ctz(b.wire);
 }
 
 static int ar_copy(ar_builder *p, ar_value *out, const ar_value *in) {
@@ -879,23 +900,24 @@ static int ar_truth(ar_builder *p, const ar_value *value, ar_bit *out) {
         *out = value->bit[0];
         return 1;
     }
-    ar_bit bits[64];
-    int zeros[64] = {0};
+    ar_bit bits[128];
+    int zeros[128] = {0};
     int wires = 0;
     for (unsigned j = 0; j < value->width; ++j) {
         bits[j] = value->bit[j];
-        if (!bits[j].wire && bits[j].inverted) {
-            *out = (ar_bit){0, 1};
+        if (!qc_mask_any(bits[j].wire) && bits[j].inverted) {
+            *out = (ar_bit){qc_mask_zero(), 1};
             return 1;
         }
-        wires |= !!bits[j].wire;
+        wires |= qc_mask_any(bits[j].wire);
     }
     if (!wires) {
-        *out = (ar_bit){0, 0};
+        *out = (ar_bit){qc_mask_zero(), 0};
         return 1;
     }
     ar_value result;
-    if (!ar_temp(p, 1, &result) || !ar_gate(p, ar_wire(result.bit[0]), 0, 0) ||
+    if (!ar_temp(p, 1, &result) ||
+        !ar_gate(p, ar_wire(result.bit[0]), qc_mask_zero(), qc_mask_zero()) ||
         !ar_condition(p, ar_wire(result.bit[0]), bits, zeros, value->width))
         return 0;
     *out = result.bit[0];
@@ -904,7 +926,7 @@ static int ar_truth(ar_builder *p, const ar_value *value, ar_bit *out) {
 
 static int ar_literal_value(const ar_value *value) {
     for (unsigned j = 0; j < value->width; ++j)
-        if (value->bit[j].wire)
+        if (qc_mask_any(value->bit[j].wire))
             return 0;
     return 1;
 }
@@ -920,8 +942,8 @@ static int ar_power(ar_builder *p,
         return 1;
     for (unsigned step = 0; step < out->width - offset; ++step) {
         unsigned b = subtract ? offset + step : out->width - 1 - step;
-        ar_bit bits[66];
-        int wanted[66];
+        ar_bit bits[130];
+        int wanted[130];
         unsigned count = 0;
         for (unsigned j = 0; j < n; ++j) {
             bits[count] = control[j];
@@ -955,13 +977,13 @@ static int ar_negate_if(ar_builder *p, ar_value *out, ar_bit condition) {
 }
 
 static int ar_magnitude(ar_builder *p, ar_value *value, ar_bit *negative) {
-    *negative = value->sign ? value->bit[value->width - 1] : (ar_bit){0, 0};
+    *negative = value->sign ? value->bit[value->width - 1] : (ar_bit){qc_mask_zero(), 0};
     if (!value->sign)
         return 1;
     uint64_t constant = 0;
     int literal = 1;
     for (unsigned b = 0; b < value->width; ++b) {
-        literal &= !value->bit[b].wire;
+        literal &= !qc_mask_any(value->bit[b].wire);
         if (value->bit[b].inverted)
             constant |= UINT64_C(1) << b;
     }
@@ -969,7 +991,7 @@ static int ar_magnitude(ar_builder *p, ar_value *value, ar_bit *negative) {
         if (negative->inverted)
             constant = (~constant + 1) & bits_mask(value->width);
         for (unsigned b = 0; b < value->width; ++b)
-            value->bit[b] = (ar_bit){0, !!(constant & (UINT64_C(1) << b))};
+            value->bit[b] = (ar_bit){qc_mask_zero(), !!(constant & (UINT64_C(1) << b))};
         value->sign = 0;
         return 1;
     }
@@ -992,8 +1014,8 @@ static int ar_compare(ar_builder *p,
     if (ar_literal_value(a) || ar_literal_value(b)) {
         const ar_value *literal = ar_literal_value(b) ? b : a;
         const ar_value *value = literal == b ? a : b;
-        ar_bit bits[66];
-        int wanted[66];
+        ar_bit bits[130];
+        int wanted[130];
         unsigned count = 0;
         if (relation == 0 || relation == 1 || relation == 3 || relation == 5) {
             for (unsigned j = 0; j < width; ++j) {
@@ -1003,7 +1025,7 @@ static int ar_compare(ar_builder *p,
             if (!ar_condition(p, ar_wire(out->bit[0]), bits, wanted, count))
                 return 0;
         }
-        if (relation == 1 && !ar_gate(p, ar_wire(out->bit[0]), 0, 0))
+        if (relation == 1 && !ar_gate(p, ar_wire(out->bit[0]), qc_mask_zero(), qc_mask_zero()))
             return 0;
         if (relation >= 2)
             for (unsigned step = 0; step < width; ++step) {
@@ -1023,14 +1045,15 @@ static int ar_compare(ar_builder *p,
         return 1;
     }
     ar_value diff;
+    unsigned saved_nids = p->nids;
     if (!ar_temp(p, width, &diff))
         return 0;
     size_t begin = p->count;
     if (!ar_copy(p, &diff, a) || !ar_copy(p, &diff, b))
         return 0;
     size_t copied = p->count;
-    ar_bit bits[66];
-    int wanted[66];
+    ar_bit bits[130];
+    int wanted[130];
     unsigned count = 0;
     for (unsigned j = 0; j < width; ++j) {
         bits[count] = diff.bit[j];
@@ -1039,7 +1062,7 @@ static int ar_compare(ar_builder *p,
     if (relation == 0 || relation == 1 || relation == 3 || relation == 5)
         if (!ar_condition(p, ar_wire(out->bit[0]), bits, wanted, count))
             return 0;
-    if (relation == 1 && !ar_gate(p, ar_wire(out->bit[0]), 0, 0))
+    if (relation == 1 && !ar_gate(p, ar_wire(out->bit[0]), qc_mask_zero(), qc_mask_zero()))
         return 0;
     if (relation >= 2)
         for (unsigned step = 0; step < width; ++step) {
@@ -1061,9 +1084,13 @@ static int ar_compare(ar_builder *p,
         if (!ar_gate(p, g.target, g.mask, g.pattern))
             return 0;
     }
-    qc_register *scratch = reg(p->c, p->ids[--p->nids]);
-    scratch->clean = 1;
-    return release(p->c, scratch);
+    while (p->nids > saved_nids) {
+        qc_register *scratch = reg(p->c, p->ids[--p->nids]);
+        scratch->clean = 1;
+        if (!release(p->c, scratch))
+            return 0;
+    }
+    return 1;
 }
 
 /* A controlled bit multiplexer enumerates at most 64 shift positions, not
@@ -1080,8 +1107,8 @@ static int ar_shift(ar_builder *p,
     unsigned positions = promoted_width;
     if (count->width < 6 && positions > (1u << count->width))
         positions = 1u << count->width;
-    ar_bit bits[65];
-    int wanted[65];
+    ar_bit bits[130];
+    int wanted[130];
     for (unsigned j = 0; j < count->width; ++j)
         bits[j] = count->bit[j];
     for (unsigned distance = 0; distance < positions; ++distance) {
@@ -1126,7 +1153,9 @@ static int ar_power_division(ar_builder *p,
         ++shift;
     ar_value value = {.width = width, .sign = sign};
     for (unsigned j = 0; j < width; ++j)
-        value.bit[j] = divide ? ar_at(a, j + shift) : j < shift ? ar_at(a, j) : (ar_bit){0, 0};
+        value.bit[j] = divide      ? ar_at(a, j + shift)
+                       : j < shift ? ar_at(a, j)
+                                   : (ar_bit){qc_mask_zero(), 0};
     if (!a->sign && (!divide || !negative)) {
         *out = value;
         return 1;
@@ -1140,12 +1169,12 @@ static int ar_power_division(ar_builder *p,
     ar_bit nonzero;
     if (!ar_truth(p, &low, &nonzero))
         return -1;
-    ar_bit controls[2] = {a->sign ? a->bit[a->width - 1] : (ar_bit){0, 0}, nonzero};
+    ar_bit controls[2] = {a->sign ? a->bit[a->width - 1] : (ar_bit){qc_mask_zero(), 0}, nonzero};
     if (divide) {
         // Arithmetic shift is floor division. Increment negative, nonexact
         // results to obtain C truncation toward zero.
         if (!ar_power(p, out, 0, controls, 2, 0) ||
-            (negative && !ar_negate_if(p, out, (ar_bit){0, 1})))
+            (negative && !ar_negate_if(p, out, (ar_bit){qc_mask_zero(), 1})))
             return -1;
     } else {
         int ones[2] = {1, 1};
@@ -1227,7 +1256,7 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         uint64_t value = (uint64_t)range.lo;
         *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
         for (unsigned j = 0; j < width; ++j)
-            out->bit[j] = (ar_bit){0, !!(value & (UINT64_C(1) << j))};
+            out->bit[j] = (ar_bit){qc_mask_zero(), !!(value & (UINT64_C(1) << j))};
         return 1;
     }
     if (cj_equal(p->d, op, "const") || cj_equal(p->d, op, "reg")) {
@@ -1244,7 +1273,7 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         for (unsigned j = 0; j < width; ++j)
             out->bit[j] = r && !r->basis_known && !(r->zero_mask & (UINT64_C(1) << j))
                               ? (ar_bit){QC_WIRE(r->wires[j]), 0}
-                              : (ar_bit){0, !!(v & (UINT64_C(1) << j))};
+                              : (ar_bit){qc_mask_zero(), !!(v & (UINT64_C(1) << j))};
         return 1;
     }
     if (cj_equal(p->d, op, "cast") && range.width != 1) {
@@ -1294,7 +1323,7 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
                 if (!(value & (UINT32_C(1) << bit)))
                     continue;
                 ar_bit before = out->bit[bit];
-                if (!before.wire && !before.inverted)
+                if (!qc_mask_any(before.wire) && !before.inverted)
                     out->bit[bit] = flag.bit[0];
                 else {
                     ar_value mapped;
@@ -1330,12 +1359,12 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         int known = ar_known_truth(p->ranges[nodes[0]]), select = cj_equal(p->d, op, "select"),
             is_or = cj_equal(p->d, op, "lor");
         if (!select && known == is_or) {
-            *out = (ar_value){.width = 1, .bit = {{0, is_or}}};
+            *out = (ar_value){.width = 1, .bit = {{qc_mask_zero(), is_or}}};
             return 1;
         }
         if (select && known >= 0)
             return ar_lower_arm(p, e, (unsigned)known, nodes[known ? 1 : 2], requested, out);
-        ar_bit condition = {0, known == 1};
+        ar_bit condition = {qc_mask_zero(), known == 1};
         ar_value first;
         if (known < 0 && (!ar_lower(p, nodes[0], 64, &first) || !ar_truth(p, &first, &condition)))
             return 0;
@@ -1418,7 +1447,8 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         int left = cj_equal(p->d, op, "shl");
         *out = (ar_value){.width = width, .sign = range.sign && range.lo < 0};
         for (unsigned j = 0; j < width; ++j)
-            out->bit[j] = left ? (j < distance ? (ar_bit){0, 0} : ar_at(&a, j - (unsigned)distance))
+            out->bit[j] = left ? (j < distance ? (ar_bit){qc_mask_zero(), 0}
+                                               : ar_at(&a, j - (unsigned)distance))
                                : ar_at(&a, j + (unsigned)distance);
         return 1;
     }
@@ -1432,9 +1462,9 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         for (unsigned bit = 0; bit < width; ++bit) {
             ar_bit constant = ar_at(literal, bit), input = ar_at(value, bit);
             if (cj_equal(p->d, op, "band"))
-                out->bit[bit] = constant.inverted ? input : (ar_bit){0, 0};
+                out->bit[bit] = constant.inverted ? input : (ar_bit){qc_mask_zero(), 0};
             else if (cj_equal(p->d, op, "bor"))
-                out->bit[bit] = constant.inverted ? (ar_bit){0, 1} : input;
+                out->bit[bit] = constant.inverted ? (ar_bit){qc_mask_zero(), 1} : input;
             else {
                 input.inverted ^= constant.inverted;
                 out->bit[bit] = input;
@@ -1449,24 +1479,25 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         return ar_shift(p, &a, &b, p->ranges[nodes[0]].width, cj_equal(p->d, op, "shl"), out);
     if (absolute)
         return ar_copy(p, out, &a) &&
-               ar_negate_if(p, out, a.sign ? a.bit[a.width - 1] : (ar_bit){0, 0});
+               ar_negate_if(p, out, a.sign ? a.bit[a.width - 1] : (ar_bit){qc_mask_zero(), 0});
     if (cj_equal(p->d, op, "neg"))
-        return ar_copy(p, out, &a) && ar_negate_if(p, out, (ar_bit){0, 1});
+        return ar_copy(p, out, &a) && ar_negate_if(p, out, (ar_bit){qc_mask_zero(), 1});
     if (comparison) {
         if ((cj_equal(p->d, op, "eq") || cj_equal(p->d, op, "ne")) &&
             (ar_literal_value(&a) || ar_literal_value(&b))) {
             const ar_value *literal = ar_literal_value(&b) ? &b : &a,
                            *value = literal == &b ? &a : &b;
             unsigned common = p->ranges[nodes[0]].width;
-            ar_bit bits[64];
-            int wanted[64];
+            ar_bit bits[128];
+            int wanted[128];
             for (unsigned j = 0; j < common; ++j) {
                 bits[j] = ar_at(value, j);
                 wanted[j] = ar_at(literal, j).inverted;
             }
             if (!ar_condition(p, ar_wire(out->bit[0]), bits, wanted, common))
                 return 0;
-            return !cj_equal(p->d, op, "ne") || ar_gate(p, ar_wire(out->bit[0]), 0, 0);
+            return !cj_equal(p->d, op, "ne") ||
+                   ar_gate(p, ar_wire(out->bit[0]), qc_mask_zero(), qc_mask_zero());
         }
         int signed_order = p->ranges[nodes[0]].sign && (a.sign || b.sign);
         unsigned awidth = a.width + (signed_order && !a.sign),
@@ -1493,9 +1524,6 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
         if (!ar_magnitude(p, &a, &a_negative) || !ar_magnitude(p, &b, &b_negative))
             return 0;
         unsigned nbits = a.width > b.width ? a.width : b.width;
-        if (nbits == 64)
-            return qc_fail(p->c,
-                           "divider needs a 65-bit work register; physical backend limit exceeded");
         ar_value remainder, quotient;
         if (!ar_temp(p, nbits + 1, &remainder))
             return 0;
@@ -1535,7 +1563,8 @@ static int ar_lower(ar_builder *p, int e, unsigned requested, ar_value *out) {
                ar_condition(p, wire, bits + 1, wanted, 1) && ar_condition(p, wire, bits, wanted, 2);
     }
     if (cj_equal(p->d, op, "add") || cj_equal(p->d, op, "sub"))
-        return ar_copy(p, out, &a) && ar_add(p, out, &b, cj_equal(p->d, op, "sub"), (ar_bit){0, 1});
+        return ar_copy(p, out, &a) &&
+               ar_add(p, out, &b, cj_equal(p->d, op, "sub"), (ar_bit){qc_mask_zero(), 1});
     if (cj_equal(p->d, op, "mul")) {
         for (unsigned i = 0; i < (a.sign ? width : a.width) && i < width; ++i)
             for (unsigned j = 0; j < (b.sign ? width : b.width) && i + j < width; ++j) {
@@ -1571,6 +1600,7 @@ static void ar_free(ar_builder *p) {
     }
     free(p->ranges);
     free(p->gates);
+    free(p->ids);
 }
 
 // Optional, independently inferred support for an initialized output. This
@@ -1583,7 +1613,7 @@ static int computed_interval(qc_context *c,
                              int sign,
                              uint64_t *lower,
                              uint64_t *upper) {
-    if (d->count > 100000)
+    if ((e >= 0 && e < d->count && d->tokens[e].next - e > 100000) || d->count > 1048576)
         return 0;
     ar_builder p = {.c = c, .d = d};
     p.ranges = calloc((size_t)d->count, sizeof *p.ranges);
@@ -1608,7 +1638,7 @@ static int computed_interval(qc_context *c,
 
 static int arithmetic_compute(
     qc_context *c, const cj_doc *d, int e, qc_register *target, qc_mask outer, qc_mask pattern) {
-    if (d->count > 100000)
+    if ((e >= 0 && e < d->count && d->tokens[e].next - e > 100000) || d->count > 1048576)
         return qc_fail(c, "expression token budget exceeded"), -1;
     ar_builder p = {.c = c, .d = d};
     p.ranges = calloc((size_t)d->count, sizeof *p.ranges);

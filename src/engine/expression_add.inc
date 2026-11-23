@@ -8,7 +8,9 @@ static int add_expression(qc_context *c,
                           int subtract,
                           qc_mask outer,
                           qc_mask pattern) {
-    if (d->count > 100000)
+    if ((expr >= 0 && expr < d->count && d->tokens[expr].next - expr > 100000) ||
+        (checked >= 0 && checked < d->count && d->tokens[checked].next - checked > 100000) ||
+        d->count > 1048576)
         return qc_fail(c, "expression token budget exceeded");
     ar_builder p = {.c = c, .d = d};
     p.ranges = calloc((size_t)d->count, sizeof *p.ranges);

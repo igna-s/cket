@@ -118,10 +118,10 @@ qc_circuit *qc_circuit_compile(const char *ir, char *error, size_t size) {
 }
 
 static qc_mask circuit_remap(qc_mask mask, const unsigned *map, unsigned physical) {
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned j = 0; j < physical; ++j)
-        if (mask & QC_WIRE(j))
-            result |= QC_WIRE(map[j]);
+        if (qc_mask_test(mask, j))
+            result = qc_mask_set(result, map[j]);
     return result;
 }
 
@@ -139,21 +139,22 @@ int qc_circuit_apply(qc_context *c,
     unsigned map[QC_MAX_PHYSICAL];
     for (unsigned j = 0; j < f->physical; ++j)
         map[j] = QC_MAX_PHYSICAL;
-    qc_mask occupied = 0, outer = 0, pattern = 0;
+    qc_mask occupied = qc_mask_zero(), outer = qc_mask_zero(), pattern = qc_mask_zero();
     for (size_t j = 0; j < count; ++j) {
         qc_register *r = reg(c, bindings[j]);
         if (!r || !r->alive || !r->prepared || r->width != f->params[j].width ||
-            r->signed_type != f->params[j].signed_type)
+            r->signed_type != f->params[j].signed_type || r->float_type != f->params[j].float_type)
             return qc_fail(
                 c,
                 "circuit ABI requires an available borrowed register of the declared C representation");
+        if (f->mutable[j] && r->readonly)
+            return qc_fail(c, "cannot mutate readonly borrowed storage in module");
         if (f->mutable[j] && (r->definition || !unborrowed(c, r->id)))
             return qc_fail(c, "circuit mutation would invalidate a pending inverse");
         for (unsigned b = 0; b < r->width; ++b) {
-            qc_mask wire = QC_WIRE(r->wires[b]);
-            if (occupied & wire)
+            if (qc_mask_test(occupied, r->wires[b]))
                 return qc_fail(c, "circuit ABI register parameters cannot alias");
-            occupied |= wire;
+            occupied = qc_mask_set(occupied, r->wires[b]);
             map[f->params[j].wires[b]] = r->wires[b];
         }
     }
@@ -162,11 +163,13 @@ int qc_circuit_apply(qc_context *c,
         if (!r || !r->alive || r->width != 1 || !r->prepared || values[j] > 1)
             return qc_fail(c, "invalid coherent module control");
         qc_mask wire = QC_WIRE(r->wires[0]);
-        if (occupied & wire || ((outer & wire) && !!(pattern & wire) != values[j]))
+        if (qc_mask_test(occupied, r->wires[0]) ||
+            (qc_mask_test(outer, r->wires[0]) &&
+             qc_mask_test(pattern, r->wires[0]) != (int)values[j]))
             return qc_fail(c, "module control aliases a parameter or contradicts another control");
-        outer |= wire;
+        outer = qc_mask_or(outer, wire);
         if (values[j])
-            pattern |= wire;
+            pattern = qc_mask_or(pattern, wire);
     }
     uint32_t scratch[QC_MAX_PHYSICAL];
     unsigned nscratch = 0;
@@ -182,8 +185,8 @@ int qc_circuit_apply(qc_context *c,
         }
     for (size_t j = 0; j < f->count; ++j) {
         qc_gate g = f->gates[inverse ? f->count - 1 - j : j];
-        qc_mask mask = circuit_remap(g.mask, map, f->physical) | outer;
-        qc_mask state = circuit_remap(g.pattern, map, f->physical) | pattern;
+        qc_mask mask = qc_mask_or(circuit_remap(g.mask, map, f->physical), outer);
+        qc_mask state = qc_mask_or(circuit_remap(g.pattern, map, f->physical), pattern);
         if (!qc_emit(c,
                      g.kind,
                      g.kind == QC_PHASE ? 0 : map[g.target],
@@ -197,7 +200,7 @@ int qc_circuit_apply(qc_context *c,
             return 0;
     taint_controls(c, outer);
     for (size_t j = 0; j < count; ++j) {
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         taint_uniform(c, bindings[j], &seen);
         if (f->mutable[j]) {
             qc_register *r = reg(c, bindings[j]);

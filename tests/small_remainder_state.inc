@@ -98,12 +98,14 @@ small_remainder_case(unsigned width, int sign, int divisor, unsigned projection,
         uint64_t projected =
             result_width == 1 ? value != 0 : (uint64_t)value & ((UINT64_C(1) << result_width) - 1);
         for (unsigned active = 0; active < 2; ++active) {
-            qc_mask original = expression_basis(source, raw) | expression_basis(control, active);
+            qc_mask original =
+                qc_mask_or(expression_basis(source, raw), expression_basis(control, active));
             qc_mask basis = original;
             double angle = 0;
             expression_walk(c, begin, forward, &basis, &angle);
-            qc_mask expected = original | expression_basis(result, active ? projected : 0);
-            if (basis != expected || fabs(angle) > 1e-10)
+            qc_mask expected =
+                qc_mask_or(original, expression_basis(result, active ? projected : 0));
+            if (!qc_mask_eq(basis, expected) || fabs(angle) > 1e-10)
                 validation_fail("remainder forward width=%u sign=%d d=%d projection=%u raw=%" PRIu64
                                 " active=%u tables=%u",
                                 width,
@@ -114,7 +116,8 @@ small_remainder_case(unsigned width, int sign, int divisor, unsigned projection,
                                 active,
                                 tables);
             expression_walk(c, forward, c->ngates, &basis, &angle);
-            if (basis != original || fabs(angle - (active && (projected & 1) ? .37 : 0)) > 1e-10)
+            if (!qc_mask_eq(basis, original) ||
+                fabs(angle - (active && (projected & 1) ? .37 : 0)) > 1e-10)
                 validation_fail("remainder inverse left garbage or lost a relative phase");
         }
     }

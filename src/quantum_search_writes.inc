@@ -35,22 +35,14 @@ tree expand_search_byte_write(
     tree chosen_index = NULL_TREE, index_type = NULL_TREE;
     if (dynamic_delta) {
         unsigned index_bits = 1;
-        while ((uint64_t{1} << index_bits) <= current.size())
+        while (index_bits < 64 && (uint64_t{1} << index_bits) <= current.size())
             ++index_bits;
         index_type = build_nonstandard_integer_type(index_bits, true);
-        tree base_pos =
-            fold_build2_loc(at(value),
-                            PLUS_EXPR,
-                            size_type_node,
-                            search.position,
-                            build_int_cstu(size_type_node, origin + static_cast<uint64_t>(delta)));
-        tree effective_pos =
-            build2_loc(at(value), PLUS_EXPR, size_type_node, base_pos, dynamic_delta);
-        tree in_bounds = build2_loc(at(value),
-                                    LT_EXPR,
-                                    boolean_type_node,
-                                    effective_pos,
-                                    build_int_cstu(size_type_node, current.size()));
+        tree in_bounds = boolean_false_node;
+        tree effective_pos = search_signed_position(
+            at(value), search, delta, dynamic_delta, search.defined, 0, in_bounds);
+        in_bounds = fold_build2_loc(
+            at(value), TRUTH_ANDIF_EXPR, boolean_type_node, search.found, in_bounds);
         tree encoded_index = build3_loc(at(value),
                                         COND_EXPR,
                                         index_type,

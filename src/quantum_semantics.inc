@@ -373,14 +373,21 @@ tree emit_operation(std::string operation, location_t loc, tree argument = NULL_
         std::vector<tree> values;
         for (unsigned id : parameters) {
             tree value = cpu_parameter_values.at(id);
+            tree type = TREE_TYPE(value);
+            bool fl = SCALAR_FLOAT_TYPE_P(type);
             if (!values.empty())
                 descriptors += ',';
             descriptors += "{\"id\":" + std::to_string(id) +
-                           ",\"bits\":" + std::to_string(TYPE_PRECISION(TREE_TYPE(value))) +
-                           ",\"signed\":" + (TYPE_UNSIGNED(TREE_TYPE(value)) ? "false" : "true") +
-                           '}';
-            values.push_back(
-                fold_convert(long_long_unsigned_type_node, guarded_cpu_binding(value, loc)));
+                           ",\"bits\":" + std::to_string(TYPE_PRECISION(type)) +
+                           ",\"signed\":" + (fl || TYPE_UNSIGNED(type) ? "false" : "true") +
+                           (fl ? ",\"float\":true" : "") + '}';
+            tree bound = guarded_cpu_binding(value, loc);
+            if (fl) {
+                tree bits_type =
+                    TYPE_PRECISION(type) == 32 ? unsigned_type_node : long_long_unsigned_type_node;
+                bound = build1_loc(loc, VIEW_CONVERT_EXPR, bits_type, bound);
+            }
+            values.push_back(fold_convert(long_long_unsigned_type_node, bound));
         }
         operation = "{\"op\":\"qbind\",\"instruction\":" + operation +
                     ",\"parameters\":" + descriptors + "]}";
@@ -531,7 +538,12 @@ void taint_uniform(unsigned id) {
 }
 
 std::string type_json(tree type) {
-    if (!type || !INTEGRAL_TYPE_P(type))
+    if (!type)
+        return ",\"bits\":1,\"signed\":false";
+    if (SCALAR_FLOAT_TYPE_P(type))
+        return ",\"bits\":" + std::to_string(TYPE_PRECISION(type)) +
+               ",\"signed\":false,\"float\":true";
+    if (!INTEGRAL_TYPE_P(type))
         return ",\"bits\":1,\"signed\":false";
     return ",\"bits\":" + std::to_string(TYPE_PRECISION(type)) +
            ",\"signed\":" + (TYPE_UNSIGNED(type) ? "false" : "true");
@@ -550,9 +562,10 @@ std::string cpu_parameter(tree value) {
 }
 
 std::string register_expression(const Variable &var) {
-    unsigned active = 0;
-    for (uint64_t value = var.range_max; value; value >>= 1)
-        ++active;
+    unsigned active = var.is_float ? var.width : 0;
+    if (!var.is_float)
+        for (uint64_t value = var.range_max; value; value >>= 1)
+            ++active;
     // Native CPU arms start from their incoming state, but structural QIR
     // validation visits both arms. Do not export path-local range/known-value
     // certificates as unconditional facts about that serialized traversal.
@@ -562,8 +575,11 @@ std::string register_expression(const Variable &var) {
     return "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
            ",\"bits\":" + std::to_string(var.width) +
            ",\"signed\":" + (var.is_signed ? "true" : "false") +
-           ",\"active\":" + std::to_string(active) +
-           (var.basis_known && !conditional ? ",\"known\":" + std::to_string(var.lower) : "") + '}';
+           (var.is_float ? ",\"float\":true" : "") + ",\"active\":" + std::to_string(active) +
+           (var.basis_known && !conditional
+                ? ",\"known\":" + std::to_string(mask_to_width(var.lower, var.width))
+                : "") +
+           '}';
 }
 
 struct QuantumAccesses {
@@ -838,6 +854,20 @@ bool standard_integer_absolute(tree fn) {
     return recognized;
 }
 
+bool standard_scalar_absolute(tree fn) {
+    if (standard_integer_absolute(fn))
+        return true;
+    bool recognized =
+        fn && !DECL_SAVED_TREE(fn) &&
+        (fndecl_built_in_p(fn, BUILT_IN_FABS) || fndecl_built_in_p(fn, BUILT_IN_FABSF));
+    if (fn && !recognized && DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
+        in_system_header_at(DECL_SOURCE_LOCATION(fn))) {
+        std::string name = name_of(fn);
+        recognized = name == "fabs" || name == "fabsf";
+    }
+    return recognized;
+}
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
@@ -853,7 +883,7 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     // CPU arithmetic in every controlled consumer must remain lazy.
     bool coherent = coherent_expression_depth || !controls.empty();
     if (coherent && code == CALL_EXPR && call_expr_nargs(value) == 1 &&
-        standard_integer_absolute(get_callee_fndecl(value)))
+        standard_scalar_absolute(get_callee_fndecl(value)))
         return expression(
             build1_loc(at(value), ABS_EXPR, TREE_TYPE(value), CALL_EXPR_ARG(value, 0)), deps);
     std::string ctype = standard_ctype(value);
@@ -865,7 +895,8 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     if (coherent && code == COMPOUND_EXPR && gcc_quantum_sanitizer_guard(TREE_OPERAND(value, 0)) &&
         quantum_pure_expression(TREE_OPERAND(value, 1)))
         return expression(TREE_OPERAND(value, 1), deps);
-    if (code != INTEGER_CST && !has_quantum(value) && INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+    if (code != INTEGER_CST && code != REAL_CST && !has_quantum(value) &&
+        supported_quantum_scalar(TREE_TYPE(value))) {
         tree inner = value;
         while (CONVERT_EXPR_P(inner) || TREE_CODE(inner) == NON_LVALUE_EXPR)
             inner = TREE_OPERAND(inner, 0);
@@ -894,12 +925,13 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             leaf = TREE_OPERAND(leaf, 0);
         // Pure arithmetic in a coherent arm is lowered lazily on the quantum
         // side. Eager CPU evaluation could otherwise execute inactive UB.
-        if (TREE_CODE(inner) != INTEGER_CST &&
+        if (TREE_CODE(inner) != INTEGER_CST && TREE_CODE(inner) != REAL_CST &&
             (!coherent || TREE_CODE(leaf) == VAR_DECL || pure_cpu_scalar_read(leaf) ||
              cpu_byte_saves.count(inner))) {
-            if (TYPE_PRECISION(TREE_TYPE(value)) > 64) {
+            unsigned bits = TYPE_PRECISION(TREE_TYPE(value));
+            if (bits > 64 || (SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)) && bits != 32 && bits != 64)) {
                 error_at(at(value),
-                         "|c>: CPU integer expression bindings currently require at most 64 bits");
+                         "|c>: CPU scalar expression bindings currently require at most 64 bits");
                 return "{}";
             }
             return cpu_parameter(value);
@@ -956,6 +988,11 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         return expression(TREE_OPERAND(value, 0), deps);
     if (code == C_MAYBE_CONST_EXPR)
         return expression(C_MAYBE_CONST_EXPR_EXPR(value), deps);
+    if (code == REAL_CST) {
+        unsigned bits = TYPE_PRECISION(TREE_TYPE(value));
+        return "{\"op\":\"const\",\"value\":" + std::to_string(encode_float_bits(value, bits)) +
+               type_json(TREE_TYPE(value)) + '}';
+    }
     if (code == INTEGER_CST) {
         std::string val = TYPE_UNSIGNED(TREE_TYPE(value))
                               ? std::to_string(static_cast<uint64_t>(TREE_INT_CST_LOW(value)))
@@ -999,7 +1036,7 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     }
     bool lazy = code == COND_EXPR || code == TRUTH_ANDIF_EXPR || code == TRUTH_ORIF_EXPR ||
                 code == TRUTH_AND_EXPR || code == TRUTH_OR_EXPR;
-    if (lazy && INTEGRAL_TYPE_P(TREE_TYPE(value))) {
+    if (lazy && (INTEGRAL_TYPE_P(TREE_TYPE(value)) || SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)))) {
         unsigned arms = code == COND_EXPR ? 3 : 2;
         for (unsigned i = 1; i < arms; ++i)
             if (!quantum_accesses(TREE_OPERAND(value, i), true).writes.empty())
@@ -1017,6 +1054,13 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     }
     if (code == ABS_EXPR) {
         tree operand = TREE_OPERAND(value, 0);
+        if (SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)) || SCALAR_FLOAT_TYPE_P(TREE_TYPE(operand))) {
+            std::string input = expression(operand, deps);
+            if (TYPE_MAIN_VARIANT(TREE_TYPE(value)) != TYPE_MAIN_VARIANT(TREE_TYPE(operand)))
+                input =
+                    "{\"op\":\"cast\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + input + "]}";
+            return "{\"op\":\"fabs\"" + type_json(TREE_TYPE(value)) + ",\"args\":[" + input + "]}";
+        }
         unsigned width = std::max((unsigned)TYPE_PRECISION(TREE_TYPE(operand)),
                                   (unsigned)TYPE_PRECISION(integer_type_node));
         // GCC can narrow abs before this pass. Restore integer promotion for
@@ -1051,19 +1095,30 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         return "{\"op\":\"ne\"" + type + ",\"args\":[{\"op\":\"not\"" + type + ",\"args\":[" +
                left + "]},{\"op\":\"not\"" + type + ",\"args\":[" + right + "]}]}";
     }
-    if (code == MULT_EXPR && TYPE_UNSIGNED(TREE_TYPE(value)) &&
+    if (code == MULT_EXPR && !SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)) &&
+        TYPE_UNSIGNED(TREE_TYPE(value)) &&
         TYPE_PRECISION(TREE_TYPE(value)) < TYPE_PRECISION(integer_type_node)) {
         unsigned __int128 maximum[2];
         for (unsigned j = 0; j < 2; ++j) {
             tree operand = strip(TREE_OPERAND(value, j));
+            tree otype = TREE_TYPE(operand);
             if (quantum(operand))
                 maximum[j] = variables.at(operand).range_max;
             else if (TREE_CODE(operand) == INTEGER_CST && tree_fits_uhwi_p(operand))
                 maximum[j] = tree_to_uhwi(operand);
-            else
-                maximum[j] = TYPE_PRECISION(TREE_TYPE(operand)) >= 64
-                                 ? UINT64_MAX
-                                 : ((uint64_t{1} << TYPE_PRECISION(TREE_TYPE(operand))) - 1);
+            else if (TREE_CODE(operand) == INTEGER_CST && tree_fits_shwi_p(operand)) {
+                __int128 v = tree_to_shwi(operand);
+                maximum[j] =
+                    v < 0 ? static_cast<unsigned __int128>(-v) : static_cast<unsigned __int128>(v);
+            } else {
+                unsigned prec = TYPE_PRECISION(otype);
+                if (prec >= 64)
+                    maximum[j] = TYPE_UNSIGNED(otype) ? UINT64_MAX : (uint64_t)INT64_MAX + 1;
+                else
+                    maximum[j] = TYPE_UNSIGNED(otype)
+                                     ? ((static_cast<unsigned __int128>(1) << prec) - 1)
+                                     : (static_cast<unsigned __int128>(1) << (prec - 1));
+            }
         }
         if (maximum[0] * maximum[1] >
             ((uint64_t{1} << (TYPE_PRECISION(integer_type_node) - 1)) - 1)) {
@@ -1073,21 +1128,34 @@ std::string expression(tree value, std::set<unsigned> &deps) {
             return "{}";
         }
     }
+    bool float_result = TREE_TYPE(value) && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value));
+    bool float_args = EXPR_P(value) && TREE_OPERAND_LENGTH(value) > 0 && TREE_OPERAND(value, 0) &&
+                      TREE_TYPE(TREE_OPERAND(value, 0)) &&
+                      SCALAR_FLOAT_TYPE_P(TREE_TYPE(TREE_OPERAND(value, 0)));
     switch (code) {
     case NOP_EXPR:
     case CONVERT_EXPR:
     case VIEW_CONVERT_EXPR:
+    case FLOAT_EXPR:
+    case FIX_TRUNC_EXPR:
         op = "cast";
         arity = 1;
         break;
     case PLUS_EXPR:
-        op = "add";
+        op = float_result ? "fadd" : "add";
         break;
     case MINUS_EXPR:
-        op = "sub";
+        op = float_result ? "fsub" : "sub";
         break;
     case MULT_EXPR:
-        op = "mul";
+        op = float_result ? "fmul" : "mul";
+        break;
+    case RDIV_EXPR:
+        if (!float_result) {
+            error_at(at(value), "|c>: division requires floating-point or integer division");
+            return "{}";
+        }
+        op = "fdiv";
         break;
     case TRUNC_DIV_EXPR:
         op = "div";
@@ -1111,22 +1179,22 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         op = "shr";
         break;
     case EQ_EXPR:
-        op = "eq";
+        op = float_args ? "feq" : "eq";
         break;
     case NE_EXPR:
-        op = "ne";
+        op = float_args ? "fne" : "ne";
         break;
     case LT_EXPR:
-        op = "lt";
+        op = float_args ? "flt" : "lt";
         break;
     case LE_EXPR:
-        op = "le";
+        op = float_args ? "fle" : "le";
         break;
     case GT_EXPR:
-        op = "gt";
+        op = float_args ? "fgt" : "gt";
         break;
     case GE_EXPR:
-        op = "ge";
+        op = float_args ? "fge" : "ge";
         break;
     case TRUTH_ANDIF_EXPR:
     case TRUTH_AND_EXPR:
@@ -1152,7 +1220,7 @@ std::string expression(tree value, std::set<unsigned> &deps) {
         arity = 1;
         break;
     case NEGATE_EXPR:
-        op = "neg";
+        op = float_result ? "fneg" : "neg";
         arity = 1;
         break;
     default:
@@ -1202,7 +1270,8 @@ std::string inverse_operation(unsigned id, const std::string &expression) {
 
 std::string cast_result(std::string expr, Variable &var) {
     return "{\"op\":\"cast\",\"bits\":" + std::to_string(var.width) +
-           ",\"signed\":" + (var.is_signed ? "true" : "false") + ",\"args\":[" + expr + "]}";
+           ",\"signed\":" + (var.is_signed ? "true" : "false") +
+           (var.is_float ? ",\"float\":true" : "") + ",\"args\":[" + expr + "]}";
 }
 
 bool dependent(unsigned id) {
@@ -1216,6 +1285,56 @@ bool dependent(unsigned id) {
             return true;
     }
     return false;
+}
+
+void cleanup(tree *list);
+
+void materialize_observed_dependents(unsigned target_id, location_t loc, tree *list) {
+    std::set<unsigned> closure;
+    std::vector<unsigned> frontier{target_id};
+    while (!frontier.empty()) {
+        unsigned src = frontier.back();
+        frontier.pop_back();
+        for (const auto &entry : variables) {
+            const auto &v = entry.second;
+            if (v.lowered && v.derived && !v.released && (!v.measured || v.pending_destruction) &&
+                !v.moved && v.dependencies.count(src) && closure.insert(v.id).second)
+                frontier.push_back(v.id);
+        }
+    }
+    if (closure.empty())
+        return;
+    std::vector<Variable *> targets;
+    for (auto &entry : variables) {
+        auto &v = entry.second;
+        if (!v.lowered || !v.derived || v.released || v.moved || !closure.count(v.id))
+            continue;
+        if (v.history ||
+            ((v.private_capture || auto_clean_zeros.count(v.decl)) && !remaining[v.id]))
+            continue;
+        if (!directly_observed_quantum_outputs.count(v.decl))
+            return;
+        targets.push_back(&v);
+    }
+    if (targets.empty())
+        return;
+    std::sort(targets.begin(), targets.end(), [](const Variable *a, const Variable *b) {
+        return a->id < b->id;
+    });
+    for (Variable *other : targets) {
+        append(
+            list,
+            emit_operation("{\"op\":\"qmaterialize\",\"id\":" + std::to_string(other->id) +
+                               ",\"optional\":" + (other->optional_definition ? "true" : "false") +
+                               control_json() + '}',
+                           loc));
+        taint_uniform(other->id);
+        other->derived = false;
+        other->optional_definition = false;
+        other->dependencies.clear();
+        other->creation.clear();
+    }
+    cleanup(list);
 }
 
 void cleanup(tree *list) {
@@ -1268,10 +1387,25 @@ void cleanup(tree *list) {
                 changed = true;
                 continue;
             }
-            if (!var.lowered || !var.derived || var.released || var.measured || var.moved ||
-                remaining[var.id] || dependent(var.id))
+            if (var.lowered && auto_clean_zeros.count(var.decl) && !var.derived && !var.history &&
+                (var.clean || (var.basis_known && var.lower == var.upper)) && !var.released &&
+                !var.moved && !var.measured && !remaining[var.id] && !dependent(var.id)) {
+                if (!var.clean)
+                    append(
+                        list,
+                        emit_operation("{\"op\":\"qreset\",\"id\":" + std::to_string(var.id) + '}',
+                                       at(var.decl)));
+                append(list,
+                       emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(var.id) + '}',
+                                      at(var.decl)));
+                var.released = true;
+                changed = true;
                 continue;
-            if (var.optional_definition)
+            }
+            if (!var.lowered || (!var.derived && !auto_clean_zeros.count(var.decl)) ||
+                var.released || var.measured || var.moved || remaining[var.id] || dependent(var.id))
+                continue;
+            if (var.optional_definition || !var.derived)
                 append(list,
                        emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(var.id) + '}',
                                       at(var.decl)));
@@ -1329,11 +1463,17 @@ int affine_parity(tree value, unsigned width, tree &source, unsigned depth = 0) 
 bool lossy_assignment(tree value, unsigned width, unsigned depth = 0) {
     if (depth > 128)
         return true;
+    if (value && TREE_TYPE(value) && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)))
+        return true;
     while (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR) {
+        if (TREE_TYPE(value) && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)))
+            return true;
         if (INTEGRAL_TYPE_P(TREE_TYPE(value)) && TYPE_PRECISION(TREE_TYPE(value)) < width)
             return true;
         value = TREE_OPERAND(value, 0);
     }
+    if (value && TREE_TYPE(value) && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)))
+        return true;
     auto code = TREE_CODE(value);
     tree affine_source = NULL_TREE;
     int parity = width > 1 ? affine_parity(value, width, affine_source) : -1;
@@ -1468,7 +1608,10 @@ tree restore_integer_arithmetic(tree value, std::map<tree, tree> &memo, unsigned
         a = restore_integer_arithmetic(a, memo, depth + 1);
         b = restore_integer_arithmetic(b, memo, depth + 1);
         tree type = usual_integer_type(a, b);
-        result = build2_loc(at(value), code, type, fold_convert(type, a), fold_convert(type, b));
+        auto promote_operand = [&](tree op) {
+            return TREE_TYPE(op) == type ? op : build1_loc(at(value), NOP_EXPR, type, op);
+        };
+        result = build2_loc(at(value), code, type, promote_operand(a), promote_operand(b));
     } else if (EXPR_P(value)) {
         for (int i = 0; i < TREE_OPERAND_LENGTH(value); ++i)
             TREE_OPERAND(result, i) =
@@ -1484,13 +1627,15 @@ std::string select_controls(std::string value,
                             const std::string &inactive,
                             unsigned width,
                             bool is_signed,
-                            std::set<unsigned> &deps) {
+                            std::set<unsigned> &deps,
+                            bool is_float = false) {
     for (auto control = controls.rbegin(); control != controls.rend(); ++control) {
         deps.insert(control->first);
         std::string flag = "{\"op\":\"reg\",\"id\":" + std::to_string(control->first) +
                            ",\"bits\":1,\"signed\":false}";
         value = "{\"op\":\"select\",\"bits\":" + std::to_string(width) +
-                ",\"signed\":" + (is_signed ? "true" : "false") + ",\"args\":[" + flag + ',' +
+                ",\"signed\":" + (is_signed ? "true" : "false") +
+                (is_float ? ",\"float\":true" : "") + ",\"args\":[" + flag + ',' +
                 (control->second ? value : inactive) + ',' + (control->second ? inactive : value) +
                 "]}";
     }
@@ -1655,15 +1800,16 @@ void rebind_guarded_saves(const Variable &var,
                           const std::string &bit_mask = "",
                           const std::set<unsigned> &mask_parameters = {},
                           const std::set<unsigned> &mask_sources = {}) {
+    std::string fl = var.is_float ? ",\"float\":true" : "";
     std::string leaf = "{\"op\":\"reg\",\"id\":" + std::to_string(var.id) +
                        ",\"bits\":" + std::to_string(var.width) +
-                       ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
+                       ",\"signed\":" + (var.is_signed ? "true" : "false") + fl + '}';
     std::string previous = "{\"op\":\"reg\",\"id\":" + std::to_string(history) +
                            ",\"bits\":" + std::to_string(var.width) +
-                           ",\"signed\":" + (var.is_signed ? "true" : "false") + '}';
+                           ",\"signed\":" + (var.is_signed ? "true" : "false") + fl + '}';
     std::set<unsigned> sources{var.id, history};
     sources.insert(mask_sources.begin(), mask_sources.end());
-    previous = select_controls(previous, leaf, var.width, var.is_signed, sources);
+    previous = select_controls(previous, leaf, var.width, var.is_signed, sources, var.is_float);
     if (!bit_mask.empty()) {
         std::string type = ",\"bits\":" + std::to_string(var.width) + ",\"signed\":false";
         auto cast = [&](const std::string &value) {
@@ -1731,6 +1877,7 @@ void rebind_guarded_saves(const Variable &var,
             continue;
         transport(saved.creation);
         saved.dependencies.insert(sources.begin(), sources.end());
+        saved.dependencies.erase(saved.id);
         saved.optional_definition = saved.runtime_history = true;
     }
     // Actual saved inverses may outlive a compiler-visible borrower while
@@ -1854,12 +2001,15 @@ void guarded_assignment(Variable &var,
     unsigned history = next_id++;
     std::set<unsigned> sources = deps;
     std::string zero = "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
-                       ",\"signed\":" + (var.is_signed ? "true" : "false") + ",\"value\":0}";
-    std::string value = select_controls(expr, zero, var.width, var.is_signed, sources);
+                       ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                       (var.is_float ? ",\"float\":true" : "") + ",\"value\":0}";
+    std::string value =
+        select_controls(expr, zero, var.width, var.is_signed, sources, var.is_float);
     append(list,
            emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(history) +
-                                ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
-                                (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                                ",\"width\":" + std::to_string(var.width) +
+                                ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                                (var.is_float ? ",\"float\":true" : "") + ",\"ancilla\":true}",
                             loc,
                             history,
                             true));
@@ -1888,6 +2038,7 @@ void guarded_assignment(Variable &var,
     previous.id = history;
     previous.width = var.width;
     previous.is_signed = var.is_signed;
+    previous.is_float = var.is_float;
     previous.lowered = previous.history = previous.optional_definition = previous.runtime_history =
         true;
     previous.decl =
@@ -1913,8 +2064,8 @@ void versioned_assignment(Variable &var,
     }
     if (runtime_memory_depth || dynamic_depth > cpu_branches.size()) {
         std::set<unsigned> sources = deps;
-        std::string value =
-            select_controls(expr, register_expression(var), var.width, var.is_signed, sources);
+        std::string value = select_controls(
+            expr, register_expression(var), var.width, var.is_signed, sources, var.is_float);
         append(list,
                emit_operation("{\"op\":\"qassign\",\"id\":" + std::to_string(var.id) +
                                   ",\"expr\":" + value + '}',
@@ -1939,7 +2090,7 @@ void versioned_assignment(Variable &var,
     if (!controls.empty()) {
         sources.insert(old_id);
         std::string inactive = register_expression(var);
-        value = select_controls(value, inactive, var.width, var.is_signed, sources);
+        value = select_controls(value, inactive, var.width, var.is_signed, sources, var.is_float);
     }
     Variable previous = var;
     previous.history = true;
@@ -1956,8 +2107,9 @@ void versioned_assignment(Variable &var,
                "{\"op\":\"qretain\",\"id\":" + std::to_string(old_id) + '}', loc, old_id, false));
     append(list,
            emit_cpu_storage("{\"op\":\"qalloc\",\"id\":" + std::to_string(new_id) +
-                                ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
-                                (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                                ",\"width\":" + std::to_string(var.width) +
+                                ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                                (var.is_float ? ",\"float\":true" : "") + ",\"ancilla\":true}",
                             loc,
                             new_id,
                             true));
@@ -2164,7 +2316,8 @@ void merge_cpu_versions(const std::map<tree, Variable> &incoming,
 }
 
 tree lower_quantum_decl(Variable &var) {
-    if (!controls.empty() || dynamic_depth) {
+    if (dynamic_depth || (!controls.empty() && !var.expression_init && !var.classical_init &&
+                          !(var.basis_known && var.lower == var.upper))) {
         error_at(
             at(var.decl),
             "|c>: quantum allocation inside a controlled branch or loop needs a proven lifetime and is not supported yet");
@@ -2179,7 +2332,8 @@ tree lower_quantum_decl(Variable &var) {
     // A change of integer representation computes a value and preserves its
     // source. Only a compatible representation can transfer the owner.
     if (var.expression_init && quantum(init) && variables.at(init).width == var.width &&
-        variables.at(init).is_signed == var.is_signed) {
+        variables.at(init).is_signed == var.is_signed &&
+        variables.at(init).is_float == var.is_float) {
         auto &src = variables.at(init);
         if (!src.lowered || src.released || src.moved ||
             TYPE_MAIN_VARIANT(TREE_TYPE(src.decl)) != TYPE_MAIN_VARIANT(TREE_TYPE(var.decl))) {
@@ -2231,11 +2385,11 @@ tree lower_quantum_decl(Variable &var) {
         consume(src);
         std::set<unsigned> deps;
         std::string predicate = expression(CALL_EXPR_ARG(init, 1), deps);
-        if (deps != std::set<unsigned>{src.id} || src.lower != 0 || src.epoch ||
+        if (deps != std::set<unsigned>{src.id} || src.is_float || var.is_float || src.epoch ||
             !src.pristine_uniform) {
             error_at(
                 at(var.decl),
-                "|c>: find currently requires an unchanged uniform [0,2^k-1] input and a pure predicate on that input");
+                "|c>: find currently requires an unchanged uniform [a,a+2^k-1] input and a pure predicate on that input");
             return list;
         }
         unsigned unused_id = var.id;
@@ -2244,51 +2398,86 @@ tree lower_quantum_decl(Variable &var) {
         var.id = src.id;
         var.lowered = true;
         var.range_max = src.range_max;
+        var.lower = src.lower;
+        var.upper = src.upper;
         src.moved = true;
         uint64_t solutions = 1;
+        uint64_t span = src.upper - src.lower;
         if (intrinsic(init) == "find_known") {
             tree count = strip(CALL_EXPR_ARG(init, 2));
             if (TREE_CODE(count) != INTEGER_CST || !tree_fits_uhwi_p(count) ||
-                !(solutions = tree_to_uhwi(count)) || solutions > src.upper + 1)
+                !(solutions = tree_to_uhwi(count)) || (span < UINT64_MAX && solutions > span + 1))
                 error_at(at(init), "|c>: find_known requires a constant solution count in 1..N");
         }
         append(&list,
-               emit_operation("{\"op\":\"qfind\",\"id\":" + std::to_string(var.id) +
-                                  ",\"upper\":" + std::to_string(src.upper) + ",\"solutions\":" +
-                                  std::to_string(solutions) + ",\"predicate\":" + predicate + '}',
-                              at(var.decl)));
+               emit_operation(
+                   "{\"op\":\"qfind\",\"id\":" + std::to_string(var.id) +
+                       (src.lower != 0 ? ",\"lower\":" + interval_bound_json(
+                                                             src.lower, src.width, src.is_signed)
+                                       : "") +
+                       ",\"upper\":" + interval_bound_json(src.upper, src.width, src.is_signed) +
+                       ",\"solutions\":" + std::to_string(solutions) +
+                       ",\"predicate\":" + predicate + '}',
+                   at(var.decl)));
+        if (src.name != var.name)
+            append(&list,
+                   emit_operation("{\"op\":\"qmove\",\"id\":" + std::to_string(var.id) +
+                                      ",\"from\":" + json(src.name) + ",\"to\":" + json(var.name) +
+                                      '}',
+                                  at(var.decl)));
         DECL_INITIAL(var.decl) = build_zero_cst(TREE_TYPE(var.decl));
         append(&list, build1(DECL_EXPR, void_type_node, var.decl));
         return list;
     }
     append(&list,
-           emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(var.id) + ",\"name\":" +
-                              json(var.name) + ",\"width\":" + std::to_string(var.width) +
-                              ",\"signed\":" + (var.is_signed ? "true" : "false") +
-                              ",\"ancilla\":" + (var.expression_init ? "true" : "false") + '}',
-                          at(var.decl)));
+           emit_operation(
+               "{\"op\":\"qalloc\",\"id\":" + std::to_string(var.id) +
+                   ",\"name\":" + json(var.name) + ",\"width\":" + std::to_string(var.width) +
+                   ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                   (var.is_float ? ",\"float\":true" : "") + ",\"ancilla\":" +
+                   (var.expression_init || !controls.empty() || auto_clean_zeros.count(var.decl)
+                        ? "true"
+                        : "false") +
+                   '}',
+               at(var.decl)));
     var.lowered = true;
-    if (var.expression_init) {
-        var.creation =
-            cast_result(evaluate_expression(var.original_init, var.dependencies, &list), var);
-        // Heap register identities are resolved by qbind at execution time.
-        // Their saved inverse still borrows the resolved engine registers.
-        tree probe = var.original_init;
-        auto heap_read = [](tree *node, int *walk, void *) -> tree {
-            if (quantum_heap_accesses.count(*node) || quantum_heap_byte_reads.count(*node))
-                return *node;
-            if (DECL_P(*node) || TYPE_P(*node))
-                *walk = 0;
-            return NULL_TREE;
-        };
-        if (var.dependencies.empty() && !walk_tree_without_duplicates(&probe, heap_read, nullptr))
-            error_at(
-                at(var.decl),
-                "|c>: quantum initializer must be constant, superposition, or a supported quantum expression");
+    if (var.expression_init || !controls.empty() ||
+        (auto_clean_zeros.count(var.decl) && var.basis_known && var.lower == var.upper)) {
+        if (var.expression_init) {
+            var.creation =
+                cast_result(evaluate_expression(var.original_init, var.dependencies, &list), var);
+            // Heap register identities are resolved by qbind at execution time.
+            // Their saved inverse still borrows the resolved engine registers.
+            tree probe = var.original_init;
+            auto heap_read = [](tree *node, int *walk, void *) -> tree {
+                if (quantum_heap_accesses.count(*node) || quantum_heap_byte_reads.count(*node))
+                    return *node;
+                if (DECL_P(*node) || TYPE_P(*node))
+                    *walk = 0;
+                return NULL_TREE;
+            };
+            if (var.dependencies.empty() &&
+                !walk_tree_without_duplicates(&probe, heap_read, nullptr))
+                error_at(
+                    at(var.decl),
+                    "|c>: quantum initializer must be constant, superposition, or a supported quantum expression");
+        } else if (var.classical_init) {
+            var.creation = cpu_parameter(var.original_init);
+        } else {
+            var.creation = "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
+                           ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                           ",\"value\":" + std::to_string(var.lower) + '}';
+        }
         var.derived = true;
+        if (!controls.empty()) {
+            var.basis_known = false;
+            var.clean = false;
+            for (const auto &c : controls)
+                var.dependencies.insert(c.first);
+        }
         append(&list,
                emit_operation("{\"op\":\"qcompute\",\"id\":" + std::to_string(var.id) +
-                                  ",\"expr\":" + var.creation + '}',
+                                  ",\"expr\":" + var.creation + control_json() + '}',
                               at(var.decl)));
     } else if (var.classical_init) {
         std::string value = cpu_parameter(var.original_init);
@@ -2298,13 +2487,17 @@ tree lower_quantum_decl(Variable &var) {
                               at(var.decl)));
     } else {
         append(&list,
-               emit_operation("{\"op\":\"qprepare\",\"id\":" + std::to_string(var.id) +
-                                  ",\"lower\":" + std::to_string(var.lower) +
-                                  ",\"upper\":" + std::to_string(var.upper) + '}',
-                              at(var.decl)));
+               emit_operation(
+                   "{\"op\":\"qprepare\",\"id\":" + std::to_string(var.id) +
+                       ",\"lower\":" + interval_bound_json(var.lower, var.width, var.is_signed) +
+                       ",\"upper\":" + interval_bound_json(var.upper, var.width, var.is_signed) +
+                       '}',
+                   at(var.decl)));
     }
-    DECL_INITIAL(var.decl) = build_zero_cst(TREE_TYPE(var.decl));
-    append(&list, build1(DECL_EXPR, void_type_node, var.decl));
+    if (!TREE_STATIC(var.decl)) {
+        DECL_INITIAL(var.decl) = build_zero_cst(TREE_TYPE(var.decl));
+        append(&list, build1(DECL_EXPR, void_type_node, var.decl));
+    }
     return list;
 }
 
@@ -2392,15 +2585,21 @@ tree lower_indexed_operation(
 tree measurement_storage(tree value, tree result_type) {
     tree storage = strip(value);
     unsigned width = 0;
-    if (quantum(storage))
+    bool fl = false;
+    if (quantum(storage)) {
         width = TYPE_PRECISION(TREE_TYPE(storage));
-    else if (selected_storage(storage))
-        width = TYPE_PRECISION(
-            TREE_TYPE(quantum_indexed_accesses.at(selected_storage(storage)).elements.front()));
-    if (!width || !INTEGRAL_TYPE_P(result_type) || TYPE_PRECISION(result_type) != width)
+        fl = SCALAR_FLOAT_TYPE_P(TREE_TYPE(storage));
+    } else if (selected_storage(storage)) {
+        tree elem = quantum_indexed_accesses.at(selected_storage(storage)).elements.front();
+        width = TYPE_PRECISION(TREE_TYPE(elem));
+        fl = SCALAR_FLOAT_TYPE_P(TREE_TYPE(elem));
+    }
+    if (!width || !(INTEGRAL_TYPE_P(result_type) || SCALAR_FLOAT_TYPE_P(result_type)) ||
+        fl != SCALAR_FLOAT_TYPE_P(result_type) || TYPE_PRECISION(result_type) != width)
         return NULL_TREE;
     while (CONVERT_EXPR_P(value) || TREE_CODE(value) == NON_LVALUE_EXPR) {
-        if (!INTEGRAL_TYPE_P(TREE_TYPE(value)) || TYPE_PRECISION(TREE_TYPE(value)) < width)
+        if (!TREE_TYPE(value) || SCALAR_FLOAT_TYPE_P(TREE_TYPE(value)) != fl ||
+            TYPE_PRECISION(TREE_TYPE(value)) < width)
             return NULL_TREE;
         value = TREE_OPERAND(value, 0);
     }
@@ -2501,14 +2700,20 @@ bool observation_bound(tree value, uint64_t &bound, unsigned depth = 0) {
 
 tree lower_expression_measurement(tree value) {
     tree input = CALL_EXPR_ARG(value, 0), type = TYPE_MAIN_VARIANT(TREE_TYPE(value));
-    if (!has_quantum(input) || !INTEGRAL_TYPE_P(type) || TYPE_PRECISION(type) > 64) {
-        error_at(at(value), "|c>: measurement requires a quantum integer expression");
+    bool is_float = SCALAR_FLOAT_TYPE_P(type);
+    if (!has_quantum(input) ||
+        (!is_float && (!INTEGRAL_TYPE_P(type) || TYPE_PRECISION(type) > 64)) ||
+        (is_float && TYPE_PRECISION(type) != 32 && TYPE_PRECISION(type) != 64)) {
+        error_at(at(value),
+                 is_float ? "|c>: measurement requires a quantum floating-point expression"
+                          : "|c>: measurement requires a quantum integer expression");
         return constant(0);
     }
     Variable temporary{};
     temporary.id = next_id++;
     temporary.width = TYPE_PRECISION(type);
-    temporary.is_signed = !TYPE_UNSIGNED(type);
+    temporary.is_float = is_float;
+    temporary.is_signed = !is_float && !TYPE_UNSIGNED(type);
     temporary.name = "__cket_observation_" + std::to_string(temporary.id);
     temporary.decl = build_decl(at(value), VAR_DECL, get_identifier(temporary.name.c_str()), type);
     variables.emplace(temporary.decl, temporary);
@@ -2516,7 +2721,7 @@ tree lower_expression_measurement(tree value) {
     tree list = alloc_stmt_list();
     std::string expression_value = evaluate_expression(input, owner.dependencies, &list);
     uint64_t bound;
-    if (observation_bound(input, bound)) {
+    if (!owner.is_float && observation_bound(input, bound)) {
         unsigned needed = 1;
         while (needed < 64 && (bound >> needed))
             ++needed;
@@ -2533,8 +2738,9 @@ tree lower_expression_measurement(tree value) {
     parameters.swap(active_cpu_parameters);
     append(&list,
            emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(owner.id) +
-                              ",\"width\":" + std::to_string(owner.width) + ",\"signed\":" +
-                              (owner.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                              ",\"width\":" + std::to_string(owner.width) +
+                              ",\"signed\":" + (owner.is_signed ? "true" : "false") +
+                              (owner.is_float ? ",\"float\":true" : "") + ",\"ancilla\":true}",
                           at(value)));
     active_cpu_parameters.swap(parameters);
     owner.clean = false;
@@ -2583,7 +2789,15 @@ tree lower_expression_measurement(tree value) {
         }
     }
     cleanup(&list);
-    return prefixed_value(list, fold_convert(TREE_TYPE(value), measured));
+    tree result = measured;
+    if (is_float) {
+        tree bits_type =
+            TYPE_PRECISION(type) == 32 ? unsigned_type_node : long_long_unsigned_type_node;
+        result = build1_loc(
+            at(value), VIEW_CONVERT_EXPR, TREE_TYPE(value), fold_convert(bits_type, measured));
+    } else
+        result = fold_convert(TREE_TYPE(value), measured);
+    return prefixed_value(list, result);
 }
 
 tree lower_node(tree value) {
@@ -3125,6 +3339,44 @@ tree lower_node(tree value) {
     }
     if (code == BIND_EXPR) {
         BIND_EXPR_BODY(value) = lower_node(BIND_EXPR_BODY(value));
+        if (!controls.empty()) {
+            tree tail = alloc_stmt_list();
+            for (tree v = BIND_EXPR_VARS(value); v; v = DECL_CHAIN(v)) {
+                auto found = variables.find(v);
+                if (found == variables.end())
+                    continue;
+                auto &var = found->second;
+                if (!var.lowered || var.released || var.moved || var.measured)
+                    continue;
+                if (var.derived && !var.optional_definition && !dependent(var.id)) {
+                    std::string inv =
+                        var.creation.empty() ||
+                                var.creation.find("\"op\":\"parameter\"") != std::string::npos
+                            ? "{\"op\":\"quncompute\",\"id\":" + std::to_string(var.id) +
+                                  ",\"saved\":true" + control_json() + '}'
+                            : "{\"op\":\"quncompute\",\"id\":" + std::to_string(var.id) +
+                                  ",\"expr\":" + var.creation + control_json() + '}';
+                    append(&tail, emit_operation(inv, at(v)));
+                    append(&tail,
+                           emit_operation("{\"op\":\"qrelease\",\"id\":" + std::to_string(var.id) +
+                                              '}',
+                                          at(v)));
+                    var.released = true;
+                } else if (var.optional_definition && !dependent(var.id)) {
+                    append(&tail,
+                           emit_operation("{\"op\":\"qdispose\",\"id\":" + std::to_string(var.id) +
+                                              '}',
+                                          at(v)));
+                    var.released = true;
+                }
+            }
+            if (TREE_CODE(tail) == STATEMENT_LIST && !tsi_end_p(tsi_start(tail))) {
+                tree combined = alloc_stmt_list();
+                append(&combined, BIND_EXPR_BODY(value));
+                append(&combined, tail);
+                BIND_EXPR_BODY(value) = combined;
+            }
+        }
         return value;
     }
     if (code == STATEMENT_LIST) {
@@ -3315,6 +3567,14 @@ tree lower_node(tree value) {
         return list;
     }
     if (code == COND_EXPR && TREE_TYPE(value) == void_type_node) {
+        // GCC's C frontend injects scalar UBSan divrem/shift guards as void
+        // COND_EXPR nodes before PRE_GENERICIZE. Keep the runtime check intact
+        // on CPU without emitting empty dynamic CPU control markers in the IR.
+        if (gcc_quantum_sanitizer_guard(value) && controls.empty()) {
+            TREE_OPERAND(value, 0) = lower_node(TREE_OPERAND(value, 0));
+            TREE_OPERAND(value, 1) = lower_node(TREE_OPERAND(value, 1));
+            return value;
+        }
         if (!controls.empty() && !checked_cpu_branch) {
             error_at(at(value),
                      "|c>: classical branch inside quantum control is not supported yet");
@@ -3740,16 +4000,28 @@ tree lower_node(tree value) {
             auto found = variables.find(storage);
             if (!controls.empty() || found == variables.end() || !found->second.lowered ||
                 found->second.moved || found->second.released || !found->second.pristine_uniform ||
-                found->second.derived || dependent(found->second.id) ||
+                found->second.derived || found->second.is_float || dependent(found->second.id) ||
                 readonly_quantum_borrows.count(storage)) {
                 error_at(
                     at(value),
-                    "|c>: search needs an independent pristine uniform mutable register under classical control");
+                    "|c>: search needs an independent pristine uniform mutable integer register under classical control");
                 return constant(0);
             }
-            if (TREE_CODE(count) != INTEGER_CST || !tree_fits_uhwi_p(count) ||
-                !tree_to_uhwi(count) || tree_to_uhwi(count) > 4096) {
-                error_at(at(value), "|c>: search requires a constant attempt budget in 1..4096");
+            std::string attempts_json;
+            if (TREE_CODE(count) == INTEGER_CST) {
+                if (!tree_fits_uhwi_p(count) || !tree_to_uhwi(count) ||
+                    tree_to_uhwi(count) > 4096) {
+                    error_at(at(value),
+                             "|c>: search requires a constant attempt budget in 1..4096");
+                    return constant(0);
+                }
+                attempts_json = std::to_string(tree_to_uhwi(count));
+            } else if (!has_quantum(count) && INTEGRAL_TYPE_P(TREE_TYPE(count)) &&
+                       TYPE_PRECISION(TREE_TYPE(count)) <= 64 && quantum_pure_expression(count)) {
+                attempts_json = cpu_parameter(fold_convert(unsigned_type_node, count));
+            } else {
+                error_at(at(value),
+                         "|c>: search requires a constant or pure CPU attempt budget in 1..4096");
                 return constant(0);
             }
             auto &var = found->second;
@@ -3758,10 +4030,13 @@ tree lower_node(tree value) {
             std::string predicate = expression(CALL_EXPR_ARG(value, 1), deps);
             if (deps.size() != 1 || !deps.count(var.id))
                 error_at(at(value), "|c>: search predicate must depend only on its input");
-            std::string operation = "{\"op\":\"qsearch\",\"id\":" + std::to_string(var.id) +
-                                    ",\"upper\":" + std::to_string(var.upper) +
-                                    ",\"attempts\":" + std::to_string(tree_to_uhwi(count)) +
-                                    ",\"predicate\":" + predicate + '}';
+            std::string operation =
+                "{\"op\":\"qsearch\",\"id\":" + std::to_string(var.id) +
+                (var.lower != 0
+                     ? ",\"lower\":" + interval_bound_json(var.lower, var.width, var.is_signed)
+                     : "") +
+                ",\"upper\":" + interval_bound_json(var.upper, var.width, var.is_signed) +
+                ",\"attempts\":" + attempts_json + ",\"predicate\":" + predicate + '}';
             var.measured = true;
             var.pristine_uniform = var.basis_known = var.clean = false;
             var.range_max = var.width == 64 ? UINT64_MAX : ((uint64_t{1} << var.width) - 1);
@@ -3774,10 +4049,11 @@ tree lower_node(tree value) {
             tree list = alloc_stmt_list();
             cleanup(&list);
             if (found == variables.end() || !found->second.lowered || found->second.moved ||
-                found->second.released || found->second.derived || dependent(found->second.id)) {
+                found->second.released || found->second.derived || found->second.is_float ||
+                dependent(found->second.id)) {
                 error_at(
                     at(value),
-                    "|c>: Fourier transform needs available owned storage without pending inverse dependencies");
+                    "|c>: Fourier transform needs available owned integer storage without pending inverse dependencies");
                 return list;
             }
             auto &var = found->second;
@@ -3884,6 +4160,7 @@ tree lower_node(tree value) {
             var.clean = false;
             tree list = alloc_stmt_list();
             cleanup(&list);
+            materialize_observed_dependents(var.id, at(value), &list);
             var.clean = was_clean;
             if (dependent(var.id)) {
                 var.pending_destruction = false;
@@ -3914,7 +4191,15 @@ tree lower_node(tree value) {
             }
             var.pending_destruction = false;
             // GCC COMPOUND_EXPR preserves cleanup-before-measure inside printf/initializers.
-            tree sequence = fold_convert(TREE_TYPE(value), call);
+            tree sequence;
+            if (kind == "measure" && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value))) {
+                tree bits_type = TYPE_PRECISION(TREE_TYPE(value)) == 32
+                                     ? unsigned_type_node
+                                     : long_long_unsigned_type_node;
+                sequence = build1_loc(
+                    at(value), VIEW_CONVERT_EXPR, TREE_TYPE(value), fold_convert(bits_type, call));
+            } else
+                sequence = fold_convert(TREE_TYPE(value), call);
             std::vector<tree> prefix;
             for (auto it = tsi_start(list); !tsi_end_p(it); tsi_next(&it))
                 prefix.push_back(tsi_stmt(it));
@@ -3954,7 +4239,7 @@ tree lower_node(tree value) {
     if (code == GOTO_EXPR && !variables.empty()) {
         error_at(
             at(value),
-            "|c>: goto with quantum storage requires control-flow lifetime analysis and is not supported yet");
+            "|c>: backward goto cycle or goto across coherent control branch scope requires CFG lifetime analysis");
         return value;
     }
     if (code == SWITCH_STMT && (has_quantum(value) || !controls.empty())) {

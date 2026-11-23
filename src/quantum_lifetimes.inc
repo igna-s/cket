@@ -13,6 +13,14 @@ std::set<tree> observation_reads(tree value) {
         } else if (quantum_indexed_accesses.count(*node)) {
             const auto &access = quantum_indexed_accesses.at(*node);
             reads.insert(access.elements.begin(), access.elements.end());
+            auto idx_reads = observation_reads(access.index);
+            reads.insert(idx_reads.begin(), idx_reads.end());
+            *walk = 0;
+        } else if (quantum_coherent_accesses.count(*node)) {
+            const auto &access = quantum_coherent_accesses.at(*node);
+            reads.insert(access.elements.begin(), access.elements.end());
+            auto idx_reads = observation_reads(access.index);
+            reads.insert(idx_reads.begin(), idx_reads.end());
             *walk = 0;
         } else if (DECL_P(*node) || TYPE_P(*node))
             *walk = 0;
@@ -60,11 +68,22 @@ tree collect_observation_flow(tree *node, int *walk, void *data) {
         *walk = 0;
         return NULL_TREE;
     }
+    if (TREE_CODE(value) == TRUTH_ANDIF_EXPR || TREE_CODE(value) == TRUTH_ORIF_EXPR) {
+        walk_tree(&TREE_OPERAND(value, 0), collect_observation_flow, data, nullptr);
+        auto previous = flow.controls;
+        auto reads = observation_reads(TREE_OPERAND(value, 0));
+        flow.controls.insert(reads.begin(), reads.end());
+        walk_tree(&TREE_OPERAND(value, 1), collect_observation_flow, data, nullptr);
+        flow.controls.swap(previous);
+        *walk = 0;
+        return NULL_TREE;
+    }
     if (TREE_CODE(value) == CALL_EXPR) {
         auto kind = intrinsic(value);
-        if (kind == "measure" || kind == "reset" || kind == "fourier" ||
-            kind == "inverse_fourier" || kind == "search" || kind == "circuit" ||
-            kind == "inverse_circuit") {
+        if (kind == "measure" || kind == "reset" || kind == "reset_arg" ||
+            kind == "reset_product" || kind == "reset_product_arg" || kind == "fourier" ||
+            kind == "inverse_fourier" || kind == "find" || kind == "find_known" ||
+            kind == "search" || kind == "circuit" || kind == "inverse_circuit") {
             for (int i = 0; i < call_expr_nargs(value); ++i) {
                 auto reads = observation_reads(CALL_EXPR_ARG(value, i));
                 flow.outputs.insert(reads.begin(), reads.end());
@@ -88,6 +107,7 @@ tree collect_observation_flow(tree *node, int *walk, void *data) {
 std::set<tree> observed_storage_dependencies(tree body) {
     ObservationFlow flow;
     walk_tree(&body, collect_observation_flow, &flow, nullptr);
+    directly_observed_quantum_outputs = flow.outputs;
     std::vector<tree> pending(flow.outputs.begin(), flow.outputs.end());
     while (!pending.empty()) {
         tree destination = pending.back();
@@ -108,11 +128,15 @@ void compute_known_storage(Variable &var,
                            location_t loc,
                            tree *list) {
     std::string inactive =
-        "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) +
-        ",\"signed\":false,\"value\":" + std::to_string(var.basis_known ? var.lower : 0) + '}';
-    inactive = cast_result(inactive, var);
+        "{\"op\":\"const\",\"bits\":" + std::to_string(var.width) + ",\"signed\":false" +
+        (var.is_float ? ",\"float\":true" : "") +
+        ",\"value\":" + std::to_string(var.basis_known ? mask_to_width(var.lower, var.width) : 0) +
+        '}';
+    if (!var.is_float)
+        inactive = cast_result(inactive, var);
     std::set<unsigned> sources = deps;
-    std::string value = select_controls(expr, inactive, var.width, var.is_signed, sources);
+    std::string value =
+        select_controls(expr, inactive, var.width, var.is_signed, sources, var.is_float);
     std::set<unsigned> parameters;
     parameters.swap(active_cpu_parameters);
     append(list, emit_operation("{\"op\":\"qretain\",\"id\":" + std::to_string(var.id) + '}', loc));
@@ -120,8 +144,9 @@ void compute_known_storage(Variable &var,
            emit_operation("{\"op\":\"qhistory_end\",\"id\":" + std::to_string(var.id) + '}', loc));
     append(list,
            emit_operation("{\"op\":\"qalloc\",\"id\":" + std::to_string(var.id) +
-                              ",\"width\":" + std::to_string(var.width) + ",\"signed\":" +
-                              (var.is_signed ? "true" : "false") + ",\"ancilla\":true}",
+                              ",\"width\":" + std::to_string(var.width) +
+                              ",\"signed\":" + (var.is_signed ? "true" : "false") +
+                              (var.is_float ? ",\"float\":true" : "") + ",\"ancilla\":true}",
                           loc));
     active_cpu_parameters.swap(parameters);
     append(list,

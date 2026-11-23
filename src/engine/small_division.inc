@@ -11,7 +11,7 @@ static int ar_modular_double(ar_builder *p, const ar_value *value, unsigned modu
         unsigned next = (2 * first) % modulus;
         while (next != first) {
             visited[next] = 1;
-            if (!ar_modular_swap(p, value, first, next, (ar_bit){0, 1}))
+            if (!ar_modular_swap(p, value, first, next, (ar_bit){qc_mask_zero(), 1}))
                 return 0;
             next = (2 * next) % modulus;
         }
@@ -94,7 +94,7 @@ static int ar_small_division(
             !ar_magnitude_bit(p, a, bit, ar_wire(magnitude.bit[0])))
             return -1;
     }
-    ar_bit negative = a->sign ? a->bit[a->width - 1] : (ar_bit){0, 0};
+    ar_bit negative = a->sign ? a->bit[a->width - 1] : (ar_bit){qc_mask_zero(), 0};
     negative.inverted ^= negative_divisor;
     return ar_negate_if(p, out, negative) ? 1 : -1;
 }
@@ -115,7 +115,7 @@ static int ar_small_division_truth(ar_builder *p, int e, ar_value *out) {
         return 0;
     ar_value input;
     if (!ar_lower(p, args[0], 64, &input) || !ar_temp(p, 1, out) ||
-        !ar_gate(p, ar_wire(out->bit[0]), 0, 0))
+        !ar_gate(p, ar_wire(out->bit[0]), qc_mask_zero(), qc_mask_zero()))
         return -1;
     __int128 positive_limit = (__int128)1 << (input.width - !!input.sign);
     __int128 negative_limit = input.sign ? -positive_limit : 0;

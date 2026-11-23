@@ -46,13 +46,13 @@ static char *swap_stable_text(
         qc_fail(c, "swap decision expansion proof budget or syntax failure");
         return NULL;
     }
-    char *out = malloc(65537);
+    size_t capacity = strlen(text) + 256, copied = 0, used = 0;
+    char *out = malloc(capacity);
     if (!out) {
         cj_free(&d);
         qc_fail(c, "cannot allocate expanded swap decision");
         return NULL;
     }
-    size_t copied = 0, used = 0;
     for (int t = 0; t < d.count; ++t) {
         uint64_t id;
         if (d.tokens[t].kind != '{' || !cj_equal(&d, cj_get(&d, t, "op"), "reg") ||
@@ -63,8 +63,8 @@ static char *swap_stable_text(
             source && source->alive && source->prepared && !source->definition && id != a && id != b
                 ? cj_copy(&d, t)
                 : swap_stable_register(c, (uint32_t)id, a, b, depth + 1, work);
-        size_t before = d.tokens[t].begin - copied;
-        if (!value || used + before + strlen(value) > 65536) {
+        size_t before = d.tokens[t].begin - copied, vlen = value ? strlen(value) : 0;
+        if (!value || used + before + vlen + 1 > 16u * 1024u * 1024u) {
             free(value);
             free(out);
             cj_free(&d);
@@ -72,19 +72,44 @@ static char *swap_stable_text(
                 qc_fail(c, "expanded swap decision text budget exceeded");
             return NULL;
         }
+        if (used + before + vlen + 1 > capacity) {
+            size_t next_cap = capacity;
+            while (next_cap < used + before + vlen + 1)
+                next_cap *= 2;
+            char *grown = realloc(out, next_cap);
+            if (!grown) {
+                free(value);
+                free(out);
+                cj_free(&d);
+                qc_fail(c, "cannot grow expanded swap decision");
+                return NULL;
+            }
+            out = grown;
+            capacity = next_cap;
+        }
         memcpy(out + used, text + copied, before);
         used += before;
-        memcpy(out + used, value, strlen(value));
-        used += strlen(value);
+        memcpy(out + used, value, vlen);
+        used += vlen;
         copied = d.tokens[t].end;
         free(value);
     }
     size_t after = strlen(text + copied);
-    if (used + after > 65536) {
+    if (used + after + 1 > 16u * 1024u * 1024u) {
         free(out);
         cj_free(&d);
         qc_fail(c, "expanded swap decision text budget exceeded");
         return NULL;
+    }
+    if (used + after + 1 > capacity) {
+        char *grown = realloc(out, used + after + 1);
+        if (!grown) {
+            free(out);
+            cj_free(&d);
+            qc_fail(c, "cannot grow expanded swap decision");
+            return NULL;
+        }
+        out = grown;
     }
     memcpy(out + used, text + copied, after + 1);
     cj_free(&d);
@@ -114,7 +139,7 @@ static char *swap_stable_register(
     char *value = swap_stable_text(c, r->definition, a, b, depth + 1, work);
     if (!value)
         return NULL;
-    if (r->definition_mask) {
+    if (qc_mask_any(r->definition_mask)) {
         char *zero = heap_memory_text(c,
                                       "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
                                       r->width,
@@ -124,18 +149,18 @@ static char *swap_stable_register(
             return NULL;
         }
         for (unsigned wire = 0; wire < QC_MAX_PHYSICAL; ++wire) {
-            qc_mask bit = QC_WIRE(wire);
-            if (!(r->definition_mask & bit))
+            if (!qc_mask_test(r->definition_mask, wire))
                 continue;
             qc_register *guard = swap_guard_owner(c, wire);
             char *condition =
                 guard ? swap_stable_register(c, guard->id, a, b, depth + 1, work) : NULL;
+            int closed = qc_mask_test(r->definition_pattern, wire);
             char *next = condition ? swap_select(c,
                                                  r->width,
                                                  r->signed_type,
                                                  condition,
-                                                 r->definition_pattern & bit ? value : zero,
-                                                 r->definition_pattern & bit ? zero : value)
+                                                 closed ? value : zero,
+                                                 closed ? zero : value)
                                    : NULL;
             free(condition);
             free(value);
@@ -367,9 +392,11 @@ static int swap_prepare_inverses(qc_context *c,
         return *c->error ? 0 : qc_fail(c, "cannot allocate swapped inverse plans");
     }
     unsigned n = 0;
-    qc_mask exchanged = 0;
-    for (unsigned bit = 0; bit < reg(c, a)->width; ++bit)
-        exchanged |= QC_WIRE(reg(c, a)->wires[bit]) | QC_WIRE(reg(c, b)->wires[bit]);
+    qc_mask exchanged = qc_mask_zero();
+    for (unsigned bit = 0; bit < reg(c, a)->width; ++bit) {
+        exchanged = qc_mask_set(exchanged, reg(c, a)->wires[bit]);
+        exchanged = qc_mask_set(exchanged, reg(c, b)->wires[bit]);
+    }
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive || !r->definition)
@@ -393,7 +420,7 @@ static int swap_prepare_inverses(qc_context *c,
         p->definition = swap_definition(c, r->definition, a, b, old_a, old_b);
         if (!p->definition)
             goto failed;
-        if (p->mask & exchanged) {
+        if (qc_mask_any(qc_mask_and(p->mask, exchanged))) {
             char *zero =
                 heap_memory_text(c,
                                  "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
@@ -402,8 +429,7 @@ static int swap_prepare_inverses(qc_context *c,
             if (!zero)
                 goto failed;
             for (unsigned wire = 0; wire < QC_MAX_PHYSICAL; ++wire) {
-                qc_mask bit = QC_WIRE(wire);
-                if (!(p->mask & bit))
+                if (!qc_mask_test(p->mask, wire))
                     continue;
                 qc_register *guard = NULL;
                 for (size_t k = 0; k < c->nregisters; ++k) {
@@ -421,12 +447,13 @@ static int swap_prepare_inverses(qc_context *c,
                 char *leaf = guard->id == a   ? strdup(old_a)
                              : guard->id == b ? strdup(old_b)
                                               : heap_memory_register(c, guard->id);
+                int closed = qc_mask_test(p->pattern, wire);
                 char *next = leaf ? swap_select(c,
                                                 r->width,
                                                 r->signed_type,
                                                 leaf,
-                                                p->pattern & bit ? p->definition : zero,
-                                                p->pattern & bit ? zero : p->definition)
+                                                closed ? p->definition : zero,
+                                                closed ? zero : p->definition)
                                   : NULL;
                 free(leaf);
                 free(p->definition);
@@ -437,7 +464,7 @@ static int swap_prepare_inverses(qc_context *c,
                 }
             }
             free(zero);
-            p->mask = p->pattern = 0;
+            p->mask = p->pattern = qc_mask_zero();
         }
         cj_doc expression = {0};
         domain inputs;
@@ -509,7 +536,8 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
     uint64_t zeros[2] = {(a->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected),
                          (b->zero_mask & ~selected) | (a->zero_mask & b->zero_mask & selected)};
     uint64_t lower[2], upper[2];
-    if (!mask && a->basis_known && b->basis_known && (!selector || selector->basis_known)) {
+    if (!qc_mask_any(mask) && a->basis_known && b->basis_known &&
+        (!selector || selector->basis_known)) {
         uint64_t eff = selected & (selector ? selector->basis_value : bits_mask(a->width));
         lower[0] = upper[0] = (a->basis_value & ~eff) | (b->basis_value & eff);
         lower[1] = upper[1] = (b->basis_value & ~eff) | (a->basis_value & eff);
@@ -535,21 +563,22 @@ static int apply_swap(qc_context *c, const cj_doc *d, int inst, qc_mask mask, qc
             if (selector) {
                 qc_mask wire = QC_WIRE(selector->wires[bit]);
                 // A contradictory Boolean outer guard makes this bit inactive.
-                if ((active & wire) && !(value & wire))
+                if (qc_mask_test(active, selector->wires[bit]) &&
+                    !qc_mask_test(value, selector->wires[bit]))
                     continue;
-                active |= wire;
-                value |= wire;
+                active = qc_mask_or(active, wire);
+                value = qc_mask_or(value, wire);
             }
-            if (!qc_emit(c, QC_X, b->wires[bit], active | x, value | x, 0) ||
-                !qc_emit(c, QC_X, a->wires[bit], active | y, value | y, 0) ||
-                !qc_emit(c, QC_X, b->wires[bit], active | x, value | x, 0)) {
+            if (!qc_emit(c, QC_X, b->wires[bit], qc_mask_or(active, x), qc_mask_or(value, x), 0) ||
+                !qc_emit(c, QC_X, a->wires[bit], qc_mask_or(active, y), qc_mask_or(value, y), 0) ||
+                !qc_emit(c, QC_X, b->wires[bit], qc_mask_or(active, x), qc_mask_or(value, x), 0)) {
                 swap_free_inverses(plans, count);
                 return 0;
             }
         }
     taint_controls(c, mask);
     if (selector) {
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         taint_uniform(c, selector->id, &seen);
     }
     unknown_support(a);

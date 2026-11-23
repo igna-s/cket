@@ -15,7 +15,7 @@ static char workspace[PATH_MAX], temporary[PATH_MAX];
 static void cleanup(void) {
     if (!*temporary)
         return;
-    const char *files[] = {"quantum.json", "gcc.ast", "host.o", "gcc-version.txt"};
+    const char *files[] = {"quantum.json", "gcc.ast", "host.o", "gcc-version.txt", "combined.c"};
     char path[PATH_MAX + 32];
     for (size_t i = 0; i < sizeof files / sizeof *files; ++i) {
         snprintf(path, sizeof path, "%s/%s", temporary, files[i]);
@@ -27,6 +27,56 @@ static void cleanup(void) {
 static int error(const char *message) {
     fprintf(stderr, "|c> compiler: %s\n", message);
     return 1;
+}
+
+static int has_suffix(const char *s, const char *suffix) {
+    size_t slen = strlen(s), suflen = strlen(suffix);
+    return slen >= suflen && !strcmp(s + slen - suflen, suffix);
+}
+
+static int append_raw_tu(FILE *out, const char *path, int include_line_directive) {
+    char *text = qc_read_file(path);
+    if (!text)
+        return error("cannot read translation unit input");
+    if (include_line_directive) {
+        char resolved[PATH_MAX];
+        const char *name = realpath(path, resolved) ? resolved : path;
+        if (fprintf(out, "#line 1 \"") < 0) {
+            free(text);
+            return error("cannot write combined translation unit");
+        }
+        for (const char *p = name; *p; ++p) {
+            if (*p == '\\' || *p == '"')
+                fputc('\\', out);
+            fputc(*p, out);
+        }
+        if (fprintf(out, "\"\n") < 0) {
+            free(text);
+            return error("cannot write combined translation unit");
+        }
+    }
+    size_t len = strlen(text);
+    if (len && fwrite(text, 1, len, out) != len) {
+        free(text);
+        return error("cannot write combined translation unit");
+    }
+    if (!len || text[len - 1] != '\n')
+        fputc('\n', out);
+    free(text);
+    return 0;
+}
+
+static int write_tu_sidecar(const char *obj_path, const char *source_path) {
+    char sidecar[PATH_MAX + 32];
+    if ((size_t)snprintf(sidecar, sizeof sidecar, "%s.cket_tu", obj_path) >= sizeof sidecar)
+        return error("object sidecar path is too long");
+    FILE *out = fopen(sidecar, "wb");
+    if (!out)
+        return error("cannot write translation unit metadata sidecar");
+    int err = append_raw_tu(out, source_path, 1);
+    if (fclose(out) != 0 && !err)
+        err = error("cannot close translation unit metadata sidecar");
+    return err;
 }
 
 static int command(char *const *args, const char *output) {
@@ -93,7 +143,7 @@ static int mkdir_parents(const char *path) {
 
 static void help(void) {
     puts("|c>: real C + quantum data (GCC + native C backend)\n"
-         "usage: cket program.c [-o output] [GCC options]\n"
+         "usage: cket program.c [-o output] [-c] [GCC options]\n"
          "       --run [--seed N]\n"
          "       --emit-ast | --emit-ir | --emit-quantum-ir\n"
          "       --emit-qasm | --resources\n"
@@ -102,9 +152,11 @@ static void help(void) {
 }
 
 int main(int argc, char **argv) {
-    const char *source = NULL, *output = NULL, *gcc = getenv("CC"), *seed = NULL;
+    const char *output = NULL, *gcc = getenv("CC"), *seed = NULL;
     const char *ctype_locale = NULL;
-    int action = 0;
+    int action = 0, compile_only = 0;
+    const char *sources[argc];
+    int nsources = 0;
     char *extra[argc + 1];
     int nextra = 0;
     if (!gcc || !*gcc)
@@ -143,22 +195,26 @@ int main(int argc, char **argv) {
             if (action)
                 return error("select only one output action");
             action = selected;
-        } else if (!strcmp(arg, "--"))
+        } else if (!strcmp(arg, "-c"))
+            compile_only = 1;
+        else if (!strcmp(arg, "--"))
             continue;
         else if (!strncmp(arg, "--backend", 9))
             return error(
                 "external backends were removed; execution uses the linked native C motor");
         else if (*arg == '-')
             extra[nextra++] = arg;
-        else if (!source)
-            source = arg;
         else
-            return error("GCC options must be single tokens, e.g. -I/path or -DNAME=1");
+            sources[nsources++] = arg;
     }
-    if (!source) {
+    if (!nsources) {
         help();
         return 2;
     }
+    if (compile_only && action)
+        return error("cannot combine -c with output action");
+    if (compile_only && nsources > 1 && output)
+        return error("cannot specify -o with -c and multiple inputs");
     if (seed) {
         char *end;
         errno = 0;
@@ -214,6 +270,102 @@ int main(int argc, char **argv) {
     char ir_option[PATH_MAX + 128], ast_option[PATH_MAX + 128];
     snprintf(ir_option, sizeof ir_option, "-fplugin-arg-cket_plugin-ir=%s", ir);
     snprintf(ast_option, sizeof ast_option, "-fplugin-arg-cket_plugin-ast=%s", ast);
+    if (compile_only) {
+        char compile_only_opt[] = "-fplugin-arg-cket_plugin-compile-only=1";
+        char *compile_args[argc + 24];
+        for (int s = 0; s < nsources; ++s) {
+            const char *src = sources[s];
+            char derived_obj[PATH_MAX];
+            const char *obj_out = output;
+            if (!obj_out) {
+                const char *base = strrchr(src, '/');
+                base = base ? base + 1 : src;
+                if (strlen(base) + 3 >= sizeof derived_obj)
+                    return error("source filename is too long");
+                strcpy(derived_obj, base);
+                char *dot = strrchr(derived_obj, '.');
+                if (dot)
+                    *dot = 0;
+                strcat(derived_obj, ".o");
+                obj_out = derived_obj;
+            }
+            if (mkdir_parents(obj_out))
+                return 1;
+            int n = 0;
+            compile_args[n++] = (char *)gcc;
+            compile_args[n++] = "-std=c11";
+            compile_args[n++] = "-Werror=attributes";
+            compile_args[n++] = "-D__CKET__=1";
+            compile_args[n++] = include;
+            compile_args[n++] = plugin;
+            compile_args[n++] = ir_option;
+            compile_args[n++] = ast_option;
+            compile_args[n++] = compile_only_opt;
+            compile_args[n++] = "-c";
+            compile_args[n++] = (char *)src;
+            compile_args[n++] = "-o";
+            compile_args[n++] = (char *)obj_out;
+            for (int i = 0; i < nextra; ++i)
+                compile_args[n++] = extra[i];
+            compile_args[n] = NULL;
+            status = command(compile_args, NULL);
+            if (status)
+                return status;
+            status = write_tu_sidecar(obj_out, src);
+            if (status)
+                return status;
+        }
+        return 0;
+    }
+    char combined[PATH_MAX + 64];
+    snprintf(combined, sizeof combined, "%s/combined.c", temporary);
+    const char *extra_objs[argc];
+    int nextra_objs = 0;
+    const char *tu_inputs[argc];
+    int tu_is_c[argc];
+    int ntu = 0;
+    for (int i = 0; i < nsources; ++i) {
+        const char *inp = sources[i];
+        if (has_suffix(inp, ".c") || has_suffix(inp, ".i")) {
+            tu_inputs[ntu] = inp;
+            tu_is_c[ntu++] = 1;
+        } else {
+            char sidecar[PATH_MAX + 32];
+            if ((size_t)snprintf(sidecar, sizeof sidecar, "%s.cket_tu", inp) < sizeof sidecar &&
+                !access(sidecar, R_OK)) {
+                tu_inputs[ntu] = inp;
+                tu_is_c[ntu++] = 0;
+            } else {
+                extra_objs[nextra_objs++] = inp;
+            }
+        }
+    }
+    if (!ntu)
+        return error("no C or |c> translation unit input provided");
+    const char *source = NULL;
+    if (ntu == 1 && tu_is_c[0]) {
+        source = tu_inputs[0];
+    } else {
+        FILE *comb = fopen(combined, "wb");
+        if (!comb)
+            return error("cannot create combined translation unit");
+        for (int i = 0; i < ntu; ++i) {
+            if (tu_is_c[i]) {
+                status = append_raw_tu(comb, tu_inputs[i], 1);
+            } else {
+                char sidecar[PATH_MAX + 32];
+                snprintf(sidecar, sizeof sidecar, "%s.cket_tu", tu_inputs[i]);
+                status = append_raw_tu(comb, sidecar, 0);
+            }
+            if (status) {
+                fclose(comb);
+                return status;
+            }
+        }
+        if (fclose(comb) != 0)
+            return error("cannot close combined translation unit");
+        source = combined;
+    }
     char *compile_args[argc + 20];
     int n = 0;
     compile_args[n++] = (char *)gcc;
@@ -286,8 +438,8 @@ int main(int argc, char **argv) {
     char default_output[PATH_MAX], absolute_output[PATH_MAX], runtime[PATH_MAX + 32],
         library[PATH_MAX + 32];
     if (!output) {
-        const char *base = strrchr(source, '/');
-        base = base ? base + 1 : source;
+        const char *base = strrchr(sources[0], '/');
+        base = base ? base + 1 : sources[0];
         if (strlen(base) >= sizeof default_output)
             return error("source filename is too long");
         strcpy(default_output, base);
@@ -304,10 +456,12 @@ int main(int argc, char **argv) {
      * linking too. Dropping them produces unresolved runtime/library symbols
      * even though the host C compilation succeeds. Keep library options after
      * the objects so that ordinary static-library ordering still applies. */
-    char *link_args[argc + 12];
+    char *link_args[argc + nextra_objs + 16];
     n = 0;
     link_args[n++] = (char *)gcc;
     link_args[n++] = obj;
+    for (int i = 0; i < nextra_objs; ++i)
+        link_args[n++] = (char *)extra_objs[i];
     link_args[n++] = runtime;
     link_args[n++] = library;
     link_args[n++] = "-lm";

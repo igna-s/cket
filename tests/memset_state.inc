@@ -127,11 +127,12 @@ static void compare(qc_context *c, unsigned profile, unsigned current, int inver
  * Its canonical nine-H preparation is verified; the remaining reversible
  * X/phase gates are followed for each of the 512 input labels. */
 static qc_mask memset_mask(const qc_register *r, unsigned value) {
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     if (!r || !r->alive)
         fail("controlled source register missing");
     for (unsigned i = 0; i < r->width; ++i)
-        result |= (qc_mask)((value >> i) & 1) << r->wires[i];
+        if ((value >> i) & 1)
+            result = qc_mask_or(result, QC_WIRE(r->wires[i]));
     return result;
 }
 
@@ -156,7 +157,7 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
     qc_mask states[512];
     double complex amplitudes[512];
     for (unsigned i = 0; i < 512; ++i) {
-        states[i] = i;
+        states[i] = qc_mask_from_u64(i);
         amplitudes[i] = 1 / sqrt(512.0);
     }
     unsigned prepared = 0;
@@ -164,7 +165,7 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
     for (size_t i = 0; i < c->ngates; ++i) {
         const qc_gate *g = &c->gates[i];
         if (g->kind == QC_H) {
-            if (suffix || prepared >= 9 || g->mask || g->target != prepared++)
+            if (suffix || prepared >= 9 || qc_mask_any(g->mask) || g->target != prepared++)
                 fail("controlled reference requires canonical nine-H preparation");
             continue;
         }
@@ -173,9 +174,9 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
         suffix = 1;
         double complex phase = cexp(I * g->angle);
         for (unsigned label = 0; label < 512; ++label)
-            if ((states[label] & g->mask) == g->pattern) {
+            if (qc_mask_eq(qc_mask_and(states[label], g->mask), g->pattern)) {
                 if (g->kind == QC_X)
-                    states[label] ^= QC_WIRE(g->target);
+                    states[label] = qc_mask_xor(states[label], QC_WIRE(g->target));
                 else
                     amplitudes[label] *= phase;
             }
@@ -188,9 +189,9 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
             if (g->kind == QC_H)
                 continue;
             for (unsigned label = 0; label < 512; ++label)
-                if ((states[label] & g->mask) == g->pattern) {
+                if (qc_mask_eq(qc_mask_and(states[label], g->mask), g->pattern)) {
                     if (g->kind == QC_X)
-                        states[label] ^= QC_WIRE(g->target);
+                        states[label] = qc_mask_xor(states[label], QC_WIRE(g->target));
                     else
                         amplitudes[label] *= cexp(-I * g->angle);
                 }
@@ -198,11 +199,11 @@ static void memset_control_paths(qc_context *c, unsigned current, int inverse) {
     for (unsigned label = 0; label < 512; ++label) {
         unsigned x = label & 255, b = label >> 8;
         unsigned value = b ? 17 : x;
-        qc_mask wanted = memset_mask(result, inverse ? x : value) | memset_mask(flag, b);
+        qc_mask wanted = qc_mask_or(memset_mask(result, inverse ? x : value), memset_mask(flag, b));
         if (!inverse)
-            wanted |= memset_mask(history, b ? x : 0);
+            wanted = qc_mask_or(wanted, memset_mask(history, b ? x : 0));
         double angle = inverse ? 0 : .001 * x + .19 * b + (value == 7 ? .17 : 0);
-        if (states[label] != wanted ||
+        if (!qc_mask_eq(states[label], wanted) ||
             cabs(amplitudes[label] - cexp(I * angle) / sqrt(512.0)) > 1e-10)
             fail("controlled labeled input/result/phase/private state mismatch");
     }
@@ -220,24 +221,25 @@ static void memset_patched_states(qc_context *c, unsigned profile, unsigned curr
         double complex amplitude;
         if (!qc_sparse_entry(c, row, &low, &high, &amplitude))
             fail("patched memset sparse row unavailable");
-        qc_mask actual = ((qc_mask)high << 64) | low;
+        qc_mask actual = qc_mask_from_u128(low, high);
         qc_register *input = qc_lookup(c, profile == 4 ? 1 : 0);
         unsigned label = 0;
         for (unsigned bit = 0; bit < input->width; ++bit)
-            label |= (unsigned)((actual >> input->wires[bit]) & 1) << bit;
+            label |= (unsigned)qc_mask_test(actual, input->wires[bit]) << bit;
         qc_mask expected;
         double angle;
         if (profile == 4) {
-            expected = memset_mask(qc_lookup(c, 0), 0x34 | (label << 8)) |
-                       memset_mask(qc_lookup(c, 1), label);
+            expected = qc_mask_or(memset_mask(qc_lookup(c, 0), 0x34 | (label << 8)),
+                                  memset_mask(qc_lookup(c, 1), label));
             angle = (.19 + .17) * label;
         } else {
             expected = memset_mask(qc_lookup(c, 0), label);
             if (profile == 7)
-                expected |= memset_mask(qc_lookup(c, 1), label);
+                expected = qc_mask_or(expected, memset_mask(qc_lookup(c, 1), label));
             angle = .001 * label + (profile == 1 && label == 7 ? .17 : 0);
         }
-        if (actual != expected || cabs(amplitude - cexp(I * angle) / sqrt(count)) > 1e-10)
+        if (!qc_mask_eq(actual, expected) ||
+            cabs(amplitude - cexp(I * angle) / sqrt(count)) > 1e-10)
             fail("patched memset public phase/value or private garbage mismatch");
     }
     size_t gates = c->ngates;

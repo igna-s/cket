@@ -11,14 +11,29 @@ expressions and coherent conditions, and let the compiler build reversible circu
 temporary workspace. Classical C code still runs on the CPU; quantum operations run in a linked C
 statevector simulator, with dense and opt-in sparse execution modes.
 
-**Ready-to-run compiler package:** the [updated Windows/WSL SDK](output/sdk/loop-jumps/README.es.md)
-includes the corrected compiler and 37 rebuilt programs. Run
+**Published CI baseline (`5c5a965`, run `42507019584`):** see the
+[full CI archive (`full-ci-everyday-profile-v1`)](docs/audit-evidence/full-ci-everyday-profile-v1/README.es.md)
+covering the prior November 2026 everyday-C milestone (`408` native checks and `1509` example checks
+across `37` examples). On the active branch, Wave 1A + Wave 1B + Wave 2 are now integrated and
+locally verified across normal and ASan/UBSan builds: `1024`-wire `qc_mask`, `1024`-element heaps,
+`128`-bit divider scratch, end-to-end IEEE-754 `float`/`double` (`61725` checks in
+`validate_float`), the full everyday C profile `A1`–`A12` (including `const` owners, `static`
+file-scope owners, padded structs/unions/bitfields/pointer fields, bounded VLAs, indirect `quant`
+function pointers, bounded recursion and variadics, multi-TU linking, bounded `while`/`do` and
+forward `goto`, extended stdlib adapters, and `6` integrated examples totaling `3610` checks across
+`75` examples), `408` native checks (`scripts/verify.sh` + `scripts/sanitize-all.sh` +
+`scripts/sanitize.sh`), and `validate-everyday-profile.py` passing (`O0`/`O2` normal and `O1`
+ASan/UBSan). Full C11 libc, `long double`/`_Complex`, unrestricted CFG/ABI/lifetimes, and physical
+QPU execution remain outside scope.
+
+**Historical SDK snapshot:** the [updated Windows/WSL SDK](output/sdk/loop-jumps/README.es.md)
+packages the earlier RC3 compiler and 37 rebuilt programs. Run
 `output\sdk\loop-jumps\run_sdk_demo.cmd`, or compile a C file with
 `output\sdk\loop-jumps\compile_and_run.cmd program.c`. The
 [read-only borrow correction](docs/c11-readonly-borrows.md) allows shared read-only aliases and
 rejects writes through casts. Its example checks phase interference. The
 [delivery guide](docs/entrega-utilizable-2026-10-26.es.md) lists working examples and open limits.
-This remains an experimental candidate with incomplete everyday-C integration.
+Everyday-C integration remains experimental and incomplete overall.
 
 The [checked function-entry correction](docs/c11-function-entries.md) rejects classical prototypes
 and pointers that could reach an empty quantum template stub. A remaining native entry reports an
@@ -47,8 +62,10 @@ iteration, nested CPU effects and general lifetimes remain pending; the next blo
 Structured CPU break/continue now preserve loop cleanup and the for increment rules, including calls
 from coherent control. The [note](docs/paper/loop_jumps_note.es.md) and
 [evidence](docs/audit-evidence/loop-jumps-v1/README.es.md) distinguish finite C effects, complex
-states and complete inverses from arbitrary flow/lifetime support. Quantum-dependent jumps and
-continue through switch remain pending.
+states and complete inverses from arbitrary flow/lifetime support. In that historical snapshot,
+quantum-dependent jumps and `continue` through `switch` remained pending; `5c5a965` subsequently
+added structured `switch` and `continue` through `switch`, while arbitrary `goto` and general
+quantum-dependent jumps remain pending.
 
 The compiler uses GCC's real C frontend. It can produce native executables, typed Quantum IR,
 OpenQASM 3 circuits, and resource reports. The current version is **1.0.0-rc.3**, with **GCC
@@ -146,10 +163,11 @@ finite regressions check 2310 additional domains; the runnable
 [quantum buckets example](examples/quantum_buckets.c) computes correlated groups from a byte
 superposition before explicit measurement. General division and complete C11 remain partial.
 
-The native runtime now offers [sparse simulation](docs/simulacion-dispersa.es.md) for circuits with
-up to 128 physical wires and bounded occupied support. `bash scripts/run-block.sh 02` runs an
-`int32` quotient and a `size_t64` example that exceed the default dense limit. This is a usable
-advance within block 02; the everyday integer profile remains incomplete.
+The native runtime offers [sparse simulation](docs/simulacion-dispersa.es.md) for circuits with up
+to `QC_MAX_PHYSICAL` wires (128 in `5c5a965`; expanded to 1024 and locally verified across Wave
+1A/1B/2) and bounded occupied support. `bash scripts/run-block.sh 02` runs an `int32` quotient and a
+`size_t64` example that exceed the default dense limit. This sits within block 02; the broader
+everyday profile is now verified separately via `validate-everyday-profile.py`.
 
 The [variable-shift implementation](docs/c11-shifts.md) now selects source positions without
 retaining one full temporary word per count bit. Full 32-bit shifts that previously exceeded the
@@ -700,16 +718,16 @@ refer to seed 7.
 
 ## Current limits and troubleshooting
 
-| Limit                     | Current contract                                                    |
-| ------------------------- | ------------------------------------------------------------------- |
-| Quantum integer width     | Up to 64 bits.                                                      |
-| Gate storage              | 128 physical qubits.                                                |
-| Dense simulation          | 24 physical qubits; default runtime mode.                           |
-| Sparse simulation         | Up to 128 physical wires and a configured occupied-support budget.  |
-| Finite synthesis fallback | At most 12 relevant input bits; disable with backend `--no-tables`. |
-| Symbolic synthesis        | 256 terms per bit and two million work steps.                       |
-| IR expressions            | 100,000 tokens, 128 levels; input files up to 64 MiB.               |
-| Fixed loop expansion      | At most 4096 checked iterations.                                    |
+| Limit                     | Current contract                                                                                                 |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| Quantum integer width     | Up to 64 bits.                                                                                                   |
+| Gate storage              | 128 physical qubits in prior `5c5a965`; expanded to 1024 (`QC_MAX_PHYSICAL`) in Wave 1A/1B/2 (locally verified). |
+| Dense simulation          | 24 physical qubits; default runtime mode.                                                                        |
+| Sparse simulation         | Up to `QC_MAX_PHYSICAL` wires (1024 on the active branch) and a configured occupied-support budget.              |
+| Finite synthesis fallback | At most 12 relevant input bits; disable with backend `--no-tables`.                                              |
+| Symbolic synthesis        | 256 terms per bit and two million work steps.                                                                    |
+| IR expressions            | 100,000 tokens per expression, 128 levels; input files up to 64 MiB.                                             |
+| Fixed loop expansion      | At most 4096 checked iterations.                                                                                 |
 
 The 24-qubit vector alone uses 256 MiB. Full declared widths and temporary ancillas count even when
 preparation uses a smaller support. Released clean wires can be reused, but vector dimension does
@@ -719,8 +737,9 @@ diagnostic on support exhaustion. See the [sparse guide](docs/simulacion-dispers
 
 Register synthesis covers addition, subtraction, multiplication, division, remainder, and
 comparisons beyond 12 relevant bits. Growth tests include two 16-bit inputs, or 32 relevant bits.
-Complexity budgets can still reject large compositions; 64-bit division needs unsupported
-extra-width workspace.
+Complexity budgets can still reject large compositions; Wave 1A + 1B + 2 widen arithmetic divider
+scratch to 128 bits and integrate verified 64-bit signed/unsigned `/` and `%` (`A1`,
+`validate_division`).
 
 If a command fails:
 
@@ -736,10 +755,13 @@ If a command fails:
 - **Synthesis budget or unsupported arithmetic:** inspect typed IR and ranges; a wider type alone
   does not establish safe or scalable synthesis.
 
-General quantum floating point, VLAs, unions, bitfields, dynamic quantum allocation, QPU execution,
-and full C11 quantum coverage are outside the current subset. GCC integration uses a provisional
-internal `volatile` marker and differential testing, rather than a proof of every frontend
-transformation.
+Wave 1B + Wave 2 complete frontend/ABI integration and local verification for IEEE-754 `float` and
+`double` (`validate_float`, `float_double`), padded structs/unions/bitfields, bounded static VLAs,
+indirect `quant` function pointers, bounded recursion/variadics, bounded `while`/forward `goto`, and
+multi-TU linking within the everyday profile (`A1`–`A12`). `long double`, `_Complex`, general
+unbounded recursion/loops, QPU execution, and full C11 libc remain outside the supported subset. GCC
+integration uses a provisional internal `volatile` marker and differential testing, rather than a
+proof of every frontend transformation.
 
 ## Verify the installation
 
@@ -775,25 +797,29 @@ undefined-domain diagnostics, 60 CPU-effect diagnostics and 10 private-homonym e
 ordinary C references per configuration and independent phase/inverse proofs have separate scopes.
 Diagnostic rejection does not implement the rejected C context.
 
-Validation includes 393 native checks; 36 examples at five optimization levels; a default frontend
-corpus of 29 programs at five levels; 24 growth circuits; and 70 independent QASM cases exported
-without tables. QASM cases check 64 complete states/final probabilities and six
-intermediate-measurement/reset channels with 8192 transcripts each, including integer absolute
-value, variable shifts and combined function/array/control programs. The separate shift suite checks
-55 cases across complete small domains, invalid arithmetic, resources and C composition. The pure
-expression suite has 1195 checks: the original 97, 810 finite remainder checks and 288 finite
-selection domains. Complete-state comparisons, finite basis actions and wide exports retain their
-separate scopes. The in-place suite adds 271 checks of affine maps, bit permutations, Boolean
-normalization, controls, inverse, policy and C composition. The memory-copy suite adds 414 checks of
-known-basis extensions, complete states/inverse, overlap, contracts, C composition and wide
-generation. The division suite adds 990 checks of products/projections, signed rounding, Boolean
-conversion, coherent states/inverse, GCC/libc preservation, definedness and resource contracts. The
-binding suite adds 519 checks of complete states and saved inverse, typed integer endpoints,
-malformed inputs, CPU/classical-product evaluation and C document specialization. The history suite
-adds 2332 checks of retained states, inverse lifetimes, combined assignments, C composition, CPU
-snapshot cleanup, coherent and CPU scalar joins, old/new expression results, sequencing,
-Boolean/word states, deferred ownership cleanup and explicit pending-contract diagnostics. The
-native suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
+Validation at baseline `5c5a965`
+([full-ci-everyday-profile-v1](docs/audit-evidence/full-ci-everyday-profile-v1/README.es.md))
+includes 408 native checks; 1509 checks across 37 examples at five optimization levels; a default
+frontend corpus of 29 programs (145 compilations at five levels); 24 growth circuits; and 70
+independent QASM cases exported without tables. QASM cases check 64 complete states/final
+probabilities and six intermediate-measurement/reset channels with 8192 transcripts each, including
+integer absolute value, variable shifts and combined function/array/control programs. The separate
+shift suite checks 203 cases across complete small domains, invalid arithmetic, resources and C
+composition. The pure expression suite has 3509 checks, expanding the earlier 97-check base with
+finite remainder, selection, and quotient matrices. Complete-state comparisons, finite basis actions
+and wide exports retain their separate scopes. The in-place suite adds 271 checks of affine maps,
+bit permutations, Boolean normalization, controls, inverse, policy and C composition. The
+memory-copy suite adds 414 checks of known-basis extensions, complete states/inverse, overlap,
+contracts, C composition and wide generation. The division suite adds 990 checks of
+products/projections, signed rounding, Boolean conversion, coherent states/inverse, GCC/libc
+preservation, definedness and resource contracts. The binding suite adds 519 checks of complete
+states and saved inverse, typed integer endpoints, malformed inputs, CPU/classical-product
+evaluation and C document specialization. The history suite adds 2332 checks of retained states,
+inverse lifetimes, combined assignments, C composition, CPU snapshot cleanup, coherent and CPU
+scalar joins, old/new expression results, sequencing, Boolean/word states, deferred ownership
+cleanup and explicit pending-contract diagnostics, alongside 55,155 register patch checks in
+`build/validate_patches` and 35,871 swap inverse checks in `build/validate_swap_rebind`. The native
+suite also exhausts selected eight-bit expressions, 3720 adder basis pairs and 65,536-input
 predicates, checks 126 Fourier bases against the DFT, and exercises 1024 generated typed expressions
 plus 4096 IR mutations.
 
@@ -819,7 +845,7 @@ inverse cleanup. The frontend generator compares every generated expression with
 inputs at each optimization level; basis-value coverage is separate from coherent amplitude
 validation.
 
-`build/validate_memset` adds 800 checked fill tests: dense states and inverses, complete labeled
+`build/validate_memset` adds 940 checked fill tests: dense states and inverses, complete labeled
 paths, sequenced value effects, native programs, rejected boundaries and wide generation.
 `build/validate_memory_sequences` adds 360 checks of discarded memory calls in comma and lazy
 expressions. Both suites run in the normal and sanitizer pipelines. The
@@ -838,7 +864,9 @@ diagnostics, 60 wide exports and 120 complete phased states with saved inverses.
 proof checks 640 complete complex states across normal and ASan/UBSan builds, including full 64-bit
 `size_t` and 32-bit `int` results. See the [contract](docs/c11-strings.md) for bounds and remaining
 string work. `build/validate_phase` adds 3380 checks per configuration for supported deferred
-classical angles; quantum floating registers remain unimplemented.
+classical angles; IEEE-754 quantum `float` and `double` registers are also implemented end-to-end in
+Wave 1B + Wave 2 (`validate_float`: `61725` checks; `float_double` example and `b1_*` trace and
+program checks across normal and ASan/UBSan).
 
 `build/validate_strncmp` adds 246 bounded string checks: complete phased states/inverses, native C,
 diagnostic contracts and separate wide generation. The
@@ -846,8 +874,8 @@ diagnostic contracts and separate wide generation. The
 integration from its main-tree checks. Full signed 32-bit comparison results also have separate
 sparse-circuit and labeled-basis evidence beyond the 24-qubit dense simulation limit.
 
-`build/validate_memcmp` checks byte comparisons with complete phased states and inverses, all 256
-byte inputs in native executables, contract rejections and separate 16/32/64-bit no-table
+`build/validate_memcmp` adds 302 byte comparison checks with complete phased states and inverses,
+all 256 byte inputs in native executables, contract rejections and separate 16/32/64-bit no-table
 generation. The [comparison contract](docs/c11-memcmp.md) defines object byte order, aliases, bounds
 and the remaining memory/ABI work.
 
@@ -915,7 +943,12 @@ Repository documentation is primarily in English.
 
 The [memory/jump audit](docs/paper/memory_loop_jumps_note.es.md) adds C-derived byte masks, complete
 states/inverses and an independent untouched-bit density check for memcpy/memmove/memset through CPU
-jumps. Its [245-input campaign](docs/audit-evidence/memory-loop-jumps-v1/README.es.md) reuses the
-published compiler binaries; the SDK is unchanged. The
-[full CI at cba9759](docs/audit-evidence/full-ci-coherent-returns-v1/README.es.md) passed for that
-earlier source identity. Later revisions and this new integration retain their own pending CI.
+jumps. Its [245-input campaign](docs/audit-evidence/memory-loop-jumps-v1/README.es.md) reused the
+historical compiler binaries; the SDK snapshot above remained unchanged. Subsequent CI milestones
+passed at
+[cba9759 (`full-ci-coherent-returns-v1`)](docs/audit-evidence/full-ci-coherent-returns-v1/README.es.md)
+and
+[5c5a965 (`full-ci-everyday-profile-v1`, run 42507019584)](docs/audit-evidence/full-ci-everyday-profile-v1/README.es.md).
+Wave 1A + Wave 1B + Wave 2 on the active branch pass local formatting, inventory,
+`scripts/verify.sh` (including `scripts/sanitize-all.sh`), `scripts/run-examples.sh --all`, and
+`scripts/sanitize.sh`; remote GitHub Actions CI executes the parallel verification jobs on push.

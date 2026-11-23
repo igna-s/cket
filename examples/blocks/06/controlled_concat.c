@@ -23,6 +23,8 @@ int main(void) {
         strncat(scratch, "z", 1);
     if (scratch[0] == 'z')
         phase(3.14159265358979323846);
+    if (oracle)
+        scratch[0] ^= 'z';
     fourier(oracle);
     unsigned interference = measure(oracle);
 

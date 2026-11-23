@@ -42,10 +42,11 @@ layouts remain pending. Ordinary classical calls still use libc.
 
 Both ranges and the constant byte count are checked before expression generation. Zero bytes at a
 valid one-past address compare equal. Out-of-bounds views/counts are rejected. The frontend accepts
-at most 64 compared bytes; expression depth/work, the 128-qubit gate representation, 24-qubit native
-simulator and gate limits apply separately. A frontend byte bound does not promise that every
-combination fits those subsequent budgets. Resource reports describe logical gates before hardware
-decomposition.
+at most 64 compared bytes; expression depth/work, the baseline 128-qubit gate representation
+(`5c5a965`; expanded to 1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending Wave 1B/2), 24-qubit
+native dense simulator and gate limits apply separately. A frontend byte bound does not promise that
+every combination fits those subsequent budgets. Resource reports describe logical gates before
+hardware decomposition.
 
 ```c
 #include <quantum.h>

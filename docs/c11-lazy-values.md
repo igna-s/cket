@@ -60,13 +60,15 @@ inactive division by zero. Reachable division by zero still rejects before its o
 emitted. This remains a conservative proof system; arbitrary correlations and narrowing conversion
 chains require further analysis P.
 
-Versions, decisions, synthesis workspace and the 128-qubit backend/24-qubit native simulator limits
-have explicit resource costs R. Static loop expansion and supported same-unit procedures compose
-with these expressions. Native runtime iterations now use the
+Versions, decisions, synthesis workspace and the physical backend representation (128 qubits in
+baseline `5c5a965`; 1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending Wave 1B/2)/24-qubit native
+dense simulator limits have explicit resource costs R. Static loop expansion and supported same-unit
+procedures compose with these expressions. Native runtime iterations now use the
 [per-iteration history contract](c11-runtime-history.md). General indexed reads/products, effectful
-return ABI, floating/complex encodings and full source-level GCC sequencing remain P/R. Undefined
-operations on a reachable branch have no defined C result; conservative rejection of an unproved
-inactive branch must remain distinct from that semantic incompatibility.
+return ABI, frontend/ABI floating/complex encodings (beyond Wave 1A engine circuits) and full
+source-level GCC sequencing remain P/R. Undefined operations on a reachable branch have no defined C
+result; conservative rejection of an unproved inactive branch must remain distinct from that
+semantic incompatibility.
 
 ## Finite evidence
 

@@ -53,12 +53,16 @@ CPU de estados complejos completos, fases, auxiliares limpios e inversas indepen
 llamadas anidadas y repetidas, condiciones con efectos, retorno antes del incremento, ramas anidadas
 y la regresión de certificados anterior.
 
-Los retornos de valor continúan con sus contratos anteriores: expresiones puras condicionales y un
-resultado escalar propio terminal. Los retornos múltiples con efectos y resultado propio, salidas
-condicionadas por datos cuánticos sin medir, `switch` y saltos generales requieren análisis
-adicional. Los diagnósticos correspondientes se conservan. La transformación comprueba un límite de
-128 niveles de anidamiento; las declaraciones, préstamos y vidas dentro del flujo siguen sus
-restricciones existentes.
+En el corte histórico de `procedure-returns-v1`, los retornos de valor continuaban limitados a
+expresiones puras condicionales y un resultado escalar propio terminal, quedando pendientes los
+retornos múltiples con efectos y resultado propio, `switch`, salidas condicionadas por datos
+cuánticos sin medir y saltos generales. Posteriormente, `5c5a965`
+([`full-ci-everyday-profile-v1`](audit-evidence/full-ci-everyday-profile-v1/README.es.md)) incorporó
+`switch` estructurados (clásicos y cuánticos con `break`, `continue` y `return`), funciones `quant`
+de valor con cláusulas de guarda y múltiples `return`, y resultados propios imperativos (escalares o
+`struct`) dentro de la misma unidad. Los diagnósticos de `goto` y salidas no estructuradas se
+conservan. La transformación comprueba un límite de 128 niveles de anidamiento; las declaraciones,
+préstamos y vidas dentro del flujo siguen sus restricciones existentes.
 
 ## Llamadas desde control coherente
 
@@ -82,7 +86,9 @@ el comportamiento anterior; el de 244 incluye esta ampliación.
 Esta entrega no cierra todos los flujos C ni toda la ABI, no demuestra ejecución en QPU física ni
 aceleración. La ciberseguridad permanece clásica.
 
-Los [saltos CPU estructurados de bucle](paper/loop_jumps_note.es.md) ya permiten `break` y
-`continue` en ese perfil, también desde llamadores coherentes. Llegan a la limpieza y conservan las
-reglas de incremento/condición de C. Se rechazan decisiones cuánticas sin medir y `continue` a
-través de `switch`; los saltos y vidas generales continúan pendientes.
+Los [saltos CPU estructurados de bucle](paper/loop_jumps_note.es.md) permitieron originalmente
+`break` y `continue` en ese perfil (también desde llamadores coherentes), llegando a la limpieza y
+conservando las reglas de incremento/condición de C, mientras se rechazaban entonces decisiones
+cuánticas sin medir y `continue` a través de `switch`. Más adelante, `5c5a965` habilitó `switch` y
+`continue` a través de `switch`; los saltos `goto`, las salidas cuánticas no estructuradas y las
+vidas generales continúan pendientes.

@@ -13,8 +13,9 @@ EOF
 }
 
 names=()
-for source in examples/*.c; do
-    name="${source##*/}"
+for source in examples/*.c examples/blocks/*/*.c; do
+    [[ -f "$source" ]] || continue
+    name="${source#examples/}"
     name="${name%.c}"
     [[ "$name" == types ]] || names+=("$name")
 done
@@ -38,7 +39,7 @@ case "${1:---all}" in
 esac
 
 for name in "${names[@]}"; do
-    if [[ ! "$name" =~ ^[a-z][a-z0-9_]*$ || ! -f "examples/$name.c" ]]; then
+    if [[ ! "$name" =~ ^[a-z0-9_]+(/[a-z0-9_]+)*$ || ! -f "examples/$name.c" ]]; then
         printf 'Unknown example: %s\n' "$name" >&2
         exit 1
     fi
@@ -53,12 +54,17 @@ mkdir -p build/examples
 export CKET_SEED="${CKET_SEED:-7}"
 for name in "${names[@]}"; do
     printf '\nRunning %s\n' "$name"
+    mkdir -p "build/examples/$(dirname "$name")"
     build/cket "examples/$name.c" -o "build/examples/$name"
+    sim_env=()
+    if [[ "$name" == blocks/* || "$name" == float_double || "$name" == everyday_* ]]; then
+        sim_env=(env CKET_SIMULATOR=sparse)
+    fi
     case "$name" in
-        dynamic_vector) printf '0\n' | "build/examples/$name" ;;
-        input_sum) printf '10\n' | "build/examples/$name" ;;
-        input_minmax) printf '8 42 17 42 0 128 255 9 255\n' | "build/examples/$name" ;;
-        *) "build/examples/$name" ;;
+        dynamic_vector) printf '0\n' | "${sim_env[@]}" "build/examples/$name" ;;
+        input_sum) printf '10\n' | "${sim_env[@]}" "build/examples/$name" ;;
+        input_minmax) printf '8 42 17 42 0 128 255 9 255\n' | "${sim_env[@]}" "build/examples/$name" ;;
+        *) "${sim_env[@]}" "build/examples/$name" ;;
     esac
 done
 printf '\nCompleted %u examples.\n' "${#names[@]}"

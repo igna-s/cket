@@ -83,7 +83,7 @@ líneas).
     (127 líneas — `memcpy`/`memmove`/`memset` con longitud `n` en tiempo de ejecución sobre buffers
     fijos)
   - L1502: \[src/quantum_decimal.inc\](file:///e:/Backup/GitHub/Quantum/src/quantum_decimal.inc)
-    (131 líneas — `atoi`, `atol`, `atoll`)
+    (371 líneas — `atoi`, `atol`, `atoll`, `strtol`, `strtoll`, `strtoimax`)
   - L1503:
     \[src/quantum_search_writes.inc\](file:///e:/Backup/GitHub/Quantum/src/quantum_search_writes.inc)
     (95 líneas — parches enmascarados por byte en punteros de búsqueda)
@@ -99,9 +99,11 @@ ______________________________________________________________________
 ### 1.2 Motor cuántico, verificador, síntesis y simulador (`build/libcket_quantum.a`)
 
 - Cabecera pública del motor:
-  \[src/engine/quantum.h\](file:///e:/Backup/GitHub/Quantum/src/engine/quantum.h) (87 líneas).
-- Cabecera interna (`qc_context`, `qc_register`, `qc_gate`, `qc_heap`):
-  \[src/engine/internal.h\](file:///e:/Backup/GitHub/Quantum/src/engine/internal.h) (124 líneas).
+  \[src/engine/quantum.h\](file:///e:/Backup/GitHub/Quantum/src/engine/quantum.h) (92 líneas en Wave
+  1A).
+- Cabecera interna (`qc_context`, `qc_register`, `qc_gate`, `qc_heap`, `qc_mask`):
+  \[src/engine/internal.h\](file:///e:/Backup/GitHub/Quantum/src/engine/internal.h) (240 líneas en
+  Wave 1A; amplía `QC_MAX_PHYSICAL` de 128 a 1024 wires).
 - Parser JSON liviano (`cj_doc`):
   \[src/engine/json.h\](file:///e:/Backup/GitHub/Quantum/src/engine/json.h) y
   \[src/engine/json.c\](file:///e:/Backup/GitHub/Quantum/src/engine/json.c) (212 líneas).
@@ -116,7 +118,11 @@ ______________________________________________________________________
   \[src/engine/simulator.c\](file:///e:/Backup/GitHub/Quantum/src/engine/simulator.c) (106 líneas)
   - L7:
     \[src/engine/sparse_simulator.inc\](file:///e:/Backup/GitHub/Quantum/src/engine/sparse_simulator.inc)
-    (100 líneas — hasta 128 wires en soporte disperso).
+    (100 líneas — soporte disperso hasta `QC_MAX_PHYSICAL` wires: 128 en `5c5a965`, 1024 en Wave
+    1A).
+- Núcleo IEEE-754 de punto flotante del motor (Wave 1A, en integración Wave 1B/2):
+  \[src/engine/float_arithmetic.inc\](file:///e:/Backup/GitHub/Quantum/src/engine/float_arithmetic.inc)
+  (1903 líneas — aritmética, comparaciones y conversiones reversibles `float`/`double`).
 - Núcleo de ejecución y síntesis:
   \[src/engine/quantum.c\](file:///e:/Backup/GitHub/Quantum/src/engine/quantum.c) (2430 líneas)
   - L516: \[src/engine/ctype.inc\](file:///e:/Backup/GitHub/Quantum/src/engine/ctype.inc) (336
@@ -260,6 +266,8 @@ ______________________________________________________________________
     `qrebind` y transporte de definiciones entre épocas.
   - \[tests/validate_history.c\](file:///e:/Backup/GitHub/Quantum/tests/validate_history.c),
     \[tests/validate_heap.c\](file:///e:/Backup/GitHub/Quantum/tests/validate_heap.c),
-    \[tests/validate_runtime_versions.c\](file:///e:/Backup/GitHub/Quantum/tests/validate_runtime_versions.c).
+    \[tests/validate_runtime_versions.c\](file:///e:/Backup/GitHub/Quantum/tests/validate_runtime_versions.c),
+    \[tests/validate_float.c\](file:///e:/Backup/GitHub/Quantum/tests/validate_float.c) (677 líneas
+    — Wave 1A).
   - \[tests/test_native.c\](file:///e:/Backup/GitHub/Quantum/tests/test_native.c)
-    (`build/cket_tests`): 395 pruebas nativas del compilador y motor.
+    (`build/cket_tests`): 408 pruebas nativas del compilador y motor (línea base `5c5a965`).

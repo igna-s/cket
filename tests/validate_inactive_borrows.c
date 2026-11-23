@@ -103,7 +103,9 @@ static void stale_guard(void) {
         c,
         "{\"op\":\"qcompute\",\"id\":5,\"expr\":{\"op\":\"reg\",\"id\":3,\"bits\":1,\"signed\":false}}");
     qc_register *original = qc_lookup(c, 3), *saved = qc_lookup(c, 5);
-    require(qc_emit(c, QC_X, original->wires[0], 0, 0, 0), "fixture mutation", c);
+    require(qc_emit(c, QC_X, original->wires[0], qc_mask_zero(), qc_mask_zero(), 0),
+            "fixture mutation",
+            c);
     ++original->epoch;
     original->basis_value = 0;
     original->zero_mask = 1;

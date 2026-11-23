@@ -71,7 +71,7 @@ static int ip_bit(ar_builder *p, int e, unsigned bit, bit_poly *out, unsigned de
     cj_u64(p->d, cj_get(p->d, e, "bits"), &bits);
     expr_nodes(p->d, e, nodes);
     if (!bit && cj_equal(p->d, op, "not"))
-        return ip_truth(p, nodes[0], out, depth + 1) && poly_toggle(p->c, out, 0);
+        return ip_truth(p, nodes[0], out, depth + 1) && poly_toggle(p->c, out, qc_mask_zero());
     if (!bit && bits == 1 && cj_equal(p->d, op, "cast"))
         return ip_truth(p, nodes[0], out, depth + 1);
     if (!bit && bits == 1 && (cj_equal(p->d, op, "land") || cj_equal(p->d, op, "lor")))
@@ -93,12 +93,12 @@ static int ip_truth(ar_builder *p, int e, bit_poly *out, unsigned depth) {
         uint64_t value, bits;
         cj_u64(p->d, cj_get(p->d, e, "value"), &value);
         cj_u64(p->d, cj_get(p->d, e, "bits"), &bits);
-        return !(value & bits_mask((unsigned)bits)) || poly_toggle(p->c, out, 0);
+        return !(value & bits_mask((unsigned)bits)) || poly_toggle(p->c, out, qc_mask_zero());
     }
     if (p->ranges[e].valid) {
         int known = ar_known_truth(p->ranges[e]);
         if (known >= 0)
-            return !known || poly_toggle(p->c, out, 0);
+            return !known || poly_toggle(p->c, out, qc_mask_zero());
     }
     if (cj_equal(p->d, op, "cast")) {
         uint64_t to, from;
@@ -108,7 +108,7 @@ static int ip_truth(ar_builder *p, int e, bit_poly *out, unsigned depth) {
             return ip_truth(p, nodes[0], out, depth + 1);
     }
     if (cj_equal(p->d, op, "not"))
-        return ip_truth(p, nodes[0], out, depth + 1) && poly_toggle(p->c, out, 0);
+        return ip_truth(p, nodes[0], out, depth + 1) && poly_toggle(p->c, out, qc_mask_zero());
     if (cj_equal(p->d, op, "neg"))
         return ip_truth(p, nodes[0], out, depth + 1);
     if (count == 2 && cj_equal(p->d, op, "mul")) {
@@ -127,22 +127,31 @@ static int ip_truth(ar_builder *p, int e, bit_poly *out, unsigned depth) {
                     : ar_zero_constant(p, nodes[1]) ? nodes[0]
                                                     : -1;
         if (value >= 0)
-            return ip_truth(p, value, out, depth + 1) && (!equality || poly_toggle(p->c, out, 0));
+            return ip_truth(p, value, out, depth + 1) &&
+                   (!equality || poly_toggle(p->c, out, qc_mask_zero()));
         ar_range a = p->ranges[nodes[0]], b = p->ranges[nodes[1]];
         if (a.valid && b.valid && a.lo >= 0 && a.hi <= 1 && b.lo >= 0 && b.hi <= 1) {
-            bit_poly other;
-            return ip_truth(p, nodes[0], out, depth + 1) &&
-                   ip_truth(p, nodes[1], &other, depth + 1) && poly_xor(p->c, out, &other) &&
-                   (!equality || poly_toggle(p->c, out, 0));
+            bit_poly *other = malloc(sizeof *other);
+            if (!other)
+                return qc_fail(p->c, "out of memory in in-place synthesis");
+            int ok = ip_truth(p, nodes[0], out, depth + 1) &&
+                     ip_truth(p, nodes[1], other, depth + 1) && poly_xor(p->c, out, other) &&
+                     (!equality || poly_toggle(p->c, out, qc_mask_zero()));
+            free(other);
+            return ok;
         }
         return 0;
     }
     if (count == 2 && (cj_equal(p->d, op, "land") || cj_equal(p->d, op, "lor"))) {
-        bit_poly a, b;
-        if (!ip_truth(p, nodes[0], &a, depth + 1) || !ip_truth(p, nodes[1], &b, depth + 1) ||
-            !poly_product(p->c, out, &a, &b))
-            return 0;
-        return !cj_equal(p->d, op, "lor") || (poly_xor(p->c, out, &a) && poly_xor(p->c, out, &b));
+        bit_poly *s = malloc(2 * sizeof *s);
+        if (!s)
+            return qc_fail(p->c, "out of memory in in-place synthesis");
+        int ok = ip_truth(p, nodes[0], &s[0], depth + 1) &&
+                 ip_truth(p, nodes[1], &s[1], depth + 1) && poly_product(p->c, out, &s[0], &s[1]) &&
+                 (!cj_equal(p->d, op, "lor") ||
+                  (poly_xor(p->c, out, &s[0]) && poly_xor(p->c, out, &s[1])));
+        free(s);
+        return ok;
     }
     if (p->ranges[e].valid && p->ranges[e].lo >= 0 && p->ranges[e].hi <= 1)
         return ip_bit(p, e, 0, out, depth + 1);
@@ -170,7 +179,8 @@ ip_emit_affine(qc_context *c, qc_register *r, ip_affine value, qc_mask outer, qc
         unsigned bit = step - 1;
         uint64_t amount = (delta << bit) & mask;
         qc_mask control = QC_WIRE(r->wires[bit]);
-        if (amount && !add_constant(c, r, amount, outer | control, state | control))
+        if (amount &&
+            !add_constant(c, r, amount, qc_mask_or(outer, control), qc_mask_or(state, control)))
             return 0;
     }
     return add_constant(c, r, value.offset, outer, state);
@@ -178,7 +188,7 @@ ip_emit_affine(qc_context *c, qc_register *r, ip_affine value, qc_mask outer, qc
 
 static int inplace_structured(
     qc_context *c, const cj_doc *d, int e, qc_register *r, qc_mask outer, qc_mask state) {
-    if (d->count > 100000)
+    if ((e >= 0 && e < d->count && d->tokens[e].next - e > 100000) || d->count > 1048576)
         return qc_fail(c, "expression token budget exceeded"), -1;
     ar_builder p = {.c = c, .d = d};
     p.ranges = calloc((size_t)d->count, sizeof *p.ranges);
@@ -211,11 +221,11 @@ static int inplace_structured(
         bit_poly polynomial;
         qc_mask wire;
         bit_map = ip_bit(&p, e, bit, &polynomial, 0) &&
-                  poly_literal(&polynomial, &wire, &inverted[bit]) && wire;
+                  poly_literal(&polynomial, &wire, &inverted[bit]) && qc_mask_any(wire);
         if (!bit_map)
             break;
         unsigned source = 0;
-        while (source < r->width && wire != QC_WIRE(r->wires[source]))
+        while (source < r->width && !qc_mask_eq(wire, QC_WIRE(r->wires[source])))
             ++source;
         if (source == r->width || (seen & (UINT64_C(1) << source))) {
             bit_map = 0;
@@ -246,9 +256,10 @@ static int inplace_structured(
             ++source;
         if (source != bit) {
             qc_mask a = QC_WIRE(r->wires[bit]), b = QC_WIRE(r->wires[source]);
-            if (!qc_emit(c, QC_X, r->wires[bit], outer | b, state | b, 0) ||
-                !qc_emit(c, QC_X, r->wires[source], outer | a, state | a, 0) ||
-                !qc_emit(c, QC_X, r->wires[bit], outer | b, state | b, 0))
+            if (!qc_emit(c, QC_X, r->wires[bit], qc_mask_or(outer, b), qc_mask_or(state, b), 0) ||
+                !qc_emit(
+                    c, QC_X, r->wires[source], qc_mask_or(outer, a), qc_mask_or(state, a), 0) ||
+                !qc_emit(c, QC_X, r->wires[bit], qc_mask_or(outer, b), qc_mask_or(state, b), 0))
                 return -1;
             unsigned swap = current[bit];
             current[bit] = current[source];

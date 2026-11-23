@@ -59,9 +59,10 @@ parameter inside `while(n--)`.
 ## Resources and pending contexts
 
 Retained versions consume qubits. A new assignment may need another full result width and synthesis
-workspace. The backend represents at most 128 physical wires; dense native simulation supports 24,
-with a separate bounded sparse mode. Reaching a budget fails explicitly rather than dropping old
-states. Repeated self-dependent versions can exhaust that budget even when the C loop is finite.
+workspace. Baseline `5c5a965` represents at most 128 physical wires (expanded to 1024 in Wave 1A
+engine `QC_MAX_PHYSICAL`, pending Wave 1B/2); dense native simulation supports 24, with a separate
+bounded sparse mode. Reaching a budget fails explicitly rather than dropping old states. Repeated
+self-dependent versions can exhaust that budget even when the C loop is finite.
 
 Fixed-to-fixed `memcpy`, `memmove` and `memset` now share this history path in structured CPU loops,
 with checked addresses. Counts may also be [pure CPU runtime values](c11-runtime-memory.md). A
@@ -69,11 +70,12 @@ self-dependent fill byte is captured before any word changes. Their
 [finite evidence](audit-evidence/fixed-memory-loops-v1/README.es.md) is separate from the earlier
 heap-loop campaign.
 
-Quantum declarations inside controlled branches or CPU loops, general quantum loop conditions, early
-returns with live owners, arbitrary jumps, general indexed overwrites and heap strings retain
-separate pending contracts. Runtime iteration history and heap access require native execution; flat
-QASM export and the borrowed unitary-module ABI reject this profile. Cybersecurity, cryptography and
-authentication remain classical.
+Quantum declarations inside controlled branches or CPU loops, general quantum loop conditions,
+arbitrary early returns with unverified live owners (`5c5a965` adds structured void and imperative
+same-unit owned scalar/`struct` returns), arbitrary jumps, general indexed overwrites and heap
+strings retain separate pending contracts. Runtime iteration history and heap access require native
+execution; flat QASM export and the borrowed unitary-module ABI reject this profile. Cybersecurity,
+cryptography and authentication remain classical.
 
 ```sh
 CC=gcc-11 CXX=g++-11 bash scripts/build.sh

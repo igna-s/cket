@@ -3,14 +3,121 @@
 #include "quantum.h"
 #include "json.h"
 #define QC_MAX_INPUT 12
-#define QC_MAX_PHYSICAL 128
+#define QC_MAX_PHYSICAL 1024
 #define QC_MAX_SIMULATED 24
 #define QC_MAX_SOURCES 128
+#define QC_MASK_WORDS (QC_MAX_PHYSICAL / 64u)
 
 enum qc_kind { QC_H, QC_X, QC_PHASE, QC_MEASURE, QC_RESET };
 
-typedef unsigned __int128 qc_mask;
-#define QC_WIRE(n) ((qc_mask)1 << (n))
+typedef struct {
+    uint64_t w[QC_MASK_WORDS];
+} qc_mask;
+
+static inline qc_mask qc_mask_zero(void) {
+    qc_mask m = {{0}};
+    return m;
+}
+
+static inline qc_mask qc_mask_wire(unsigned n) {
+    qc_mask m = {{0}};
+    if (n < QC_MAX_PHYSICAL)
+        m.w[n >> 6] = UINT64_C(1) << (n & 63u);
+    return m;
+}
+
+static inline int qc_mask_test(qc_mask m, unsigned n) {
+    return n < QC_MAX_PHYSICAL && ((m.w[n >> 6] >> (n & 63u)) & 1u) != 0;
+}
+
+static inline qc_mask qc_mask_set(qc_mask m, unsigned n) {
+    if (n < QC_MAX_PHYSICAL)
+        m.w[n >> 6] |= UINT64_C(1) << (n & 63u);
+    return m;
+}
+
+static inline qc_mask qc_mask_clear(qc_mask m, unsigned n) {
+    if (n < QC_MAX_PHYSICAL)
+        m.w[n >> 6] &= ~(UINT64_C(1) << (n & 63u));
+    return m;
+}
+
+static inline qc_mask qc_mask_or(qc_mask a, qc_mask b) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        a.w[i] |= b.w[i];
+    return a;
+}
+
+static inline qc_mask qc_mask_and(qc_mask a, qc_mask b) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        a.w[i] &= b.w[i];
+    return a;
+}
+
+static inline qc_mask qc_mask_andnot(qc_mask a, qc_mask b) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        a.w[i] &= ~b.w[i];
+    return a;
+}
+
+static inline qc_mask qc_mask_xor(qc_mask a, qc_mask b) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        a.w[i] ^= b.w[i];
+    return a;
+}
+
+static inline qc_mask qc_mask_not(qc_mask a) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        a.w[i] = ~a.w[i];
+    return a;
+}
+
+static inline int qc_mask_eq(qc_mask a, qc_mask b) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        if (a.w[i] != b.w[i])
+            return 0;
+    return 1;
+}
+
+static inline int qc_mask_any(qc_mask a) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        if (a.w[i])
+            return 1;
+    return 0;
+}
+
+static inline unsigned qc_mask_pop(qc_mask a) {
+    unsigned total = 0;
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        total += (unsigned)__builtin_popcountll(a.w[i]);
+    return total;
+}
+
+static inline unsigned qc_mask_ctz(qc_mask a) {
+    for (unsigned i = 0; i < QC_MASK_WORDS; ++i)
+        if (a.w[i])
+            return i * 64u + (unsigned)__builtin_ctzll(a.w[i]);
+    return QC_MAX_PHYSICAL;
+}
+
+static inline int qc_mask_cmp(qc_mask a, qc_mask b) {
+    for (unsigned i = QC_MASK_WORDS; i-- > 0;)
+        if (a.w[i] != b.w[i])
+            return a.w[i] < b.w[i] ? -1 : 1;
+    return 0;
+}
+
+static inline qc_mask qc_mask_from_u64(uint64_t v) {
+    qc_mask m = {{v}};
+    return m;
+}
+
+static inline qc_mask qc_mask_from_u128(uint64_t low, uint64_t high) {
+    qc_mask m = {{low, high}};
+    return m;
+}
+
+#define QC_WIRE(n) qc_mask_wire(n)
 
 typedef struct {
     qc_mask basis;
@@ -29,8 +136,8 @@ typedef struct {
     unsigned width, wires[64];
     uint64_t epoch;
     int alive, clean, prepared, ancillary, history, finished;
-    int signed_type, basis_known, uniform;
-    uint64_t basis_value, zero_mask, uniform_upper;
+    int signed_type, float_type, basis_known, uniform, readonly;
+    uint64_t basis_value, zero_mask, uniform_lower, uniform_upper;
     int support_interval;
     uint64_t support_lower, support_upper;
     char *definition;
@@ -121,4 +228,13 @@ int qc_controls_inactive(qc_context *c, const cj_doc *d, int instruction, int *i
 int qc_verify_instruction(qc_context *c, const cj_doc *d, int instruction);
 int qc_verify_document(qc_context *c, const cj_doc *d);
 int qc_verify_ctype_profile(qc_context *c, const cj_doc *d, int expression, int mapping);
+int qc_interval_bound(qc_context *c,
+                      const cj_doc *d,
+                      int obj,
+                      const char *key,
+                      unsigned width,
+                      int signed_type,
+                      uint64_t *out);
+int qc_interval_ordered(int signed_type, uint64_t low, uint64_t high);
+int qc_search_attempts(qc_context *c, const cj_doc *d, int inst, uint64_t *out);
 #endif

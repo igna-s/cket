@@ -213,12 +213,13 @@ selection_case(unsigned width, int sign, unsigned profile, unsigned reverse, uns
         }
         for (unsigned control_value = 0; control_value < 2; ++control_value) {
             uint64_t selected = (control_value ^ reverse) ? a : b;
-            qc_mask original =
-                expression_basis(source, raw_value) | expression_basis(guard, control_value);
+            qc_mask original = qc_mask_or(expression_basis(source, raw_value),
+                                          expression_basis(guard, control_value));
             qc_mask basis = original;
             double angle = 0;
             expression_walk(c, begin, forward, &basis, &angle);
-            if (basis != (original | expression_basis(result, selected)) || fabs(angle) > 1e-10)
+            if (!qc_mask_eq(basis, qc_mask_or(original, expression_basis(result, selected))) ||
+                fabs(angle) > 1e-10)
                 validation_fail("selection forward width=%u sign=%d profile=%u reverse=%u "
                                 "tables=%u raw=%u control=%u",
                                 width,
@@ -230,7 +231,7 @@ selection_case(unsigned width, int sign, unsigned profile, unsigned reverse, uns
                                 control_value);
             expression_walk(c, forward, c->ngates, &basis, &angle);
             double expected_angle = .11 * (selected & 1) + .29 * ((selected >> (width - 1)) & 1);
-            if (basis != original || fabs(angle - expected_angle) > 1e-10)
+            if (!qc_mask_eq(basis, original) || fabs(angle - expected_angle) > 1e-10)
                 validation_fail("selection inverse left garbage or changed relative phase");
         }
     }

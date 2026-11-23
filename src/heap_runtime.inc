@@ -72,7 +72,7 @@ void __cket_heap_borrow_check(const void *left, const void *right) {
 }
 
 void *__cket_heap_allocate(uint64_t count, uint64_t stride, uint64_t width, uint64_t sign) {
-    if (!stride || count > SIZE_MAX / stride || count > 64 || !count)
+    if (!stride || count > SIZE_MAX / stride || count > 4096u || !count)
         return NULL;
     if (!width || width > 64 || sign > 1 || (width == 1 && sign) || stride != (width + 7) / 8) {
         fputs("|c> runtime: invalid quantum heap element layout\n", stderr);
@@ -150,7 +150,7 @@ __cket_heap_realloc(void *address, uint64_t bytes, uint64_t stride, uint64_t wid
         __cket_heap_free(address);
         return NULL;
     }
-    if (!stride || bytes % stride || bytes / stride > 64 || bytes > SIZE_MAX)
+    if (!stride || bytes % stride || bytes / stride > 4096u || bytes > SIZE_MAX)
         return NULL;
     void *replacement = calloc(1, (size_t)bytes);
     if (!replacement)

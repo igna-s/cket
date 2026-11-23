@@ -170,21 +170,30 @@ def expected(profile, point, context):
             assert (
                 names['fixed[0]']['wires'] == context['wires']['fixed[0]']
             ), 'zero byte copy changed the public quantum wires'
+        if profile == 'controlled_to_fixed':
+            assert not [
+                r for r in point['registers'] if r['id'] < 4096 and r['name'] is None
+            ], 'controlled transfer retained an unnamed guard register'
+    histories = [
+        r['id']
+        for r in point['registers']
+        if r['history']
+        and r['id'] not in context['initial']
+        and r['id'] not in context.get('written', {})
+    ]
+    if profile == 'controlled_from_fixed' and point['tag'] != 'prepared':
+        assert len(histories) == 1
+    else:
+        assert not histories
     answer = {}
     for coin in (0, 1):
         values = {identity: value[coin] for identity, value in context['initial'].items()}
         if point['tag'] != 'prepared':
             values.update({identity: value[coin] for identity, value in context['written'].items()})
             values.update({names[name]['id']: value[coin] for name, value in p['after'].items()})
+            if profile == 'controlled_from_fixed':
+                values[histories[0]] = p['heap'][0][0] if coin else 0
         values[names['coin']['id']] = coin
-        if profile == 'controlled_to_fixed' and point['tag'] != 'prepared':
-            guards = [
-                r
-                for r in point['registers']
-                if r['id'] < 4096 and r['name'] is None and len(r['wires']) == 1
-            ]
-            assert len(guards) == 1
-            values[guards[0]['id']] = coin
         if point['tag'] in ('written', 'freed'):
             values[names['saved']['id']] = p['value'][coin]
         basis = 0
@@ -208,12 +217,15 @@ def main():
     compiler = args.compiler_root.resolve()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    levels = [level.lstrip('-') for level in args.levels]
     flags = (
         ['-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie']
         if args.sanitized
         else []
     )
-    env = dict(os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7')
+    env = dict(os.environ, CC='gcc-11', CKET_SIMULATOR='sparse', CKET_SEED='7')
+    if args.sanitized:
+        env.update(CC=str(compiler / 'build/gcc-wrapper'), CKET_REAL_GCC='gcc-11')
     records = []
 
     def run(label, command, environment=env):
@@ -273,7 +285,7 @@ def main():
         '-Wl,--wrap=__cket_read_byte',
     ]
     points = inverses = 0
-    for level in args.levels:
+    for level in levels:
         for name in PROFILES:
             source = output / (name + '.c')
             binary = output / (name + level)
@@ -349,12 +361,12 @@ def main():
             assert result.returncode > 0 and diagnostic in result.stdout, result.stdout
     summary = dict(
         status='passed',
-        levels=args.levels,
+        levels=levels,
         synthesis_policies=[0, 1],
         full_state_checkpoints=points,
         complete_gate_inverses=inverses,
-        native_programs=len(VALID) * len(args.levels),
-        semantic_rejections=len(INVALID) * len(args.levels),
+        native_programs=len(VALID) * len(levels),
+        semantic_rejections=len(INVALID) * len(levels),
         sanitized=args.sanitized,
         plugin_sha256=hashlib.sha256((compiler / 'build/cket_plugin.so').read_bytes()).hexdigest(),
         scope='Finite fixed/heap and known CPU source transfers, complete complex joint-state formulas, saved inverses after free, zero-length wire identity and counted CPU reads; no complete C11/ABI or QPU claim.',

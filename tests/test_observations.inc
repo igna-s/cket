@@ -165,7 +165,7 @@ static void observation_programs(validation *v) {
 
 static void observation_diagnostics(validation *v) {
     const char *bodies[] = {
-        "quant bool x=false;measure((double)x);measure(x);",
+        "quant bool x=false;measure((_Complex double)x);measure(x);",
         "quant bool x=false;measure((long double)x);measure(x);",
         "quant bool x=false;int flag=0;measure(flag++?x++:x);measure(x);",
         "quant bool x=false;measure(x+++x);measure(x);",

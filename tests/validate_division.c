@@ -1,5 +1,6 @@
 #include "internal.h"
 #include "validation.h"
+#include <inttypes.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -351,7 +352,7 @@ static void generation_and_contracts(validation *v) {
                                 products[fn],
                                 functions[fn],
                                 types[fn]);
-                free(compile_case(v, body, level, builtins, "--resources", fn ? "128" : NULL));
+                free(compile_case(v, body, level, builtins, "--resources", NULL));
                 ++checks;
                 const char *limits[] = {"INT_MIN", "LONG_MIN", "LLONG_MIN", "INTMAX_MIN"};
                 for (unsigned negative = 0; negative < 4; ++negative) {
@@ -390,6 +391,249 @@ static void generation_and_contracts(validation *v) {
     fflush(stdout);
 }
 
+static uint64_t sparse_reg_value(const uint64_t *words, const qc_register *r) {
+    uint64_t v = 0;
+    for (unsigned b = 0; b < r->width; ++b) {
+        unsigned w = r->wires[b];
+        if ((words[w / 64] >> (w % 64)) & 1ULL)
+            v |= 1ULL << b;
+    }
+    return v;
+}
+
+static void fmt_i64_literal(char *buf, size_t cap, int is_signed, uint64_t val) {
+    int neg = is_signed && ((val >> 63) & 1U);
+    uint64_t mag = neg ? (~val + 1ULL) : val;
+    snprintf(buf, cap, "%s%" PRIu64, neg ? "-" : "", mag);
+}
+
+static void check_wide64_case(
+    int is_signed, uint64_t x0, uint64_t x1, uint64_t d0, uint64_t d1, int remainder, int tables) {
+    qc_context *c = qc_create_sparse(7, 1024);
+    if (!c)
+        validation_fail("wide64 sparse context allocation failed");
+    qc_allow_tables(c, tables);
+    apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":1,\"signed\":false}");
+    apply(c, "{\"op\":\"qprepare\",\"id\":0,\"lower\":0,\"upper\":1}");
+    apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":1,\"signed\":false}");
+    apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":1}");
+    qc_register *s0 = qc_lookup(c, 0), *s1 = qc_lookup(c, 1);
+    if (!qc_emit(c, QC_PHASE, 0, QC_WIRE(s0->wires[0]), QC_WIRE(s0->wires[0]), .29) ||
+        !qc_emit(c, QC_PHASE, 0, QC_WIRE(s1->wires[0]), QC_WIRE(s1->wires[0]), .43))
+        validation_fail("wide64 phase preparation failed");
+    char op[4096], expr[2048], s_x0[32], s_x1[32], s_d0[32], s_d1[32];
+    fmt_i64_literal(s_x0, sizeof s_x0, is_signed, x0);
+    fmt_i64_literal(s_x1, sizeof s_x1, is_signed, x1);
+    fmt_i64_literal(s_d0, sizeof s_d0, is_signed, d0);
+    fmt_i64_literal(s_d1, sizeof s_d1, is_signed, d1);
+    const char *stype = is_signed ? "true" : "false";
+    validation_path(
+        op, sizeof op, "{\"op\":\"qalloc\",\"id\":2,\"width\":64,\"signed\":%s}", stype);
+    apply(c, op);
+    validation_path(
+        op,
+        sizeof op,
+        "{\"op\":\"qcompute\",\"id\":2,\"expr\":{\"op\":\"select\",\"bits\":64,\"signed\":%s,\"args\":["
+        "{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false},"
+        "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s},"
+        "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s}]}}",
+        stype,
+        stype,
+        s_x1,
+        stype,
+        s_x0);
+    apply(c, op);
+    int store_div = !is_signed || ((int64_t)d0 > 0 && (int64_t)d1 > 0);
+    if (store_div) {
+        validation_path(
+            op, sizeof op, "{\"op\":\"qalloc\",\"id\":3,\"width\":64,\"signed\":%s}", stype);
+        apply(c, op);
+        validation_path(
+            op,
+            sizeof op,
+            "{\"op\":\"qcompute\",\"id\":3,\"expr\":{\"op\":\"select\",\"bits\":64,\"signed\":%s,"
+            "\"args\":[{\"op\":\"reg\",\"id\":1,\"bits\":1,\"signed\":false},"
+            "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s},"
+            "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s}]}}",
+            stype,
+            stype,
+            s_d1,
+            stype,
+            s_d0);
+        apply(c, op);
+    }
+    validation_path(
+        op, sizeof op, "{\"op\":\"qalloc\",\"id\":4,\"width\":64,\"signed\":%s}", stype);
+    apply(c, op);
+    char denom_expr[512];
+    if (store_div)
+        validation_path(denom_expr,
+                        sizeof denom_expr,
+                        "{\"op\":\"reg\",\"id\":3,\"bits\":64,\"signed\":%s}",
+                        stype);
+    else
+        validation_path(denom_expr,
+                        sizeof denom_expr,
+                        "{\"op\":\"select\",\"bits\":64,\"signed\":%s,\"args\":["
+                        "{\"op\":\"reg\",\"id\":1,\"bits\":1,\"signed\":false},"
+                        "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s},"
+                        "{\"op\":\"const\",\"bits\":64,\"signed\":%s,\"value\":%s}]}",
+                        stype,
+                        stype,
+                        s_d1,
+                        stype,
+                        s_d0);
+    validation_path(expr,
+                    sizeof expr,
+                    "{\"op\":\"%s\",\"bits\":64,\"signed\":%s,\"args\":["
+                    "{\"op\":\"reg\",\"id\":2,\"bits\":64,\"signed\":%s},%s]}",
+                    remainder ? "mod" : "div",
+                    stype,
+                    stype,
+                    denom_expr);
+    validation_path(op, sizeof op, "{\"op\":\"qcompute\",\"id\":4,\"expr\":%s}", expr);
+    apply(c, op);
+    qc_register *rx = qc_lookup(c, 2), *rd = store_div ? qc_lookup(c, 3) : NULL,
+                *rq = qc_lookup(c, 4);
+    for (int inv = 0; inv < 2; ++inv) {
+        if (qc_sparse_size(c) != 4)
+            validation_fail("wide64 unexpected sparse branch count %zu", qc_sparse_size(c));
+        qc_mask public_mask = qc_mask_zero();
+        const qc_register *regs[5] = {s0, s1, rx, rq, rd};
+        for (int r = 0; r < (store_div ? 5 : 4); ++r)
+            for (unsigned b = 0; b < regs[r]->width; ++b)
+                public_mask = qc_mask_set(public_mask, regs[r]->wires[b]);
+        for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+            uint64_t words[16] = {0};
+            double complex amp = 0;
+            if (!qc_sparse_entry_words(c, row, words, 16, &amp))
+                validation_fail("wide64 sparse row %zu read failed", row);
+            for (unsigned w = 0; w < QC_MAX_PHYSICAL; ++w)
+                if (!qc_mask_test(public_mask, w) && ((words[w / 64] >> (w % 64)) & 1ULL))
+                    validation_fail("wide64 uncomputed garbage remained on wire %u", w);
+            uint64_t b0 = sparse_reg_value(words, s0);
+            uint64_t b1 = sparse_reg_value(words, s1);
+            uint64_t vx = sparse_reg_value(words, rx);
+            uint64_t vd = store_div ? sparse_reg_value(words, rd) : (b1 ? d1 : d0);
+            uint64_t vq = sparse_reg_value(words, rq);
+            uint64_t ex = b0 ? x1 : x0;
+            uint64_t ed = b1 ? d1 : d0;
+            uint64_t eq = 0;
+            if (!inv) {
+                if (is_signed) {
+                    int64_t sx = (int64_t)ex, sd = (int64_t)ed;
+                    eq = (uint64_t)(remainder ? (sx % sd) : (sx / sd));
+                } else {
+                    eq = remainder ? (ex % ed) : (ex / ed);
+                }
+            }
+            double complex eamp = cexp(I * ((b0 ? .29 : 0.0) + (b1 ? .43 : 0.0))) / 2.0;
+            if (vx != ex || vd != ed || vq != eq || cabs(amp - eamp) > 1e-10)
+                validation_fail("wide64 state mismatch signed=%d rem=%d inv=%d b0=%llu b1=%llu",
+                                is_signed,
+                                remainder,
+                                inv,
+                                (unsigned long long)b0,
+                                (unsigned long long)b1);
+        }
+        if (!inv) {
+            validation_path(op, sizeof op, "{\"op\":\"quncompute\",\"id\":4,\"expr\":%s}", expr);
+            apply(c, op);
+        }
+    }
+    qc_destroy(c);
+    ++checks;
+}
+
+static void wide64_cases(validation *v) {
+    for (int rem = 0; rem < 2; ++rem)
+        for (int tables = 0; tables < 2; ++tables) {
+            check_wide64_case(0, UINT64_MAX - 17ULL, UINT64_MAX, 17ULL, 19ULL, rem, tables);
+            check_wide64_case(1,
+                              (uint64_t)(INT64_MIN + 5),
+                              (uint64_t)INT64_MIN,
+                              (uint64_t)(int64_t)-17,
+                              (uint64_t)(int64_t)-19,
+                              rem,
+                              tables);
+            check_wide64_case(1,
+                              (uint64_t)INT64_MAX,
+                              (uint64_t)(INT64_MIN + 1),
+                              (uint64_t)(int64_t)17,
+                              (uint64_t)(int64_t)23,
+                              rem,
+                              tables);
+            check_wide64_case(1,
+                              (uint64_t)INT64_MAX,
+                              (uint64_t)INT64_MIN,
+                              (uint64_t)(int64_t)-17,
+                              (uint64_t)(int64_t)-17,
+                              rem,
+                              tables);
+        }
+    for (unsigned level = 0; level < 5; ++level)
+        for (unsigned rem = 0; rem < 2; ++rem) {
+            char body[1024];
+            validation_path(body,
+                            sizeof body,
+                            "quant bool s=superposition(0,1);quant int64_t n=s?INT64_MIN:INT64_MAX;"
+                            "quant int64_t r=n%s(s?-17:-19);"
+                            "measure(r);measure(n);measure(s);return 0;",
+                            rem ? "%" : "/");
+            char *ir = compile_case(v, body, level, 1, "--emit-ir", NULL);
+            qc_context *c = qc_create_sparse(7, 1024);
+            if (!c)
+                validation_fail("wide64 C case sparse context failed");
+            qc_allow_tables(c, 0);
+            if (!qc_document(c, ir, 0, 1) || qc_qubits(c) > QC_MAX_PHYSICAL || c->reset ||
+                qc_sparse_size(c) != 2)
+                validation_fail("wide64 C division synthesis failed: %s", qc_error(c));
+            qc_register *rs = qc_lookup(c, 0), *rn = qc_lookup(c, 1), *rr = qc_lookup(c, 2);
+            for (size_t row = 0; row < qc_sparse_size(c); ++row) {
+                uint64_t words[16] = {0};
+                double complex amp = 0;
+                if (!qc_sparse_entry_words(c, row, words, 16, &amp))
+                    validation_fail("wide64 C sparse read failed");
+                uint64_t s = sparse_reg_value(words, rs);
+                int64_t n = (int64_t)sparse_reg_value(words, rn);
+                int64_t r = (int64_t)sparse_reg_value(words, rr);
+                int64_t en = s ? INT64_MIN : INT64_MAX;
+                int64_t ed = s ? -17 : -19;
+                int64_t er = rem ? (en % ed) : (en / ed);
+                if (n != en || r != er)
+                    validation_fail(
+                        "wide64 C value mismatch rem=%u s=%llu", rem, (unsigned long long)s);
+            }
+            qc_destroy(c);
+            free(ir);
+            ++checks;
+        }
+    for (int rem = 0; rem < 2; ++rem) {
+        qc_context *c = qc_create_sparse(7, 64);
+        if (!c)
+            validation_fail("wide64 overflow context allocation failed");
+        apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":64,\"signed\":true}");
+        char op[512], smin[32];
+        fmt_i64_literal(smin, sizeof smin, 1, (uint64_t)INT64_MIN);
+        validation_path(
+            op,
+            sizeof op,
+            "{\"op\":\"qcompute\",\"id\":0,\"expr\":{\"op\":\"%s\",\"bits\":64,\"signed\":true,"
+            "\"args\":[{\"op\":\"const\",\"bits\":64,\"signed\":true,\"value\":%s},"
+            "{\"op\":\"const\",\"bits\":64,\"signed\":true,\"value\":-1}]}}",
+            rem ? "mod" : "div",
+            smin);
+        if (qc_apply(c, op, NULL) || !strstr(qc_error(c), "overflow"))
+            validation_fail(
+                "INT64_MIN %s -1 should report overflow, got: %s", rem ? "%" : "/", qc_error(c));
+        qc_destroy(c);
+        ++checks;
+    }
+    puts(
+        "PASS 12 general 64-bit sparse superposition div/mod, 10 C int64_t levels and INT64_MIN/-1 overflow checks");
+    fflush(stdout);
+}
+
 int main(int argc, char **argv) {
     if (argc != 1)
         validation_fail("usage: validate_division");
@@ -399,6 +643,7 @@ int main(int argc, char **argv) {
     library_states(&v);
     numeric_and_classical(&v);
     generation_and_contracts(&v);
+    wide64_cases(&v);
     validation_cleanup(&v);
     printf(
         "%u division checks passed; full-state validation, explicit channels and wide generation have separate scopes.\n",

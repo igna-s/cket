@@ -33,7 +33,7 @@ static int ar_shift_truth(ar_builder *p, int e, ar_value *out) {
         return 0;
     ar_value source, count;
     if (!ar_lower(p, args[0], 64, &source) || !ar_lower(p, args[1], 64, &count) ||
-        !ar_temp(p, 1, out) || !ar_gate(p, ar_wire(out->bit[0]), 0, 0))
+        !ar_temp(p, 1, out) || !ar_gate(p, ar_wire(out->bit[0]), qc_mask_zero(), qc_mask_zero()))
         return -1;
     unsigned width = p->ranges[args[0]].width, positions = width;
     if (count.width < 6 && positions > (1u << count.width))

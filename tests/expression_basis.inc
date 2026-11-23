@@ -2,10 +2,10 @@
  * Source preparation is excluded; wide cases are finite label checks, not
  * dense wide-state simulations. Public and private wires are checked jointly. */
 static qc_mask expression_basis(const qc_register *r, uint64_t value) {
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned bit = 0; bit < r->width; ++bit)
         if ((value >> bit) & 1)
-            result |= QC_WIRE(r->wires[bit]);
+            result = qc_mask_or(result, QC_WIRE(r->wires[bit]));
     return result;
 }
 
@@ -15,10 +15,10 @@ expression_walk(const qc_context *c, size_t begin, size_t end, qc_mask *basis, d
         const qc_gate *g = &c->gates[i];
         if (g->kind != QC_X && g->kind != QC_PHASE)
             validation_fail("basis-action arithmetic introduced a nonpermutation gate");
-        if ((*basis & g->mask) != g->pattern)
+        if (!qc_mask_eq(qc_mask_and(*basis, g->mask), g->pattern))
             continue;
         if (g->kind == QC_X)
-            *basis ^= QC_WIRE(g->target);
+            *basis = qc_mask_xor(*basis, QC_WIRE(g->target));
         else
             *angle += g->angle;
     }

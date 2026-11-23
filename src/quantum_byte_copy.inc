@@ -28,9 +28,9 @@ tree expand_byte_copy(tree call, bool move) {
     uint64_t count = tree_to_uhwi(length);
     if (count > destination.size() - destination.offset || count > source.size() - source.offset)
         return reject("|c>: quantum byte copy exceeds its checked storage bounds");
-    if (count > 64)
+    if (count > 256)
         return reject(
-            "|c>: quantum object-byte copy exceeds the 64-byte expression synthesis bound");
+            "|c>: quantum object-byte copy exceeds the 256-byte expression synthesis bound");
     if (move && source.quantum && destination.elements == source.elements &&
         destination.stride == source.stride && destination.offset == source.offset)
         return make_quantum_value_program(call, {}, boolean_true_node);
@@ -85,7 +85,19 @@ tree expand_byte_copy(tree call, bool move) {
             if (!--indegree[writer])
                 ready.push_back(writer);
     }
-    if (ordered.size() != words.size())
-        return reject("|c>: cyclic quantum byte-copy dependencies need a retained snapshot");
-    return make_quantum_value_program(call, ordered, boolean_true_node, {}, NULL_TREE, bit_masks);
+    std::vector<tree> prefix;
+    if (ordered.size() != words.size()) {
+        // Snapshot source bytes first so cyclic multi-word memmove/byte permutations
+        // remain strictly reversible without mutating unread dependencies.
+        ordered.clear();
+        std::vector<tree> snapshots(count);
+        for (uint64_t i = 0; i < count; ++i)
+            snapshots[i] = quantum_value_capture(
+                call, object_byte(source, i, at(call)), "__cket_copy_snap_", prefix);
+        for (uint64_t i = 0; i < count; ++i)
+            string_word_byte(
+                destination, i, fold_convert(integer_type_node, snapshots[i]), ordered, at(call));
+    }
+    return make_quantum_value_program(
+        call, ordered, boolean_true_node, std::move(prefix), NULL_TREE, bit_masks);
 }

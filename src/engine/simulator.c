@@ -31,16 +31,17 @@ int qc_sim_gate(qc_context *c, const qc_gate *g) {
     if (c->sparse_limit)
         return sparse_gate(c, g);
     uint64_t bit = UINT64_C(1) << g->target;
+    uint64_t mask = g->mask.w[0], pattern = g->pattern.w[0];
     if (g->kind == QC_PHASE) {
         double complex factor = cos(g->angle) + I * sin(g->angle);
         for (size_t i = 0; i < c->dimension; ++i)
-            if ((i & g->mask) == g->pattern)
+            if ((i & mask) == pattern)
                 c->state[i] *= factor;
     } else if (g->kind == QC_H || g->kind == QC_X) {
         for (size_t base = 0; base < c->dimension; base += (size_t)bit * 2)
             for (size_t off = 0; off < bit; ++off) {
                 size_t a = base + off, b = a + (size_t)bit;
-                if ((a & g->mask) != g->pattern)
+                if ((a & mask) != pattern)
                     continue;
                 double complex left = c->state[a], right = c->state[b];
                 if (g->kind == QC_X) {

@@ -38,23 +38,23 @@ static void shift_truth_state(qc_context *c,
     unsigned char seen[512] = {0};
     if (qc_sparse_size(c) != states)
         validation_fail("shift truth support changed");
-    qc_mask allowed = 0;
+    qc_mask allowed = qc_mask_zero();
     for (unsigned id = 0; id < 5; ++id) {
         qc_register *r = qc_lookup(c, id);
         for (unsigned bit = 0; bit < r->width; ++bit)
-            allowed |= QC_WIRE(r->wires[bit]);
+            allowed = qc_mask_or(allowed, QC_WIRE(r->wires[bit]));
     }
     for (size_t row = 0; row < states; ++row) {
         uint64_t low, high;
         double complex amplitude;
         if (!qc_sparse_entry(c, row, &low, &high, &amplitude))
             validation_fail("shift truth enumeration");
-        qc_mask basis = (qc_mask)low | (qc_mask)high << 64;
+        qc_mask basis = qc_mask_from_u128(low, high);
         unsigned seed = (unsigned)shift_read(basis, qc_lookup(c, 4));
         unsigned count = (unsigned)shift_read(basis, qc_lookup(c, 1));
         unsigned control = (unsigned)shift_read(basis, qc_lookup(c, 3));
         uint64_t raw = seed < 2 ? seed : shift_truth_mask(width) - (3 - seed);
-        if (seed > 3 || count >= promoted || (basis & ~allowed) ||
+        if (seed > 3 || count >= promoted || qc_mask_any(qc_mask_andnot(basis, allowed)) ||
             shift_read(basis, qc_lookup(c, 0)) != raw)
             validation_fail("shift truth input or private wire mismatch");
         unsigned truth =

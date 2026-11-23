@@ -6,9 +6,13 @@ tree quantum_memory_return(tree value) {
     if (quantum_native_memory.count(value))
         return value;
     bool move = false;
-    if (TREE_CODE(value) != CALL_EXPR || call_expr_nargs(value) != 3 ||
-        (!standard_memory_set(get_callee_fndecl(value)) &&
-         !standard_memory_copy(get_callee_fndecl(value), move)))
+    if (TREE_CODE(value) != CALL_EXPR)
+        return NULL_TREE;
+    tree fn = get_callee_fndecl(value);
+    int nargs = call_expr_nargs(value);
+    bool mem_op = nargs == 3 && (standard_memory_set(fn) || standard_memory_copy(fn, move));
+    bool str_op = (nargs == 2 || nargs == 3) && standard_string_copy(fn);
+    if (!mem_op && !str_op)
         return NULL_TREE;
     QuantumByteRange destination;
     resolve_byte_range(CALL_EXPR_ARG(value, 0), destination);

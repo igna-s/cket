@@ -34,8 +34,8 @@ their sanitizer instrumentation.
 
 The runtime carries integer inputs in 64-bit values and converts them to the declared 1..64-bit
 types. Unsigned narrowing uses low bits; signed interpretation follows the declared two's-complement
-GCC target. Boolean inputs use comparison with zero. Floating/complex quantum data and the full
-conversion/effect matrix remain open.
+GCC target. Boolean inputs use comparison with zero. Frontend/ABI floating/complex quantum data
+(beyond Wave 1A engine circuits) and the full conversion/effect matrix remain open.
 
 ## Products from classical values
 
@@ -85,7 +85,8 @@ the corrected evaluations and fields at all five optimization levels, with and w
 
 `quant div_t result = div(6,2)` now compiles as classical result capture followed by quantum basis
 preparation. Its two 32-bit fields exceed the 24-qubit native statevector limit (**R**). Two 64-bit
-fields plus a live quantum input also exceed the current 128-qubit representation (**R**). These
+fields plus a live quantum input also exceed the baseline 128-qubit representation in `5c5a965`
+(**R**; Wave 1A raises engine `QC_MAX_PHYSICAL` to 1024 pending Wave 1B/2 verification). These
 limits are not semantic prohibitions on the types.
 
 ## IR, validation and export

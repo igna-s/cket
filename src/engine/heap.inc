@@ -1,6 +1,6 @@
 /* Heap capacities are classical. The payload consists of owned quantum
  * register identities, never host copies of amplitudes or measured values. */
-#define QC_HEAP_MAX_ELEMENTS 64u
+#define QC_HEAP_MAX_ELEMENTS QC_MAX_PHYSICAL
 #define QC_HEAP_FIRST_REGISTER UINT32_C(0x80000000)
 #define QC_HEAP_LAST_REGISTER UINT32_C(0x8fffffff)
 
@@ -462,7 +462,7 @@ static char *patch_old_definition(qc_context *c, uint32_t owner) {
     }
     char *value = strdup(r->definition);
     for (unsigned wire = 0; value && wire < QC_MAX_PHYSICAL; ++wire) {
-        if (!(r->definition_mask & QC_WIRE(wire)))
+        if (!qc_mask_test(r->definition_mask, wire))
             continue;
         qc_register *guard = NULL;
         for (size_t i = 0; i < c->nregisters; ++i)
@@ -485,7 +485,7 @@ static char *patch_old_definition(qc_context *c, uint32_t owner) {
                      "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":0}",
                      r->width,
                      r->signed_type ? "true" : "false");
-            int closed = !!(r->definition_pattern & QC_WIRE(wire));
+            int closed = qc_mask_test(r->definition_pattern, wire);
             snprintf(
                 next,
                 size,
@@ -691,7 +691,7 @@ static int heap_exchange_store(qc_context *c,
                 free(old_definition);
                 return 0;
             }
-            qc_mask seen = 0;
+            qc_mask seen = qc_mask_zero();
             taint_uniform(c, (uint32_t)selector, &seen);
             clear_definition(reg(c, (uint32_t)selector));
         }
@@ -735,7 +735,7 @@ static int heap_exchange_store(qc_context *c,
         // A decision about the old destination cannot depend on its own
         // conditional inverse. Preserve that decision as necessary history.
         if (reads) {
-            qc_mask seen = 0;
+            qc_mask seen = qc_mask_zero();
             taint_uniform(c, (uint32_t)id, &seen);
             clear_definition(reg(c, (uint32_t)id));
         }
@@ -755,13 +755,13 @@ static int heap_exchange_store(qc_context *c,
     free(expression);
     if (ok) {
         qc_register *r = reg(c, history);
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         for (unsigned i = 0; i < r->ndeps; ++i)
             taint_uniform(c, r->deps[i], &seen);
         clear_definition(r);
         r = reg(c, owner);
         if (r->definition) {
-            seen = 0;
+            seen = qc_mask_zero();
             taint_uniform(c, owner, &seen);
             clear_definition(r);
         }
@@ -969,7 +969,7 @@ static int heap_action(qc_context *c, const cj_doc *d, int inst, uint64_t *resul
     if (!ok)
         return 0;
     qc_register *r = reg(c, destination);
-    qc_mask seen = 0;
+    qc_mask seen = qc_mask_zero();
     for (unsigned i = 0; i < r->ndeps; ++i)
         taint_uniform(c, r->deps[i], &seen);
     // Persistent heap slots own their output. Saved consumers of previous slots

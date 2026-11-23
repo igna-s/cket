@@ -27,7 +27,8 @@ bool standard_memory_compare(tree fn) {
            (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn)) &&
             (name_of(fn) == "memcmp" || name_of(fn) == "__cket_memcmp" ||
              name_of(fn) == "strncmp" || name_of(fn) == "__cket_strncmp" ||
-             name_of(fn) == "strcmp" || name_of(fn) == "__cket_strcmp"));
+             name_of(fn) == "strcmp" || name_of(fn) == "__cket_strcmp" ||
+             name_of(fn) == "strcoll" || name_of(fn) == "__cket_strcoll"));
 }
 
 bool standard_string_length(tree fn) {
@@ -440,7 +441,8 @@ tree expand_string_length(tree call) {
 tree expand_memory_compare(tree call, enum tree_code relation = ERROR_MARK) {
     tree fn = get_callee_fndecl(call);
     bool unbounded = fn && (fndecl_built_in_p(fn, BUILT_IN_STRCMP) || name_of(fn) == "strcmp" ||
-                            name_of(fn) == "__cket_strcmp");
+                            name_of(fn) == "__cket_strcmp" || name_of(fn) == "strcoll" ||
+                            name_of(fn) == "__cket_strcoll");
     if (call_expr_nargs(call) != (unbounded ? 2 : 3))
         return NULL_TREE;
     bool stop_at_zero =
@@ -675,4 +677,438 @@ tree expand_memory_set(tree call) {
         build_call_expr_loc_array(at(call), marker, (int)arguments.size(), arguments.data());
     quantum_memory_sets.emplace(result, std::move(operation));
     return result;
+}
+
+bool extract_string_literal(tree arg, std::string &out) {
+    arg = strip(arg);
+    while (arg && (TREE_CODE(arg) == ADDR_EXPR || TREE_CODE(arg) == ARRAY_REF))
+        arg = strip(TREE_OPERAND(arg, 0));
+    if (!arg || TREE_CODE(arg) != STRING_CST)
+        return false;
+    const char *p = TREE_STRING_POINTER(arg);
+    int len = TREE_STRING_LENGTH(arg);
+    out.assign(p, len > 0 ? strnlen(p, (size_t)len) : 0);
+    return true;
+}
+
+int static_zero_or_nonzero_byte(tree expr, unsigned depth = 0) {
+    if (!expr || depth > 16)
+        return -1;
+    expr = strip(expr);
+    if (TREE_CODE(expr) == INTEGER_CST)
+        return integer_zerop(expr) ? 0 : 1;
+    if (TREE_CODE(expr) == COND_EXPR) {
+        int a = static_zero_or_nonzero_byte(TREE_OPERAND(expr, 1), depth + 1);
+        int b = static_zero_or_nonzero_byte(TREE_OPERAND(expr, 2), depth + 1);
+        return (a >= 0 && a == b) ? a : -1;
+    }
+    if (TREE_CODE(expr) == VAR_DECL && DECL_INITIAL(expr))
+        return static_zero_or_nonzero_byte(DECL_INITIAL(expr), depth + 1);
+    return -1;
+}
+
+bool qsort_comparator_is_descending(tree cmp_fn) {
+    if (!cmp_fn || TREE_CODE(cmp_fn) != FUNCTION_DECL || !DECL_SAVED_TREE(cmp_fn))
+        return false;
+    tree p0 = DECL_ARGUMENTS(cmp_fn), p1 = p0 ? DECL_CHAIN(p0) : NULL_TREE;
+    if (!p0 || !p1)
+        return false;
+    std::map<tree, int> origins{{p0, 0}, {p1, 1}};
+    tree body = DECL_SAVED_TREE(cmp_fn);
+    auto collect_origins = [](tree *node, int *walk, void *data) -> tree {
+        auto &orig = *static_cast<std::map<tree, int> *>(data);
+        if (TREE_CODE(*node) == DECL_EXPR) {
+            tree v = DECL_EXPR_DECL(*node);
+            tree init = DECL_INITIAL(v);
+            if (init) {
+                auto check_param = [](tree *sub, int *w, void *pdata) -> tree {
+                    auto &m = *static_cast<std::map<tree, int> *>(pdata);
+                    if (m.count(*sub))
+                        return *sub;
+                    if (DECL_P(*sub) || TYPE_P(*sub))
+                        *w = 0;
+                    return NULL_TREE;
+                };
+                tree p = walk_tree(&init, check_param, &orig, nullptr);
+                if (p)
+                    orig[v] = orig[p];
+            }
+        }
+        if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree(&body, collect_origins, &origins, nullptr);
+
+    struct DirState {
+        std::map<tree, int> *origins;
+        int direction;
+    } dstate{&origins, 0};
+
+    auto inspect_ret = [](tree *node, int *walk, void *data) -> tree {
+        auto &st = *static_cast<DirState *>(data);
+        auto &orig = *st.origins;
+        if (TREE_CODE(*node) == RETURN_EXPR && TREE_OPERAND(*node, 0)) {
+            tree expr = TREE_OPERAND(*node, 0);
+            if (TREE_CODE(expr) == MODIFY_EXPR || TREE_CODE(expr) == INIT_EXPR)
+                expr = TREE_OPERAND(expr, 1);
+            expr = strip(expr);
+            if (TREE_CODE(expr) == MINUS_EXPR) {
+                tree l = strip(TREE_OPERAND(expr, 0)), r = strip(TREE_OPERAND(expr, 1));
+                if ((TREE_CODE(l) == GT_EXPR && TREE_CODE(r) == LT_EXPR) ||
+                    (TREE_CODE(l) == GE_EXPR && TREE_CODE(r) == LE_EXPR)) {
+                    tree ll = strip(TREE_OPERAND(l, 0)), lr = strip(TREE_OPERAND(l, 1));
+                    if (orig.count(ll) && orig.count(lr)) {
+                        if (orig[ll] == 1 && orig[lr] == 0)
+                            st.direction = -1;
+                        else if (orig[ll] == 0 && orig[lr] == 1)
+                            st.direction = 1;
+                    }
+                } else if (orig.count(l) && orig.count(r)) {
+                    if (orig[l] == 1 && orig[r] == 0)
+                        st.direction = -1;
+                    else if (orig[l] == 0 && orig[r] == 1)
+                        st.direction = 1;
+                }
+            }
+        }
+        if (DECL_P(*node) || TYPE_P(*node))
+            *walk = 0;
+        return NULL_TREE;
+    };
+    walk_tree(&body, inspect_ret, &dstate, nullptr);
+    return dstate.direction < 0;
+}
+
+tree expand_extra_stdlib_call(tree call) {
+    if (!call || TREE_CODE(call) != CALL_EXPR)
+        return NULL_TREE;
+    tree fn = get_callee_fndecl(call);
+    if (!fn || (DECL_SAVED_TREE(fn) && !in_system_header_at(DECL_SOURCE_LOCATION(fn))))
+        return NULL_TREE;
+    std::string name = name_of(fn);
+    bool external_sys =
+        DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) && in_system_header_at(DECL_SOURCE_LOCATION(fn));
+
+    if (external_sys && (name == "qsort" || name == "__cket_qsort") && call_expr_nargs(call) == 4) {
+        QuantumReference ref;
+        if (!resolve_quantum_reference(CALL_EXPR_ARG(call, 0), ref))
+            return NULL_TREE;
+        tree count_cst = strip(fold(CALL_EXPR_ARG(call, 1)));
+        tree size_cst = strip(fold(CALL_EXPR_ARG(call, 2)));
+        if (!count_cst || TREE_CODE(count_cst) != INTEGER_CST || !tree_fits_uhwi_p(count_cst) ||
+            !size_cst || TREE_CODE(size_cst) != INTEGER_CST || !tree_fits_uhwi_p(size_cst)) {
+            error_at(at(call), "|c>: quantum qsort requires constant element count and size");
+            return build_empty_stmt(at(call));
+        }
+        uint64_t n = tree_to_uhwi(count_cst);
+        uint64_t sz = tree_to_uhwi(size_cst);
+        tree elem_size = TYPE_SIZE_UNIT(ref.element_type);
+        if (!elem_size || !tree_fits_uhwi_p(elem_size) || sz != tree_to_uhwi(elem_size) ||
+            ref.leaves_per_element != 1 || !supported_quantum_scalar(ref.element_type)) {
+            error_at(at(call), "|c>: quantum qsort requires supported scalar elements");
+            return build_empty_stmt(at(call));
+        }
+        if (TYPE_READONLY(ref.element_type) || ref.offset < 0 ||
+            (uint64_t)ref.offset + n > ref.elements.size()) {
+            error_at(at(call), "|c>: quantum qsort requires mutable storage within bounds");
+            return build_empty_stmt(at(call));
+        }
+        if (n > 16) {
+            error_at(at(call), "|c>: quantum qsort exceeds 16-element sorting network bound");
+            return build_empty_stmt(at(call));
+        }
+        if (n <= 1)
+            return build_empty_stmt(at(call));
+        tree cmp_arg = strip(CALL_EXPR_ARG(call, 3));
+        if (TREE_CODE(cmp_arg) == ADDR_EXPR)
+            cmp_arg = strip(TREE_OPERAND(cmp_arg, 0));
+        bool descending = qsort_comparator_is_descending(cmp_arg);
+        tree list = alloc_stmt_list();
+        tree etype = TYPE_MAIN_VARIANT(ref.element_type);
+        uint64_t qsort_id = 0;
+        auto compare_swap = [&](uint64_t ia, uint64_t ib) {
+            tree a = ref.elements[(size_t)ref.offset + ia];
+            tree b = ref.elements[(size_t)ref.offset + ib];
+            if (readonly_quantum_borrows.count(a) || readonly_quantum_borrows.count(b)) {
+                error_at(at(call), "|c>: quantum qsort cannot modify read-only borrowed elements");
+                return;
+            }
+            tree cond =
+                fold_build2_loc(at(call), descending ? GT_EXPR : LT_EXPR, boolean_type_node, a, b);
+            tree lo_init = fold_build3_loc(at(call), COND_EXPR, etype, cond, a, b);
+            tree hi_init = fold_build3_loc(at(call), COND_EXPR, etype, cond, b, a);
+            auto make_tmp = [&](tree initial, const char *tag) {
+                std::string tname = "__cket_qsort_" + std::string(tag) + "_" +
+                                    std::to_string(auto_clean_zeros.size()) + "_" +
+                                    std::to_string(qsort_id++);
+                tree decl = build_decl(at(call),
+                                       VAR_DECL,
+                                       get_identifier(tname.c_str()),
+                                       build_qualified_type(etype, TYPE_QUAL_VOLATILE));
+                DECL_CONTEXT(decl) = active_function;
+                DECL_ATTRIBUTES(decl) =
+                    tree_cons(get_identifier("cket_quant"), NULL_TREE, NULL_TREE);
+                DECL_ARTIFICIAL(decl) = TREE_THIS_VOLATILE(decl) = TREE_SIDE_EFFECTS(decl) = 1;
+                DECL_INITIAL(decl) = fold_convert(TREE_TYPE(decl), initial);
+                auto_clean_zeros.insert(decl);
+                DECL_CHAIN(decl) = cpu_patch_locals;
+                cpu_patch_locals = decl;
+                return decl;
+            };
+            tree lo = make_tmp(lo_init, "lo");
+            tree hi = make_tmp(hi_init, "hi");
+            append(&list, build1_loc(at(call), DECL_EXPR, void_type_node, lo));
+            append(&list, build1_loc(at(call), DECL_EXPR, void_type_node, hi));
+            append(
+                &list,
+                build2_loc(at(call), MODIFY_EXPR, TREE_TYPE(a), a, fold_convert(TREE_TYPE(a), lo)));
+            append(
+                &list,
+                build2_loc(at(call), MODIFY_EXPR, TREE_TYPE(b), b, fold_convert(TREE_TYPE(b), hi)));
+        };
+        for (uint64_t p = 1; p < n; p <<= 1)
+            for (uint64_t k = p; k >= 1; k >>= 1) {
+                uint64_t j_start = k % p;
+                for (uint64_t j = j_start; j + k < n; j += 2 * k)
+                    for (uint64_t i = 0; i < k && i + j + k < n; ++i)
+                        if ((i + j) / (p * 2) == (i + j + k) / (p * 2))
+                            compare_swap(i + j, i + j + k);
+                if (k == 1)
+                    break;
+            }
+        return list;
+    }
+
+    if (external_sys && (name == "strxfrm" || name == "__cket_strxfrm") &&
+        call_expr_nargs(call) == 3) {
+        QuantumByteRange dst, src;
+        bool dst_q = resolve_byte_range(CALL_EXPR_ARG(call, 0), dst) && dst.quantum;
+        bool src_q = resolve_byte_range(CALL_EXPR_ARG(call, 1), src) && src.quantum;
+        if (!dst_q && !src_q)
+            return NULL_TREE;
+        tree count_cst = strip(fold(CALL_EXPR_ARG(call, 2)));
+        if (!count_cst || TREE_CODE(count_cst) != INTEGER_CST || !tree_fits_uhwi_p(count_cst)) {
+            error_at(at(call), "|c>: quantum strxfrm requires a constant destination buffer bound");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        uint64_t limit = tree_to_uhwi(count_cst);
+        if (!src_q)
+            return NULL_TREE;
+        uint64_t src_avail = src.size() - src.offset;
+        int64_t known_len = -1;
+        for (uint64_t k = 0; k < src_avail; ++k) {
+            uint64_t pos = src.offset + k;
+            tree elem = src.elements[(size_t)(pos / src.stride)];
+            int st = src.stride == 1 ? static_zero_or_nonzero_byte(elem) : -1;
+            if (st == 0) {
+                known_len = (int64_t)k;
+                break;
+            }
+            if (st < 0)
+                break;
+        }
+        if (known_len < 0) {
+            error_at(at(call),
+                     "|c>: quantum strxfrm requires a source string with a statically bounded NUL");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        tree effect = build_empty_stmt(at(call));
+        if (limit > 0) {
+            if (!dst_q) {
+                error_at(at(call),
+                         "|c>: quantum strxfrm cannot write quantum bytes into CPU storage");
+                return build_zero_cst(TREE_TYPE(call));
+            }
+            uint64_t to_copy = std::min<uint64_t>(limit, (uint64_t)known_len + 1);
+            tree memcpy_decl = build_fn_decl(
+                "__cket_memcpy",
+                build_function_type_list(
+                    ptr_type_node, ptr_type_node, const_ptr_type_node, size_type_node, NULL_TREE));
+            DECL_EXTERNAL(memcpy_decl) = TREE_PUBLIC(memcpy_decl) = 1;
+            tree mc = build_call_expr_loc(at(call),
+                                          memcpy_decl,
+                                          3,
+                                          CALL_EXPR_ARG(call, 0),
+                                          CALL_EXPR_ARG(call, 1),
+                                          build_int_cstu(size_type_node, to_copy));
+            effect = expand_memory_copy(mc, false);
+            if (!effect)
+                effect = build_empty_stmt(at(call));
+        }
+        tree list = alloc_stmt_list();
+        append(&list, effect);
+        return build2_loc(at(call),
+                          COMPOUND_EXPR,
+                          TREE_TYPE(call),
+                          list,
+                          build_int_cstu(TREE_TYPE(call), (uint64_t)known_len));
+    }
+
+    bool is_snprintf_chk =
+        fndecl_built_in_p(fn, BUILT_IN_SNPRINTF_CHK) || (external_sys && name == "__snprintf_chk");
+    bool is_snprintf = is_snprintf_chk || fndecl_built_in_p(fn, BUILT_IN_SNPRINTF) ||
+                       (external_sys && (name == "snprintf" || name == "__cket_snprintf"));
+    if (is_snprintf) {
+        int fmt_idx = is_snprintf_chk ? 4 : 2;
+        if (call_expr_nargs(call) <= fmt_idx)
+            return NULL_TREE;
+        QuantumReference buf_ref;
+        bool buf_q = resolve_quantum_reference(CALL_EXPR_ARG(call, 0), buf_ref);
+        bool any_q = buf_q;
+        for (int i = fmt_idx + 1; i < call_expr_nargs(call); ++i)
+            any_q |= has_quantum(CALL_EXPR_ARG(call, i));
+        if (!any_q)
+            return NULL_TREE;
+        std::string fmt;
+        if (!buf_q || !extract_string_literal(CALL_EXPR_ARG(call, fmt_idx), fmt)) {
+            error_at(at(call),
+                     "|c>: quantum snprintf requires checked buffer storage and a literal format");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        if (TYPE_READONLY(buf_ref.element_type) || buf_ref.leaves_per_element != 1 ||
+            !INTEGRAL_TYPE_P(buf_ref.element_type) || TYPE_PRECISION(buf_ref.element_type) != 8) {
+            error_at(at(call), "|c>: quantum snprintf requires mutable char storage");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        tree cap_cst = strip(fold(CALL_EXPR_ARG(call, 1)));
+        if (!cap_cst || TREE_CODE(cap_cst) != INTEGER_CST || !tree_fits_uhwi_p(cap_cst)) {
+            error_at(at(call), "|c>: quantum snprintf requires a constant capacity");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        uint64_t cap = tree_to_uhwi(cap_cst);
+        size_t pct = fmt.find('%');
+        if (pct == std::string::npos || pct + 1 >= fmt.size() ||
+            (fmt[pct + 1] != 'u' && fmt[pct + 1] != 'd') ||
+            fmt.find('%', pct + 2) != std::string::npos || call_expr_nargs(call) != fmt_idx + 2) {
+            error_at(at(call),
+                     "%s",
+                     "|c>: quantum snprintf currently supports a single %u or %d integer field");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        std::string prefix_lit = fmt.substr(0, pct), suffix_lit = fmt.substr(pct + 2);
+        uint64_t needed = prefix_lit.size() + 1 + suffix_lit.size() + 1;
+        if (cap < needed || buf_ref.offset < 0 ||
+            (uint64_t)buf_ref.offset + needed > buf_ref.elements.size()) {
+            error_at(at(call), "|c>: quantum snprintf exceeds buffer capacity or bounds");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        tree val = expand_quantum_program(CALL_EXPR_ARG(call, fmt_idx + 1));
+        tree ctype = TYPE_MAIN_VARIANT(buf_ref.element_type);
+        tree list = alloc_stmt_list();
+        size_t pos = (size_t)buf_ref.offset;
+        auto emit_byte = [&](tree bval) {
+            tree dst = buf_ref.elements[pos++];
+            append(&list,
+                   expand_quantum_program(build2_loc(at(call),
+                                                     MODIFY_EXPR,
+                                                     TREE_TYPE(dst),
+                                                     dst,
+                                                     fold_convert(TREE_TYPE(dst), bval))));
+        };
+        for (char ch : prefix_lit)
+            emit_byte(build_int_cst(ctype, (unsigned char)ch));
+        tree digit =
+            fold_build2_loc(at(call),
+                            PLUS_EXPR,
+                            ctype,
+                            fold_convert(ctype, build_int_cst(unsigned_char_type_node, '0')),
+                            fold_convert(ctype, val));
+        emit_byte(digit);
+        for (char ch : suffix_lit)
+            emit_byte(build_int_cst(ctype, (unsigned char)ch));
+        emit_byte(build_zero_cst(ctype));
+        return build2_loc(at(call),
+                          COMPOUND_EXPR,
+                          TREE_TYPE(call),
+                          list,
+                          build_int_cst(TREE_TYPE(call), (int)(needed - 1)));
+    }
+
+    if ((fndecl_built_in_p(fn, BUILT_IN_SSCANF) ||
+         (external_sys && (name == "sscanf" || name == "__cket_sscanf"))) &&
+        call_expr_nargs(call) >= 3) {
+        QuantumReference buf_ref;
+        bool buf_q = resolve_quantum_reference(CALL_EXPR_ARG(call, 0), buf_ref);
+        if (!buf_q)
+            return NULL_TREE;
+        std::string fmt;
+        if (!extract_string_literal(CALL_EXPR_ARG(call, 1), fmt)) {
+            error_at(at(call), "|c>: quantum sscanf requires a literal format");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        size_t pct = fmt.find('%');
+        if (pct == std::string::npos || pct + 1 >= fmt.size() ||
+            (fmt[pct + 1] != 'u' && fmt[pct + 1] != 'd') ||
+            fmt.find('%', pct + 2) != std::string::npos || call_expr_nargs(call) != 3) {
+            error_at(at(call),
+                     "%s",
+                     "|c>: quantum sscanf currently supports a single %u or %d output field");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        QuantumReference out_ref;
+        if (!resolve_quantum_reference(CALL_EXPR_ARG(call, 2), out_ref) || out_ref.offset < 0 ||
+            (size_t)out_ref.offset >= out_ref.elements.size() ||
+            TYPE_READONLY(out_ref.element_type)) {
+            error_at(at(call), "|c>: quantum sscanf requires a mutable scalar output borrow");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        std::string prefix_lit = fmt.substr(0, pct);
+        if (buf_ref.offset < 0 ||
+            (uint64_t)buf_ref.offset + prefix_lit.size() + 1 > buf_ref.elements.size() ||
+            buf_ref.leaves_per_element != 1 || !INTEGRAL_TYPE_P(buf_ref.element_type) ||
+            TYPE_PRECISION(buf_ref.element_type) != 8) {
+            error_at(at(call), "|c>: quantum sscanf input buffer bounds are too small");
+            return build_zero_cst(TREE_TYPE(call));
+        }
+        tree match = boolean_true_node;
+        for (size_t k = 0; k < prefix_lit.size(); ++k) {
+            tree ch_elem = buf_ref.elements[(size_t)buf_ref.offset + k];
+            tree eq =
+                fold_build2_loc(at(call),
+                                EQ_EXPR,
+                                boolean_type_node,
+                                fold_convert(integer_type_node, ch_elem),
+                                build_int_cst(integer_type_node, (unsigned char)prefix_lit[k]));
+            match = fold_build2_loc(at(call), TRUTH_ANDIF_EXPR, boolean_type_node, match, eq);
+        }
+        tree digit_elem = buf_ref.elements[(size_t)buf_ref.offset + prefix_lit.size()];
+        tree digit_i = fold_convert(integer_type_node, digit_elem);
+        tree ge0 = fold_build2_loc(
+            at(call), GE_EXPR, boolean_type_node, digit_i, build_int_cst(integer_type_node, '0'));
+        tree le9 = fold_build2_loc(
+            at(call), LE_EXPR, boolean_type_node, digit_i, build_int_cst(integer_type_node, '9'));
+        match = fold_build2_loc(
+            at(call),
+            TRUTH_ANDIF_EXPR,
+            boolean_type_node,
+            match,
+            fold_build2_loc(at(call), TRUTH_ANDIF_EXPR, boolean_type_node, ge0, le9));
+        tree parsed = fold_build2_loc(
+            at(call),
+            MINUS_EXPR,
+            TREE_TYPE(out_ref.elements[(size_t)out_ref.offset]),
+            fold_convert(TREE_TYPE(out_ref.elements[(size_t)out_ref.offset]), digit_elem),
+            build_int_cst(TREE_TYPE(out_ref.elements[(size_t)out_ref.offset]), '0'));
+        tree out_var = out_ref.elements[(size_t)out_ref.offset];
+        tree write =
+            fold_build3_loc(at(call), COND_EXPR, TREE_TYPE(out_var), match, parsed, out_var);
+        tree stmt = expand_quantum_program(
+            build2_loc(at(call), MODIFY_EXPR, TREE_TYPE(out_var), out_var, write));
+        tree list = alloc_stmt_list();
+        append(&list, stmt);
+        tree count_val = fold_build3_loc(at(call),
+                                         COND_EXPR,
+                                         TREE_TYPE(call),
+                                         match,
+                                         build_int_cst(TREE_TYPE(call), 1),
+                                         build_zero_cst(TREE_TYPE(call)));
+        return build2_loc(at(call), COMPOUND_EXPR, TREE_TYPE(call), list, count_val);
+    }
+
+    return NULL_TREE;
+}
+
+tree expand_extra_stdlib_relation(tree) {
+    return NULL_TREE;
 }

@@ -72,11 +72,12 @@ versions. Synthesis work has its own additional cost. Resource reports include c
 history qubits, already counted in the logical/ancillary totals. Known-basis cleanup may reduce the
 current history while leaving the recorded peak unchanged.
 
-The backend represents at most 128 physical qubits and the native statevector at most 24. A
-table-free circuit can require more private work than the bounded table route, so passing a native
-execution does not certify the same program's table-free resource budget. Wider generation is
-reported separately from complete-state execution. Histories are never discarded to fit these
-limits; failures are explicit **R** resource contracts.
+Baseline `5c5a965` represents at most 128 physical qubits (expanded to 1024 in Wave 1A engine
+`QC_MAX_PHYSICAL`, pending Wave 1B/2) and the native dense statevector at most 24. A table-free
+circuit can require more private work than the bounded table route, so passing a native execution
+does not certify the same program's table-free resource budget. Wider generation is reported
+separately from complete-state execution. Histories are never discarded to fit these limits;
+failures are explicit **R** resource contracts.
 
 Structured coherent branch versions follow the [selected-value contract](c11-control.md), including
 escaping predicate lifetimes. [Structured CPU scalar joins](c11-cpu-control.md) transfer the

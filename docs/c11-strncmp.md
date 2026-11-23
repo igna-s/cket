@@ -16,8 +16,9 @@ locale-sensitive string comparison.
 The count and offsets must be constant and all counted bytes must fit both checked objects. This
 conservative requirement also applies when a particular input would terminate earlier; it does not
 implement every otherwise-defined C call with a larger count. A zero count at a checked one-past
-address is allowed. The frontend bound is 64 bytes; expression, gate, 128-qubit circuit
-representation and 24-qubit native simulation bounds apply separately.
+address is allowed. The frontend bound is 64 bytes; expression, gate, baseline 128-qubit circuit
+representation (`5c5a965`; 1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending Wave 1B/2) and 24-qubit
+native dense simulation bounds apply separately.
 
 CPU snapshots capture actual current bytes once, with disabled loads after the CPU operand's own
 NUL. The inverse reuses the captured values after CPU mutation. All enabled captures must access

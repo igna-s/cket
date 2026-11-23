@@ -218,7 +218,7 @@ static void invalid_cases(void) {
         {"global quantum storage",
          "#include <quantum.h>\nquant uint8_t x;\nint main(void){return 0;}\n"},
         {"quantum floating pointer parameter",
-         "#include <quantum.h>\nvoid f(quant float *x){}\nint main(void){return 0;}\n"},
+         "#include <quantum.h>\nvoid f(quant long double *x){}\nint main(void){return 0;}\n"},
     };
 
     for (size_t i = 0; i < sizeof cases / sizeof *cases; ++i) {

@@ -379,13 +379,16 @@ def main() -> None:
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     compiler_root = args.compiler_root.resolve()
+    base_env = dict(os.environ, CC='gcc-11', CKET_SIMULATOR='sparse', CKET_SEED='7')
+    if args.sanitized:
+        base_env.update(CC=str(compiler_root / 'build/gcc-wrapper'), CKET_REAL_GCC='gcc-11')
     records = []
 
     def run(command: list[str], label: str, *, env=None) -> subprocess.CompletedProcess:
         result = subprocess.run(
             command,
             cwd=compiler_root,
-            env=env,
+            env=base_env if env is None else env,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
@@ -464,7 +467,8 @@ def main() -> None:
             assert result.returncode == 0, result.stdout
             for tables in (0, 1):
                 env = dict(
-                    os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7', OWNERSHIP_TABLES=str(tables)
+                    base_env,
+                    OWNERSHIP_TABLES=str(tables),
                 )
                 result = run([str(binary)], case + level + f'-tables{tables}', env=env)
                 assert result.returncode == 0, result.stdout[-3000:]
@@ -519,7 +523,6 @@ def main() -> None:
             result = run(
                 [str(binary)],
                 case + level + '-run',
-                env=dict(os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7'),
             )
             assert result.returncode == 0, result.stdout
         for case, (body, diagnostic) in DOMAINS.items():
@@ -534,7 +537,6 @@ def main() -> None:
                 result = run(
                     [str(binary)],
                     case + level + '-run',
-                    env=dict(os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7'),
                 )
             diagnostics = (diagnostic,) if isinstance(diagnostic, str) else diagnostic
             assert result.returncode > 0 and any(

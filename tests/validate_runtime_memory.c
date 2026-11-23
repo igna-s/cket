@@ -96,6 +96,48 @@ int main(void) {
     require(c->physical == 1 && qc_amplitude(c, 0) == 1, "bound extent altered state", c);
     qc_destroy(c);
     ++checks;
+
+    c = qc_create_sparse(7, 64);
+    require(c != NULL, "quantum count cmemory context", c);
+    require(
+        qc_apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":1,\"signed\":false}", &result) &&
+            qc_apply(c, "{\"op\":\"qprepare\",\"id\":0,\"lower\":0,\"upper\":1}", &result) &&
+            qc_apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":64,\"signed\":false}", &result) &&
+            qc_apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":3}", &result),
+        "quantum count setup",
+        c);
+    size_t regs_before = c->nregisters, gates_before = c->ngates;
+    unsigned phys_before = c->physical;
+    const char *q_valid =
+        "{\"op\":\"cmemory\",\"count\":{\"op\":\"reg\",\"id\":1,\"bits\":64,\"signed\":false},\"limit\":4,\"overlap\":3}";
+    require(qc_apply(c, q_valid, &result), "proven 64-bit interval quantum count rejected", c);
+    require(c->physical == phys_before && c->nregisters == regs_before && c->ngates == gates_before,
+            "quantum count cmemory mutated state or gates",
+            c);
+    const char *q_bad_limit =
+        "{\"op\":\"cmemory\",\"count\":{\"op\":\"reg\",\"id\":1,\"bits\":64,\"signed\":false},\"limit\":2}";
+    require(!qc_apply(c, q_bad_limit, &result) && *qc_error(c),
+            "out-of-bounds quantum count interval accepted",
+            c);
+    qc_destroy(c);
+    ++checks;
+
+    c = prepared(1);
+    require(qc_apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":4,\"signed\":false}", &result) &&
+                qc_apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":3}", &result),
+            "guarded quantum count setup",
+            c);
+    const char *q_guarded_ok =
+        "{\"op\":\"cmemory\",\"count\":{\"op\":\"select\",\"bits\":64,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false},{\"op\":\"cast\",\"bits\":64,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":1,\"bits\":4,\"signed\":false}]},{\"op\":\"const\",\"bits\":64,\"signed\":false,\"value\":60}]},\"limit\":3,\"controls\":[{\"id\":0,\"value\":1}]}";
+    require(qc_apply(c, q_guarded_ok, &result), "active-arm bounded quantum count rejected", c);
+    const char *q_guarded_bad =
+        "{\"op\":\"cmemory\",\"count\":{\"op\":\"cast\",\"bits\":64,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":1,\"bits\":4,\"signed\":false}]},\"limit\":3,\"overlap\":2,\"controls\":[{\"id\":0,\"value\":1}]}";
+    require(!qc_apply(c, q_guarded_bad, &result) &&
+                strstr(qc_error(c), "overlapping quantum memcpy"),
+            "active superposition overlap violation missed",
+            c);
+    qc_destroy(c);
+    ++checks;
     printf(
         "%u runtime memory preflight contracts passed; schemas, bounds, overlap, typed binding and inactive controls checked before mutation.\n",
         checks);

@@ -43,10 +43,10 @@ static uint64_t full_mask(unsigned width) {
 
 static qc_mask bits(qc_context *c, uint32_t id, uint64_t value) {
     qc_register *r = qc_lookup(c, id);
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned i = 0; i < r->width; ++i)
         if ((value >> i) & 1)
-            result |= QC_WIRE(r->wires[i]);
+            result = qc_mask_or(result, QC_WIRE(r->wires[i]));
     return result;
 }
 
@@ -54,7 +54,7 @@ static uint64_t read_bits(qc_context *c, uint32_t id, qc_mask basis) {
     qc_register *r = qc_lookup(c, id);
     uint64_t value = 0;
     for (unsigned i = 0; i < r->width; ++i)
-        value |= (uint64_t)((basis >> r->wires[i]) & 1) << i;
+        value |= (uint64_t)qc_mask_test(basis, r->wires[i]) << i;
     return value;
 }
 
@@ -132,7 +132,7 @@ static void state(qc_context *c,
         uint64_t low, high;
         double complex amplitude;
         require(qc_sparse_entry(c, row, &low, &high, &amplitude), "state row", c);
-        qc_mask actual = ((qc_mask)high << 64) | low;
+        qc_mask actual = qc_mask_from_u128(low, high);
         unsigned a = (unsigned)read_bits(c, 2, actual), x = (unsigned)read_bits(c, 3, actual),
                  flag = (unsigned)read_bits(c, 4, actual);
         int active = mode == 0 || (mode == 1 ? flag : mode == 2 ? !flag : flag && !a);
@@ -145,10 +145,14 @@ static void state(qc_context *c,
             old = (~old) & full_mask(width);
         uint64_t value = patched && active ? (old & ~mask) | (x & mask) : old;
         uint64_t saved = patched && active && !cleaned ? old & mask : 0;
-        qc_mask expected = bits(c, 0, saved) | bits(c, 1, value) | bits(c, 2, a) | bits(c, 3, x) |
-                           bits(c, 4, flag) | bits(c, 5, derived ? b : 0);
+        qc_mask expected = bits(c, 0, saved);
+        expected = qc_mask_or(expected, bits(c, 1, value));
+        expected = qc_mask_or(expected, bits(c, 2, a));
+        expected = qc_mask_or(expected, bits(c, 3, x));
+        expected = qc_mask_or(expected, bits(c, 4, flag));
+        expected = qc_mask_or(expected, bits(c, 5, derived ? b : 0));
         double angle = .11 * a + .23 * (derived ? b : (b ^ sign)) + .41 * x + .17 * flag;
-        require(actual == expected && cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
+        require(qc_mask_eq(actual, expected) && cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
                 "phased joint state or private garbage",
                 c);
     }
@@ -235,7 +239,7 @@ static void quantum_mask_state(qc_context *c,
         uint64_t low, high;
         double complex amplitude;
         require(qc_sparse_entry(c, row, &low, &high, &amplitude), "quantum mask row", c);
-        qc_mask actual = ((qc_mask)high << 64) | low;
+        qc_mask actual = qc_mask_from_u128(low, high);
         unsigned a = (unsigned)read_bits(c, 2, actual), x = (unsigned)read_bits(c, 3, actual),
                  flag = (unsigned)read_bits(c, 4, actual),
                  choice = (unsigned)read_bits(c, 6, actual);
@@ -254,12 +258,18 @@ static void quantum_mask_state(qc_context *c,
             old = (~old) & full_mask(width);
         uint64_t value = active ? (old & ~mask) | (x & mask) : old;
         uint64_t saved = active && !(cleaned && derived) ? old & mask : 0;
-        qc_mask expected = bits(c, 0, saved) | bits(c, 1, value) | bits(c, 2, a) | bits(c, 3, x) |
-                           bits(c, 4, flag) | bits(c, 5, derived ? b : 0) | bits(c, 6, choice) |
-                           bits(c, 7, cleaned ? 0 : mask);
+        qc_mask expected = bits(c, 0, saved);
+        expected = qc_mask_or(expected, bits(c, 1, value));
+        expected = qc_mask_or(expected, bits(c, 2, a));
+        expected = qc_mask_or(expected, bits(c, 3, x));
+        expected = qc_mask_or(expected, bits(c, 4, flag));
+        expected = qc_mask_or(expected, bits(c, 5, derived ? b : 0));
+        expected = qc_mask_or(expected, bits(c, 6, choice));
+        expected = qc_mask_or(expected, bits(c, 7, cleaned ? 0 : mask));
         double angle =
             .11 * a + .23 * (derived ? b : (b ^ sign)) + .41 * x + .17 * flag + .19 * choice;
-        require(actual == expected && cabs(amplitude - cexp(I * angle) / sqrt(32.0)) < 1e-10,
+        require(qc_mask_eq(actual, expected) &&
+                    cabs(amplitude - cexp(I * angle) / sqrt(32.0)) < 1e-10,
                 "quantum mask phased state, history or private garbage",
                 c);
     }
@@ -362,7 +372,7 @@ static void derived_mask_inputs(void) {
                 uint64_t low, high;
                 double complex amplitude;
                 require(qc_sparse_entry(c, row, &low, &high, &amplitude), "derived mask row", c);
-                qc_mask actual = ((qc_mask)high << 64) | low;
+                qc_mask actual = qc_mask_from_u128(low, high);
                 unsigned a = (unsigned)read_bits(c, 2, actual),
                          x = (unsigned)read_bits(c, 3, actual),
                          flag = (unsigned)read_bits(c, 4, actual),
@@ -370,10 +380,14 @@ static void derived_mask_inputs(void) {
                 uint64_t old = b | ((uint64_t)a << 8);
                 if (sign)
                     old = (~old) & full_mask(width);
-                qc_mask expected = bits(c, 1, old & x) | bits(c, 2, a) | bits(c, 3, x) |
-                                   bits(c, 4, flag) | bits(c, 5, b);
+                qc_mask expected = bits(c, 1, old & x);
+                expected = qc_mask_or(expected, bits(c, 2, a));
+                expected = qc_mask_or(expected, bits(c, 3, x));
+                expected = qc_mask_or(expected, bits(c, 4, flag));
+                expected = qc_mask_or(expected, bits(c, 5, b));
                 double angle = .11 * a + .23 * b + .41 * x + .17 * flag;
-                require(actual == expected && cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
+                require(qc_mask_eq(actual, expected) &&
+                            cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
                         "derived mask cleanup changed phases or retained garbage",
                         c);
             }

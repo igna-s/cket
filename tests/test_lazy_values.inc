@@ -11,7 +11,7 @@ static void lazy_constant_contracts(void) {
             qc_allow_tables(c, tables);
             apply(c, "{\"op\":\"qalloc\",\"id\":0,\"width\":1}");
             apply(c, "{\"op\":\"qprepare\",\"id\":0,\"lower\":0,\"upper\":0}");
-            if (!qc_emit(c, QC_PHASE, 0, 0, 0, .19))
+            if (!qc_emit(c, QC_PHASE, 0, qc_mask_zero(), qc_mask_zero(), .19))
                 validation_fail("constant predicate phase failed");
             apply(c, "{\"op\":\"qalloc\",\"id\":1,\"width\":1,\"ancilla\":true}");
             const char *guard =

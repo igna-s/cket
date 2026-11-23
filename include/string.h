@@ -13,15 +13,17 @@ extern int __cket_memcmp(const void *left, const void *right, size_t count) __as
 
 extern void *__cket_memcpy(void *destination, const void *source, size_t count) __asm__("memcpy");
 #undef memcpy
-#define memcpy(destination, source, count) __cket_memcpy((destination), (source), (count))
+#define memcpy(destination, source, count) \
+    __cket_memcpy((void *)(destination), (const void *)(source), (count))
 
 extern void *__cket_memmove(void *destination, const void *source, size_t count) __asm__("memmove");
 #undef memmove
-#define memmove(destination, source, count) __cket_memmove((destination), (source), (count))
+#define memmove(destination, source, count) \
+    __cket_memmove((void *)(destination), (const void *)(source), (count))
 
 extern void *__cket_memset(void *destination, int value, size_t count) __asm__("memset");
 #undef memset
-#define memset(destination, value, count) __cket_memset((destination), (value), (count))
+#define memset(destination, value, count) __cket_memset((void *)(destination), (value), (count))
 
 extern char *__cket_strcpy(char *destination, const char *source) __asm__("strcpy");
 #undef strcpy
@@ -79,8 +81,22 @@ extern char *__cket_strstr(const char *string, const char *needle) __asm__("strs
 #undef strstr
 #define strstr(string, needle) __cket_strstr((string), (needle))
 
+extern char *__cket_strtok(char *string, const char *delimiters) __asm__("strtok");
+#undef strtok
+#define strtok(string, delimiters) __cket_strtok((string), (delimiters))
+
+extern int __cket_strcoll(const char *left, const char *right) __asm__("strcoll");
+#undef strcoll
+#define strcoll(left, right) __cket_strcoll((left), (right))
+
+extern size_t
+__cket_strxfrm(char *destination, const char *source, size_t count) __asm__("strxfrm");
+#undef strxfrm
+#define strxfrm(destination, source, count) __cket_strxfrm((destination), (source), (count))
+
 #undef memcmp
-#define memcmp(left, right, count) __cket_memcmp((left), (right), (count))
+#define memcmp(left, right, count) \
+    __cket_memcmp((const void *)(left), (const void *)(right), (count))
 #endif
 
 #endif

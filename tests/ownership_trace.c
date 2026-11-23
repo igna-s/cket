@@ -84,7 +84,16 @@ uint64_t __wrap___cket_apply(const char *operation) {
 }
 
 static void mask_json(qc_mask value) {
-    printf("\"0x%016" PRIx64 "%016" PRIx64 "\"", (uint64_t)(value >> 64), (uint64_t)value);
+    unsigned top = 1;
+    for (unsigned i = 15; i >= 2; --i)
+        if (value.w[i]) {
+            top = i;
+            break;
+        }
+    fputs("\"0x", stdout);
+    for (unsigned i = top + 1; i > 0; --i)
+        printf("%016" PRIx64, value.w[i - 1]);
+    putchar('"');
 }
 
 void ownership_checkpoint(const char *tag) {
@@ -123,14 +132,14 @@ void ownership_checkpoint(const char *tag) {
     }
     fputs("],\"state\":[", stdout);
     for (size_t row = 0; row < qc_sparse_size(observed); ++row) {
-        uint64_t low, high;
+        qc_mask basis = qc_mask_zero();
         double complex amplitude;
-        if (!qc_sparse_entry(observed, row, &low, &high, &amplitude))
+        if (!qc_sparse_entry_words(observed, row, basis.w, 16, &amplitude))
             fail_trace("cannot read recorded sparse state");
         if (row)
             putchar(',');
         putchar('[');
-        mask_json(((qc_mask)high << 64) | low);
+        mask_json(basis);
         printf(",%.17g,%.17g]", creal(amplitude), cimag(amplitude));
     }
     fputs("],\"gates\":[", stdout);

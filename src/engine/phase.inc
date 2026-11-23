@@ -32,7 +32,7 @@ static int phase_known_register(
                 *value = (unsigned)p->facts[i].value;
                 return 1;
             }
-    if (!r->definition || r->definition_mask)
+    if (!r->definition || qc_mask_any(r->definition_mask))
         return 0;
     for (unsigned i = 0; i < r->ndeps; ++i) {
         qc_register *input = reg(p->c, r->deps[i]);

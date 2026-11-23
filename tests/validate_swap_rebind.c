@@ -44,7 +44,9 @@ static qc_context *fixture(unsigned width, int sign, int masked) {
     if (negative_fixture) {
         qc_register *a = qc_lookup(c, 1);
         for (unsigned bit = 1; bit < width; ++bit)
-            require(qc_emit(c, QC_X, a->wires[bit], 0, 0, 0), "negative preparation", c);
+            require(qc_emit(c, QC_X, a->wires[bit], qc_mask_zero(), qc_mask_zero(), 0),
+                    "negative preparation",
+                    c);
         a->zero_mask = 0;
         a->support_interval = 0;
         a->uniform = 0;
@@ -103,10 +105,10 @@ static qc_context *fixture(unsigned width, int sign, int masked) {
 
 static qc_mask value_bits(qc_context *c, uint32_t id, unsigned value) {
     qc_register *r = qc_lookup(c, id);
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned i = 0; i < r->width; ++i)
         if ((value >> i) & 1)
-            result |= QC_WIRE(r->wires[i]);
+            result = qc_mask_or(result, QC_WIRE(r->wires[i]));
     return result;
 }
 
@@ -117,11 +119,11 @@ state(qc_context *c, unsigned width, int masked, unsigned swaps, unsigned mode, 
         uint64_t low, high;
         double complex amplitude;
         require(qc_sparse_entry(c, row, &low, &high, &amplitude), "state row", c);
-        qc_mask actual = ((qc_mask)high << 64) | low;
-        unsigned a = (unsigned)((actual >> qc_lookup(c, 1)->wires[0]) & 1);
-        unsigned b = (unsigned)((actual >> qc_lookup(c, 2)->wires[0]) & 1);
-        unsigned flag = (unsigned)((actual >> qc_lookup(c, 3)->wires[0]) & 1);
-        unsigned extra = (unsigned)((actual >> qc_lookup(c, 4)->wires[0]) & 1);
+        qc_mask actual = qc_mask_from_u128(low, high);
+        unsigned a = (unsigned)qc_mask_test(actual, qc_lookup(c, 1)->wires[0]);
+        unsigned b = (unsigned)qc_mask_test(actual, qc_lookup(c, 2)->wires[0]);
+        unsigned flag = (unsigned)qc_mask_test(actual, qc_lookup(c, 3)->wires[0]);
+        unsigned extra = (unsigned)qc_mask_test(actual, qc_lookup(c, 4)->wires[0]);
         int active = mode == 0 ? 1 : mode == 1 ? flag : mode == 2 ? !flag : flag && !extra;
         if (active && (swaps & 1)) {
             unsigned swap = a;
@@ -134,11 +136,13 @@ state(qc_context *c, unsigned width, int masked, unsigned swaps, unsigned mode, 
         double angle = .11 * a + .23 * b + .31 * flag + .19 * extra + .37 * (value & 1);
         unsigned now_a = active && (swaps & 1) ? b : old_a,
                  now_b = active && (swaps & 1) ? old_a : b;
-        qc_mask expected = value_bits(c, 1, now_a) | value_bits(c, 2, now_b) |
-                           value_bits(c, 3, flag) | value_bits(c, 4, extra);
+        qc_mask expected = value_bits(c, 1, now_a);
+        expected = qc_mask_or(expected, value_bits(c, 2, now_b));
+        expected = qc_mask_or(expected, value_bits(c, 3, flag));
+        expected = qc_mask_or(expected, value_bits(c, 4, extra));
         if (!inverse)
-            expected |= value_bits(c, 5, value);
-        require(actual == expected && cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
+            expected = qc_mask_or(expected, value_bits(c, 5, value));
+        require(qc_mask_eq(actual, expected) && cabs(amplitude - cexp(I * angle) / 4) < 1e-10,
                 "full phased joint state or private garbage",
                 c);
     }
@@ -218,7 +222,7 @@ static void complete_states(void) {
             mode == 1);
         apply(c, text);
         state(c, 1, 1, 1, mode, 0);
-        require(qc_lookup(c, 5)->definition_mask == 0,
+        require(!qc_mask_any(qc_lookup(c, 5)->definition_mask),
                 "old physical gate control was not transported",
                 c);
         apply(c, "{\"op\":\"quncompute\",\"id\":5,\"saved\":true}");
@@ -230,7 +234,9 @@ static void complete_states(void) {
 static void rejected_graph(int stale) {
     qc_context *c = fixture(1, 0, 0);
     if (stale) {
-        require(qc_emit(c, QC_X, qc_lookup(c, 1)->wires[0], 0, 0, 0), "stale fixture mutation", c);
+        require(qc_emit(c, QC_X, qc_lookup(c, 1)->wires[0], qc_mask_zero(), qc_mask_zero(), 0),
+                "stale fixture mutation",
+                c);
         ++qc_lookup(c, 1)->epoch;
     } else {
         apply(c, "{\"op\":\"qalloc\",\"id\":6,\"width\":1,\"signed\":false,\"ancilla\":true}");
@@ -271,7 +277,7 @@ static unsigned read_value(qc_context *c, qc_mask basis, uint32_t id) {
     qc_register *r = qc_lookup(c, id);
     unsigned value = 0;
     for (unsigned bit = 0; bit < r->width; ++bit)
-        value |= (unsigned)((basis >> r->wires[bit]) & 1) << bit;
+        value |= (unsigned)qc_mask_test(basis, r->wires[bit]) << bit;
     return value;
 }
 
@@ -288,7 +294,9 @@ static void partial_exchanges(void) {
             for (unsigned id = 1; id <= 2; ++id) {
                 unsigned bit = id == 1 ? 2 : 1;
                 qc_register *r = qc_lookup(c, id);
-                require(qc_emit(c, QC_H, r->wires[bit], 0, 0, 0), "untouched bit", c);
+                require(qc_emit(c, QC_H, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0),
+                        "untouched bit",
+                        c);
                 r->zero_mask &= ~(UINT64_C(1) << bit);
                 r->support_interval = r->uniform = 0;
                 ++r->epoch;
@@ -323,7 +331,7 @@ static void partial_exchanges(void) {
                     uint64_t low, high;
                     double complex amplitude;
                     require(qc_sparse_entry(c, row, &low, &high, &amplitude), "partial row", c);
-                    qc_mask actual = ((qc_mask)high << 64) | low;
+                    qc_mask actual = qc_mask_from_u128(low, high);
                     unsigned a = read_value(c, actual, 1), b = read_value(c, actual, 2),
                              flag = read_value(c, actual, 3);
                     int active = mode == 0 || (mode == 1 ? flag : !flag);
@@ -336,10 +344,11 @@ static void partial_exchanges(void) {
                     double angle = .11 * (old_a & 1) + .23 * ((old_a >> 2) & 1) +
                                    .31 * (old_b & 1) + .19 * ((old_b >> 1) & 1) + .37 * flag +
                                    .41 * (saved & 1);
-                    qc_mask expected = value_bits(c, 1, a) | value_bits(c, 2, b) |
-                                       value_bits(c, 3, flag) |
-                                       value_bits(c, 5, inverse ? 0 : saved);
-                    require(actual == expected &&
+                    qc_mask expected = value_bits(c, 1, a);
+                    expected = qc_mask_or(expected, value_bits(c, 2, b));
+                    expected = qc_mask_or(expected, value_bits(c, 3, flag));
+                    expected = qc_mask_or(expected, value_bits(c, 5, inverse ? 0 : saved));
+                    require(qc_mask_eq(actual, expected) &&
                                 cabs(amplitude - cexp(I * angle) / sqrt(32.0)) < 1e-10,
                             "partial swap lost an untouched phase or inverse",
                             c);

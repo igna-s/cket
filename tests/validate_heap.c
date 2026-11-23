@@ -24,9 +24,11 @@ static void prepare(qc_context *c, uint32_t id, unsigned low, unsigned high) {
     require(r && r->clean && (!low || low == high), "test input domain");
     for (unsigned bit = 0; bit < r->width; ++bit) {
         if (low == high && ((low >> bit) & 1))
-            require(qc_emit(c, QC_X, r->wires[bit], 0, 0, 0), "basis preparation");
+            require(qc_emit(c, QC_X, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0),
+                    "basis preparation");
         if (low != high && ((high >> bit) & 1))
-            require(qc_emit(c, QC_H, r->wires[bit], 0, 0, 0), "superposition preparation");
+            require(qc_emit(c, QC_H, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0),
+                    "superposition preparation");
     }
     r->clean = low == high && !low;
     r->basis_known = low == high;
@@ -57,7 +59,7 @@ static void resize_states(void) {
     prepare(c, first, 0, 3);
     prepare(c, second, 9, 9);
     unsigned wire = qc_lookup(c, first)->wires[0], other = qc_lookup(c, second)->wires[0];
-    qc_mask mask = QC_WIRE(wire) | QC_WIRE(wire + 1);
+    qc_mask mask = qc_mask_or(QC_WIRE(wire), QC_WIRE(wire + 1));
     require(qc_emit(c, QC_PHASE, 0, mask, mask, .31), "relative phase");
     state(c, wire, other, 9, .31);
     require(qc_heap_resize(c, heap, 3), "grow");
@@ -110,17 +112,27 @@ static void resources(void) {
     uint64_t heap = qc_heap_allocate(c, 2, 16, 0);
     uint32_t first, after;
     require(heap && qc_heap_element(c, heap, 0, &first), "resource allocation");
-    require(!qc_heap_resize(c, heap, 9) && !*qc_error(c),
+    require(!qc_heap_resize(c, heap, QC_MAX_PHYSICAL / 16 + 1) && !*qc_error(c),
             "failed grow is a nonpoisoning resource result");
     require(qc_heap_count(c, heap) == 2 && qc_heap_element(c, heap, 0, &after) && first == after,
             "failed grow preserves old owner and extent");
-    require(!qc_heap_allocate(c, 65, 1, 0) && !*qc_error(c), "bounded capacity");
+    require(!qc_heap_allocate(c, QC_MAX_PHYSICAL + 1, 1, 0) && !*qc_error(c),
+            "bounded physical capacity");
     require(qc_heap_free(c, heap), "release zero payload");
     for (unsigned repeat = 0; repeat < 32; ++repeat) {
         heap = qc_heap_allocate(c, 64, 1, 0);
         require(heap && qc_heap_free(c, heap), "repeated allocations reuse clean wires");
     }
     require(c->nregisters <= 66 && c->physical <= 64, "metadata and physical identity reuse");
+    uint64_t wide_heap = qc_heap_allocate(c, 128, 1, 0);
+    require(wide_heap && qc_heap_count(c, wide_heap) == 128 && c->physical >= 128,
+            "sparse heap scales dynamically beyond 64 elements");
+    require(qc_heap_free(c, wide_heap), "release wide dynamic heap");
+    qc_context *dense = qc_create(1, 7);
+    require(dense != NULL, "dense context");
+    require(!qc_heap_allocate(dense, QC_MAX_SIMULATED + 1, 1, 0) && !*qc_error(dense),
+            "dense heap remains bounded by simulated qubit budget");
+    qc_destroy(dense);
     require(!c->measure && !c->reset, "resource paths have no channels");
     qc_destroy(c);
 }
@@ -180,6 +192,7 @@ int main(void) {
     malformed_byte_memory();
     bound_heap_byte_states();
     malformed_transfer_memory();
+    bool_and_quantum_count_memory();
     printf(
         "%u heap checks passed; dynamic identities, complete phased states, saved inverses, retained outputs and resource failure have separate scopes.\n",
         checks);

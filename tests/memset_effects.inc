@@ -120,7 +120,7 @@ static void memset_effect_controlled(qc_context *c, unsigned profile, const unsi
     for (size_t i = 0; i < c->ngates; ++i) {
         const qc_gate *g = &c->gates[i];
         if (g->kind == QC_H) {
-            if (prepared >= 2 || g->target != prepared || g->mask)
+            if (prepared >= 2 || g->target != prepared || qc_mask_any(g->mask))
                 validation_fail("unexpected controlled value-effect preparation");
             for (unsigned label = 0; label < 4; ++label)
                 states[label] |= (size_t)((label >> prepared) & 1) << g->target;
@@ -130,7 +130,7 @@ static void memset_effect_controlled(qc_context *c, unsigned profile, const unsi
         if (g->kind != QC_X && g->kind != QC_PHASE)
             validation_fail("implicit channel in controlled value-effect prefix");
         for (unsigned label = 0; label < 4; ++label)
-            if ((states[label] & g->mask) == g->pattern) {
+            if (qc_mask_eq(qc_mask_and(qc_mask_from_u64(states[label]), g->mask), g->pattern)) {
                 if (g->kind == QC_X)
                     states[label] ^= (size_t)1 << g->target;
                 else
@@ -179,7 +179,7 @@ static void memset_effect_controlled(qc_context *c, unsigned profile, const unsi
         if (g->kind == QC_H)
             continue;
         for (unsigned label = 0; label < 4; ++label)
-            if ((states[label] & g->mask) == g->pattern) {
+            if (qc_mask_eq(qc_mask_and(qc_mask_from_u64(states[label]), g->mask), g->pattern)) {
                 if (g->kind == QC_X)
                     states[label] ^= (size_t)1 << g->target;
                 else

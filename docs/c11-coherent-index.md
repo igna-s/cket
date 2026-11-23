@@ -30,10 +30,14 @@ path. `measure(values[index])` with a quantum index can explicitly observe the c
 it does not measure or consume every candidate owner. Reset/Fourier of that computed selection
 remain unsupported storage operations. [Checked pointer borrows](c11-buffer-functions.md) now
 recover the element index before canonical pointer-byte scaling; their nonnegative index is bounded
-by the remaining owner range. General pointer arithmetic, negative indices into an offset borrow,
-nested products, dynamic allocation/counts, address escape, general mutable pointer ABI, effectful
-indices and further loop/lifetime combinations also remain pending. Pure private value programs can
-compose as indices or assignment values; CPU side effects require sequencing.
+by the remaining owner range. Subsequent integration at `5c5a965`
+([`full-ci-everyday-profile-v1`](audit-evidence/full-ci-everyday-profile-v1/README.es.md))
+additionally supports multi-axis indexing (`m[q_i][q_j]`), struct-array members (`t[q_i].arr[q_j]`)
+and checked search-pointer offsets (`p[q_i]`, `*(p + q_i)`). General pointer arithmetic, negative
+indices into an offset borrow, general nested pointer layouts, dynamic allocation/counts, address
+escape, general mutable pointer ABI, effectful indices and further loop/lifetime combinations also
+remain pending. Pure private value programs can compose as indices or assignment values; CPU side
+effects require sequencing.
 
 [`quantum_index.c`](../examples/blocks/04/quantum_index.c) provides a source example of reads,
 assignment values and postfix updates. `bash scripts/run-block.sh 04` supplies its native/export

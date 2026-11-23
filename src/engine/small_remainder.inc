@@ -42,7 +42,7 @@ static int ar_modular_swap(
 static int ar_modular_add(
     ar_builder *p, const ar_value *value, unsigned modulus, unsigned amount, ar_bit control) {
     unsigned char visited[AR_SMALL_MODULUS] = {0};
-    if (!amount || (!control.wire && !control.inverted))
+    if (!amount || (!qc_mask_any(control.wire) && !control.inverted))
         return 1;
     for (unsigned first = 0; first < modulus; ++first) {
         if (visited[first])

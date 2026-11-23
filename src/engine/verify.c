@@ -37,6 +37,62 @@ static int unsigned_field(qc_context *c, const cj_doc *d, int obj, const char *k
     return 1;
 }
 
+int qc_interval_bound(qc_context *c,
+                      const cj_doc *d,
+                      int obj,
+                      const char *key,
+                      unsigned width,
+                      int signed_type,
+                      uint64_t *out) {
+    if (width < 1 || width > 64)
+        return qc_fail(c, "invalid interval bit width");
+    int t = cj_get(d, obj, key);
+    if (t < 0)
+        return qc_fail(c, "missing integer bound: %s", key);
+    uint64_t v = 0;
+    if (signed_type == 1) {
+        if ((d->tokens[t].kind != '-' && (d->tokens[t].kind < '0' || d->tokens[t].kind > '9')) ||
+            !cj_u64(d, t, &v))
+            return qc_fail(c, "missing or invalid signed integer bound: %s", key);
+        if (d->tokens[t].kind == '-') {
+            int64_t min_s = width == 64 ? INT64_MIN : -(int64_t)(UINT64_C(1) << (width - 1));
+            if ((int64_t)v < min_s)
+                return qc_fail(c, "preparation interval is outside the C integer register");
+        } else {
+            if (v > mask_bits(width))
+                return qc_fail(c, "preparation interval is outside the C integer register");
+            if (v & (UINT64_C(1) << (width - 1)))
+                v |= ~mask_bits(width);
+        }
+    } else if (d->tokens[t].kind < '0' || d->tokens[t].kind > '9' || !cj_u64(d, t, &v) ||
+               v > mask_bits(width))
+        return qc_fail(c, "preparation interval is outside the C integer register");
+    *out = v;
+    return 1;
+}
+
+int qc_interval_ordered(int signed_type, uint64_t low, uint64_t high) {
+    return signed_type == 1 ? ((int64_t)low <= (int64_t)high) : (low <= high);
+}
+
+int qc_search_attempts(qc_context *c, const cj_doc *d, int inst, uint64_t *out) {
+    int t = cj_get(d, inst, "attempts");
+    if (t >= 0 && d->tokens[t].kind >= '0' && d->tokens[t].kind <= '9') {
+        if (!cj_u64(d, t, out) || !*out || *out > 4096)
+            return qc_fail(c, "invalid search attempt budget");
+        return 1;
+    }
+    if (t >= 0 && d->tokens[t].kind == '{') {
+        int op = cj_get(d, t, "op"), value = cj_get(d, t, "value");
+        if (!qc_verify_expression(c, d, t) || !cj_equal(d, op, "const") || value < 0 ||
+            d->tokens[value].kind < '0' || d->tokens[value].kind > '9' || !cj_u64(d, value, out) ||
+            !*out || *out > 4096)
+            return qc_fail(c, "invalid search attempt budget");
+        return 1;
+    }
+    return qc_fail(c, "invalid search attempt budget");
+}
+
 static int boolean_field(qc_context *c, const cj_doc *d, int obj, const char *key, int optional) {
     int t = cj_get(d, obj, key);
     if (t < 0 && optional)
@@ -54,13 +110,14 @@ static int string_field(qc_context *c, const cj_doc *d, int obj, const char *key
 static int same_type(const cj_doc *d, int a, int b) {
     uint64_t ab = 0, bb = 0;
     return cj_u64(d, cj_get(d, a, "bits"), &ab) && cj_u64(d, cj_get(d, b, "bits"), &bb) &&
-           ab == bb && cj_bool(d, cj_get(d, a, "signed")) == cj_bool(d, cj_get(d, b, "signed"));
+           ab == bb && cj_bool(d, cj_get(d, a, "signed")) == cj_bool(d, cj_get(d, b, "signed")) &&
+           cj_bool(d, cj_get(d, a, "float")) == cj_bool(d, cj_get(d, b, "float"));
 }
 
 static int truth_valued(const cj_doc *d, int e) {
     uint64_t bits = 0;
     cj_u64(d, cj_get(d, e, "bits"), &bits);
-    if (bits == 1)
+    if (bits == 1 && !cj_bool(d, cj_get(d, e, "float")))
         return 1;
     int op = cj_get(d, e, "op");
     if (cj_equal(d, op, "cast")) {
@@ -68,7 +125,22 @@ static int truth_valued(const cj_doc *d, int e) {
         if (args >= 0 && d->tokens[args].kind == '[' && d->tokens[args].children == 1)
             return truth_valued(d, args + 1);
     }
-    const char *ops[] = {"eq", "ne", "lt", "le", "gt", "ge", "not", "land", "lor", NULL};
+    const char *ops[] = {"eq",
+                         "ne",
+                         "lt",
+                         "le",
+                         "gt",
+                         "ge",
+                         "feq",
+                         "fne",
+                         "flt",
+                         "fle",
+                         "fgt",
+                         "fge",
+                         "not",
+                         "land",
+                         "lor",
+                         NULL};
     for (unsigned i = 0; ops[i]; ++i)
         if (cj_equal(d, op, ops[i]))
             return 1;
@@ -103,20 +175,25 @@ int qc_verify_ctype_profile(qc_context *c, const cj_doc *d, int e, int mapping) 
 }
 
 static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned depth) {
-    if (depth > 128 || d->count > 100000)
+    if (depth > 128 || (e >= 0 && e < d->count && d->tokens[e].next - e > 100000))
         return qc_fail(c, "quantum expression complexity budget exceeded");
-    static const char *const leaf[] = {"op", "bits", "signed", "value", NULL};
-    static const char *const source[] = {"op", "bits", "signed", "id", "active", "known", NULL};
-    static const char *const composite[] = {"op", "bits", "signed", "args", NULL};
+    static const char *const leaf[] = {"op", "bits", "signed", "float", "value", NULL};
+    static const char *const source[] = {
+        "op", "bits", "signed", "float", "id", "active", "known", NULL};
+    static const char *const composite[] = {"op", "bits", "signed", "float", "args", NULL};
     static const char *const character[] = {"op", "bits", "signed", "args", "profile", NULL};
     if (e < 0 || e >= d->count || d->tokens[e].kind != '{')
         return qc_fail(c, "invalid typed quantum expression");
     int op = cj_get(d, e, "op");
     uint64_t bits;
     if (!string_field(c, d, e, "op", 0) || !unsigned_field(c, d, e, "bits", &bits) || !bits ||
-        bits > 64 || !boolean_field(c, d, e, "signed", 0))
+        bits > 64 || !boolean_field(c, d, e, "signed", 0) || !boolean_field(c, d, e, "float", 1))
         return qc_fail(c, "invalid quantum expression type");
     int sign = cj_bool(d, cj_get(d, e, "signed"));
+    int is_float = cj_bool(d, cj_get(d, e, "float"));
+    if (is_float && ((bits != 32 && bits != 64) || sign))
+        return qc_fail(
+            c, "floating-point quantum expressions require unsigned 32-bit or 64-bit encoding");
     if (bits == 1 && sign)
         return qc_fail(c, "one-bit quantum values use unsigned bool representation");
     if (cj_equal(d, op, "const")) {
@@ -126,7 +203,7 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
             return qc_fail(c, "invalid quantum constant");
         if (d->tokens[t].kind == '-') {
             uint64_t minimum = (uint64_t)(-((__int128)1 << ((unsigned)bits - 1)));
-            if (!sign || v < minimum)
+            if (is_float || !sign || v < minimum)
                 return qc_fail(c, "negative constant is outside its signed C type");
         } else if ((sign && v >= (UINT64_C(1) << ((unsigned)bits - 1))) ||
                    (!sign && v > mask_bits((unsigned)bits)))
@@ -140,7 +217,8 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
         if (id > UINT32_MAX)
             return qc_fail(c, "quantum source identifier is out of range");
         qc_register *r = qc_lookup(c, (uint32_t)id);
-        if (!r || !r->alive || r->width != bits || (r->signed_type >= 0 && r->signed_type != sign))
+        if (!r || !r->alive || r->width != bits ||
+            (r->signed_type >= 0 && r->signed_type != sign) || r->float_type != is_float)
             return qc_fail(c, "unavailable or mistyped quantum source");
         if (cj_get(d, e, "active") >= 0 && !unsigned_field(c, d, e, "active", &active))
             return 0;
@@ -180,36 +258,68 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
     if (!fields(c, d, e, character_op ? character : composite))
         return 0;
     int arity = 0, matching = 0, comparison = 0, shift = 0;
-    int ctype = 0;
-    const char *unary[] = {"cast",          "neg",           "bnot",
-                           "not",           "abs",           "uabs",
-                           "ctype_isalnum", "ctype_isalpha", "ctype_isblank",
-                           "ctype_iscntrl", "ctype_isdigit", "ctype_isgraph",
-                           "ctype_islower", "ctype_isprint", "ctype_ispunct",
-                           "ctype_isspace", "ctype_isupper", "ctype_isxdigit",
-                           "ctype_tolower", "ctype_toupper", NULL};
-    const char *binary[] = {"add",  "sub", "mul",  "div", "mod",      "band", "bor",
-                            "bxor", "shl", "shr",  "eq",  "ne",       "lt",   "le",
-                            "gt",   "ge",  "land", "lor", "sequence", NULL};
+    int ctype = 0, float_only = 0, float_args = 0, allow_float_result = 0, allow_float_args = 0;
+    const char *unary[] = {"cast",
+                           "neg",
+                           "bnot",
+                           "not",
+                           "abs",
+                           "uabs",
+                           "fneg",
+                           "fabs",
+                           "ctype_isalnum",
+                           "ctype_isalpha",
+                           "ctype_isblank",
+                           "ctype_iscntrl",
+                           "ctype_isdigit",
+                           "ctype_isgraph",
+                           "ctype_islower",
+                           "ctype_isprint",
+                           "ctype_ispunct",
+                           "ctype_isspace",
+                           "ctype_isupper",
+                           "ctype_isxdigit",
+                           "ctype_tolower",
+                           "ctype_toupper",
+                           NULL};
+    const char *binary[] = {"add",  "sub",  "mul",  "div",  "mod",      "band", "bor", "bxor",
+                            "shl",  "shr",  "eq",   "ne",   "lt",       "le",   "gt",  "ge",
+                            "fadd", "fsub", "fmul", "fdiv", "feq",      "fne",  "flt", "fle",
+                            "fgt",  "fge",  "land", "lor",  "sequence", NULL};
     for (unsigned i = 0; unary[i]; ++i)
         if (cj_equal(d, op, unary[i])) {
             arity = 1;
-            matching = i == 1 || i == 2 || i == 4;
-            ctype = i >= 6;
+            matching = i == 1 || i == 2 || i == 4 || i == 6 || i == 7;
+            float_only = i == 6 || i == 7;
+            float_args = float_only;
+            allow_float_result = i == 0;
+            allow_float_args = i == 0 || i == 3;
+            ctype = i >= 8;
             if (ctype && (bits != 32 || !sign))
                 return qc_fail(c, "ctype result requires the declared signed int representation");
         }
     for (unsigned i = 0; binary[i]; ++i)
         if (cj_equal(d, op, binary[i])) {
             arity = 2;
-            matching = i < 8;
+            matching = i < 8 || (i >= 16 && i < 20);
             shift = i == 8 || i == 9;
-            comparison = i >= 10 && i < 16;
+            comparison = (i >= 10 && i < 16) || (i >= 20 && i < 26);
+            float_only = i >= 16 && i < 20;
+            float_args = i >= 16 && i < 26;
+            allow_float_result = i == 28;
+            allow_float_args = i >= 26;
         }
-    if (cj_equal(d, op, "select"))
+    if (cj_equal(d, op, "select")) {
         arity = 3;
+        allow_float_result = 1;
+        allow_float_args = 1;
+    }
     if (!arity)
         return qc_fail(c, "unsupported operator in typed Quantum IR");
+    if (is_float && !float_only && !allow_float_result)
+        return qc_fail(c, "floating-point type is invalid for integer operator");
+    if (float_only && !is_float)
+        return qc_fail(c, "floating-point arithmetic operator requires floating-point result");
     if (cj_equal(d, op, "abs") && !sign)
         return qc_fail(c, "absolute value requires a signed C integer type");
     int args = cj_get(d, e, "args"), nodes[3], n = 0;
@@ -225,6 +335,15 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
     for (int j = 0; j < n; ++j)
         if (!bounded_expression(c, d, nodes[j], depth + 1))
             return 0;
+    if (float_args) {
+        if (!cj_bool(d, cj_get(d, nodes[0], "float")) ||
+            (n > 1 && !cj_bool(d, cj_get(d, nodes[1], "float"))))
+            return qc_fail(c, "floating-point operator requires floating-point operands");
+    } else if (!allow_float_args) {
+        for (int j = 0; j < n; ++j)
+            if (cj_bool(d, cj_get(d, nodes[j], "float")))
+                return qc_fail(c, "integer operator requires non-floating operands");
+    }
     if (ctype && !same_type(d, e, nodes[0]))
         return qc_fail(c, "ctype argument requires an explicit conversion to signed int");
     if (matching)
@@ -311,6 +430,12 @@ static int heap_address_literal(qc_context *c, const cj_doc *d, int node) {
            cj_u64(d, number, &value);
 }
 
+static int heap_count_expr(qc_context *c, const cj_doc *d, int node) {
+    uint64_t bits;
+    return expression(c, d, node) && unsigned_field(c, d, node, "bits", &bits) && bits == 64 &&
+           !cj_bool(d, cj_get(d, node, "signed"));
+}
+
 static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
     int set = cj_equal(d, cj_get(d, inst, "mode"), "set");
     int bytes = cj_equal(d, cj_get(d, inst, "mode"), "bytes");
@@ -343,7 +468,7 @@ static int heap_memory_instruction(qc_context *c, const cj_doc *d, int inst) {
         !boolean_field(c, d, inst, "big_endian", 0) ||
         !heap_address_literal(c, d, cj_get(d, inst, "heap")) ||
         !heap_address_literal(c, d, cj_get(d, inst, "heap_offset")) ||
-        !heap_address_literal(c, d, cj_get(d, inst, "count")))
+        !heap_count_expr(c, d, cj_get(d, inst, "count")))
         return qc_fail(c, "invalid heap byte operation schema");
     if (check) {
         uint64_t limit;
@@ -496,11 +621,14 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         qc_register *a = qc_lookup(c, (uint32_t)id), *b = qc_lookup(c, (uint32_t)history);
         if (!a || !b || !a->alive || !b->alive || !a->prepared || a->finished || b->finished ||
             !b->clean || b->definition || a->width != b->width || a->signed_type < 0 ||
-            a->signed_type != b->signed_type || !unsigned_field(c, d, expr, "bits", &width) ||
-            width != a->width || cj_bool(d, cj_get(d, expr, "signed")) != a->signed_type ||
-            (width < 64 && selected >> width))
+            a->signed_type != b->signed_type || a->float_type || b->float_type ||
+            !unsigned_field(c, d, expr, "bits", &width) || width != a->width ||
+            cj_bool(d, cj_get(d, expr, "signed")) != a->signed_type ||
+            cj_bool(d, cj_get(d, expr, "float")) || (width < 64 && selected >> width))
             return qc_fail(c,
                            "register patch needs prepared typed input and separate clean history");
+        if (a->readonly || b->readonly)
+            return qc_fail(c, "cannot patch readonly borrowed storage");
         if (!verify_mask_register(c, d, inst, (uint32_t)id, (uint32_t)history, a->width))
             return 0;
         for (int t = expr; t < d->tokens[expr].next; ++t) {
@@ -535,8 +663,7 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     if (cj_equal(d, heap_op, "cmemory")) {
         static const char *const allowed[] = {"op", "count", "limit", "overlap", "controls", NULL};
         uint64_t limit, overlap;
-        int ok = fields(c, d, inst, allowed) &&
-                 heap_address_literal(c, d, cj_get(d, inst, "count")) &&
+        int ok = fields(c, d, inst, allowed) && heap_count_expr(c, d, cj_get(d, inst, "count")) &&
                  unsigned_field(c, d, inst, "limit", &limit) && limit <= 64 &&
                  (cj_get(d, inst, "overlap") < 0 ||
                   (unsigned_field(c, d, inst, "overlap", &overlap) && overlap <= 64));
@@ -599,6 +726,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         if (!a || !b || !a->alive || !b->alive || !a->prepared || !b->prepared || a->finished ||
             b->finished || a->width != b->width || a->signed_type != b->signed_type)
             return qc_fail(c, "quantum swap requires materialized storage of the same C type");
+        if (a->readonly || b->readonly)
+            return qc_fail(c, "cannot swap readonly borrowed storage");
         if (cj_bool(d, cj_get(d, inst, "rebind")) && a->signed_type < 0)
             return qc_fail(c, "inverse transport requires an explicit C signedness");
         uint64_t bit_mask;
@@ -635,7 +764,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     }
     if (cj_equal(d, heap_op, "qassign") || cj_equal(d, heap_op, "qslot")) {
         static const char *const assignment[] = {"op", "id", "expr", NULL};
-        static const char *const slot[] = {"op", "id", "width", "signed", "ancilla", "name", NULL};
+        static const char *const slot[] = {
+            "op", "id", "width", "signed", "float", "ancilla", "name", NULL};
         int allocation = cj_equal(d, heap_op, "qslot");
         uint64_t id, width;
         if (!fields(c, d, inst, allocation ? slot : assignment) ||
@@ -643,18 +773,24 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             return qc_fail(c, "runtime version requires a valid storage identity");
         qc_register *r = qc_lookup(c, (uint32_t)id);
         if (allocation) {
+            if (r && r->alive && r->readonly)
+                return qc_fail(c, "cannot reassign readonly borrowed storage");
             if (!unsigned_field(c, d, inst, "width", &width) || !width || width > 64 ||
-                !boolean_field(c, d, inst, "signed", 0) ||
+                !boolean_field(c, d, inst, "signed", 0) || !boolean_field(c, d, inst, "float", 1) ||
                 !boolean_field(c, d, inst, "ancilla", 0) || !string_field(c, d, inst, "name", 1) ||
                 (width == 1 && cj_bool(d, cj_get(d, inst, "signed"))) ||
+                (cj_bool(d, cj_get(d, inst, "float")) &&
+                 ((width != 32 && width != 64) || cj_bool(d, cj_get(d, inst, "signed")))) ||
                 (r && r->alive &&
-                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")))))
+                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")) ||
+                  r->float_type != cj_bool(d, cj_get(d, inst, "float")))))
                 return qc_fail(c, "runtime slot requires a compatible explicit C representation");
         } else {
             int expr = cj_get(d, inst, "expr");
-            if (!r || !r->alive || !r->prepared || r->finished || !expression(c, d, expr) ||
-                !unsigned_field(c, d, expr, "bits", &width) || width != r->width ||
-                cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type)
+            if (!r || !r->alive || !r->prepared || r->finished || r->readonly ||
+                !expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &width) ||
+                width != r->width || cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type ||
+                cj_bool(d, cj_get(d, expr, "float")) != r->float_type)
                 return qc_fail(c,
                                "runtime assignment requires prepared storage and its exact C type");
         }
@@ -667,17 +803,21 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
         return heap_instruction(c, d, inst);
     if (cj_equal(d, cj_get(d, inst, "op"), "qphi")) {
         static const char *const phi[] = {
-            "op", "id", "width", "signed", "sources", "condition", NULL};
+            "op", "id", "width", "signed", "float", "sources", "condition", NULL};
         uint64_t id, width, value, bits;
         int sources = cj_get(d, inst, "sources"), condition = cj_get(d, inst, "condition");
         if (!fields(c, d, inst, phi) || !unsigned_field(c, d, inst, "id", &id) || id > UINT32_MAX ||
             qc_lookup(c, (uint32_t)id) || !unsigned_field(c, d, inst, "width", &width) || !width ||
-            width > 64 || !boolean_field(c, d, inst, "signed", 0) || sources < 0 ||
-            d->tokens[sources].kind != '[' || d->tokens[sources].children != 2 ||
+            width > 64 || !boolean_field(c, d, inst, "signed", 0) ||
+            !boolean_field(c, d, inst, "float", 1) ||
+            (cj_bool(d, cj_get(d, inst, "float")) &&
+             ((width != 32 && width != 64) || cj_bool(d, cj_get(d, inst, "signed")))) ||
+            sources < 0 || d->tokens[sources].kind != '[' || d->tokens[sources].children != 2 ||
             !cj_equal(d, cj_get(d, condition, "op"), "const") || !expression(c, d, condition) ||
             !unsigned_field(c, d, condition, "bits", &bits) || bits != 1 ||
             !unsigned_field(c, d, condition, "value", &value) || value > 1)
             return qc_fail(c, "CPU phi requires a fresh owner and a bound Boolean condition");
+        int fl = cj_bool(d, cj_get(d, inst, "float"));
         uint64_t seen = UINT64_MAX;
         unsigned index = 0;
         for (int token = sources + 1; token < d->tokens[sources].next;
@@ -686,10 +826,13 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             if (!cj_u64(d, token, &source) || source > UINT32_MAX || source == seen)
                 return qc_fail(c, "invalid or duplicate CPU phi source");
             qc_register *r = qc_lookup(c, (uint32_t)source);
-            if ((index == (value ? 0u : 1u) && (!r || !r->alive || !r->prepared || r->finished)) ||
+            if ((index == (value ? 0u : 1u) &&
+                 (!r || !r->alive || !r->prepared || r->finished || r->readonly)) ||
                 (r && r->alive &&
-                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")))))
-                return qc_fail(c, "CPU phi needs available sources of the same C representation");
+                 (r->width != width || r->signed_type != cj_bool(d, cj_get(d, inst, "signed")) ||
+                  r->float_type != fl)))
+                return qc_fail(
+                    c, "CPU phi needs mutable available sources of the same C representation");
             seen = source;
         }
         return 1;
@@ -720,7 +863,8 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             }
         return 1;
     }
-    static const char *const alloc[] = {"op", "id", "width", "signed", "name", "ancilla", NULL};
+    static const char *const alloc[] = {
+        "op", "id", "width", "signed", "float", "name", "ancilla", "readonly", NULL};
     static const char *const prepare[] = {"op", "id", "lower", "upper", "dynamic", "expr", NULL};
     static const char *const computation[] = {"op", "id", "expr", "controls", "saved", NULL};
     static const char *const addition[] = {
@@ -736,8 +880,10 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
     static const char *const measure[] = {"op", "id", "width", "result", NULL};
     static const char *const simple[] = {"op", "id", NULL};
     static const char *const move[] = {"op", "id", "from", "to", NULL};
-    static const char *const find[] = {"op", "id", "upper", "predicate", "solutions", NULL};
-    static const char *const search[] = {"op", "id", "upper", "predicate", "attempts", NULL};
+    static const char *const find[] = {
+        "op", "id", "lower", "upper", "predicate", "solutions", NULL};
+    static const char *const search[] = {
+        "op", "id", "lower", "upper", "predicate", "attempts", NULL};
     static const char *const marker[] = {"op", NULL};
     static const char *const indexed[] = {"op", "ids", "action", NULL};
     if (inst < 0 || inst >= d->count || d->tokens[inst].kind != '{' ||
@@ -773,10 +919,11 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                     return qc_fail(c, "duplicate indexed storage identifier");
             seen[count++] = id;
             qc_register *candidate = qc_lookup(c, (uint32_t)id);
-            if (!candidate || !candidate->alive || !candidate->prepared || candidate->definition)
+            if (!candidate || !candidate->alive || !candidate->prepared || candidate->definition ||
+                candidate->readonly)
                 return qc_fail(
                     c,
-                    "indexed candidate must be available prepared storage without a pending inverse");
+                    "indexed candidate must be mutable available prepared storage without a pending inverse");
             if (!base) {
                 base = candidate;
                 first = id;
@@ -857,11 +1004,18 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 return 0;
             if (!width || width > 64)
                 return qc_fail(c, "quantum register width must be 1..64");
-            if (!boolean_field(c, d, inst, "signed", 1) ||
-                !boolean_field(c, d, inst, "ancilla", 1) || !string_field(c, d, inst, "name", 1))
+            if (!boolean_field(c, d, inst, "signed", 1) || !boolean_field(c, d, inst, "float", 1) ||
+                !boolean_field(c, d, inst, "ancilla", 1) || !string_field(c, d, inst, "name", 1) ||
+                !boolean_field(c, d, inst, "readonly", 1))
                 return 0;
+            if (cj_equal(d, op, "qalloc") && cj_get(d, inst, "readonly") >= 0)
+                return qc_fail(c, "only borrowed quantum storage accepts readonly");
             if (cj_equal(d, op, "qborrow") && !boolean_field(c, d, inst, "signed", 0))
                 return 0;
+            if (cj_bool(d, cj_get(d, inst, "float")) &&
+                ((width != 32 && width != 64) || cj_bool(d, cj_get(d, inst, "signed"))))
+                return qc_fail(
+                    c, "floating-point storage requires unsigned 32-bit float or 64-bit double");
             return !(width == 1 && cj_bool(d, cj_get(d, inst, "signed"))) ||
                    qc_fail(c, "one-bit storage uses unsigned bool representation");
         }
@@ -871,7 +1025,11 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             return 1;
         if (!r || !r->alive)
             return qc_fail(c, "unavailable quantum storage");
+        if (r->readonly && !cj_equal(d, op, "qrelease"))
+            return qc_fail(c, "cannot mutate or measure readonly borrowed storage");
         if (allowed == fourier) {
+            if (r->float_type)
+                return qc_fail(c, "Fourier transform requires integer quantum storage");
             if (!boolean_field(c, d, inst, "inverse", 1))
                 return 0;
         } else if (allowed == prepare) {
@@ -886,15 +1044,20 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                     !cj_equal(d, cj_get(d, expr, "op"), "const") || !expression(c, d, expr) ||
                     !unsigned_field(c, d, expr, "bits", &bits) || bits != r->width ||
                     (r->signed_type >= 0 &&
-                     cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type))
+                     cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type) ||
+                    cj_bool(d, cj_get(d, expr, "float")) != r->float_type)
                     return qc_fail(
                         c, "basis preparation requires a matching bound classical constant");
             } else if (cj_bool(d, cj_get(d, inst, "dynamic"))) {
                 if (cj_get(d, inst, "lower") >= 0 || cj_get(d, inst, "upper") >= 0)
                     return qc_fail(c, "ambiguous runtime/static preparation");
-            } else if (!unsigned_field(c, d, inst, "lower", &low) ||
-                       !unsigned_field(c, d, inst, "upper", &high))
-                return 0;
+            } else {
+                if (!qc_interval_bound(c, d, inst, "lower", r->width, r->signed_type, &low) ||
+                    !qc_interval_bound(c, d, inst, "upper", r->width, r->signed_type, &high))
+                    return 0;
+                if (r->float_type && low != high)
+                    return qc_fail(c, "floating-point preparation requires a single raw value");
+            }
         } else if (allowed == computation) {
             int expr = cj_get(d, inst, "expr");
             int saved = cj_get(d, inst, "saved");
@@ -909,8 +1072,10 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 if (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits))
                     return 0;
                 int sign = cj_bool(d, cj_get(d, expr, "signed"));
-                if ((bits != r->width || (r->signed_type >= 0 && sign != r->signed_type)) &&
-                    !(r->width == 1 && truth_valued(d, expr)))
+                int is_float = cj_bool(d, cj_get(d, expr, "float"));
+                if (is_float != r->float_type ||
+                    ((bits != r->width || (r->signed_type >= 0 && sign != r->signed_type)) &&
+                     !(r->width == 1 && !r->float_type && truth_valued(d, expr))))
                     return qc_fail(c,
                                    "quantum output requires an explicit conversion to its C type");
             }
@@ -921,24 +1086,26 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 return qc_fail(c, "invalid quantum addition source");
             qc_register *s = qc_lookup(c, (uint32_t)source);
             if (!s || !s->alive || s == r || s->signed_type != 0 || r->signed_type != 0 ||
-                r->width == 1)
+                s->float_type || r->float_type || r->width == 1)
                 return qc_fail(
                     c, "register addition requires separate explicitly unsigned integer storage");
         } else if (allowed == expression_addition) {
             int expr = cj_get(d, inst, "expr"), checked = cj_get(d, inst, "checked");
             uint64_t bits, checked_bits;
-            if (!boolean_field(c, d, inst, "subtract", 1) || r->signed_type != 0 || r->width == 1 ||
-                !expression(c, d, expr) || !expression(c, d, checked) ||
+            if (!boolean_field(c, d, inst, "subtract", 1) || r->signed_type != 0 || r->float_type ||
+                r->width == 1 || !expression(c, d, expr) || !expression(c, d, checked) ||
                 !unsigned_field(c, d, expr, "bits", &bits) || bits != r->width ||
-                cj_bool(d, cj_get(d, expr, "signed")) ||
+                cj_bool(d, cj_get(d, expr, "signed")) || cj_bool(d, cj_get(d, expr, "float")) ||
                 !unsigned_field(c, d, checked, "bits", &checked_bits) || checked_bits != r->width ||
-                cj_bool(d, cj_get(d, checked, "signed")))
+                cj_bool(d, cj_get(d, checked, "signed")) || cj_bool(d, cj_get(d, checked, "float")))
                 return qc_fail(
                     c,
                     "modular expression addition requires explicitly unsigned target-type operands");
         } else if (allowed == xor_update) {
             int expr = cj_get(d, inst, "expr"), v = cj_get(d, inst, "value");
             uint64_t value, bits;
+            if (r->float_type)
+                return qc_fail(c, "XOR compound assignment requires integer storage");
             if (!boolean_field(c, d, inst, "dynamic", 1))
                 return 0;
             int dynamic = cj_bool(d, cj_get(d, inst, "dynamic"));
@@ -948,13 +1115,15 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
                 return qc_fail(c, "invalid XOR operand");
             if (expr >= 0 &&
                 (!expression(c, d, expr) || !unsigned_field(c, d, expr, "bits", &bits) ||
-                 bits != r->width ||
+                 bits != r->width || cj_bool(d, cj_get(d, expr, "float")) ||
                  (r->signed_type >= 0 && cj_bool(d, cj_get(d, expr, "signed")) != r->signed_type)))
                 return qc_fail(c, "XOR operand requires an explicit target-type conversion");
             if (r->width == 1)
                 return qc_fail(
                     c, "boolean compound XOR requires a separately proved truth conversion");
         } else if (allowed == addition) {
+            if (r->float_type)
+                return qc_fail(c, "modular addition requires integer quantum storage");
             if (!boolean_field(c, d, inst, "dynamic", 1))
                 return 0;
             uint64_t value;
@@ -976,20 +1145,29 @@ int qc_verify_instruction(qc_context *c, const cj_doc *d, int inst) {
             if (!string_field(c, d, inst, "from", 0) || !string_field(c, d, inst, "to", 0))
                 return 0;
         } else if (allowed == find || allowed == search) {
-            uint64_t upper;
+            if (r->float_type)
+                return qc_fail(c, "Grover search requires integer quantum storage");
+            uint64_t lower = 0, upper;
             int predicate = cj_get(d, inst, "predicate");
-            if (!unsigned_field(c, d, inst, "upper", &upper) || !expression(c, d, predicate))
+            if ((cj_get(d, inst, "lower") >= 0 &&
+                 !qc_interval_bound(c, d, inst, "lower", r->width, r->signed_type, &lower)) ||
+                !qc_interval_bound(c, d, inst, "upper", r->width, r->signed_type, &upper) ||
+                !expression(c, d, predicate))
                 return 0;
+            if (!qc_interval_ordered(r->signed_type, lower, upper) || lower == upper)
+                return qc_fail(c, "find requires a nontrivial power-of-two uniform domain");
+            uint64_t span = upper - lower;
+            if (span != UINT64_MAX && (span & (span + 1)))
+                return qc_fail(c, "find requires a nontrivial power-of-two uniform domain");
             if (!truth_valued(d, predicate))
                 return qc_fail(c, "find predicate requires a boolean C conversion");
             uint64_t budget;
             if (allowed == find && cj_get(d, inst, "solutions") >= 0 &&
                 (!unsigned_field(c, d, inst, "solutions", &budget) || !budget ||
-                 budget > upper + 1))
+                 (span != UINT64_MAX && budget > span + 1)))
                 return qc_fail(c, "invalid solution count promise");
-            if (allowed == search &&
-                (!unsigned_field(c, d, inst, "attempts", &budget) || !budget || budget > 4096))
-                return qc_fail(c, "invalid search attempt budget");
+            if (allowed == search && !qc_search_attempts(c, d, inst, &budget))
+                return 0;
         }
     }
     int list = cj_get(d, inst, "controls");

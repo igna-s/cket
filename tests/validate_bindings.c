@@ -253,6 +253,194 @@ static void document_contracts(void) {
     puts("PASS 11 whole-document binding/preparation contracts before circuit mutation");
 }
 
+static void shifted_search_and_structural(void) {
+    /* Verify structural and non-structural qprepare metadata match across shifted
+     * aligned, unaligned, negative and zero-crossing intervals, and invalid qfind rejects. */
+    const char *prep_docs[] = {"{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                               "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":false},"
+                               "{\"op\":\"qprepare\",\"id\":0,\"lower\":4,\"upper\":7}]}",
+                               "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                               "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":false},"
+                               "{\"op\":\"qprepare\",\"id\":0,\"lower\":3,\"upper\":6}]}",
+                               "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                               "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":true},"
+                               "{\"op\":\"qprepare\",\"id\":0,\"lower\":-6,\"upper\":-3}]}",
+                               "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                               "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":true},"
+                               "{\"op\":\"qprepare\",\"id\":0,\"lower\":-4,\"upper\":3}]}"};
+    for (unsigned p = 0; p < 4; ++p) {
+        qc_context *st = qc_create(0, 7), *ns = qc_create(1, 7);
+        if (!st || !ns)
+            validation_fail("structural comparison allocation failed");
+        st->validation = st->structural = 1;
+        if (!qc_document(st, prep_docs[p], 1, 1) || !qc_document(ns, prep_docs[p], 0, 1))
+            validation_fail("shifted qprepare failed (%u): %s / %s", p, qc_error(st), qc_error(ns));
+        qc_register *rs = qc_lookup(st, 0), *rn = qc_lookup(ns, 0);
+        if (!rs || !rn || rs->uniform != rn->uniform || rs->uniform_lower != rn->uniform_lower ||
+            rs->uniform_upper != rn->uniform_upper ||
+            rs->support_interval != rn->support_interval ||
+            rs->support_lower != rn->support_lower || rs->support_upper != rn->support_upper ||
+            rs->zero_mask != rn->zero_mask)
+            validation_fail("structural vs non-structural qprepare metadata desync (%u)", p);
+        qc_destroy(st);
+        qc_destroy(ns);
+        ++checks;
+    }
+
+    const char *bad_structural_find =
+        "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+        "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":false},"
+        "{\"op\":\"qprepare\",\"id\":0,\"lower\":3,\"upper\":6},"
+        "{\"op\":\"qbind\",\"parameters\":[{\"id\":1,\"bits\":4,\"signed\":false}],"
+        "\"instruction\":{\"op\":\"qprepare\",\"id\":1,\"expr\":{\"op\":\"parameter\",\"id\":1,\"bits\":4,\"signed\":false}}},"
+        "{\"op\":\"qfind\",\"id\":0,\"lower\":0,\"upper\":3,\"predicate\":{\"op\":\"eq\",\"bits\":4,\"signed\":false,"
+        "\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":4,\"signed\":false},{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":3}]}}]}";
+    /* Note id 1 wasn't even allocated or lower mismatches; also test valid id 1 + mismatched qfind
+     * bounds. */
+    const char *bad_find_bounds =
+        "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+        "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":false},"
+        "{\"op\":\"qprepare\",\"id\":0,\"lower\":3,\"upper\":6},"
+        "{\"op\":\"qalloc\",\"id\":1,\"width\":4,\"signed\":false},"
+        "{\"op\":\"qbind\",\"parameters\":[{\"id\":9,\"bits\":4,\"signed\":false}],"
+        "\"instruction\":{\"op\":\"qprepare\",\"id\":1,\"expr\":{\"op\":\"parameter\",\"id\":9,\"bits\":4,\"signed\":false}}},"
+        "{\"op\":\"qfind\",\"id\":0,\"lower\":0,\"upper\":3,\"predicate\":{\"op\":\"eq\",\"bits\":4,\"signed\":false,"
+        "\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":4,\"signed\":false},{\"op\":\"const\",\"bits\":4,\"signed\":false,\"value\":3}]}}]}";
+    for (unsigned b = 0; b < 2; ++b) {
+        qc_context *st = qc_create(0, 7);
+        if (!st || qc_document(st, b ? bad_find_bounds : bad_structural_find, 1, 1) ||
+            !*qc_error(st))
+            validation_fail("invalid qfind inside structural document unexpectedly passed");
+        qc_destroy(st);
+        ++checks;
+    }
+
+    const struct {
+        unsigned sign;
+        const char *lower, *upper, *target;
+        unsigned basis_index, kbits;
+    } finds[] = {
+        {0, "4", "7", "6", 6, 2},
+        {0, "3", "6", "5", 5, 2},
+        {1, "-8", "-5", "-7", 9, 2},
+        {1, "-6", "-3", "-4", 12, 2},
+        {1, "-4", "3", "-2", 14, 3},
+    };
+
+    for (unsigned f = 0; f < sizeof finds / sizeof *finds; ++f)
+        for (unsigned tables = 0; tables < 2; ++tables) {
+            qc_context *c = qc_create(1, 7);
+            if (!c)
+                validation_fail("shifted find context allocation failed");
+            qc_allow_tables(c, tables);
+            char ir[1024];
+            snprintf(ir,
+                     sizeof ir,
+                     "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                     "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":%s},"
+                     "{\"op\":\"qprepare\",\"id\":0,\"lower\":%s,\"upper\":%s},"
+                     "{\"op\":\"qfind\",\"id\":0,\"lower\":%s,\"upper\":%s,\"solutions\":1,"
+                     "\"predicate\":{\"op\":\"eq\",\"bits\":4,\"signed\":%s,\"args\":["
+                     "{\"op\":\"reg\",\"id\":0,\"bits\":4,\"signed\":%s},"
+                     "{\"op\":\"const\",\"bits\":4,\"signed\":%s,\"value\":%s}]}}]}",
+                     finds[f].sign ? "true" : "false",
+                     finds[f].lower,
+                     finds[f].upper,
+                     finds[f].lower,
+                     finds[f].upper,
+                     finds[f].sign ? "true" : "false",
+                     finds[f].sign ? "true" : "false",
+                     finds[f].sign ? "true" : "false",
+                     finds[f].target);
+            if (!qc_document(c, ir, 0, 1))
+                validation_fail(
+                    "shifted qfind failed case=%u tables=%u: %s", f, tables, qc_error(c));
+            double expected_prob =
+                finds[f].kbits == 2 ? 1.0 : pow(sin(5.0 * asin(1.0 / sqrt(8.0))), 2);
+            double total_prob = 0, target_prob = 0;
+            for (size_t i = 0; i < qc_state_size(c); ++i) {
+                double p = pow(cabs(qc_amplitude(c, i)), 2);
+                total_prob += p;
+                if (i == finds[f].basis_index)
+                    target_prob = p;
+                if (i >= 16 && p > 1e-12)
+                    validation_fail("shifted qfind left garbage ancilla probability");
+            }
+            if (fabs(total_prob - 1.0) > 1e-10 || fabs(target_prob - expected_prob) > 1e-10)
+                validation_fail(
+                    "shifted qfind distribution mismatch case=%u total=%g target=%g expected=%g",
+                    f,
+                    total_prob,
+                    target_prob,
+                    expected_prob);
+            qc_destroy(c);
+            ++checks;
+        }
+
+    const char *bound_search_ir =
+        "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+        "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":true},"
+        "{\"op\":\"qprepare\",\"id\":0,\"lower\":-6,\"upper\":-3},"
+        "{\"op\":\"qbind\",\"parameters\":[{\"id\":7,\"bits\":32,\"signed\":false}],"
+        "\"instruction\":{\"op\":\"qsearch\",\"id\":0,\"lower\":-6,\"upper\":-3,"
+        "\"predicate\":{\"op\":\"eq\",\"bits\":4,\"signed\":true,\"args\":["
+        "{\"op\":\"reg\",\"id\":0,\"bits\":4,\"signed\":true},"
+        "{\"op\":\"const\",\"bits\":4,\"signed\":true,\"value\":-4}]},"
+        "\"attempts\":{\"op\":\"parameter\",\"id\":7,\"bits\":32,\"signed\":false}}}]}";
+    qc_context *st = qc_create(0, 7);
+    if (!st || !qc_document(st, bound_search_ir, 1, 1) || !st->structural)
+        validation_fail("structural validation of bound qsearch attempts failed: %s", qc_error(st));
+    qc_destroy(st);
+    ++checks;
+
+    qc_context *bad_att_ctx = qc_create(1, 7);
+    char *bad_bound =
+        bad_att_ctx
+            ? qc_bind_document(bad_att_ctx, bound_search_ir, "[{\"instruction\":2,\"values\":[0]}]")
+            : NULL;
+    if (!bad_bound || qc_document(bad_att_ctx, bad_bound, 0, 1) || !*qc_error(bad_att_ctx))
+        validation_fail("zero bound attempts unexpectedly succeeded");
+    free(bad_bound);
+    qc_destroy(bad_att_ctx);
+    ++checks;
+
+    qc_context *srch = qc_create(1, 7);
+    char *good_bound =
+        srch ? qc_bind_document(srch, bound_search_ir, "[{\"instruction\":2,\"values\":[16]}]")
+             : NULL;
+    if (!good_bound || !qc_document(srch, good_bound, 0, 1))
+        validation_fail("bound shifted qsearch execution failed: %s", qc_error(srch));
+    double found_prob = pow(cabs(qc_amplitude(srch, 12)), 2);
+    if (fabs(found_prob - 1.0) > 1e-10)
+        validation_fail("bound shifted qsearch did not converge to |-4>: prob=%g", found_prob);
+    free(good_bound);
+    qc_destroy(srch);
+    ++checks;
+
+    const char *unsat_search = "{\"format\":\"cket.qir\",\"version\":1,\"instructions\":["
+                               "{\"op\":\"qalloc\",\"id\":0,\"width\":4,\"signed\":true},"
+                               "{\"op\":\"qprepare\",\"id\":0,\"lower\":-6,\"upper\":-3},"
+                               "{\"op\":\"qsearch\",\"id\":0,\"lower\":-6,\"upper\":-3,"
+                               "\"predicate\":{\"op\":\"eq\",\"bits\":4,\"signed\":true,\"args\":["
+                               "{\"op\":\"reg\",\"id\":0,\"bits\":4,\"signed\":true},"
+                               "{\"op\":\"const\",\"bits\":4,\"signed\":true,\"value\":0}]},"
+                               "\"attempts\":4}]}";
+    qc_context *unsat = qc_create(1, 7);
+    if (!unsat || !qc_document(unsat, unsat_search, 0, 1))
+        validation_fail("shifted unsat qsearch failed: %s", qc_error(unsat));
+    double in_domain = 0;
+    for (size_t i = 10; i <= 13; ++i)
+        in_domain += pow(cabs(qc_amplitude(unsat, i)), 2);
+    if (fabs(in_domain - 1.0) > 1e-10)
+        validation_fail("shifted qsearch trial re-preparation leaked outside [-6,-3]: %g",
+                        in_domain);
+    qc_destroy(unsat);
+    ++checks;
+
+    puts(
+        "PASS 21 shifted/signed uniform qprepare, qfind, structural sync & bound qsearch attempts");
+}
+
 static void programs(validation *v) {
     const char *valid[] = {
         "quant bool n=false;int d=0;quant bool q=n?1/d==0:false;return measure(q)!=0||measure(n)!=0;",
@@ -415,6 +603,7 @@ int main(int argc, char **argv) {
     endpoints();
     rejected();
     document_contracts();
+    shifted_search_and_structural();
     validation v;
     validation_init(&v, argv[0]);
     programs(&v);

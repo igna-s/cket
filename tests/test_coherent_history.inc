@@ -13,7 +13,8 @@ static void coherent_gate_rows(qc_context *c, size_t basis[4], double angle[4]) 
         if (g.kind == QC_MEASURE && c->ignore_measurements)
             continue; // Explicit terminal observations are counted separately.
         if (g.kind == QC_H) {
-            if (prepared == 2 || g.mask || g.target != qc_lookup(c, prepared)->wires[0])
+            if (prepared == 2 || qc_mask_any(g.mask) ||
+                g.target != qc_lookup(c, prepared)->wires[0])
                 validation_fail("unexpected preparation in coherent history reference");
             for (unsigned row = 0; row < 4; ++row)
                 if ((row >> prepared) & 1)
@@ -24,7 +25,7 @@ static void coherent_gate_rows(qc_context *c, size_t basis[4], double angle[4]) 
         if (g.kind != QC_X && g.kind != QC_PHASE)
             validation_fail("unsupported gate in coherent history reference");
         for (unsigned row = 0; row < 4; ++row)
-            if (((qc_mask)basis[row] & g.mask) == g.pattern) {
+            if (qc_mask_eq(qc_mask_and(qc_mask_from_u64(basis[row]), g.mask), g.pattern)) {
                 if (g.kind == QC_X)
                     basis[row] ^= (size_t)1 << g.target;
                 else
@@ -48,13 +49,13 @@ static void coherent_gate_inverse(qc_context *c) {
             continue;
         if (g.kind == QC_PHASE) {
             for (size_t row = 0; row < count; ++row)
-                if (((qc_mask)row & g.mask) == g.pattern)
+                if (qc_mask_eq(qc_mask_and(qc_mask_from_u64(row), g.mask), g.pattern))
                     state[row] *= cexp(-I * g.angle);
             continue;
         }
         size_t bit = (size_t)1 << g.target;
         for (size_t row = 0; row < count; ++row) {
-            if ((row & bit) || ((qc_mask)row & g.mask) != g.pattern)
+            if ((row & bit) || !qc_mask_eq(qc_mask_and(qc_mask_from_u64(row), g.mask), g.pattern))
                 continue;
             double complex low = state[row], high = state[row | bit];
             if (g.kind == QC_X) {

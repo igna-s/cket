@@ -6,7 +6,7 @@
 typedef struct {
     uint32_t id;
     unsigned bits;
-    int sign, used;
+    int sign, is_float, used;
     uint64_t value;
 } qc_binding;
 
@@ -38,21 +38,29 @@ static int binding_fields(qc_context *c, const cj_doc *d, int object, const char
     return 1;
 }
 
-static int
-binding_type(qc_context *c, const cj_doc *d, int object, uint32_t *id, unsigned *bits, int *sign) {
+static int binding_type(qc_context *c,
+                        const cj_doc *d,
+                        int object,
+                        uint32_t *id,
+                        unsigned *bits,
+                        int *sign,
+                        int *is_float) {
     uint64_t number, width;
     int identity = cj_get(d, object, "id"), precision = cj_get(d, object, "bits"),
-        signedness = cj_get(d, object, "signed");
+        signedness = cj_get(d, object, "signed"), fl = cj_get(d, object, "float");
     if (identity < 0 || precision < 0 || signedness < 0 || d->tokens[identity].kind < '0' ||
         d->tokens[identity].kind > '9' || d->tokens[precision].kind < '0' ||
         d->tokens[precision].kind > '9' || !cj_u64(d, identity, &number) || number > UINT32_MAX ||
         !cj_u64(d, precision, &width) || !width || width > 64 ||
         (d->tokens[signedness].kind != 't' && d->tokens[signedness].kind != 'f') ||
-        (width == 1 && cj_bool(d, signedness)))
-        return qc_fail(c, "invalid CPU binding integer type");
+        (fl >= 0 && d->tokens[fl].kind != 't' && d->tokens[fl].kind != 'f') ||
+        (width == 1 && cj_bool(d, signedness)) ||
+        (fl >= 0 && cj_bool(d, fl) && ((width != 32 && width != 64) || cj_bool(d, signedness))))
+        return qc_fail(c, "invalid CPU binding C type");
     *id = (uint32_t)number;
     *bits = (unsigned)width;
     *sign = cj_bool(d, signedness);
+    *is_float = fl >= 0 && cj_bool(d, fl);
     return 1;
 }
 
@@ -95,9 +103,9 @@ static int binding_heap_value(qc_binding_writer *writer, int token, uint64_t *va
     static const char *const fields[] = {"op", "id", "bits", "signed", NULL};
     uint32_t id;
     unsigned bits;
-    int sign;
+    int sign, is_float = 0;
     if (!cj_equal(d, op, "parameter") || !binding_fields(writer->context, d, token, fields) ||
-        !binding_type(writer->context, d, token, &id, &bits, &sign))
+        !binding_type(writer->context, d, token, &id, &bits, &sign, &is_float) || is_float)
         return qc_fail(writer->context, "heap address requires a declared CPU binding");
     for (size_t i = 0; i < writer->count; ++i)
         if (writer->bindings[i].id == id && writer->bindings[i].bits == 64 &&
@@ -281,32 +289,43 @@ static int binding_token(qc_binding_writer *writer, int token, unsigned depth) {
     if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "heap_byte_read"))
         return binding_heap_byte_read(writer, token);
     if (d->tokens[token].kind == '{' && cj_equal(d, cj_get(d, token, "op"), "parameter")) {
-        static const char *const names[] = {"op", "id", "bits", "signed", NULL};
+        static const char *const names[] = {"op", "id", "bits", "signed", "float", NULL};
         uint32_t id;
         unsigned bits;
-        int sign;
+        int sign, is_float;
         if (!binding_fields(writer->context, d, token, names) ||
-            !binding_type(writer->context, d, token, &id, &bits, &sign))
+            !binding_type(writer->context, d, token, &id, &bits, &sign, &is_float))
             return 0;
         for (size_t i = 0; i < writer->count; ++i) {
             qc_binding *binding = &writer->bindings[i];
             if (binding->id != id)
                 continue;
-            if (binding->bits != bits || binding->sign != sign)
+            if (binding->bits != bits || binding->sign != sign || binding->is_float != is_float)
                 return qc_fail(writer->context, "CPU parameter type differs from its binding");
             binding->used = 1;
             uint64_t value = bits == 1 ? binding->value != 0 : binding->value & bits_mask(bits);
-            int negative = sign && !!(value & (UINT64_C(1) << (bits - 1)));
-            uint64_t magnitude = negative ? (~value + 1) & bits_mask(bits) : value;
-            char literal[160];
-            int length =
-                snprintf(literal,
-                         sizeof literal,
-                         "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":%s%" PRIu64 "}",
-                         bits,
-                         sign ? "true" : "false",
-                         negative ? "-" : "",
-                         magnitude);
+            char literal[192];
+            int length;
+            if (is_float) {
+                length = snprintf(
+                    literal,
+                    sizeof literal,
+                    "{\"op\":\"const\",\"bits\":%u,\"signed\":false,\"float\":true,\"value\":%" PRIu64
+                    "}",
+                    bits,
+                    value);
+            } else {
+                int negative = sign && !!(value & (UINT64_C(1) << (bits - 1)));
+                uint64_t magnitude = negative ? (~value + 1) & bits_mask(bits) : value;
+                length =
+                    snprintf(literal,
+                             sizeof literal,
+                             "{\"op\":\"const\",\"bits\":%u,\"signed\":%s,\"value\":%s%" PRIu64 "}",
+                             bits,
+                             sign ? "true" : "false",
+                             negative ? "-" : "",
+                             magnitude);
+            }
             return binding_write(writer, literal, (size_t)length);
         }
         return qc_fail(writer->context, "CPU parameter has no declared binding");
@@ -323,7 +342,7 @@ static int binding_token(qc_binding_writer *writer, int token, unsigned depth) {
 
 char *qc_bind_operation(qc_context *c, const char *text, const uint64_t *values, size_t count) {
     static const char *const wrapper[] = {"op", "instruction", "parameters", NULL};
-    static const char *const descriptor[] = {"id", "bits", "signed", NULL};
+    static const char *const descriptor[] = {"id", "bits", "signed", "float", NULL};
     cj_doc d = {0};
     qc_binding_writer writer = {.context = c, .doc = &d, .count = count};
     if (!text || !values || !count || count > QC_MAX_BINDINGS ||
@@ -344,7 +363,8 @@ char *qc_bind_operation(qc_context *c, const char *text, const uint64_t *values,
          token = d.tokens[token].next) {
         qc_binding *binding = &writer.bindings[index];
         if (!binding_fields(c, &d, token, descriptor) ||
-            !binding_type(c, &d, token, &binding->id, &binding->bits, &binding->sign))
+            !binding_type(
+                c, &d, token, &binding->id, &binding->bits, &binding->sign, &binding->is_float))
             goto failed;
         for (size_t previous = 0; previous < index; ++previous)
             if (writer.bindings[previous].id == binding->id) {

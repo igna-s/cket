@@ -40,11 +40,12 @@ The inputs and relative phases are preserved. Right shift still reads the origin
 sign before narrowing. The implementation introduces no measurement/reset. Invalid inactive counts
 have a total XOR extension; this does not permit reachable undefined C shifts.
 
-The gate representation remains limited to 128 physical qubits. Default dense simulation is limited
-to 24; [sparse execution](simulacion-dispersa.es.md) supports wider bounded-support states. Complete
-8/16/32-bit variable-shift circuits now generate without tables. Two public 64-bit words plus a
-separate counter already exceed 128 wires, independently of this workspace improvement; narrow
-results and general future resource expansion retain their separate contracts.
+The gate representation remains limited to 128 physical qubits in baseline `5c5a965` (expanded to
+1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending Wave 1B/2). Default dense simulation is limited to
+24; [sparse execution](simulacion-dispersa.es.md) supports wider bounded-support states. Complete
+8/16/32-bit variable-shift circuits generate without tables. In baseline `5c5a965`, two public
+64-bit words plus a separate counter already exceed 128 wires, independently of this workspace
+improvement; narrow results and the Wave 1A/1B/2 resource expansion retain their separate contracts.
 
 ## Boolean consumers and integer conversions
 

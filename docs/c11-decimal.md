@@ -1,22 +1,26 @@
 # Checked decimal conversion
 
-`atoi`, `atol` and `atoll` now have partial quantum adapters. Their reference is
-[N1570 §7.22.1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf). They skip leading
-whitespace, accept one optional sign, and consume the first decimal digit run. No conversion
-produces zero. The result must fit the signed return type; an out-of-range result has undefined C
-semantics and is rejected through a circuit domain guard when reachable.
+`atoi`, `atol`, `atoll`, `strtol`, `strtoll` and `strtoimax` now have partial quantum adapters.
+Their reference is [N1570 §7.22.1](https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1570.pdf) and
+§7.8.2.3. They skip leading whitespace, accept one optional sign, and consume the first digit run
+(base 10 for `atoi`/`atol`/`atoll`; checked constant bases `2..36` with optional `0`/`0x` auto-base
+0 rules for `strtol`/`strtoll`/`strtoimax`, plus optional `NULL` or local `&end` `endptr`). No
+conversion produces zero. The result must fit the signed return type; an out-of-range result has
+undefined C semantics (or overflow bounds) and is rejected through a circuit domain guard when
+reachable.
 
 The checked source contains a NUL within 1–64 bytes of padding-free integer storage. Constant
-offsets and the target byte order follow the existing byte-view contract. Dynamic addresses, other
-encodings, general layouts and general CPU-loop lifetimes remain pending. `strtol`, its bases, end
-pointers and range/errno outputs are separate pending interfaces.
+offsets and the target byte order follow the existing byte-view contract. Dynamic addresses,
+non-local `endptr` lifetimes, dynamic bases, `errno`/`ERANGE` outputs, other encodings, general
+layouts and general CPU-loop lifetimes remain pending.
 
 The parser builds typed computations for its phase, sign and magnitude. Private zero registers are
 prepared independently of coherent controls; selected computations and saved inverses use the
 existing reversible engine. No measurement chooses a character or parsing branch. Intermediate
 widths grow with the possible digit count, up to the target result width. Previous values remain
 available for inverses. Source and private state add resource costs; a 64-byte frontend bound does
-not promise that every such circuit fits the 128-wire representation or simulator budgets.
+not promise that every such circuit fits the baseline 128-wire representation (or Wave 1A engine's
+1024-wire expansion) or simulator budgets.
 
 Whitespace classification uses the captured effective byte `LC_CTYPE` profile, including the
 existing thread-locale contract. ASCII digits retain decimal meaning. Locale-specific extensions to

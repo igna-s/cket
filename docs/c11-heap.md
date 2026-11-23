@@ -90,10 +90,12 @@ disjoint heap suffixes; the current check conservatively rejects two such suffix
 allocation. Equality, null tests and ordinary same-object differences use classical addresses.
 Escaping into ordinary CPU data or calling a foreign CPU buffer API is diagnosed.
 
-The frontend supports element widths 1..64 bits with padding-free storage. Each allocation is
-limited to 64 elements; actual capacity is also limited by the engine's 128 physical wires and
-temporary/history requirements. Dense execution has a 24-wire limit. Sparse execution supports up to
-128 wires with a bounded occupied support. Repeated overwrites of unknown data can exhaust the
+The frontend supports element widths 1..64 bits with padding-free storage. In baseline `5c5a965`,
+each allocation is limited to 64 elements and actual capacity is bounded by the 128 physical wires
+and temporary/history requirements (working-tree Wave 1A raises `QC_MAX_PHYSICAL` and
+`QC_HEAP_MAX_ELEMENTS` in `src/engine/heap.inc` to 1024, pending Wave 1B/2 verification). Dense
+execution has a 24-wire limit; sparse execution supports up to the configured `QC_MAX_PHYSICAL`
+capacity with a bounded occupied support. Repeated overwrites of unknown data can exhaust the
 retained history budget; `free` does not make that history vanish.
 
 Assignments and prefix/postfix increments also return typed quantum values to scheduled consumers
@@ -130,10 +132,11 @@ pending. Empty ranges allow a live allocation's one-past address; null or dead a
 invalid even at zero length. A provably inactive quantum operation skips its range checks.
 
 Unrestricted pointer arithmetic/ABI, general aggregates, general returned-pointer consumers, string
-adapters over heaps, quantum floating-point storage, atomics and concurrency remain pending. Quantum
-allocation under coherent control is unsupported. Runtime CPU control and heap allocation are
-native-only: static QASM/resource export rejects that profile. Structural template validation does
-not execute allocations or prove the resulting circuit. There is no physical-QPU or speedup claim.
+adapters over heaps, frontend/ABI quantum floating-point storage (beyond Wave 1A engine circuits),
+atomics and concurrency remain pending. Quantum allocation under coherent control is unsupported.
+Runtime CPU control and heap allocation are native-only: static QASM/resource export rejects that
+profile. Structural template validation does not execute allocations or prove the resulting circuit.
+There is no physical-QPU or speedup claim.
 
 ## Reproduce the usable block and directed validation
 

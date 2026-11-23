@@ -26,9 +26,9 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
         uint64_t limit = destination.size() - destination.offset;
         if (!set)
             limit = std::min(limit, source.size() - source.offset);
-        if (limit > 64)
+        if (limit > 128)
             return reject(
-                "|c>: quantum memory length exceeds the 64-byte expression synthesis bound");
+                "|c>: quantum memory length exceeds the 128-byte expression synthesis bound");
         uint64_t max_valid = limit;
         if (!set && !move && source.quantum)
             for (uint64_t i = 0; i < limit; ++i) {
@@ -64,8 +64,19 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
                                                       q_count,
                                                       build_zero_cst(TREE_TYPE(q_count))),
                                       defined);
-        tree captured_len = quantum_value_capture(
-            call, fold_convert(unsigned_char_type_node, q_count), "__cket_qmem_len_", prefix);
+        unsigned len_bits = 8;
+        while (len_bits < 32 && (uint64_t{1} << len_bits) <= limit)
+            ++len_bits;
+        tree len_type = len_bits <= 8 ? unsigned_char_type_node
+                                      : build_nonstandard_integer_type(len_bits, true);
+        tree safe_len = fold_build3_loc(at(call),
+                                        COND_EXPR,
+                                        len_type,
+                                        defined,
+                                        fold_convert(len_type, q_u),
+                                        missing_string_terminator(len_type, at(call)));
+        tree captured_len =
+            quantum_value_capture(call, safe_len, "__cket_qmem_len_", prefix, len_type);
         bool identity = move && source.quantum && destination.elements == source.elements &&
                         destination.offset == source.offset && destination.stride == source.stride;
         std::vector<std::pair<tree, tree>> words;
@@ -76,11 +87,8 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
             tree target = destination.elements[(size_t)(dst / destination.stride)];
             if (readonly_quantum_borrows.count(target))
                 return reject("|c>: runtime memory cannot write through a read-only borrow");
-            tree selected = fold_build2_loc(at(call),
-                                            GT_EXPR,
-                                            boolean_type_node,
-                                            captured_len,
-                                            build_int_cstu(unsigned_char_type_node, i));
+            tree selected = fold_build2_loc(
+                at(call), GT_EXPR, boolean_type_node, captured_len, build_int_cstu(len_type, i));
             tree next = set ? fill : object_byte(source, i, at(call));
             string_word_byte(
                 destination, i, fold_convert(integer_type_node, next), words, at(call));
@@ -127,8 +135,19 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
                 if (!--indegree[writer])
                     ready.push_back(writer);
         }
-        if (ordered.size() != words.size())
-            return reject("|c>: cyclic runtime byte-copy dependencies need a retained snapshot");
+        if (ordered.size() != words.size()) {
+            ordered.clear();
+            std::vector<tree> snapshots(limit);
+            for (uint64_t i = 0; i < limit; ++i)
+                snapshots[i] = quantum_value_capture(
+                    call, object_byte(source, i, at(call)), "__cket_qmem_snap_", prefix);
+            for (uint64_t i = 0; i < limit; ++i)
+                string_word_byte(destination,
+                                 i,
+                                 fold_convert(integer_type_node, snapshots[i]),
+                                 ordered,
+                                 at(call));
+        }
         std::map<tree, tree> quantum_masks;
         for (const auto &entry : mask_values)
             quantum_masks[entry.first] =
@@ -137,8 +156,13 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
                                       "__cket_qmem_mask_",
                                       prefix,
                                       unsigned_type_for(TREE_TYPE(entry.first)));
-        return make_quantum_value_program(
-            call, ordered, defined, std::move(prefix), NULL_TREE, bit_masks, quantum_masks);
+        return make_quantum_value_program(call,
+                                          ordered,
+                                          boolean_true_node,
+                                          std::move(prefix),
+                                          NULL_TREE,
+                                          bit_masks,
+                                          quantum_masks);
     }
     if (!quantum_pure_expression(count))
         return reject(
@@ -220,8 +244,32 @@ tree expand_dynamic_memory(tree call, bool move, bool set) {
         for (unsigned writer : next[ready[i]])
             if (!--indegree[writer])
                 ready.push_back(writer);
-    if (ready.size() != words.size())
-        return reject("|c>: cyclic runtime byte-copy dependencies need a retained snapshot");
+    if (ready.size() != words.size()) {
+        words.clear();
+        ready.clear();
+        for (uint64_t i = 0; i < operation.limit; ++i) {
+            tree selected = fold_build2_loc(
+                at(call), LT_EXPR, boolean_type_node, build_int_cstu(ull, i), length);
+            source.cpu_guard = selected;
+            tree src_b = object_byte(source, i, at(call));
+            tree guarded_b = fold_build3_loc(at(call),
+                                             COND_EXPR,
+                                             integer_type_node,
+                                             selected,
+                                             src_b,
+                                             build_zero_cst(integer_type_node));
+            tree snap = quantum_value_capture(call, guarded_b, "__cket_dyn_snap_", prefix);
+            tree dst_b = fold_build3_loc(at(call),
+                                         COND_EXPR,
+                                         integer_type_node,
+                                         selected,
+                                         fold_convert(integer_type_node, snap),
+                                         object_byte(destination, i, at(call)));
+            string_word_byte(destination, i, dst_b, words, at(call));
+        }
+        for (unsigned i = 0; i < words.size(); ++i)
+            ready.push_back(i);
+    }
     operation.fixed_output = alloc_stmt_list();
     // The fill argument is evaluated once even for a zero-length call.
     if (!prefix.empty())

@@ -54,11 +54,13 @@ while returning a C `int`. Unsupported bounds use the full result width. This is
 range solver or a promise of minimum qubits.
 
 Physical storage, retained histories, synthesis workspace and the native simulator's 24-qubit limit
-remain explicit resource requirements R. Large circuits generated within the backend's 128-qubit
-limit are distinct from complete-state validation. Floating/complex measurement, general computed
-dynamic-index reads, mixed CPU effects in lazy arms, coherent measurement control and general
-function/CFG lifetimes remain P/R. Source borrows require the existing mutable capability; arbitrary
-classical operands do not become quantum states through `measure`.
+remain explicit resource requirements R. Large circuits generated within the physical backend limit
+(128 qubits in baseline `5c5a965`; expanded to 1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending
+Wave 1B/2) are distinct from complete-state validation. Frontend/ABI floating/complex measurement
+(beyond Wave 1A engine circuits), general computed dynamic-index reads, mixed CPU effects in lazy
+arms, coherent measurement control and general function/CFG lifetimes remain P/R. Source borrows
+require the existing mutable capability; arbitrary classical operands do not become quantum states
+through `measure`.
 
 Supported scalar effects in lazy arms follow the [saved-decision contract](c11-lazy-values.md),
 including their use in explicit integer observations.

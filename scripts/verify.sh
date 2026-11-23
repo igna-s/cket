@@ -72,6 +72,25 @@ build/validate_ctype 2>&1 | tee build/verify-ctype.log
 build/validate_profiles 2>&1 | tee build/verify-profiles.log
 build/validate_numeric_locale 2>&1 | tee build/verify-numeric-locale.log
 build/validate_library 2>&1 | tee build/verify-library.log
+build/validate_float 2>&1 | tee build/verify-float.log
+ownership_proof="$(mktemp -d "$PWD/build/ownership-proof.XXXXXX")"
+python3 scripts/validate-ownership.py --output "$ownership_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-ownership.log
+heap_states_proof="$(mktemp -d "$PWD/build/heap-states-proof.XXXXXX")"
+python3 scripts/validate-heap.py --output "$heap_states_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-heap-states.log
+heap_memory_proof="$(mktemp -d "$PWD/build/heap-memory-proof.XXXXXX")"
+python3 scripts/validate-heap-memory.py --output "$heap_memory_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-heap-memory.log
+heap_transfer_proof="$(mktemp -d "$PWD/build/heap-transfer-proof.XXXXXX")"
+python3 scripts/validate-heap-transfer.py --output "$heap_transfer_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-heap-transfer.log
+runtime_version_states_proof="$(mktemp -d "$PWD/build/runtime-version-states-proof.XXXXXX")"
+python3 scripts/validate-runtime-versions.py --output "$runtime_version_states_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-runtime-version-states.log
+everyday_profile_proof="$(mktemp -d "$PWD/build/everyday-profile-proof.XXXXXX")"
+python3 scripts/validate-everyday-profile.py --output "$everyday_profile_proof/normal" --levels O0 O2 \
+    2>&1 | tee build/verify-everyday-profile.log
 bash scripts/test-c11-classical.sh 2>&1 | tee build/verify-classical.log
 bash scripts/build-validation.sh 2>&1 | tee build/verify-validation-build.log
 fuzz_options=(--seed "${CKET_FUZZ_SEED:-20261011}" --cases "${CKET_FUZZ_CASES:-24}")

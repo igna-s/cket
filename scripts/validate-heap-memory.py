@@ -199,11 +199,26 @@ def expected(profile, point, context):
         context['written'] = dict(zip(heaps[0]['ids'], after_p))
         if q:
             context['written'].update(zip(heaps[1]['ids'], after_q))
+        histories = sorted(
+            r['id']
+            for r in point['registers']
+            if r['history'] and r['id'] not in context['initial']
+        )
+        expected_histories = []
+        if profile == 'partial_words':
+            expected_histories = [lambda c: 0xAA00, lambda c: 0x00BB]
+        elif profile == 'controlled_copy':
+            expected_histories = [lambda c, old=q[0](1): old if c else 0]
+        elif profile == 'controlled_fill':
+            expected_histories = [lambda c, old=p[0](0) & 0xFF00: old if c else 0]
+        assert len(histories) == len(expected_histories)
+        context['history'] = dict(zip(histories, expected_histories))
     result = {}
     for coin in (0, 1):
         values = {identity: value(coin) for identity, value in context['initial'].items()}
         if point['tag'] != 'prepared':
             values.update({identity: value(coin) for identity, value in context['written'].items()})
+            values.update({identity: value(coin) for identity, value in context['history'].items()})
         values[named['coin']['id']] = coin
         if 'saved' in named and point['tag'] in ('written', 'freed'):
             values[named['saved']['id']] = (p[0](coin) & 255) ^ 1
@@ -228,12 +243,15 @@ def main():
     args = parser.parse_args()
     compiler, output = args.compiler_root.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    levels = [level.lstrip('-') for level in args.levels]
     flags = (
         ['-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie']
         if args.sanitized
         else []
     )
-    env = dict(os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7')
+    env = dict(os.environ, CC='gcc-11', CKET_SIMULATOR='sparse', CKET_SEED='7')
+    if args.sanitized:
+        env.update(CC=str(compiler / 'build/gcc-wrapper'), CKET_REAL_GCC='gcc-11')
     records = []
 
     def run(label, command, environment=env):
@@ -284,7 +302,7 @@ def main():
     assert compiled.returncode == 0, compiled.stdout
     links = ['-Wl,' + str(adapter), '-Wl,--wrap=qc_create_sparse', '-Wl,--wrap=__cket_apply']
     points = inverses = 0
-    for level in args.levels:
+    for level in levels:
         for name in PROFILES:
             source, binary = output / (name + '.c'), output / (name + level)
             source.write_text(profile_source(name))
@@ -349,12 +367,12 @@ def main():
             assert completed.returncode > 0 and diagnostic in completed.stdout, completed.stdout
     summary = dict(
         status='passed',
-        levels=args.levels,
+        levels=levels,
         synthesis_policies=[0, 1],
         full_state_checkpoints=points,
         complete_gate_inverses=inverses,
-        native_programs=len(VALID) * len(args.levels),
-        semantic_rejections=len(INVALID) * len(args.levels),
+        native_programs=len(VALID) * len(levels),
+        semantic_rejections=len(INVALID) * len(levels),
         sanitized=args.sanitized,
         plugin_sha256=hashlib.sha256((compiler / 'build/cket_plugin.so').read_bytes()).hexdigest(),
         scope='Finite native heap-to-heap copies, overlapping moves, partial/mixed words, fill capture, coherent controls, saved inverses and disposal; no physical-QPU or complete-libc claim.',

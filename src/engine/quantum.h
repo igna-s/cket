@@ -20,7 +20,7 @@ int qc_circuit_apply(qc_context *context,
                      size_t control_count);
 qc_context *qc_create(int simulate, uint64_t seed);
 /* Opt-in sparse statevector: 1..QC_SPARSE_MAX_STATES occupied basis labels,
- * up to the existing 128 physical wires. Exceeding support fails explicitly;
+ * up to QC_MAX_PHYSICAL physical wires. Exceeding support fails explicitly;
  * nonzero amplitudes are never intentionally pruned. */
 #define QC_SPARSE_MAX_STATES 1048576u
 qc_context *qc_create_sparse(uint64_t seed, size_t max_states);
@@ -30,6 +30,11 @@ int qc_sparse_entry(const qc_context *context,
                     uint64_t *low,
                     uint64_t *high,
                     double complex *amplitude);
+int qc_sparse_entry_words(const qc_context *context,
+                          size_t row,
+                          uint64_t *words,
+                          size_t word_count,
+                          double complex *amplitude);
 void qc_allow_tables(qc_context *context, int allowed);
 /* Classical extents own dynamically allocated quantum registers. Resizing
  * transports register identities; retiring unknown values retains joint outputs.

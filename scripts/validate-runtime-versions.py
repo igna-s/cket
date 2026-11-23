@@ -65,6 +65,11 @@ def check_states(profile, points, rounds):
             for bit, wire in enumerate(register['wires']):
                 wires[wire] = [(v >> bit) & 1 for v in values]
 
+        for patch in point['patches']:
+            old = [list(wires[w]) for w in patch['target_wires']]
+            for bit, wire in enumerate(patch['history_wires']):
+                wires[wire] = old[bit] if (patch['bit_mask'] >> bit) & 1 else [0, 0]
+
         if point['tag'] == 'step':
             iteration = position - 1
             previous = list(heap)
@@ -122,6 +127,19 @@ def check_states(profile, points, rounds):
     return len(points)
 
 
+def parse_points(log):
+    patches, points = [], []
+    for line in log.splitlines():
+        if line.startswith('PATCH '):
+            patches.append(json.loads(line[6:]))
+        elif line.startswith('{'):
+            point = json.loads(line)
+            point['patches'] = patches
+            points.append(point)
+            patches = []
+    return points
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler-root', type=Path, default=ROOT)
@@ -131,12 +149,15 @@ def main():
     args = parser.parse_args()
     compiler, output = args.compiler_root.resolve(), args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    levels = [level.lstrip('-') for level in args.levels]
     flags = (
         ['-fsanitize=address,undefined', '-fno-omit-frame-pointer', '-fno-pie', '-no-pie']
         if args.sanitized
         else []
     )
-    env = dict(os.environ, CKET_SIMULATOR='sparse', CKET_SEED='7')
+    env = dict(os.environ, CC='gcc-11', CKET_SIMULATOR='sparse', CKET_SEED='7')
+    if args.sanitized:
+        env.update(CC=str(compiler / 'build/gcc-wrapper'), CKET_REAL_GCC='gcc-11')
     commands = []
 
     def run(label, command, environment=env):
@@ -180,7 +201,7 @@ def main():
         )
     ]
     checkpoints = inverses = 0
-    for level in args.levels:
+    for level in levels:
         for profile in PROFILES:
             path, binary = output / (profile + '.c'), output / (profile + level)
             path.write_text(source(profile))
@@ -203,12 +224,12 @@ def main():
                         [str(binary), str(rounds)],
                         dict(env, OWNERSHIP_TABLES=str(tables)),
                     )
-                    points = [json.loads(line) for line in log.splitlines() if line.startswith('{')]
+                    points = parse_points(log)
                     checkpoints += check_states(profile, points, rounds)
                     inverses += 1
     summary = dict(
         status='passed',
-        levels=args.levels,
+        levels=levels,
         sanitized=args.sanitized,
         profiles=list(PROFILES),
         rounds=[0, 1, 3],

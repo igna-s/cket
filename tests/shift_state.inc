@@ -4,7 +4,7 @@
 static uint64_t shift_read(qc_mask basis, const qc_register *r) {
     uint64_t result = 0;
     for (unsigned bit = 0; bit < r->width; ++bit)
-        if (basis & QC_WIRE(r->wires[bit]))
+        if (qc_mask_test(basis, r->wires[bit]))
             result |= UINT64_C(1) << bit;
     return result;
 }
@@ -25,22 +25,22 @@ static void shift_sparse_state(qc_context *c,
     unsigned char *seen = calloc(expected_states, 1);
     if (!seen || qc_sparse_size(c) != expected_states)
         validation_fail("shift sparse support size");
-    qc_mask allowed = 0;
+    qc_mask allowed = qc_mask_zero();
     for (unsigned id = 0; id < 4; ++id) {
         qc_register *r = qc_lookup(c, id);
         for (unsigned bit = 0; bit < r->width; ++bit)
-            allowed |= QC_WIRE(r->wires[bit]);
+            allowed = qc_mask_or(allowed, QC_WIRE(r->wires[bit]));
     }
     for (size_t row = 0; row < expected_states; ++row) {
         uint64_t low, high;
         double complex amplitude;
         if (!qc_sparse_entry(c, row, &low, &high, &amplitude))
             validation_fail("shift sparse enumeration");
-        qc_mask basis = (qc_mask)low | (qc_mask)high << 64;
+        qc_mask basis = qc_mask_from_u128(low, high);
         uint64_t raw = shift_read(basis, input), distance = shift_read(basis, count);
         unsigned flag = (unsigned)shift_read(basis, control);
         uint64_t byte = raw ^ base;
-        if (byte > 255 || distance >= positions || (basis & ~allowed))
+        if (byte > 255 || distance >= positions || qc_mask_any(qc_mask_andnot(basis, allowed)))
             validation_fail("shift changed an input or left private garbage");
         uint64_t shifted = left ? raw << distance : raw >> distance;
         if (!left && sign && distance && (raw & (UINT64_C(1) << (width - 1)))) {

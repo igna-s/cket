@@ -47,8 +47,8 @@ static int heap_identity_truth(heap_identity_proof *p, const cj_doc *d, int e, i
     if (!r || !r->alive || !r->prepared || r->width != 1)
         return 0;
     qc_mask bit = QC_WIRE(r->wires[0]);
-    if (p->mask & bit) {
-        *value = (p->pattern & bit) != 0;
+    if (qc_mask_any(qc_mask_and(p->mask, bit))) {
+        *value = qc_mask_any(qc_mask_and(p->pattern, bit));
         return 1;
     }
     if (!r->basis_known)
@@ -71,16 +71,18 @@ heap_identity_expression(heap_identity_proof *p, const cj_doc *d, int e, unsigne
         qc_register *r = reg(p->c, (uint32_t)id);
         if (!r || !r->alive || !r->prepared)
             return NULL;
-        if (r->width == 1 && (p->mask & QC_WIRE(r->wires[0]))) {
+        if (r->width == 1 && qc_mask_test(p->mask, r->wires[0])) {
             char constant[96];
             snprintf(constant,
                      sizeof constant,
                      "{\"op\":\"const\",\"bits\":1,\"signed\":false,\"value\":%u}",
-                     (p->pattern & QC_WIRE(r->wires[0])) != 0);
+                     qc_mask_test(p->pattern, r->wires[0]));
             return strdup(constant);
         }
-        int valid = r->definition && (r->definition_mask & p->mask) == r->definition_mask &&
-                    ((r->definition_pattern ^ p->pattern) & r->definition_mask) == 0;
+        int valid = r->definition &&
+                    qc_mask_eq(qc_mask_and(r->definition_mask, p->mask), r->definition_mask) &&
+                    !qc_mask_any(qc_mask_and(qc_mask_xor(r->definition_pattern, p->pattern),
+                                             r->definition_mask));
         for (unsigned i = 0; valid && i < r->ndeps; ++i) {
             qc_register *source = reg(p->c, r->deps[i]);
             valid = source && source->alive && source->epoch == r->epochs[i];
@@ -179,11 +181,11 @@ static int heap_store_identity(qc_context *c, const cj_doc *d, int inst, uint32_
         bit_poly value;
         same = expr_bit(&proof, &expression, 0, bit, &value, 0);
         qc_mask wire = QC_WIRE(r->wires[bit]);
-        if (same && (p.mask & wire)) {
-            if (p.pattern & wire)
-                same = poly_toggle(&proof, &value, 0);
+        if (same && qc_mask_any(qc_mask_and(p.mask, wire))) {
+            if (qc_mask_any(qc_mask_and(p.pattern, wire)))
+                same = poly_toggle(&proof, &value, qc_mask_zero());
         } else if (same && r->basis_known && ((r->basis_value >> bit) & 1))
-            same = poly_toggle(&proof, &value, 0);
+            same = poly_toggle(&proof, &value, qc_mask_zero());
         else if (same && !r->basis_known && !((r->zero_mask >> bit) & 1))
             same = poly_toggle(&proof, &value, wire);
         same = same && value.count == 0;

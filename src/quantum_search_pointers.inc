@@ -2,7 +2,7 @@
 // They never contain a host address for superposed storage. The checked
 // candidate count is the missing-match sentinel, after every valid position.
 bool expand_search_pointer_borrow(tree decl, tree &prefix) {
-    tree initial = strip(DECL_INITIAL(decl)), type = TREE_TYPE(decl);
+    tree initial_raw = DECL_INITIAL(decl), initial = strip(initial_raw), type = TREE_TYPE(decl);
     if (!initial || TREE_CODE(type) != POINTER_TYPE || !search_pointer_call(initial))
         return false;
     QuantumStringSearch search;
@@ -21,25 +21,37 @@ bool expand_search_pointer_borrow(tree decl, tree &prefix) {
         prefix = build_empty_stmt(at(decl));
         return true;
     }
-    if (quantum_search_pointers.count(strip(initial))) {
-        // These local borrows are immutable. Aliasing an existing selector
-        // shares its lifetime rather than copying an unknown quantum state.
+    tree alias_key = search_pointer_call(initial_raw);
+    auto alias_it =
+        alias_key ? quantum_search_pointers.find(alias_key) : quantum_search_pointers.end();
+    if (alias_it != quantum_search_pointers.end()) {
+        // These local borrows preserve read-only qualification from any source
+        // pointer/borrow and share the selector lifetime cleanly.
+        if (TREE_CODE(alias_key) == VAR_DECL && TREE_TYPE(TREE_TYPE(alias_key)) &&
+            TYPE_READONLY(TREE_TYPE(TREE_TYPE(alias_key))))
+            search.source.element_type =
+                build_qualified_type(search.source.element_type, TYPE_QUAL_CONST);
         quantum_search_pointers[decl] = search;
         DECL_INITIAL(decl) = NULL_TREE;
         prefix = build_empty_stmt(at(decl));
         return true;
     }
+    unsigned pos_bits = 8;
+    while (pos_bits < 32 && (uint64_t{1} << pos_bits) <= search.positions)
+        ++pos_bits;
+    tree pos_type =
+        pos_bits <= 8 ? unsigned_char_type_node : build_nonstandard_integer_type(pos_bits, true);
     tree encoded = fold_build3_loc(at(decl),
                                    COND_EXPR,
-                                   unsigned_char_type_node,
+                                   pos_type,
                                    search.found,
-                                   fold_convert(unsigned_char_type_node, search.position),
-                                   build_int_cstu(unsigned_char_type_node, search.positions));
+                                   fold_convert(pos_type, search.position),
+                                   build_int_cstu(pos_type, search.positions));
     encoded = string_search_domain(search, encoded, at(decl));
     tree handle = build_decl(at(decl),
                              VAR_DECL,
                              get_identifier((name_of(decl) + ".__search_position").c_str()),
-                             build_qualified_type(unsigned_char_type_node, TYPE_QUAL_VOLATILE));
+                             build_qualified_type(pos_type, TYPE_QUAL_VOLATILE));
     DECL_CONTEXT(handle) = active_function;
     DECL_ATTRIBUTES(handle) = tree_cons(get_identifier("cket_quant"), NULL_TREE, NULL_TREE);
     TREE_THIS_VOLATILE(handle) = TREE_SIDE_EFFECTS(handle) = 1;
@@ -60,87 +72,88 @@ bool expand_search_pointer_borrow(tree decl, tree &prefix) {
     return true;
 }
 
-bool search_read_pointer(tree value,
-                         QuantumStringSearch &search,
-                         int64_t &delta,
-                         tree &dynamic_delta) {
+static bool search_read_pointer_full(tree value,
+                                     QuantumStringSearch &search,
+                                     int64_t &delta,
+                                     tree &dynamic_delta,
+                                     tree &dynamic_defined,
+                                     bool &had_error) {
     value = strip(value);
+    while (value && TREE_CODE(value) == SAVE_EXPR)
+        value = strip(TREE_OPERAND(value, 0));
     if (!value)
         return false;
     if (TREE_CODE(value) == POINTER_PLUS_EXPR) {
-        if (!search_read_pointer(TREE_OPERAND(value, 0), search, delta, dynamic_delta))
+        if (!search_read_pointer_full(
+                TREE_OPERAND(value, 0), search, delta, dynamic_delta, dynamic_defined, had_error))
             return false;
-        tree raw_offset = expand_quantum_program(TREE_OPERAND(value, 1));
-        tree offset = strip(fold(raw_offset));
-        if (offset && TREE_CODE(offset) == INTEGER_CST && TYPE_PRECISION(TREE_TYPE(offset)) <= 64) {
-            int64_t step = static_cast<int64_t>(TREE_INT_CST_LOW(offset));
-            if ((step > 0 && delta > INT64_MAX - step) || (step < 0 && delta < INT64_MIN - step)) {
-                error_at(at(value),
-                         "|c>: search-pointer byte offset overflows its checked representation");
-                return true;
-            }
-            delta += step;
+        if (had_error)
             return true;
-        }
-        if (!raw_offset || !INTEGRAL_TYPE_P(TREE_TYPE(raw_offset)) ||
-            TYPE_PRECISION(TREE_TYPE(raw_offset)) > 64 || !quantum_pure_expression(raw_offset)) {
-            error_at(at(value),
-                     "|c>: search-pointer byte offset requires a pure integer expression");
-            return true;
-        }
-        tree step_expr = fold_convert(size_type_node, raw_offset);
-        if (!has_quantum(step_expr) && TREE_CODE(strip(step_expr)) != INTEGER_CST) {
-            step_expr = save_expr(step_expr);
-            cpu_library_saves.insert(step_expr);
-        }
-        dynamic_delta =
-            dynamic_delta
-                ? fold_build2_loc(at(value), PLUS_EXPR, size_type_node, dynamic_delta, step_expr)
-                : step_expr;
-        return true;
+        return search_append_offset_step(at(value),
+                                         TREE_OPERAND(value, 1),
+                                         true,
+                                         search,
+                                         delta,
+                                         dynamic_delta,
+                                         dynamic_defined,
+                                         had_error,
+                                         "byte offset");
     }
     return expand_string_search(value, search, true);
+}
+
+[[maybe_unused]] bool
+search_read_pointer(tree value, QuantumStringSearch &search, int64_t &delta, tree &dynamic_delta) {
+    tree dynamic_defined = boolean_true_node;
+    bool had_error = false;
+    bool ok =
+        search_read_pointer_full(value, search, delta, dynamic_delta, dynamic_defined, had_error);
+    if (ok && dynamic_defined != boolean_true_node)
+        search.defined = fold_build2_loc(
+            at(value), TRUTH_ANDIF_EXPR, boolean_type_node, search.defined, dynamic_defined);
+    return ok;
+}
+
+static bool search_read_reference_full(tree value,
+                                       QuantumStringSearch &search,
+                                       int64_t &delta,
+                                       tree &dynamic_delta,
+                                       tree &dynamic_defined,
+                                       bool &had_error) {
+    if (TREE_CODE(value) == INDIRECT_REF)
+        return search_read_pointer_full(
+            TREE_OPERAND(value, 0), search, delta, dynamic_delta, dynamic_defined, had_error);
+    if (TREE_CODE(value) != ARRAY_REF ||
+        TREE_CODE(TREE_TYPE(TREE_OPERAND(value, 0))) != POINTER_TYPE)
+        return false;
+    if (!search_read_pointer_full(
+            TREE_OPERAND(value, 0), search, delta, dynamic_delta, dynamic_defined, had_error))
+        return false;
+    if (had_error)
+        return true;
+    return search_append_offset_step(at(value),
+                                     TREE_OPERAND(value, 1),
+                                     false,
+                                     search,
+                                     delta,
+                                     dynamic_delta,
+                                     dynamic_defined,
+                                     had_error,
+                                     "character index");
 }
 
 bool search_read_reference(tree value,
                            QuantumStringSearch &search,
                            int64_t &delta,
                            tree &dynamic_delta) {
-    if (TREE_CODE(value) == INDIRECT_REF)
-        return search_read_pointer(TREE_OPERAND(value, 0), search, delta, dynamic_delta);
-    if (TREE_CODE(value) != ARRAY_REF ||
-        TREE_CODE(TREE_TYPE(TREE_OPERAND(value, 0))) != POINTER_TYPE)
-        return false;
-    if (!search_read_pointer(TREE_OPERAND(value, 0), search, delta, dynamic_delta))
-        return false;
-    tree raw_index = expand_quantum_program(TREE_OPERAND(value, 1));
-    tree index = strip(fold(raw_index));
-    if (index && TREE_CODE(index) == INTEGER_CST && tree_fits_shwi_p(index)) {
-        int64_t step = tree_to_shwi(index);
-        if ((step > 0 && delta > INT64_MAX - step) || (step < 0 && delta < INT64_MIN - step)) {
-            error_at(at(value),
-                     "|c>: search-pointer character index overflows its checked representation");
-            return true;
-        }
-        delta += step;
-        return true;
-    }
-    if (!raw_index || !INTEGRAL_TYPE_P(TREE_TYPE(raw_index)) ||
-        TYPE_PRECISION(TREE_TYPE(raw_index)) > 64 || !quantum_pure_expression(raw_index)) {
-        error_at(at(value),
-                 "|c>: search-pointer character index requires a pure integer expression");
-        return true;
-    }
-    tree step_expr = fold_convert(size_type_node, raw_index);
-    if (!has_quantum(step_expr) && TREE_CODE(strip(step_expr)) != INTEGER_CST) {
-        step_expr = save_expr(step_expr);
-        cpu_library_saves.insert(step_expr);
-    }
-    dynamic_delta =
-        dynamic_delta
-            ? fold_build2_loc(at(value), PLUS_EXPR, size_type_node, dynamic_delta, step_expr)
-            : step_expr;
-    return true;
+    tree dynamic_defined = boolean_true_node;
+    bool had_error = false;
+    bool ok =
+        search_read_reference_full(value, search, delta, dynamic_delta, dynamic_defined, had_error);
+    if (ok && dynamic_defined != boolean_true_node)
+        search.defined = fold_build2_loc(
+            at(value), TRUTH_ANDIF_EXPR, boolean_type_node, search.defined, dynamic_defined);
+    return ok;
 }
 
 tree expand_search_pointer_read_resolved(tree value,
@@ -162,15 +175,13 @@ tree expand_search_pointer_read_resolved(tree value,
     current.stop_at_zero = false;
     current.cpu_bytes.clear();
     tree result = fold_convert(type, missing_string_terminator(integer_type_node, at(value)));
-    if (dynamic_delta) {
-        tree base_pos =
-            fold_build2_loc(at(value),
-                            PLUS_EXPR,
-                            size_type_node,
-                            search.position,
-                            build_int_cstu(size_type_node, origin + static_cast<uint64_t>(delta)));
-        tree effective_pos =
-            build2_loc(at(value), PLUS_EXPR, size_type_node, base_pos, dynamic_delta);
+    if (dynamic_delta || (search.defined != boolean_true_node && dynamic_delta)) {
+        tree i64_type = long_long_integer_type_node;
+        tree in_bounds = boolean_false_node;
+        tree effective_pos = search_signed_position(
+            at(value), search, delta, dynamic_delta, boolean_true_node, 0, in_bounds);
+        QuantumByteRange safe_src = search.source;
+        safe_src.cpu_bytes.clear();
         current.cpu_guard = NULL_TREE;
         for (uint64_t address = current.size(); address; --address) {
             uint64_t addr = address - 1;
@@ -178,8 +189,17 @@ tree expand_search_pointer_read_resolved(tree value,
                                        EQ_EXPR,
                                        boolean_type_node,
                                        effective_pos,
-                                       build_int_cstu(size_type_node, addr));
-            tree byte = fold_convert(type, object_byte(current, addr, at(value)));
+                                       build_int_cst(i64_type, static_cast<int64_t>(addr)));
+            tree byte_val;
+            if (current.cpu_address && search.source.stop_at_zero && addr >= origin) {
+                byte_val = object_byte(safe_src, addr - origin, at(value));
+            } else if (current.cpu_address && !search.source.stop_at_zero &&
+                       addr >= origin + search.positions) {
+                continue;
+            } else {
+                byte_val = object_byte(current, addr, at(value));
+            }
+            tree byte = fold_convert(type, byte_val);
             result = build3_loc(at(value), COND_EXPR, type, selected, byte, result);
         }
         return string_search_domain(search, result, at(value), true);

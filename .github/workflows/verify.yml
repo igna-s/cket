@@ -10,11 +10,11 @@ defaults:
   run:
     shell: bash
 jobs:
-  formatting:
+  formatting-and-inventory:
     runs-on: ubuntu-22.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install optional formatting tools
         run: |
           sudo apt-get update
@@ -24,25 +24,479 @@ jobs:
         run: .deps/format-venv/bin/python scripts/format.py --check
       - name: Check formatter contract preservation
         run: .deps/format-venv/bin/python scripts/test-format.py
-  verify:
+      - name: Validate C11 library inventory schema and proof references
+        run: python3 scripts/inventory_c11.py
+
+  build-unit-examples:
     runs-on: ubuntu-22.04
-    timeout-minutes: 180
+    timeout-minutes: 25
     env:
       CC: gcc-11
       CXX: g++-11
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install matching GCC and validation dependencies
         run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
-      - name: Compiler, runtime, user examples and independent validation with sanitizers
-        run: bash scripts/verify.sh
-      - uses: actions/upload-artifact@v4
+      - name: Build compiler, native unit tests, examples and independent QASM checks
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          bash scripts/build.sh 2>&1 | tee build/verify-build.log
+          bash scripts/test.sh 2>&1 | tee build/verify-native.log
+          bash scripts/run-examples.sh --all 2>&1 | tee build/verify-examples-cli.log
+          bash scripts/test-c11-classical.sh 2>&1 | tee build/verify-classical.log
+          bash scripts/build-validation.sh 2>&1 | tee build/verify-validation-build.log
+          fuzz_options=(--seed "${CKET_FUZZ_SEED:-20261011}" --cases "${CKET_FUZZ_CASES:-24}")
+          build/fuzz_frontend "${fuzz_options[@]}" 2>&1 | tee build/verify-frontend.log
+          build/benchmark_synthesis 2>&1 | tee build/verify-growth.log
+          build/validate_qasm 2>&1 | tee build/verify-qasm.log
+          bash scripts/test-locale-sanitizer.sh 2>&1 | tee build/verify-locale-sanitizer.log
+          cp build/verify-*.log build/gcc-version.txt build/synthesis-growth.csv build/evidence/
+          shopt -s nullglob
+          for f in build/frontend-failure.*; do
+            cp "$f" build/evidence/
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-build-unit-examples
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  c-validators:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1]
+    env:
+      CC: gcc-11
+      CXX: g++-11
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_COUNT: 2
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
+      - name: Build and run sharded C validators
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          bash scripts/build.sh >/dev/null
+          python3 - <<'PY'
+          import os, pathlib, re, subprocess
+
+          shard_idx = int(os.environ["SHARD_INDEX"])
+          shard_count = int(os.environ["SHARD_COUNT"])
+          build_lines = pathlib.Path("scripts/build.sh").read_text("utf-8").splitlines()
+          verify_lines = pathlib.Path("scripts/verify.sh").read_text("utf-8").splitlines()
+
+          expected = {
+              m.group(1)
+              for line in build_lines
+              for m in [re.search(r"-o\s+build/(validate_[a-zA-Z0-9_]+)\b", line)]
+              if m and m.group(1) != "validate_qasm"
+          }
+          cmds = []
+          for line in verify_lines:
+              m = re.match(
+                  r"^(build/(validate_[a-zA-Z0-9_]+)\s+2>&1\s+\|\s+tee\s+(build/[^\s]+))\s*$",
+                  line,
+              )
+              if m and m.group(2) != "validate_qasm":
+                  cmds.append((m.group(2), m.group(1), m.group(3)))
+
+          missing = expected - {name for name, _, _ in cmds}
+          extra = {name for name, _, _ in cmds} - expected
+          assert not missing and not extra, f"C validator drift: missing={missing} extra={extra}"
+
+          weights = {
+              "validate_byte_snapshots": 240,
+              "validate_library": 220,
+              "validate_history": 120,
+              "validate_memset": 75,
+              "validate_phase": 60,
+              "validate_memcmp": 47,
+              "validate_strings": 45,
+              "validate_controlled_operands": 30,
+              "validate_division": 30,
+              "validate_strncmp": 26,
+              "validate_memcopy": 22,
+              "validate_ctype": 22,
+              "validate_memory_sequences": 20,
+              "validate_bindings": 17,
+              "validate_memory_returns": 15,
+              "validate_pointer_differences": 10,
+              "validate_readonly_borrows": 5,
+              "validate_function_entries": 4,
+              "validate_expressions": 4,
+              "validate_numeric_locale": 3,
+              "validate_shifts": 2,
+              "validate_sparse": 2,
+              "validate_inplace": 2,
+          }
+          loads = [0] * shard_count
+          selected = []
+          for name, cmd, log_path in sorted(cmds, key=lambda x: (-weights.get(x[0], 30), x[0])):
+              target = min(range(shard_count), key=lambda k: loads[k])
+              loads[target] += weights.get(name, 30)
+              if target == shard_idx:
+                  selected.append((name, cmd, log_path))
+
+          for name, cmd, log_path in selected:
+              print(f"=== Running {name} (shard {shard_idx}/{shard_count}) ===", flush=True)
+              subprocess.run(["bash", "-euo", "pipefail", "-c", cmd], check=True)
+              src = pathlib.Path(log_path)
+              dst = pathlib.Path("build/evidence") / src.name
+              dst.write_bytes(src.read_bytes())
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-c-validators-${{ matrix.shard }}
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  python-state-validators:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    env:
+      CC: gcc-11
+      CXX: g++-11
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
+      - name: Build and run Python finite-state validators
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          bash scripts/build.sh >/dev/null
+          python3 - <<'PY'
+          import pathlib, re, subprocess
+
+          lines = pathlib.Path("scripts/verify.sh").read_text("utf-8").splitlines()
+          blocks = []
+          i = 0
+          while i < len(lines):
+              if '_proof="$(mktemp -d' in lines[i] and i + 2 < len(lines):
+                  block = "\n".join(lines[i : i + 3])
+                  m_name = re.search(r"scripts/(validate-[a-zA-Z0-9_-]+\.py)", block)
+                  m_log = re.search(r"\|\s+tee\s+(build/[^\s]+)", block)
+                  assert m_name and m_log, block
+                  blocks.append((m_name.group(1), block, m_log.group(1)))
+                  i += 3
+                  continue
+              i += 1
+          assert blocks, "No Python validator blocks discovered in scripts/verify.sh"
+          for name, block, log_path in blocks:
+              print(f"=== Running {name} ===", flush=True)
+              subprocess.run(["bash", "-euo", "pipefail", "-c", block], check=True)
+              src = pathlib.Path(log_path)
+              (pathlib.Path("build/evidence") / src.name).write_bytes(src.read_bytes())
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-python-validators
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  sanitized-asan-ubsan-core:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    env:
+      CC: gcc-11
+      CXX: g++-11
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
+      - name: Build sanitized toolchain and run ASan/UBSan core, examples, fuzz, growth and QuEST
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          real_cc="${CC:-gcc}"
+          python3 - <<'PY'
+          import pathlib
+
+          san_lines = pathlib.Path("scripts/sanitize-all.sh").read_text("utf-8").splitlines()
+          split_idx = next(
+              i for i, l in enumerate(san_lines) if l.strip() == '"$san_root/build/cket_tests" "$san_root"'
+          )
+          runner = pathlib.Path("build/run-sanitized-core.sh")
+          body = san_lines[:split_idx] + [
+              '"$san_root/build/cket_tests" "$san_root" 2>&1 | tee build/evidence/verify-sanitized-tests.log',
+              '"$san_root/build/test_examples" 2>&1 | tee build/evidence/verify-sanitized-examples.log',
+          ]
+          runner.write_text("\n".join(body) + "\n", encoding="utf-8")
+          PY
+          bash build/run-sanitized-core.sh
+          classical_san_root="${CKET_SAN_ROOT:-$PWD/build/sanitized}"
+          CKET_REAL_GCC="$real_cc" CC="$classical_san_root/build/gcc-wrapper" \
+            CKET_DRIVER="$classical_san_root/build/cket" \
+            UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+            bash scripts/test-c11-classical.sh 2>&1 | tee build/evidence/verify-classical-sanitized.log
+          VALIDATION_SANITIZERS=1 CC="$real_cc" bash scripts/build-validation.sh \
+            2>&1 | tee build/evidence/verify-validation-sanitized-build.log
+          export UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1
+          for validator in fuzz_frontend benchmark_synthesis validate_qasm qasm_samples; do
+            cp "build/$validator-sanitized" "$classical_san_root/build/"
+          done
+          fuzz_options=(--seed "${CKET_FUZZ_SEED:-20261011}" --cases "${CKET_FUZZ_CASES:-24}")
+          export CKET_REAL_GCC="$real_cc"
+          export CC="$classical_san_root/build/gcc-wrapper"
+          "$classical_san_root/build/fuzz_frontend-sanitized" "${fuzz_options[@]}" \
+            2>&1 | tee build/evidence/verify-frontend-sanitized.log
+          "$classical_san_root/build/benchmark_synthesis-sanitized" \
+            2>&1 | tee build/evidence/verify-growth-sanitized.log
+          LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-locale.lsan:print_suppressions=0" \
+            "$classical_san_root/build/validate_qasm-sanitized" \
+            2>&1 | tee build/evidence/verify-qasm-sanitized.log
+          cp "$classical_san_root/build/synthesis-growth.csv" build/evidence/sanitized-synthesis-growth.csv
+          cp "$classical_san_root/build/gcc-version.txt" build/evidence/sanitized-gcc-version.txt
+          shopt -s nullglob
+          for f in "$classical_san_root/build/frontend-failure."*; do
+            cp "$f" "build/evidence/sanitized-${f##*/}"
+          done
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-sanitized-core
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  sanitized-c-validators:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4]
+    env:
+      CC: gcc-11
+      CXX: g++-11
+      SHARD_INDEX: ${{ matrix.shard }}
+      SHARD_COUNT: 5
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
+      - name: Build sanitized toolchain and run sharded ASan/UBSan C validators
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          python3 - <<'PY'
+          import os, pathlib, re, subprocess
+
+          shard_idx = int(os.environ["SHARD_INDEX"])
+          shard_count = int(os.environ["SHARD_COUNT"])
+          build_lines = pathlib.Path("scripts/build.sh").read_text("utf-8").splitlines()
+          san_lines = pathlib.Path("scripts/sanitize-all.sh").read_text("utf-8").splitlines()
+
+          expected = {
+              m.group(1)
+              for line in build_lines
+              for m in [re.search(r"-o\s+build/(validate_[a-zA-Z0-9_]+)\b", line)]
+              if m and m.group(1) != "validate_qasm"
+          }
+          split_idx = next(
+              i for i, l in enumerate(san_lines) if l.strip() == '"$san_root/build/cket_tests" "$san_root"'
+          )
+          cmds = []
+          i = split_idx + 1
+          while i < len(san_lines):
+              line = san_lines[i]
+              if line.strip() == 'exec "$san_root/build/test_examples"':
+                  i += 1
+                  continue
+              m_c = re.match(r'^"\$san_root/build/(validate_[a-zA-Z0-9_]+)"\s*$', line)
+              if m_c:
+                  cmds.append((m_c.group(1), line))
+                  i += 1
+                  continue
+              if line.startswith("LSAN_OPTIONS=") and i + 1 < len(san_lines):
+                  block = line + "\n" + san_lines[i + 1]
+                  m_c2 = re.search(r'build/(validate_[a-zA-Z0-9_]+)"', block)
+                  assert m_c2, block
+                  cmds.append((m_c2.group(1), block))
+                  i += 2
+                  continue
+              if '_proof="$(mktemp -d' in line and i + 2 < len(san_lines):
+                  i += 3
+                  continue
+              raise AssertionError(f"Unhandled line {i + 1} in sanitize-all.sh: {line!r}")
+
+          missing = expected - {name for name, _ in cmds}
+          extra = {name for name, _ in cmds} - expected
+          assert not missing and not extra, f"Sanitized C validator drift: missing={missing} extra={extra}"
+
+          weights = {
+              "validate_byte_snapshots": 950,
+              "validate_library": 800,
+              "validate_history": 555,
+              "validate_memset": 345,
+              "validate_phase": 285,
+              "validate_ctype": 230,
+              "validate_memcmp": 225,
+              "validate_strings": 180,
+              "validate_controlled_operands": 175,
+              "validate_division": 160,
+              "validate_memory_sequences": 120,
+              "validate_memcopy": 115,
+              "validate_bindings": 105,
+              "validate_strncmp": 105,
+              "validate_memory_returns": 80,
+              "validate_pointer_differences": 55,
+              "validate_readonly_borrows": 25,
+              "validate_function_entries": 20,
+              "validate_expressions": 15,
+              "validate_shifts": 10,
+              "validate_inplace": 10,
+              "validate_sparse": 5,
+              "validate_harness": 2,
+              "validate_heap": 2,
+              "validate_heap_identities": 2,
+              "validate_inactive_borrows": 2,
+              "validate_swap_rebind": 2,
+              "validate_patches": 2,
+              "validate_runtime_versions": 2,
+              "validate_runtime_memory": 2,
+              "validate_profiles": 2,
+              "validate_numeric_locale": 2,
+          }
+          loads = [0] * shard_count
+          selected = []
+          for name, cmd in sorted(cmds, key=lambda x: (-weights.get(x[0], 150), x[0])):
+              target = min(range(shard_count), key=lambda k: loads[k])
+              loads[target] += weights.get(name, 150)
+              if target == shard_idx:
+                  selected.append((name, cmd))
+
+          script_parts = san_lines[:split_idx]
+          for name, cmd in selected:
+              log_file = f"build/evidence/verify-sanitized-{name}.log"
+              script_parts.append(f"printf '=== Running sanitized {name} (shard {shard_idx}/{shard_count}) ===\\n'")
+              script_parts.append(f"{{\n{cmd}\n}} 2>&1 | tee {log_file}")
+          runner = pathlib.Path("build/run-sanitized-c-shard.sh")
+          runner.write_text("\n".join(script_parts) + "\n", encoding="utf-8")
+          subprocess.run(["bash", str(runner)], check=True)
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-sanitized-c-${{ matrix.shard }}
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  sanitized-python-validators:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    env:
+      CC: gcc-11
+      CXX: g++-11
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install matching GCC and validation dependencies
+        run: sudo apt-get update && sudo apt-get install -y gcc-11 g++-11 gcc-11-plugin-dev binutils curl ca-certificates locales
+      - name: Build sanitized toolchain and run ASan/UBSan Python state validators
+        run: |
+          set -euo pipefail
+          mkdir -p build/evidence
+          python3 - <<'PY'
+          import pathlib, re, subprocess
+
+          san_lines = pathlib.Path("scripts/sanitize-all.sh").read_text("utf-8").splitlines()
+          split_idx = next(
+              i for i, l in enumerate(san_lines) if l.strip() == '"$san_root/build/cket_tests" "$san_root"'
+          )
+          blocks = []
+          i = split_idx + 1
+          while i < len(san_lines):
+              line = san_lines[i]
+              if '_proof="$(mktemp -d' in line and i + 2 < len(san_lines):
+                  block = "\n".join(san_lines[i : i + 3])
+                  m = re.search(r"scripts/(validate-[a-zA-Z0-9_-]+)\.py", block)
+                  assert m, block
+                  blocks.append((m.group(1), block))
+                  i += 3
+                  continue
+              i += 1
+          assert blocks, "No sanitized Python validator blocks found"
+          script_parts = san_lines[:split_idx]
+          for name, block in blocks:
+              log_file = f"build/evidence/verify-sanitized-{name}.log"
+              script_parts.append(f"printf '=== Running sanitized {name}.py ===\\n'")
+              script_parts.append(f"{{\n{block}\n}} 2>&1 | tee {log_file}")
+          runner = pathlib.Path("build/run-sanitized-python.sh")
+          runner.write_text("\n".join(script_parts) + "\n", encoding="utf-8")
+          subprocess.run(["bash", str(runner)], check=True)
+          PY
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: evidence-sanitized-python
+          path: build/evidence/
+          if-no-files-found: ignore
+
+  verification-summary:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 10
+    if: always()
+    needs:
+      - formatting-and-inventory
+      - build-unit-examples
+      - c-validators
+      - python-state-validators
+      - sanitized-asan-ubsan-core
+      - sanitized-c-validators
+      - sanitized-python-validators
+    steps:
+      - name: Download sharded verification evidence
+        uses: actions/download-artifact@v8
+        with:
+          path: verification-evidence
+          merge-multiple: true
+      - name: Verify synthesis growth equivalence and assemble unified logs
+        run: |
+          set -euo pipefail
+          if [[ -f verification-evidence/synthesis-growth.csv && -f verification-evidence/sanitized-synthesis-growth.csv ]]; then
+            cmp verification-evidence/synthesis-growth.csv verification-evidence/sanitized-synthesis-growth.csv
+          fi
+          shopt -s nullglob
+          san_logs=(
+            verification-evidence/verify-sanitized-tests.log
+            verification-evidence/verify-sanitized-validate_*.log
+            verification-evidence/verify-sanitized-validate-*.log
+            verification-evidence/verify-sanitized-examples.log
+          )
+          if ((${#san_logs[@]} > 0)); then
+            cat "${san_logs[@]}" >verification-evidence/verify-sanitized.log
+          fi
+      - name: Upload unified verification evidence
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: verification-evidence
-          path: |
-            build/verify-*.log
-            build/frontend-failure.*
-            build/sanitized/build/frontend-failure.*
-            build/gcc-version.txt
-            build/synthesis-growth.csv
+          path: verification-evidence/
+          if-no-files-found: ignore
+      - name: Assert all parallel verification jobs succeeded
+        run: |
+          set -euo pipefail
+          results=(
+            "${{ needs.formatting-and-inventory.result }}"
+            "${{ needs.build-unit-examples.result }}"
+            "${{ needs.c-validators.result }}"
+            "${{ needs.python-state-validators.result }}"
+            "${{ needs.sanitized-asan-ubsan-core.result }}"
+            "${{ needs.sanitized-c-validators.result }}"
+            "${{ needs.sanitized-python-validators.result }}"
+          )
+          for r in "${results[@]}"; do
+            if [[ "$r" != "success" ]]; then
+              echo "Upstream verification job status: $r" >&2
+              exit 1
+            fi
+          done
+          printf '%s\n' 'All parallel compiler, runtime, example, synthesis, QASM, formatting and sanitized checks passed.'

@@ -34,11 +34,12 @@ coherent loops. The extended language work remains on the roadmap; missing imple
 physical impossibilities. CPU jumps without lifetime proofs are currently rejected. A GCC fork is
 not required; justification of the transformation boundary is.
 
-Language width, circuit workspace, and simulation have distinct limits. The current reference
-exports up to 128 physical qubits and simulates up to 24 in the default dense mode. The opt-in
-[sparse runtime](simulacion-dispersa.es.md) supports up to 128 physical wires with an explicit
-occupied-support budget. Exhausting a budget produces a diagnostic rather than silent enumeration of
-a large domain.
+Language width, circuit workspace, and simulation have distinct limits. Prior baseline `5c5a965`
+exported and simulated sparse states up to 128 physical qubits (24 in dense mode); Wave 1A + 1B + 2
+integrate and locally verify `QC_MAX_PHYSICAL` and the opt-in
+[sparse runtime](simulacion-dispersa.es.md) up to 1024 physical wires across `scripts/verify.sh`
+(normal and ASan/UBSan). Both modes enforce an explicit occupied-support budget; exhausting a budget
+produces a diagnostic rather than silent enumeration of a large domain.
 
 ## Priorities and verifiable criteria
 
@@ -79,8 +80,10 @@ avoiding tables does not ensure scalability.
 `src/engine/arithmetic.inc` implements negative operands, truncation toward zero, remainder with the
 dividend's sign, general comparisons, and `--no-tables`. Nonzero divisors are proven through ranges
 or constant bits; MIN/-1 is excluded. An optional finite path remains for small expressions,
-uncovered cases, and permutations. More precise ranges, large compositions, and 64-bit division
-remain open. **P1 is partial.**
+uncovered cases, and permutations. More precise ranges, large compositions, and verified 64-bit
+division (`A1`) extend baseline `5c5a965` via Wave 1A/1B/2 (engine divider scratch widened to 128
+bits and locally verified across `scripts/verify.sh`, normal and ASan/UBSan). Arbitrary unbounded
+division still respects synthesis budgets. **P1 is partial outside the everyday profile.**
 
 ## P2: search
 
@@ -122,10 +125,11 @@ borrows, and changes to pending dependencies.
 
 Current analysis conservatively joins branches/loops and invalidates ranges before dynamic CPU
 control. It supports these combinations, terminal owned scalar returns, and pure conditional
-returns. Structured [CPU early returns in void procedures](c11-procedure-returns.md) now continue
-the caller after lexical cleanup, including returns inside CPU loops. Dynamic owners, general early
-result transfer and lifetimes, `goto`, `switch`, branch-dependent identities, and complete CFG
-reconstruction remain pending. **P3 is partial.**
+returns. Structured [CPU early returns in void procedures](c11-procedure-returns.md), structured
+`switch` statements (CPU and quantum, with `continue` through `switch`), bounded
+`for`/`while`/`do-while` quantum-guard loops, and same-unit imperative owned scalar/`struct` results
+now work in `5c5a965`. Dynamic owners, general early result transfer and lifetimes, `goto`,
+branch-dependent identities, and complete CFG reconstruction remain pending. **P3 is partial.**
 
 ## P4: functions and ABI
 
@@ -139,7 +143,8 @@ workspace inside these modules.
 The QIR ABI provides `qborrow`, `qc_circuit_compile`, `qc_circuit_apply`, and C composition through
 `circuit`/`inverse_circuit`. Independent files are embedded during compilation and plans retained by
 the runtime. [circuit-abi.md](circuit-abi.md) defines restrictions. Arbitrary C `quant` linking
-across units and owned product results remain pending. **P4 is partial.**
+across units and general external product ABI remain pending (`5c5a965` supports same-unit owned
+`struct` moves/assignments/returns). **P4 is partial.**
 
 ## P5: GCC
 
@@ -176,7 +181,8 @@ feedback, noise, and every reset channel remain outside coverage.
 
 CI builds with GCC 11 and runs native tests, ASan/UBSan across the project's compiler chain, growth
 without tables, generated frontend differentials, and independent QASM validation.
-Logs/reproductions are archived. The
+Logs/reproductions are archived (including the latest everyday-profile full CI at `5c5a965` in
+[`full-ci-everyday-profile-v1`](audit-evidence/full-ci-everyday-profile-v1/README.es.md)). The
 [first remote run](https://github.com/igna-s/cket/actions/runs/38150646854), completed October 11,
 2026, passed the previous Python/Qiskit-based campaign; release evidence retains this historical
 distinction. Current validation uses C. Larger campaigns and additional intermediate measurements

@@ -76,8 +76,9 @@ corrections leave general lifetime, alias and ABI qualification open.
 The [delivery evidence](audit-evidence/runtime-memory-v1/README.es.md) records source identity and
 separates complete complex states/inverses, native observations, boundary rejections and preflight
 state preservation. It does not certify arbitrary states or complete C11. Retained history consumes
-the 128-wire representation budget; dense simulation supports 24 wires and sparse mode has bounded
-occupied support.
+the physical representation budget (128 wires in baseline `5c5a965`; expanded to 1024 in Wave 1A
+engine `QC_MAX_PHYSICAL`, pending Wave 1B/2); dense simulation supports 24 wires and sparse mode has
+bounded occupied support.
 
 Unbound counts require CPU parameter bindings. Runtime branches require native execution and cannot
 be flattened into QASM. Borrowed unitary modules reject `cmemory` until their ABI includes such a

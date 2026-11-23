@@ -10,7 +10,7 @@ static int phase_cpu_integer(qc_context *c, const cj_doc *d, int e) {
 }
 
 static int phase_expression(qc_context *c, const cj_doc *d, int e, unsigned depth) {
-    if (depth > 128 || d->count > 100000)
+    if (depth > 128 || (e >= 0 && e < d->count && d->tokens[e].next - e > 100000))
         return qc_fail(c, "phase expression complexity budget exceeded");
     static const char *const leaf[] = {"op", "bits", "value", NULL};
     static const char *const composite[] = {"op", "bits", "args", NULL};

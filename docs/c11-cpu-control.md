@@ -48,8 +48,10 @@ continue to name the joined source-level owner.
 In the loop-free branch route, both arms' fresh storage is reserved and prepared cleanly before the
 outer CPU dispatch. This keeps allocation identities consistent but incurs the sum of reserved
 branch storage, rather than just the executed arm's peak. Unused storage is cleanly released. More
-selective reservation is pending implementation; exceeding the 128-qubit circuit or 24-qubit native
-simulation budgets is an explicit resource failure. The join itself has zero physical storage cost.
+selective reservation is pending implementation; exceeding the physical circuit representation (128
+qubits in baseline `5c5a965`; 1024 in Wave 1A engine `QC_MAX_PHYSICAL`, pending Wave 1B/2) or
+24-qubit native simulation budgets is an explicit resource failure. The join itself has zero
+physical storage cost.
 
 ## Cleanup and information lifetime
 
@@ -115,8 +117,9 @@ build/validate_qasm
 
 Completed campaign counts and hashes are recorded in the
 [evidence archive](audit-evidence/README.md). Structured iterations now have a
-[native history contract](c11-runtime-history.md). Declarations inside controlled flow, products,
-dynamic indexed overwrites, `switch`, jumps, early returns, general memory and separate-compilation
-ABI remain P/R obligations. CPU effects inside coherent control retain their distinct
-semantic/effect requirements. Passing this finite stage does not complete M3 or the full C11
-objective.
+[native history contract](c11-runtime-history.md). Declarations inside controlled flow, dynamic
+indexed overwrites, `goto`/unstructured jumps, unverified arbitrary early returns (`5c5a965` adds
+structured `switch` and same-unit imperative owned scalar/`struct` returns), general memory and
+separate-compilation ABI remain P/R obligations. CPU effects inside coherent control retain their
+distinct semantic/effect requirements. Passing this finite stage does not complete M3 or the full
+C11 objective.

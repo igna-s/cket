@@ -2,7 +2,7 @@
  * Equal mux columns can share a view; compute still copies each logical result
  * bit into its own destination wire before reversing the private plan. */
 static int ar_same_bit(ar_bit a, ar_bit b) {
-    return a.wire == b.wire && a.inverted == b.inverted;
+    return qc_mask_eq(a.wire, b.wire) && a.inverted == b.inverted;
 }
 
 static int ar_select_view(ar_builder *p,
@@ -19,7 +19,7 @@ static int ar_select_view(ar_builder *p,
             out->bit[bit] = a;
             continue;
         }
-        if (!a.wire && !b.wire) {
+        if (!qc_mask_any(a.wire) && !qc_mask_any(b.wire)) {
             out->bit[bit] = condition;
             out->bit[bit].inverted ^= b.inverted;
             continue;

@@ -48,14 +48,15 @@ information or intermediate values.
 
 Each arithmetic plan limits proof/synthesis work to two million steps, recursive depth to 128, facts
 to 128 per branch, additional branch-range storage to 16 MiB, and temporary register records to 512.
-The backend's 128-qubit representation and the default dense simulator's 24-qubit limit also apply.
-Opt-in [sparse execution](simulacion-dispersa.es.md) uses an occupied-support budget within the same
-128-qubit representation. Exceeding a budget is an explicit resource restriction (**R**).
+The backend's baseline 128-qubit representation (`5c5a965`; expanded to 1024 in Wave 1A engine
+`QC_MAX_PHYSICAL`, pending Wave 1B/2) and the default dense simulator's 24-qubit limit also apply.
+Opt-in [sparse execution](simulacion-dispersa.es.md) uses an occupied-support budget within the
+configured physical-wire capacity. Exceeding a budget is an explicit resource restriction (**R**).
 
 ## Finite validation
 
-`tests/validate_expressions.c` runs **3505 checks** in each configuration. Its original 97 checks
-remain:
+`tests/validate_expressions.c` runs **3509 checks** in baseline `5c5a965` (expanding the 3505-check
+post-quotient suite and original 97 checks) in each configuration. Its original 97 checks remain:
 
 - Two regressions for legacy signed basis metadata, across the two synthesis configurations. A
   prepared signed eight-bit value with bit pattern 249 must be analyzed as -7 when the expression

@@ -53,9 +53,11 @@ static void gate_domains(void) {
             qc_gate g = {0};
             g.kind = (enum qc_kind)validation_bounded(&random, 3);
             g.target = (unsigned)validation_bounded(&random, width);
-            g.mask = validation_random(&random) & (((qc_mask)1 << width) - 1);
-            g.mask &= ~QC_WIRE(g.target);
-            g.pattern = validation_random(&random) & g.mask;
+            uint64_t width_mask = (UINT64_C(1) << width) - 1;
+            uint64_t mask_bits = validation_random(&random) & width_mask;
+            mask_bits &= ~(UINT64_C(1) << g.target);
+            g.mask = qc_mask_from_u64(mask_bits);
+            g.pattern = qc_mask_from_u64(validation_random(&random) & mask_bits);
             g.angle = ((int)validation_bounded(&random, 101) - 50) * .037;
             gates[step] = g;
             require(qc_emit(dense, g.kind, g.target, g.mask, g.pattern, g.angle), qc_error(dense));
@@ -84,10 +86,10 @@ static void high_wires(void) {
             qc_error(c));
     require(qc_apply(c, "{\"op\":\"qprepare\",\"id\":1,\"lower\":0,\"upper\":0}", NULL),
             qc_error(c));
-    require(qc_emit(c, QC_H, 127, 0, 0, 0), qc_error(c));
+    require(qc_emit(c, QC_H, 127, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
     require(qc_emit(c, QC_X, 63, QC_WIRE(127), QC_WIRE(127), 0), qc_error(c));
-    require(qc_emit(c, QC_X, 64, QC_WIRE(127), 0, 0), qc_error(c));
-    qc_mask mask = QC_WIRE(127) | QC_WIRE(63);
+    require(qc_emit(c, QC_X, 64, QC_WIRE(127), qc_mask_zero(), 0), qc_error(c));
+    qc_mask mask = qc_mask_or(QC_WIRE(127), QC_WIRE(63));
     require(qc_emit(c, QC_PHASE, 0, mask, mask, .37), qc_error(c));
     require(qc_sparse_size(c) == 2, "wide Bell support");
     unsigned seen = 0;
@@ -104,17 +106,46 @@ static void high_wires(void) {
     }
     require(seen == 3, "missing wide branch");
     require(qc_emit(c, QC_PHASE, 0, mask, mask, -.37), qc_error(c));
-    require(qc_emit(c, QC_X, 64, QC_WIRE(127), 0, 0), qc_error(c));
+    require(qc_emit(c, QC_X, 64, QC_WIRE(127), qc_mask_zero(), 0), qc_error(c));
     require(qc_emit(c, QC_X, 63, QC_WIRE(127), QC_WIRE(127), 0), qc_error(c));
-    require(qc_emit(c, QC_H, 127, 0, 0, 0), qc_error(c));
+    require(qc_emit(c, QC_H, 127, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
     require(cabs(qc_amplitude(c, 0) - 1) < 1e-12, "wide inverse");
     require(qc_sim_clean(c, qc_lookup(c, 0)) && qc_sim_clean(c, qc_lookup(c, 1)), "wide cleanup");
     qc_destroy(c);
     ++checks;
 
     c = context(1, 64, 7, 2);
-    require(qc_emit(c, QC_X, 63, 0, 0, 0), qc_error(c));
+    require(qc_emit(c, QC_X, 63, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
     require(!qc_sim_clean(c, qc_lookup(c, 0)), "dirty high wire was released");
+    qc_destroy(c);
+    ++checks;
+
+    /* Verify wires > 128 up to 900+ via qc_sparse_entry_words. */
+    c = qc_create_sparse(7, 4);
+    require(c != NULL, "high wire sparse context");
+    c->physical = 910;
+    require(qc_emit(c, QC_H, 900, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
+    require(qc_emit(c, QC_X, 5, QC_WIRE(900), QC_WIRE(900), 0), qc_error(c));
+    qc_mask hi_phase = qc_mask_or(QC_WIRE(900), QC_WIRE(5));
+    require(qc_emit(c, QC_PHASE, 0, hi_phase, hi_phase, .41), qc_error(c));
+    require(qc_sparse_size(c) == 2, "ultra-wide Bell support");
+    unsigned seen_hi = 0;
+    for (size_t row = 0; row < 2; ++row) {
+        uint64_t words[QC_MASK_WORDS] = {0};
+        double complex amplitude;
+        require(qc_sparse_entry_words(c, row, words, QC_MASK_WORDS, &amplitude),
+                "ultra-wide enumeration");
+        int branch = (words[900 / 64] >> (900 % 64)) & 1;
+        require((words[0] == (branch ? UINT64_C(32) : 0)), "ultra-wide low word");
+        double complex expected = (branch ? cexp(I * .41) : 1) / sqrt(2);
+        require(cabs(amplitude - expected) < 1e-12, "ultra-wide relative phase");
+        seen_hi |= 1u << branch;
+    }
+    require(seen_hi == 3, "missing ultra-wide branch");
+    require(qc_emit(c, QC_PHASE, 0, hi_phase, hi_phase, -.41), qc_error(c));
+    require(qc_emit(c, QC_X, 5, QC_WIRE(900), QC_WIRE(900), 0), qc_error(c));
+    require(qc_emit(c, QC_H, 900, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
+    require(cabs(qc_amplitude(c, 0) - 1) < 1e-12, "ultra-wide inverse");
     qc_destroy(c);
     ++checks;
 }
@@ -125,8 +156,9 @@ static void channels(void) {
         qc_context *sparse = context(1, 2, seed, 2);
         qc_context *both[] = {dense, sparse};
         for (unsigned mode = 0; mode < 2; ++mode) {
-            require(qc_emit(both[mode], QC_H, 0, 0, 0, 0), "Bell H");
-            require(qc_emit(both[mode], QC_X, 1, 1, 1, 0), "Bell X");
+            require(qc_emit(both[mode], QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0), "Bell H");
+            require(qc_emit(both[mode], QC_X, 1, qc_mask_from_u64(1), qc_mask_from_u64(1), 0),
+                    "Bell X");
         }
         require(qc_sim_measure(dense, 0) == qc_sim_measure(sparse, 0), "measurement outcome");
         compare(dense, sparse);
@@ -143,8 +175,9 @@ static void channels(void) {
      * Born probability must remain selectable; the old dense cutoff erased it. */
     for (int mode = 0; mode < 2; ++mode) {
         qc_context *c = context(mode, 1, UINT64_C(0x61c8864680b583eb), 2);
-        require(qc_emit(c, QC_H, 0, 0, 0, 0) && qc_emit(c, QC_PHASE, 0, 1, 1, 2e-8) &&
-                    qc_emit(c, QC_H, 0, 0, 0, 0),
+        require(qc_emit(c, QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0) &&
+                    qc_emit(c, QC_PHASE, 0, qc_mask_from_u64(1), qc_mask_from_u64(1), 2e-8) &&
+                    qc_emit(c, QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0),
                 "tiny-probability preparation");
         require(cabs(qc_amplitude(c, 1)) > 0, "tiny amplitude was pruned");
         require(qc_sim_measure(c, 0) == 1, "tiny Born probability was forced to zero");
@@ -158,16 +191,19 @@ static void budgets(void) {
     require(!qc_create_sparse(7, 0) && !qc_create_sparse(7, QC_SPARSE_MAX_STATES + 1),
             "invalid budget");
     qc_context *c = context(1, 2, 7, 2);
-    require(qc_emit(c, QC_H, 0, 0, 0, 0) && qc_emit(c, QC_H, 0, 0, 0, 0),
+    require(qc_emit(c, QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0) &&
+                qc_emit(c, QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0),
             "interference within support cap");
     require(qc_sparse_size(c) == 1, "exact zero paths were retained");
-    require(qc_emit(c, QC_H, 0, 0, 0, 0), qc_error(c));
-    require(!qc_emit(c, QC_H, 1, 0, 0, 0) && strstr(qc_error(c), "support exceeds 2"),
+    require(qc_emit(c, QC_H, 0, qc_mask_zero(), qc_mask_zero(), 0), qc_error(c));
+    require(!qc_emit(c, QC_H, 1, qc_mask_zero(), qc_mask_zero(), 0) &&
+                strstr(qc_error(c), "support exceeds 2"),
             "support exhaustion");
     require(qc_sparse_size(c) == 2 && cabs(qc_amplitude(c, 0) - 1 / sqrt(2)) < 1e-12 &&
                 cabs(qc_amplitude(c, 1) - 1 / sqrt(2)) < 1e-12,
             "failed H changed the state");
-    require(!qc_emit(c, QC_X, 0, 0, 0, 0), "failed context accepted another gate");
+    require(!qc_emit(c, QC_X, 0, qc_mask_zero(), qc_mask_zero(), 0),
+            "failed context accepted another gate");
     qc_destroy(c);
     ++checks;
 }
@@ -253,7 +289,7 @@ int main(int argc, char **argv) {
     budgets();
     native_programs(&v);
     printf(
-        "%u sparse simulation checks passed; phased gates/inverses, 128 wires, explicit channels, support bounds and native int32/size_t programs.\n",
+        "%u sparse simulation checks passed; phased gates/inverses, 1024 wires, explicit channels, support bounds and native int32/size_t programs.\n",
         checks);
     validation_cleanup(&v);
     return 0;

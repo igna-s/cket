@@ -72,6 +72,7 @@ ar rcs "$san_root/build/libcket_quantum.a" "$san_root/build/json.o" \
 "$real_cc" "${flags[@]}" tests/validate_profiles.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_profiles"
 "$real_cc" "${flags[@]}" tests/validate_numeric_locale.c tests/validation.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_numeric_locale"
 "$real_cc" "${flags[@]}" tests/validate_library.c tests/validation.c -o "$san_root/build/validate_library"
+"$real_cc" "${flags[@]}" -Isrc tests/validate_float.c "$san_root/build/libcket_quantum.a" -lm -o "$san_root/build/validate_float"
 "$real_cc" -dumpfullversion >"$san_root/build/gcc-version.txt"
 cat >"$san_root/build/gcc-wrapper" <<'WRAPPER'
 #!/usr/bin/env bash
@@ -158,4 +159,23 @@ LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-local
 LSAN_OPTIONS="${LSAN_OPTIONS:+$LSAN_OPTIONS:}suppressions=$PWD/tests/glibc-locale.lsan:print_suppressions=0" \
     "$san_root/build/validate_numeric_locale"
 "$san_root/build/validate_library"
+"$san_root/build/validate_float"
+ownership_proof="$(mktemp -d "$san_root/build/ownership-proof.XXXXXX")"
+python3 scripts/validate-ownership.py --compiler-root "$san_root" \
+    --output "$ownership_proof/sanitized" --levels O1 --sanitized
+heap_states_proof="$(mktemp -d "$san_root/build/heap-states-proof.XXXXXX")"
+python3 scripts/validate-heap.py --compiler-root "$san_root" \
+    --output "$heap_states_proof/sanitized" --levels O1 --sanitized
+heap_memory_proof="$(mktemp -d "$san_root/build/heap-memory-proof.XXXXXX")"
+python3 scripts/validate-heap-memory.py --compiler-root "$san_root" \
+    --output "$heap_memory_proof/sanitized" --levels O1 --sanitized
+heap_transfer_proof="$(mktemp -d "$san_root/build/heap-transfer-proof.XXXXXX")"
+python3 scripts/validate-heap-transfer.py --compiler-root "$san_root" \
+    --output "$heap_transfer_proof/sanitized" --levels O1 --sanitized
+runtime_version_states_proof="$(mktemp -d "$san_root/build/runtime-version-states-proof.XXXXXX")"
+python3 scripts/validate-runtime-versions.py --compiler-root "$san_root" \
+    --output "$runtime_version_states_proof/sanitized" --levels O1 --sanitized
+everyday_profile_proof="$(mktemp -d "$san_root/build/everyday-profile-proof.XXXXXX")"
+python3 scripts/validate-everyday-profile.py --compiler-root "$san_root" \
+    --output "$everyday_profile_proof/sanitized" --levels O1 --sanitized
 exec "$san_root/build/test_examples"

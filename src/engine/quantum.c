@@ -16,9 +16,8 @@ static uint64_t bits_mask(unsigned bits) {
     return bits == 64 ? UINT64_MAX : (UINT64_C(1) << bits) - 1;
 }
 
-static unsigned pop(qc_mask v) {
-    return (unsigned)(__builtin_popcountll((uint64_t)v) +
-                      __builtin_popcountll((uint64_t)(v >> 64)));
+static unsigned pop(uint64_t v) {
+    return (unsigned)__builtin_popcountll(v);
 }
 
 int qc_fail(qc_context *c, const char *fmt, ...) {
@@ -63,7 +62,7 @@ qc_context *qc_create_sparse(uint64_t seed, size_t max_states) {
     c->simulate = 1;
     c->sparse_limit = max_states;
     c->sparse_count = 1;
-    c->sparse[0] = (qc_sparse_term){0, 1};
+    c->sparse[0] = (qc_sparse_term){qc_mask_zero(), 1};
     return c;
 }
 
@@ -75,8 +74,24 @@ int qc_sparse_entry(
     const qc_context *c, size_t row, uint64_t *low, uint64_t *high, double complex *amplitude) {
     if (row >= c->sparse_count || !low || !high || !amplitude)
         return 0;
-    *low = (uint64_t)c->sparse[row].basis;
-    *high = (uint64_t)(c->sparse[row].basis >> 64);
+    *low = c->sparse[row].basis.w[0];
+    *high = c->sparse[row].basis.w[1];
+    *amplitude = c->sparse[row].amplitude;
+    return 1;
+}
+
+int qc_sparse_entry_words(const qc_context *c,
+                          size_t row,
+                          uint64_t *words,
+                          size_t word_count,
+                          double complex *amplitude) {
+    if (!c || row >= c->sparse_count || (!words && word_count) || !amplitude)
+        return 0;
+    size_t copy = word_count < QC_MASK_WORDS ? word_count : QC_MASK_WORDS;
+    for (size_t i = 0; i < copy; ++i)
+        words[i] = c->sparse[row].basis.w[i];
+    for (size_t i = copy; i < word_count; ++i)
+        words[i] = 0;
     *amplitude = c->sparse[row].amplitude;
     return 1;
 }
@@ -136,8 +151,9 @@ size_t qc_state_size(const qc_context *c) {
 
 double complex qc_amplitude(const qc_context *c, size_t index) {
     if (c->sparse_limit) {
+        qc_mask wanted = qc_mask_from_u64((uint64_t)index);
         for (size_t row = 0; row < c->sparse_count; ++row)
-            if (c->sparse[row].basis == (qc_mask)index)
+            if (qc_mask_eq(c->sparse[row].basis, wanted))
                 return c->sparse[row].amplitude;
         return 0;
     }
@@ -195,7 +211,8 @@ static void clear_definition(qc_register *r) {
     free(r->definition);
     r->definition = NULL;
     r->ndeps = 0;
-    r->definition_mask = r->definition_pattern = 0;
+    r->definition_mask = qc_mask_zero();
+    r->definition_pattern = qc_mask_zero();
     r->support_interval = 0;
 }
 
@@ -232,7 +249,7 @@ static int remember_dependency(qc_context *c, qc_register *r, uint32_t id) {
 
 static void unknown_support(qc_register *r) {
     r->basis_known = r->uniform = 0;
-    r->zero_mask = 0;
+    r->zero_mask = r->uniform_lower = r->uniform_upper = 0;
     r->support_interval = 0;
     r->support_lower = r->support_upper = 0;
 }
@@ -241,10 +258,9 @@ static void taint_uniform(qc_context *c, uint32_t id, qc_mask *seen) {
     qc_register *r = reg(c, id);
     if (!r || !r->alive)
         return;
-    qc_mask key = QC_WIRE(r->wires[0]);
-    if (*seen & key)
+    if (qc_mask_test(*seen, r->wires[0]))
         return;
-    *seen |= key;
+    *seen = qc_mask_set(*seen, r->wires[0]);
     r->uniform = 0;
     if (r->definition)
         for (unsigned j = 0; j < r->ndeps; ++j)
@@ -252,13 +268,13 @@ static void taint_uniform(qc_context *c, uint32_t id, qc_mask *seen) {
 }
 
 static void taint_controls(qc_context *c, qc_mask mask) {
-    qc_mask seen = 0;
+    qc_mask seen = qc_mask_zero();
     for (size_t i = 0; i < c->nregisters; ++i) {
         qc_register *r = &c->registers[i];
         if (!r->alive)
             continue;
         for (unsigned b = 0; b < r->width; ++b)
-            if (mask & (QC_WIRE(r->wires[b]))) {
+            if (qc_mask_test(mask, r->wires[b])) {
                 taint_uniform(c, r->id, &seen);
                 break;
             }
@@ -278,9 +294,9 @@ int qc_emit(qc_context *c,
             double angle) {
     if (c->error[0])
         return 0;
-    if ((kind == QC_X || kind == QC_H) && (mask & (QC_WIRE(target))))
+    if ((kind == QC_X || kind == QC_H) && qc_mask_test(mask, target))
         return qc_fail(c, "a quantum control aliases its target");
-    if (pattern & ~mask)
+    if (qc_mask_any(qc_mask_andnot(pattern, mask)))
         return qc_fail(c, "invalid quantum control pattern");
     qc_gate gate = {kind, target, mask, pattern, angle};
     if (!c->simulate || c->recording) {
@@ -298,16 +314,16 @@ int qc_emit(qc_context *c,
     }
     qc_mask used = mask;
     if (kind != QC_PHASE)
-        used |= QC_WIRE(target);
+        used = qc_mask_set(used, target);
     unsigned depth = 0;
     for (unsigned b = 0; b < c->physical; ++b)
-        if (used & QC_WIRE(b))
+        if (qc_mask_test(used, b))
             if (c->depths[b] > depth)
                 depth = c->depths[b];
-    if (used) {
+    if (qc_mask_any(used)) {
         ++depth;
         for (unsigned b = 0; b < c->physical; ++b)
-            if (used & QC_WIRE(b))
+            if (qc_mask_test(used, b))
                 c->depths[b] = depth;
         if (depth > c->depth)
             c->depth = depth;
@@ -315,7 +331,7 @@ int qc_emit(qc_context *c,
     if (kind == QC_H)
         ++c->h;
     else if (kind == QC_X) {
-        unsigned n = pop(mask);
+        unsigned n = qc_mask_pop(mask);
         if (!n)
             ++c->x;
         else if (n == 1)
@@ -325,7 +341,7 @@ int qc_emit(qc_context *c,
         else
             ++c->mcx;
     } else if (kind == QC_PHASE) {
-        if (mask)
+        if (qc_mask_any(mask))
             ++c->phase;
         else
             ++c->global_phase;
@@ -344,7 +360,7 @@ static int allocate(qc_context *c, uint32_t id, unsigned width, int ancillary, i
         return qc_fail(c, "quantum storage cannot be reinitialized implicitly");
     unsigned extra = width > c->nfree ? width - c->nfree : 0;
     if (extra > QC_MAX_PHYSICAL - c->physical)
-        return qc_fail(c, "gate IR is limited to 128 physical qubits");
+        return qc_fail(c, "gate IR is limited to %d physical qubits", QC_MAX_PHYSICAL);
     if (!qc_sim_grow(c, c->physical + extra))
         return 0;
     if (!previous && c->nregisters == c->register_capacity) {
@@ -515,16 +531,37 @@ static __int128 numeric(uint64_t v, unsigned bits, int sign) {
 /* Constant evaluation during reversible synthesis, never execution of C. */
 #include "ctype.inc"
 
+static int float_is_op(const cj_doc *d, int op);
+static int float_cond_truth(const cj_doc *d, int node, uint64_t val);
+static int float_evaluate(qc_context *c,
+                          const cj_doc *d,
+                          int e,
+                          int op,
+                          unsigned bits,
+                          int sign,
+                          int is_float,
+                          const int *nodes,
+                          unsigned n,
+                          uint64_t av,
+                          uint64_t bv,
+                          uint64_t *out);
+
 static int evaluate(
     qc_context *c, const cj_doc *d, int e, const domain *dom, const uint64_t *vals, uint64_t *out) {
     uint64_t bits64;
     if (!number(c, d, e, "bits", &bits64) || bits64 < 1 || bits64 > 64)
         return qc_fail(c, "invalid expression integer width");
     unsigned bits = (unsigned)bits64;
-    int sign = cj_bool(d, cj_get(d, e, "signed")), op = cj_get(d, e, "op");
+    int sign = cj_bool(d, cj_get(d, e, "signed")), is_float = cj_bool(d, cj_get(d, e, "float")),
+        op = cj_get(d, e, "op");
     if (cj_equal(d, op, "const")) {
         if (!number(c, d, e, "value", out))
             return 0;
+        if (is_float) {
+            if ((bits != 32 && bits != 64) || sign || *out > bits_mask(bits))
+                return qc_fail(c, "invalid floating-point constant");
+            return 1;
+        }
         *out = bits == 1 ? !!*out : *out & bits_mask(bits);
         return 1;
     }
@@ -557,21 +594,29 @@ static int evaluate(
     if (cj_equal(d, op, "select")) {
         if (n != 3)
             return qc_fail(c, "conditional expression requires three operands");
-        if (!evaluate(c, d, nodes[av ? 1 : 2], dom, vals, out))
+        if (!evaluate(c, d, nodes[float_cond_truth(d, nodes[0], av) ? 1 : 2], dom, vals, out))
             return 0;
-        *out = bits == 1 ? !!*out : *out & bits_mask(bits);
+        *out = bits == 1 && !is_float ? !!*out : *out & bits_mask(bits);
         return 1;
     }
-    if (cj_equal(d, op, "land") && !av) {
+    if (cj_equal(d, op, "land") && !float_cond_truth(d, nodes[0], av)) {
         *out = 0;
         return 1;
     }
-    if (cj_equal(d, op, "lor") && av) {
+    if (cj_equal(d, op, "lor") && float_cond_truth(d, nodes[0], av)) {
         *out = 1;
         return 1;
     }
     if (n > 1 && !evaluate(c, d, nodes[1], dom, vals, &bv))
         return 0;
+    if (cj_equal(d, op, "land") || cj_equal(d, op, "lor")) {
+        int ta = float_cond_truth(d, nodes[0], av);
+        int tb = float_cond_truth(d, nodes[1], bv);
+        *out = cj_equal(d, op, "land") ? (ta && tb) : (ta || tb);
+        return 1;
+    }
+    if (is_float || float_is_op(d, op) || cj_bool(d, cj_get(d, nodes[0], "float")))
+        return float_evaluate(c, d, e, op, bits, sign, is_float, nodes, (unsigned)n, av, bv, out);
     uint64_t abits, bbits = 1;
     if (!number(c, d, nodes[0], "bits", &abits))
         return 0;
@@ -664,7 +709,7 @@ static int evaluate(
 
 static int controls(
     qc_context *c, const cj_doc *d, int inst, qc_mask *mask, qc_mask *pattern, int *impossible) {
-    *mask = *pattern = 0;
+    *mask = *pattern = qc_mask_zero();
     *impossible = 0;
     int list = cj_get(d, inst, "controls");
     if (list < 0)
@@ -679,19 +724,21 @@ static int controls(
         qc_register *r = reg(c, (uint32_t)id);
         if (!r || !r->alive || r->width != 1)
             return qc_fail(c, "control requires available quant bool storage");
-        qc_mask bit = QC_WIRE(r->wires[0]);
-        if ((*mask & bit) && !!(*pattern & bit) != (int)v)
+        if (qc_mask_test(*mask, r->wires[0]) && qc_mask_test(*pattern, r->wires[0]) != (int)v)
             return qc_fail(c, "contradictory coherent controls");
-        *mask |= bit;
+        *mask = qc_mask_set(*mask, r->wires[0]);
         if (v)
-            *pattern |= bit;
+            *pattern = qc_mask_set(*pattern, r->wires[0]);
     }
     return 1;
 }
 
 #include "structured.inc"
 static const cj_doc *parsed_operation(qc_context *c, const char *text, cj_doc *local);
+static int compute(
+    qc_context *c, const cj_doc *d, int expr, qc_register *target, qc_mask outer, qc_mask pattern);
 #include "arithmetic.inc"
+#include "float_arithmetic.inc"
 #include "phase.inc"
 
 // Certificate-only proof shared by schema checks and metadata operations.
@@ -705,16 +752,18 @@ static int synthesize_compute(
     domain dom;
     if (!collect_domain(c, d, expr, &dom))
         return 0;
-    qc_mask inputs = 0, outputs = 0;
+    qc_mask inputs = qc_mask_zero(), outputs = qc_mask_zero();
     for (unsigned j = 0; j < dom.count; ++j) {
         qc_register *s = reg(c, dom.sources[j].id);
         for (unsigned b = 0; b < s->width; ++b)
-            inputs |= QC_WIRE(s->wires[b]);
+            inputs = qc_mask_set(inputs, s->wires[b]);
     }
     for (unsigned b = 0; b < target->width; ++b)
-        outputs |= QC_WIRE(target->wires[b]);
-    if (outputs & (inputs | outer))
+        outputs = qc_mask_set(outputs, target->wires[b]);
+    if (qc_mask_any(qc_mask_and(outputs, qc_mask_or(inputs, outer))))
         return qc_fail(c, "qcompute requires a separate clean output register");
+    if (float_expr_uses_float(d, expr))
+        return float_arithmetic_compute(c, d, expr, target, outer, state);
     int structured = structured_compute(c, d, expr, target, outer, state);
     if (structured)
         return structured > 0;
@@ -810,19 +859,25 @@ static int synthesize_compute(
         uint64_t *terms = minterms ? table : anf;
         for (size_t i = 0; i < n && ok; ++i)
             if (terms[i]) {
-                qc_mask local = 0, pattern = 0;
+                qc_mask local = qc_mask_zero(), pattern = qc_mask_zero();
                 for (unsigned b = 0; b < dom.nwires; ++b)
                     if (minterms || (i & ((size_t)1 << b))) {
                         qc_mask bit = QC_WIRE(dom.wires[b]);
-                        local |= bit;
+                        local = qc_mask_or(local, bit);
                         if (!minterms || (i & ((size_t)1 << b)))
-                            pattern |= bit;
+                            pattern = qc_mask_or(pattern, bit);
                     }
-                if (((state ^ pattern) & outer & local))
+                if (qc_mask_any(
+                        qc_mask_and(qc_mask_and(qc_mask_xor(state, pattern), outer), local)))
                     continue;
                 for (unsigned b = 0; b < target->width && ok; ++b)
                     if (terms[i] & (UINT64_C(1) << b))
-                        ok = qc_emit(c, QC_X, target->wires[b], outer | local, state | pattern, 0);
+                        ok = qc_emit(c,
+                                     QC_X,
+                                     target->wires[b],
+                                     qc_mask_or(outer, local),
+                                     qc_mask_or(state, pattern),
+                                     0);
             }
     }
     free(table);
@@ -853,10 +908,11 @@ static int compute(
         qc_register *r = j == dom.count ? target : reg(c, dom.sources[j].id);
         used += (size_t)snprintf(key + used,
                                  capacity - used,
-                                 "/%u:%u:%d:%d:%" PRIu64 ":%" PRIu64 ":%" PRIu64,
+                                 "/%u:%u:%d:%d:%d:%" PRIu64 ":%" PRIu64 ":%" PRIu64,
                                  r->id,
                                  r->width,
                                  r->signed_type,
+                                 r->float_type,
                                  j == dom.count ? 0 : r->basis_known,
                                  j == dom.count ? 0 : r->basis_value,
                                  j == dom.count ? 0 : r->zero_mask,
@@ -872,14 +928,14 @@ static int compute(
             used += (size_t)snprintf(key + used, capacity - used, ":%u", r->wires[b]);
     }
     snprintf(key + used, capacity - used, "/%d", c->allow_tables);
-    qc_mask occupied = 0;
+    qc_mask occupied = qc_mask_zero();
     for (size_t j = 0; j < c->nregisters; ++j)
         if (c->registers[j].alive)
             for (unsigned b = 0; b < c->registers[j].width; ++b)
-                occupied |= QC_WIRE(c->registers[j].wires[b]);
+                occupied = qc_mask_or(occupied, QC_WIRE(c->registers[j].wires[b]));
     for (qc_plan_cache *p = c->plans; p; p = p->next)
-        if (p->outer == outer && p->pattern == pattern && !(p->work & occupied) &&
-            !strcmp(p->key, key)) {
+        if (qc_mask_eq(p->outer, outer) && qc_mask_eq(p->pattern, pattern) &&
+            !qc_mask_any(qc_mask_and(p->work, occupied)) && !strcmp(p->key, key)) {
             free(key);
             ++c->plan_hits;
             if (p->ancillary > c->ancillary_peak)
@@ -913,11 +969,11 @@ static int compute(
                 p->pattern = pattern;
                 p->ancillary = c->ancillary_peak;
                 for (size_t j = 0; j < count; ++j) {
-                    p->work |= p->gates[j].mask;
+                    p->work = qc_mask_or(p->work, p->gates[j].mask);
                     if (p->gates[j].kind != QC_PHASE)
-                        p->work |= QC_WIRE(p->gates[j].target);
+                        p->work = qc_mask_or(p->work, QC_WIRE(p->gates[j].target));
                 }
-                p->work &= ~occupied;
+                p->work = qc_mask_andnot(p->work, occupied);
                 p->next = c->plans;
                 c->plans = p;
                 c->plan_bytes += bytes;
@@ -937,10 +993,15 @@ static int synthesize_add_constant(
     for (unsigned offset = 0; offset < r->width; ++offset)
         if (value & (UINT64_C(1) << offset)) {
             for (unsigned b = r->width - 1; b > offset; --b) {
-                qc_mask local = 0;
+                qc_mask local = qc_mask_zero();
                 for (unsigned k = offset; k < b; ++k)
-                    local |= QC_WIRE(r->wires[k]);
-                if (!qc_emit(c, QC_X, r->wires[b], outer | local, state | local, 0))
+                    local = qc_mask_or(local, QC_WIRE(r->wires[k]));
+                if (!qc_emit(c,
+                             QC_X,
+                             r->wires[b],
+                             qc_mask_or(outer, local),
+                             qc_mask_or(state, local),
+                             0))
                     return 0;
             }
             if (!qc_emit(c, QC_X, r->wires[offset], outer, state, 0))
@@ -957,7 +1018,7 @@ add_constant(qc_context *c, qc_register *r, uint64_t value, qc_mask outer, qc_ma
     for (unsigned b = 0; b < r->width; ++b)
         used += (size_t)snprintf(key + used, sizeof key - used, ":%u", r->wires[b]);
     for (qc_plan_cache *p = c->plans; p; p = p->next)
-        if (p->outer == outer && p->pattern == state && !strcmp(p->key, key)) {
+        if (qc_mask_eq(p->outer, outer) && qc_mask_eq(p->pattern, state) && !strcmp(p->key, key)) {
             ++c->plan_hits;
             for (size_t j = 0; j < p->count; ++j) {
                 qc_gate g = p->gates[j];
@@ -1010,9 +1071,9 @@ static int swap_edge(
     for (unsigned b = 0; b < r->width; ++b)
         if (b != target) {
             qc_mask bit = QC_WIRE(r->wires[b]);
-            mask |= bit;
+            mask = qc_mask_or(mask, bit);
             if (left & (UINT64_C(1) << b))
-                pattern |= bit;
+                pattern = qc_mask_or(pattern, bit);
         }
     return qc_emit(c, QC_X, r->wires[target], mask, pattern, 0);
 }
@@ -1097,73 +1158,134 @@ static int permutation(
     return ok;
 }
 
-static int search_input(qc_context *c, const cj_doc *d, int inst, uint32_t id, unsigned *active) {
-    uint64_t upper;
-    if (!number(c, d, inst, "upper", &upper))
+static int emit_uniform_prep(qc_context *c, qc_register *r, uint64_t low_bits, uint64_t span) {
+    for (unsigned b = 0; b < r->width; ++b) {
+        if (!span && (low_bits & (UINT64_C(1) << b))) {
+            if (!qc_emit(c, QC_X, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0))
+                return 0;
+        } else if (span && (span & (UINT64_C(1) << b))) {
+            if (!qc_emit(c, QC_H, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0))
+                return 0;
+        } else if (span && !(low_bits & span) && (low_bits & (UINT64_C(1) << b))) {
+            if (!qc_emit(c, QC_X, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0))
+                return 0;
+        }
+    }
+    if (span && (low_bits & span) && !add_constant(c, r, low_bits, qc_mask_zero(), qc_mask_zero()))
         return 0;
-    if (upper < 1 || upper == UINT64_MAX || (upper & (upper + 1)))
-        return qc_fail(c, "find requires a nontrivial power-of-two uniform domain");
+    return 1;
+}
+
+static int search_input(qc_context *c,
+                        const cj_doc *d,
+                        int inst,
+                        uint32_t id,
+                        uint64_t *lower_out,
+                        uint64_t *upper_out,
+                        uint64_t *span_out,
+                        unsigned *active) {
     qc_register *input = reg(c, id);
-    if (!input || !input->uniform || input->uniform_upper != upper || !unborrowed(c, id))
+    if (!input || !input->alive)
+        return qc_fail(c, "unavailable find storage");
+    uint64_t lower = 0, upper;
+    if ((cj_get(d, inst, "lower") >= 0 &&
+         !qc_interval_bound(c, d, inst, "lower", input->width, input->signed_type, &lower)) ||
+        !qc_interval_bound(c, d, inst, "upper", input->width, input->signed_type, &upper))
+        return 0;
+    if (!qc_interval_ordered(input->signed_type, lower, upper) || lower == upper)
+        return qc_fail(c, "find requires a nontrivial power-of-two uniform domain");
+    uint64_t span = upper - lower;
+    if (span != UINT64_MAX && (span & (span + 1)))
+        return qc_fail(c, "find requires a nontrivial power-of-two uniform domain");
+    if (!input->uniform || input->uniform_lower != lower || input->uniform_upper != upper ||
+        !unborrowed(c, id))
         return qc_fail(c, "find input is not an independently certified pristine uniform register");
     domain dom;
     if (!collect_domain(c, d, cj_get(d, inst, "predicate"), &dom))
         return 0;
     if (dom.count != 1 || dom.sources[0].id != id || dom.sources[0].known)
         return qc_fail(c, "find predicate must depend only on its uniform owned input");
-    *active = 64 - (unsigned)__builtin_clzll(upper);
+    *lower_out = lower;
+    *upper_out = upper;
+    *span_out = span;
+    *active = span == UINT64_MAX ? 64u : 64u - (unsigned)__builtin_clzll(span);
     return 1;
 }
 
-static int grover(
-    qc_context *c, const cj_doc *d, int expr, uint32_t id, unsigned active, unsigned iterations) {
+static int grover(qc_context *c,
+                  const cj_doc *d,
+                  int expr,
+                  uint32_t id,
+                  uint64_t shift_bits,
+                  uint64_t span,
+                  unsigned active,
+                  unsigned iterations) {
     uint32_t scratch = UINT32_MAX;
     while (reg(c, scratch) && reg(c, scratch)->alive)
         --scratch;
     if (!allocate(c, scratch, 1, 1, 0))
         return 0;
+    int unaligned = (shift_bits & span) != 0;
+    uint64_t neg_shift = (0 - shift_bits) & bits_mask(reg(c, id)->width);
     for (unsigned k = 0; k < iterations; ++k) {
-        if (!compute(c, d, expr, reg(c, scratch), 0, 0))
+        if (!compute(c, d, expr, reg(c, scratch), qc_mask_zero(), qc_mask_zero()))
             return 0;
         qc_mask flag = QC_WIRE(reg(c, scratch)->wires[0]);
-        if (!qc_emit(c, QC_PHASE, 0, flag, flag, PI) || !compute(c, d, expr, reg(c, scratch), 0, 0))
+        if (!qc_emit(c, QC_PHASE, 0, flag, flag, PI) ||
+            !compute(c, d, expr, reg(c, scratch), qc_mask_zero(), qc_mask_zero()))
             return 0;
         qc_register *r = reg(c, id);
-        qc_mask mask = 0;
+        if (unaligned && !add_constant(c, r, neg_shift, qc_mask_zero(), qc_mask_zero()))
+            return 0;
+        qc_mask mask = qc_mask_zero();
         for (unsigned j = 0; j < active; ++j) {
-            mask |= QC_WIRE(r->wires[j]);
-            if (!qc_emit(c, QC_H, r->wires[j], 0, 0, 0) || !qc_emit(c, QC_X, r->wires[j], 0, 0, 0))
+            mask = qc_mask_or(mask, QC_WIRE(r->wires[j]));
+            if (!qc_emit(c, QC_H, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0) ||
+                !qc_emit(c, QC_X, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0))
                 return 0;
         }
         if (!qc_emit(c, QC_PHASE, 0, mask, mask, PI))
             return 0;
         for (unsigned j = 0; j < active; ++j)
-            if (!qc_emit(c, QC_X, r->wires[j], 0, 0, 0) || !qc_emit(c, QC_H, r->wires[j], 0, 0, 0))
+            if (!qc_emit(c, QC_X, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0) ||
+                !qc_emit(c, QC_H, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0))
                 return 0;
+        if (unaligned && !add_constant(c, r, shift_bits, qc_mask_zero(), qc_mask_zero()))
+            return 0;
     }
     return release(c, reg(c, scratch));
 }
 
 static int find_value(qc_context *c, const cj_doc *d, int inst, uint32_t id) {
+    uint64_t lower, upper, span;
     unsigned active;
-    if (!search_input(c, d, inst, id, &active))
+    if (!search_input(c, d, inst, id, &lower, &upper, &span, &active))
         return 0;
-    uint64_t marked = 1, N = UINT64_C(1) << active;
+    uint64_t marked = 1;
     if (cj_get(d, inst, "solutions") >= 0 && !number(c, d, inst, "solutions", &marked))
         return 0;
-    if (!marked || marked > N)
+    if (!marked || (span != UINT64_MAX && marked > span + 1))
         return qc_fail(
             c, "solution count promise must be in 1..N; use search for unknown or zero counts");
-    double theta = asin(sqrt((double)marked / (double)N)),
-           estimate = fmax(0, PI / (4 * theta) - .5);
+    double N = active == 64 ? ldexp(1.0, 64) : (double)(UINT64_C(1) << active);
+    double theta = asin(sqrt((double)marked / N)), estimate = fmax(0, PI / (4 * theta) - .5);
     if (estimate > 1000000)
         return qc_fail(c, "Grover iteration budget exceeded");
     unsigned a = (unsigned)floor(estimate), b = (unsigned)ceil(estimate);
     unsigned iterations =
         pow(sin((2 * b + 1) * theta), 2) > pow(sin((2 * a + 1) * theta), 2) ? b : a;
-    if (!grover(c, d, cj_get(d, inst, "predicate"), id, active, iterations))
-        return 0;
     qc_register *r = reg(c, id);
+    if (!c->structural && !grover(c,
+                                  d,
+                                  cj_get(d, inst, "predicate"),
+                                  id,
+                                  lower & bits_mask(r->width),
+                                  span,
+                                  active,
+                                  iterations))
+        return 0;
+    r = reg(c, id);
+    r->clean = 0;
     ++r->epoch;
     unknown_support(r);
     return 1;
@@ -1185,52 +1307,55 @@ static uint64_t search_below(qc_context *c, uint64_t limit) {
 }
 
 static int search_value(qc_context *c, const cj_doc *d, int inst, uint32_t id, uint64_t *result) {
+    uint64_t lower, upper, span, attempts;
     unsigned active;
-    if (!search_input(c, d, inst, id, &active))
+    if (!search_input(c, d, inst, id, &lower, &upper, &span, &active) ||
+        !qc_search_attempts(c, d, inst, &attempts))
         return 0;
-    uint64_t attempts;
-    if (!number(c, d, inst, "attempts", &attempts) || !attempts || attempts > 4096)
-        return qc_fail(c, "search attempt budget must be in 1..4096");
+    double N = active == 64 ? ldexp(1.0, 64) : (double)(UINT64_C(1) << active);
+    uint64_t K = (uint64_t)ceil(sqrt(N));
+    if (K > 1000000)
+        return qc_fail(c, "search oracle query budget exceeded");
+    qc_register *r = reg(c, id);
+    uint64_t low_bits = lower & bits_mask(r->width);
     if (!c->simulate) {
         if (!c->validation)
             return qc_fail(
                 c, "search requires native CPU feedback and cannot be flattened to static QASM");
         /* Validate the oracle even though the classical strategy has no static circuit. */
-        if (!grover(c, d, cj_get(d, inst, "predicate"), id, active, 1))
+        if (!c->structural &&
+            !grover(c, d, cj_get(d, inst, "predicate"), id, low_bits, span, active, 1))
             return 0;
-        qc_register *r = reg(c, id);
+        r = reg(c, id);
         unknown_support(r);
+        r->clean = 0;
         ++r->epoch;
         return 1;
     }
-    uint64_t N = UINT64_C(1) << active, K = (uint64_t)ceil(sqrt((double)N));
-    if (K > 1000000)
-        return qc_fail(c, "search oracle query budget exceeded");
     for (uint64_t trial = 0; trial < attempts; ++trial) {
         if (trial) {
-            qc_register *r = reg(c, id);
+            r = reg(c, id);
             for (unsigned j = 0; j < r->width; ++j) {
                 if (qc_sim_measure(c, r->wires[j])) {
-                    qc_gate x = {QC_X, r->wires[j], 0, 0, 0};
+                    qc_gate x = {QC_X, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0};
                     if (!qc_sim_gate(c, &x))
                         return 0;
                 }
-                if (!qc_emit(c, QC_RESET, r->wires[j], 0, 0, 0))
+                if (!qc_emit(c, QC_RESET, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0))
                     return 0;
             }
-            for (unsigned j = 0; j < active; ++j)
-                if (!qc_emit(c, QC_H, r->wires[j], 0, 0, 0))
-                    return 0;
+            if (!emit_uniform_prep(c, r, low_bits, span))
+                return 0;
         }
         /* Half the trials sample directly; half choose a uniform Grover count. */
         unsigned iterations = search_random(c) & 1 ? (unsigned)search_below(c, K) : 0;
-        if (!grover(c, d, cj_get(d, inst, "predicate"), id, active, iterations))
+        if (!grover(c, d, cj_get(d, inst, "predicate"), id, low_bits, span, active, iterations))
             return 0;
-        qc_register *r = reg(c, id);
+        r = reg(c, id);
         uint64_t candidate = 0;
         for (unsigned j = 0; j < r->width; ++j) {
             candidate |= (uint64_t)qc_sim_measure(c, r->wires[j]) << j;
-            if (!qc_emit(c, QC_MEASURE, r->wires[j], 0, 0, 0))
+            if (!qc_emit(c, QC_MEASURE, r->wires[j], qc_mask_zero(), qc_mask_zero(), 0))
                 return 0;
         }
         domain dom;
@@ -1244,17 +1369,18 @@ static int search_value(qc_context *c, const cj_doc *d, int inst, uint32_t id, u
             break;
         }
     }
-    qc_register *r = reg(c, id);
+    r = reg(c, id);
     unknown_support(r);
+    r->clean = 0;
     ++r->epoch;
     return 1;
 }
 
 static int swap_wires(qc_context *c, unsigned a, unsigned b, qc_mask mask, qc_mask pattern) {
     qc_mask abit = QC_WIRE(a), bbit = QC_WIRE(b);
-    return qc_emit(c, QC_X, a, mask | bbit, pattern | bbit, 0) &&
-           qc_emit(c, QC_X, b, mask | abit, pattern | abit, 0) &&
-           qc_emit(c, QC_X, a, mask | bbit, pattern | bbit, 0);
+    return qc_emit(c, QC_X, a, qc_mask_or(mask, bbit), qc_mask_or(pattern, bbit), 0) &&
+           qc_emit(c, QC_X, b, qc_mask_or(mask, abit), qc_mask_or(pattern, abit), 0) &&
+           qc_emit(c, QC_X, a, qc_mask_or(mask, bbit), qc_mask_or(pattern, bbit), 0);
 }
 
 static int fourier(qc_context *c, qc_register *r, int inverse, qc_mask mask, qc_mask pattern) {
@@ -1267,12 +1393,12 @@ static int fourier(qc_context *c, qc_register *r, int inverse, qc_mask mask, qc_
         if (!inverse && !qc_emit(c, QC_H, r->wires[j], mask, pattern, 0))
             return 0;
         for (unsigned k = 0; k < j; ++k) {
-            qc_mask both = (QC_WIRE(r->wires[j])) | (QC_WIRE(r->wires[k]));
+            qc_mask both = qc_mask_or(QC_WIRE(r->wires[j]), QC_WIRE(r->wires[k]));
             if (!qc_emit(c,
                          QC_PHASE,
                          0,
-                         mask | both,
-                         pattern | both,
+                         qc_mask_or(mask, both),
+                         qc_mask_or(pattern, both),
                          ldexp(inverse ? -PI : PI, -(int)(j - k))))
                 return 0;
         }
@@ -1369,7 +1495,7 @@ static int collect_disposed(qc_context *c) {
                 uint64_t value = r->basis_value;
                 for (unsigned bit = 0; bit < r->width; ++bit)
                     if ((value >> bit) & 1)
-                        if (!qc_emit(c, QC_X, r->wires[bit], 0, 0, 0))
+                        if (!qc_emit(c, QC_X, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0))
                             goto failed;
                 r->clean = 1;
                 r->basis_value = 0;
@@ -1506,6 +1632,22 @@ int qc_apply_token(qc_context *c,
                 return qc_fail(c, "invalid CPU binding descriptor count");
             char *wrapper = cj_copy(d, inst);
             uint64_t values[128] = {0};
+            int inner = cj_get(d, inst, "instruction");
+            if (inner >= 0 && cj_equal(d, cj_get(d, inner, "op"), "qsearch")) {
+                int att = cj_get(d, inner, "attempts");
+                if (att >= 0 && cj_equal(d, cj_get(d, att, "op"), "parameter")) {
+                    uint64_t pid;
+                    if (cj_u64(d, cj_get(d, att, "id"), &pid)) {
+                        size_t idx = 0;
+                        for (int p = parameters + 1; p < d->tokens[parameters].next;
+                             p = d->tokens[p].next, ++idx) {
+                            uint64_t did;
+                            if (cj_u64(d, cj_get(d, p, "id"), &did) && did == pid)
+                                values[idx] = 1;
+                        }
+                    }
+                }
+            }
             if (!wrapper)
                 return qc_fail(c, "cannot copy CPU binding template");
             int success =
@@ -1532,42 +1674,41 @@ int qc_apply_token(qc_context *c,
             return 1;
         qc_register *r = reg(c, (uint32_t)id);
         if (r && r->alive) {
-            qc_mask seen = 0;
+            qc_mask seen = qc_mask_zero();
             taint_uniform(c, r->id, &seen);
             clear_definition(r);
         }
         return 1;
     }
     if (cj_equal(d, op, "cmemory")) {
-        uint64_t count, limit, overlap;
-        cj_u64(d, cj_get(d, cj_get(d, inst, "count"), "value"), &count);
+        uint64_t limit, overlap = 0;
         cj_u64(d, cj_get(d, inst, "limit"), &limit);
+        int has_overlap = cj_u64(d, cj_get(d, inst, "overlap"), &overlap);
         *result = 0;
         if (c->validation && c->structural)
             return 1;
-        qc_mask mask, pattern;
-        int impossible;
-        if (!controls(c, d, inst, &mask, &pattern, &impossible))
+        uint64_t lo = 0, hi = 0;
+        int proven = 0;
+        if (!heap_prove_count_bounds(
+                c,
+                d,
+                inst,
+                cj_get(d, inst, "count"),
+                limit,
+                has_overlap,
+                overlap,
+                "runtime fixed memory exceeds checked byte bounds",
+                "overlapping quantum memcpy has undefined C behavior; use memmove",
+                &lo,
+                &hi,
+                &proven))
             return 0;
-        int guards = cj_get(d, inst, "controls");
-        if (guards >= 0) {
-            ar_builder proof = {.c = c, .d = d};
-            for (int t = guards + 1; t < d->tokens[guards].next; t = d->tokens[t].next) {
-                uint64_t id, wanted;
-                int fixed;
-                cj_u64(d, cj_get(d, t, "id"), &id);
-                cj_u64(d, cj_get(d, t, "value"), &wanted);
-                if (ar_register_boolean_constant(&proof, (uint32_t)id, &fixed, 0) &&
-                    fixed != (int)wanted)
-                    return 1;
-                if (*c->error)
-                    return 0;
-            }
-        }
-        if (count > limit)
-            return qc_fail(c, "runtime fixed memory exceeds checked byte bounds");
-        if (cj_u64(d, cj_get(d, inst, "overlap"), &overlap) && count > overlap)
-            return qc_fail(c, "overlapping quantum memcpy has undefined C behavior; use memmove");
+        if (!proven)
+            return qc_fail(c,
+                           "%s",
+                           has_overlap && overlap < limit
+                               ? "overlapping quantum memcpy has undefined C behavior; use memmove"
+                               : "runtime fixed memory exceeds checked byte bounds");
         return 1;
     }
     if (!c->structural) {
@@ -1661,18 +1802,21 @@ int qc_apply_token(qc_context *c,
         uint64_t width;
         if (!number(c, d, inst, "width", &width) || width > 64)
             return qc_fail(c, "invalid quantum register width");
+        int is_float = cj_bool(d, cj_get(d, inst, "float"));
         int s = cj_get(d, inst, "signed");
         if (!allocate(c,
                       (uint32_t)id,
                       (unsigned)width,
                       cj_bool(d, cj_get(d, inst, "ancilla")),
-                      s < 0 ? -1 : cj_bool(d, s)))
+                      is_float ? 0 : (s < 0 ? -1 : cj_bool(d, s))))
             return 0;
+        reg(c, (uint32_t)id)->float_type = is_float;
         if (cj_equal(d, op, "qborrow")) {
             qc_register *r = reg(c, (uint32_t)id);
             unknown_support(r);
             r->clean = 0;
             r->prepared = 1;
+            r->readonly = cj_bool(d, cj_get(d, inst, "readonly"));
         }
         return 1;
     }
@@ -1737,7 +1881,7 @@ int qc_apply_token(qc_context *c,
         if (r->definition)
             return qc_fail(c, "updating a computed value invalidates its inverse");
         for (unsigned b = 0; b < r->width; ++b)
-            if (mask & (QC_WIRE(r->wires[b])))
+            if (qc_mask_test(mask, r->wires[b]))
                 return qc_fail(c, "XOR control aliases updated storage");
         int expr = cj_get(d, inst, "expr");
         uint64_t old_zero_mask = r->zero_mask, operand_zero_mask = 0;
@@ -1758,7 +1902,7 @@ int qc_apply_token(qc_context *c,
             domain dom;
             if (!collect_domain(c, d, expr, &dom))
                 return 0;
-            qc_mask seen = 0;
+            qc_mask seen = qc_mask_zero();
             for (unsigned j = 0; j < dom.count; ++j)
                 taint_uniform(c, dom.sources[j].id, &seen);
         } else {
@@ -1791,7 +1935,7 @@ int qc_apply_token(qc_context *c,
         if (r->definition)
             return qc_fail(c, "basis transformation of a computed value invalidates its inverse");
         for (unsigned b = 0; b < r->width; ++b)
-            if (mask & (QC_WIRE(r->wires[b])))
+            if (qc_mask_test(mask, r->wires[b]))
                 return qc_fail(c, "Fourier control aliases transformed storage");
         if (!impossible && !fourier(c, r, cj_bool(d, cj_get(d, inst, "inverse")), mask, pattern))
             return 0;
@@ -1828,43 +1972,46 @@ int qc_apply_token(qc_context *c,
         } else {
             if (has_argument)
                 return qc_fail(c, "runtime preparation argument conflicts with static interval");
-            if (!number(c, d, inst, "lower", &low) || !number(c, d, inst, "upper", &high))
+            if (!qc_interval_bound(c, d, inst, "lower", r->width, r->signed_type, &low) ||
+                !qc_interval_bound(c, d, inst, "upper", r->width, r->signed_type, &high))
                 return 0;
         }
-        if (low > high || high > bits_mask(r->width))
+        if (expression < 0 && !cj_bool(d, cj_get(d, inst, "dynamic"))) {
+            if (!qc_interval_ordered(r->signed_type, low, high))
+                return qc_fail(c, "preparation interval is outside the C integer register");
+        } else if (low > high || high > bits_mask(r->width))
             return qc_fail(c, "preparation interval is outside the C integer register");
         uint64_t span = high - low;
+        if (r->float_type && low != high)
+            return qc_fail(c, "floating-point preparation requires a single raw value");
         if (low != high && (span != UINT64_MAX && (span & (span + 1))))
-            return qc_fail(c, "uniform preparation requires [0,2^k-1] or a single basis value");
-        if (low != high && r->signed_type == 1 && high >= (UINT64_C(1) << (r->width - 1)))
-            return qc_fail(c, "uniform interval is not nonnegative in its signed C type");
-        for (unsigned b = 0; b < r->width; ++b) {
-            if (low == high && (low & (UINT64_C(1) << b))) {
-                if (!qc_emit(c, QC_X, r->wires[b], 0, 0, 0))
-                    return 0;
-            } else if (low != high && (span & (UINT64_C(1) << b))) {
-                if (!qc_emit(c, QC_H, r->wires[b], 0, 0, 0))
-                    return 0;
-            } else if (low != high && !(low & span) && (low & (UINT64_C(1) << b))) {
-                if (!qc_emit(c, QC_X, r->wires[b], 0, 0, 0))
-                    return 0;
+            return qc_fail(
+                c, "uniform preparation requires a single basis value or a power-of-two interval");
+        uint64_t low_bits = low & bits_mask(r->width), high_bits = high & bits_mask(r->width);
+        if (!c->structural && !emit_uniform_prep(c, r, low_bits, span))
+            return 0;
+        uint64_t nonzero = low_bits;
+        if (low != high) {
+            if (r->signed_type == 1 && (int64_t)low < 0 && (int64_t)high >= 0)
+                nonzero = bits_mask(r->width);
+            else {
+                uint64_t diff = low_bits ^ high_bits;
+                for (unsigned shift = 1; shift < 64; shift *= 2)
+                    diff |= diff >> shift;
+                nonzero = low_bits | high_bits | diff;
             }
         }
-        if (low != high && (low & span) && !c->structural && !add_constant(c, r, low, 0, 0))
-            return 0;
-        uint64_t nonzero = high;
-        if (low & span)
-            for (unsigned shift = 1; shift < 64; shift *= 2)
-                nonzero |= nonzero >> shift;
         r->prepared = 1;
-        if (high)
+        if (low != high || low_bits)
             r->clean = 0;
         r->basis_known = low == high;
-        r->basis_value = low;
+        r->basis_value = low == high ? low_bits : 0;
         r->zero_mask = bits_mask(r->width) & ~nonzero;
-        r->uniform = low != high && low == 0;
-        r->uniform_upper = low == 0 ? high : 0;
-        r->support_interval = low != high && low != 0;
+        r->uniform = low != high;
+        r->uniform_lower = low != high ? low : 0;
+        r->uniform_upper = low != high ? high : 0;
+        int nonneg = r->signed_type != 1 || (int64_t)low >= 0;
+        r->support_interval = low != high && low != 0 && nonneg;
         r->support_lower = r->support_interval ? low : 0;
         r->support_upper = r->support_interval ? high : 0;
         ++r->epoch;
@@ -1901,7 +2048,8 @@ int qc_apply_token(qc_context *c,
                 free(definition);
                 return qc_fail(c, "safe uncomputation cannot be proven: expression changed");
             }
-            if (mask != r->definition_mask || pattern != r->definition_pattern) {
+            if (!qc_mask_eq(mask, r->definition_mask) ||
+                !qc_mask_eq(pattern, r->definition_pattern)) {
                 free(definition);
                 return qc_fail(c, "safe uncomputation cannot be proven: controls changed");
             }
@@ -1959,7 +2107,7 @@ int qc_apply_token(qc_context *c,
             unknown_support(r);
             uint64_t lower, upper;
             if (computed_interval(c, d, expr, r->width, r->signed_type, &lower, &upper)) {
-                if (mask)
+                if (qc_mask_any(mask))
                     lower = 0; // The inactive clean target remains zero.
                 r->support_interval = 1;
                 r->support_lower = lower;
@@ -2008,7 +2156,7 @@ int qc_apply_token(qc_context *c,
         uint64_t basis = r->basis_value;
         for (unsigned bit = 0; bit < r->width; ++bit)
             if ((basis >> bit) & 1)
-                if (!qc_emit(c, QC_X, r->wires[bit], 0, 0, 0))
+                if (!qc_emit(c, QC_X, r->wires[bit], qc_mask_zero(), qc_mask_zero(), 0))
                     return 0;
         r->clean = 1;
         r->basis_value = 0;
@@ -2020,15 +2168,15 @@ int qc_apply_token(qc_context *c,
         domain dom;
         if (!collect_domain(c, d, expr, &dom))
             return 0;
-        qc_mask inputs = 0, outputs = 0;
+        qc_mask inputs = qc_mask_zero(), outputs = qc_mask_zero();
         for (unsigned j = 0; j < dom.count; ++j) {
             qc_register *source = reg(c, dom.sources[j].id);
             for (unsigned b = 0; b < source->width; ++b)
-                inputs |= QC_WIRE(source->wires[b]);
+                inputs = qc_mask_or(inputs, QC_WIRE(source->wires[b]));
         }
         for (unsigned b = 0; b < r->width; ++b)
-            outputs |= QC_WIRE(r->wires[b]);
-        if (outputs & (inputs | mask))
+            outputs = qc_mask_or(outputs, QC_WIRE(r->wires[b]));
+        if (qc_mask_any(qc_mask_and(outputs, qc_mask_or(inputs, mask))))
             return qc_fail(c,
                            "modular expression addition requires disjoint destination and inputs");
         if (r->definition)
@@ -2044,7 +2192,7 @@ int qc_apply_token(qc_context *c,
                             pattern))
             return 0;
         r = reg(c, (uint32_t)id);
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         for (unsigned j = 0; j < dom.count; ++j)
             taint_uniform(c, dom.sources[j].id, &seen);
         taint_controls(c, mask);
@@ -2067,7 +2215,7 @@ int qc_apply_token(qc_context *c,
             return qc_fail(
                 c, "updating a computed value would invalidate its inverse; create a fresh result");
         for (unsigned b = 0; b < r->width; ++b)
-            if (mask & (QC_WIRE(r->wires[b])))
+            if (qc_mask_test(mask, r->wires[b]))
                 return qc_fail(c, "updating quantum control storage is not reversible control");
         if (!impossible) {
             if (cj_equal(d, op, "qadd_register")) {
@@ -2077,15 +2225,17 @@ int qc_apply_token(qc_context *c,
                 qc_register *source = reg(c, (uint32_t)source_id);
                 for (unsigned b = 0; b < source->width && b < r->width; ++b) {
                     qc_mask bit = QC_WIRE(source->wires[b]);
-                    if ((mask & bit) && !(pattern & bit))
+                    if (qc_mask_test(mask, source->wires[b]) &&
+                        !qc_mask_test(pattern, source->wires[b]))
                         continue;
                     uint64_t amount = UINT64_C(1) << b;
                     if (cj_bool(d, cj_get(d, inst, "subtract")))
                         amount = 0 - amount;
-                    if (!add_constant(c, r, amount, mask | bit, pattern | bit))
+                    if (!add_constant(
+                            c, r, amount, qc_mask_or(mask, bit), qc_mask_or(pattern, bit)))
                         return 0;
                 }
-                qc_mask seen = 0;
+                qc_mask seen = qc_mask_zero();
                 taint_uniform(c, source->id, &seen);
             } else if (cj_equal(d, op, "qadd_inplace")) {
                 if (!has_argument) {
@@ -2106,7 +2256,7 @@ int qc_apply_token(qc_context *c,
                 return 0;
         }
         taint_controls(c, mask);
-        if (cj_equal(d, op, "qadd_inplace") && !mask && r->basis_known &&
+        if (cj_equal(d, op, "qadd_inplace") && !qc_mask_any(mask) && r->basis_known &&
             (has_argument || cj_get(d, inst, "value") >= 0)) {
             r->basis_value = (r->basis_value + argument) & bits_mask(r->width);
             r->zero_mask = bits_mask(r->width) & ~r->basis_value;
@@ -2118,16 +2268,16 @@ int qc_apply_token(qc_context *c,
         return 1;
     }
     if (cj_equal(d, op, "qreset")) {
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         taint_uniform(c, r->id, &seen);
         for (unsigned b = 0; b < r->width; ++b) {
             int measured = qc_sim_measure(c, r->wires[b]);
             if (measured) {
-                qc_gate xgate = {QC_X, r->wires[b], 0, 0, 0};
+                qc_gate xgate = {QC_X, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0};
                 if (!qc_sim_gate(c, &xgate))
                     return 0;
             }
-            if (!qc_emit(c, QC_RESET, r->wires[b], 0, 0, 0))
+            if (!qc_emit(c, QC_RESET, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0))
                 return 0;
         }
         ++r->epoch;
@@ -2151,12 +2301,12 @@ int qc_apply_token(qc_context *c,
                     return qc_fail(c, "value observation requires unchanged live inputs");
             }
         }
-        qc_mask seen = 0;
+        qc_mask seen = qc_mask_zero();
         taint_uniform(c, r->id, &seen);
         for (unsigned b = 0; b < r->width; ++b) {
             if (!c->ignore_measurements)
                 *result |= (uint64_t)qc_sim_measure(c, r->wires[b]) << b;
-            if (!qc_emit(c, QC_MEASURE, r->wires[b], 0, 0, 0))
+            if (!qc_emit(c, QC_MEASURE, r->wires[b], qc_mask_zero(), qc_mask_zero(), 0))
                 return 0;
         }
         ++r->epoch;
@@ -2168,12 +2318,6 @@ int qc_apply_token(qc_context *c,
             if (!collect_disposed(c))
                 return 0;
         }
-        return 1;
-    }
-    if (c->structural && (cj_equal(d, op, "qfind") || cj_equal(d, op, "qsearch"))) {
-        unknown_support(r);
-        r->clean = 0;
-        ++r->epoch;
         return 1;
     }
     if (cj_equal(d, op, "qfind"))
@@ -2400,21 +2544,21 @@ int qc_qasm(const qc_context *c, FILE *f) {
     uint64_t measurement = 0;
     for (size_t i = 0; i < c->ngates; ++i) {
         const qc_gate *g = &c->gates[i];
-        unsigned n = pop(g->mask);
+        unsigned n = qc_mask_pop(g->mask);
         if (g->kind == QC_RESET)
             fprintf(f, "reset q[%u];\n", g->target);
         else if (g->kind == QC_MEASURE)
             fprintf(f, "results[%" PRIu64 "] = measure q[%u];\n", measurement++, g->target);
         else {
             for (unsigned b = 0; b < c->physical; ++b)
-                if ((g->mask & QC_WIRE(b)) && !(g->pattern & QC_WIRE(b)))
+                if (qc_mask_test(g->mask, b) && !qc_mask_test(g->pattern, b))
                     fprintf(f, "x q[%u];\n", b);
             if (g->kind == QC_X || g->kind == QC_H) {
                 if (n)
                     fprintf(f, "ctrl(%u) @ ", n);
                 fputs(g->kind == QC_H ? "h " : "x ", f);
                 for (unsigned b = 0; b < c->physical; ++b)
-                    if (g->mask & QC_WIRE(b))
+                    if (qc_mask_test(g->mask, b))
                         fprintf(f, "q[%u], ", b);
                 fprintf(f, "q[%u];\n", g->target);
             } else if (!n)
@@ -2425,7 +2569,7 @@ int qc_qasm(const qc_context *c, FILE *f) {
                 fprintf(f, "p(%.17g) ", g->angle);
                 unsigned used = 0;
                 for (unsigned b = 0; b < c->physical; ++b)
-                    if (g->mask & QC_WIRE(b)) {
+                    if (qc_mask_test(g->mask, b)) {
                         if (used++)
                             fputs(", ", f);
                         fprintf(f, "q[%u]", b);
@@ -2433,7 +2577,7 @@ int qc_qasm(const qc_context *c, FILE *f) {
                 fputs(";\n", f);
             }
             for (unsigned b = 0; b < c->physical; ++b)
-                if ((g->mask & QC_WIRE(b)) && !(g->pattern & QC_WIRE(b)))
+                if (qc_mask_test(g->mask, b) && !qc_mask_test(g->pattern, b))
                     fprintf(f, "x q[%u];\n", b);
         }
     }

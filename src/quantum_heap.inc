@@ -14,16 +14,21 @@ void defer_heap_decisions() {
 std::string heap_allocator(tree fn) {
     if (!fn || DECL_SAVED_TREE(fn))
         return "";
-    const char *names[] = {"malloc", "calloc", "realloc", "free"};
+    const char *names[] = {
+        "malloc", "calloc", "realloc", "free", "aligned_alloc", "__cket_aligned_alloc"};
 
-    enum built_in_function codes[] = {
-        BUILT_IN_MALLOC, BUILT_IN_CALLOC, BUILT_IN_REALLOC, BUILT_IN_FREE};
+    enum built_in_function codes[] = {BUILT_IN_MALLOC,
+                                      BUILT_IN_CALLOC,
+                                      BUILT_IN_REALLOC,
+                                      BUILT_IN_FREE,
+                                      BUILT_IN_NONE,
+                                      BUILT_IN_NONE};
 
-    for (unsigned i = 0; i < 4; ++i)
-        if (fndecl_built_in_p(fn, codes[i]) ||
+    for (unsigned i = 0; i < 6; ++i)
+        if ((codes[i] != BUILT_IN_NONE && fndecl_built_in_p(fn, codes[i])) ||
             (DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
              in_system_header_at(DECL_SOURCE_LOCATION(fn)) && name_of(fn) == names[i]))
-            return names[i];
+            return i >= 4 ? "aligned_alloc" : names[i];
     return "";
 }
 
@@ -106,19 +111,68 @@ tree heap_runtime_call(const char *name,
     return build_call_expr_loc_array(loc, fn, values.size(), values.data());
 }
 
+bool heap_struct_layout(tree element,
+                        tree &field_type,
+                        uint64_t &field_count,
+                        uint64_t &field_stride) {
+    if (!element || TREE_CODE(element) != RECORD_TYPE || !TYPE_SIZE_UNIT(element) ||
+        !tree_fits_uhwi_p(TYPE_SIZE_UNIT(element)))
+        return false;
+    field_type = NULL_TREE;
+    field_count = 0;
+    for (tree f = TYPE_FIELDS(element); f; f = DECL_CHAIN(f)) {
+        if (TREE_CODE(f) != FIELD_DECL)
+            continue;
+        if (DECL_BIT_FIELD(f) || !INTEGRAL_TYPE_P(TREE_TYPE(f)) || !TYPE_PRECISION(TREE_TYPE(f)) ||
+            TYPE_PRECISION(TREE_TYPE(f)) > 64 || !TYPE_SIZE_UNIT(TREE_TYPE(f)) ||
+            !tree_fits_uhwi_p(TYPE_SIZE_UNIT(TREE_TYPE(f))))
+            return false;
+        if (!field_type)
+            field_type = TREE_TYPE(f);
+        else if (TYPE_MAIN_VARIANT(TREE_TYPE(f)) != TYPE_MAIN_VARIANT(field_type) ||
+                 TYPE_PRECISION(TREE_TYPE(f)) != TYPE_PRECISION(field_type) ||
+                 TYPE_UNSIGNED(TREE_TYPE(f)) != TYPE_UNSIGNED(field_type))
+            return false;
+        ++field_count;
+    }
+    if (!field_type || !field_count)
+        return false;
+    field_stride = tree_to_uhwi(TYPE_SIZE_UNIT(field_type));
+    return field_stride == static_cast<uint64_t>((TYPE_PRECISION(field_type) + 7) / 8) &&
+           tree_to_uhwi(TYPE_SIZE_UNIT(element)) == field_count * field_stride;
+}
+
 tree heap_allocate_call(tree call, tree pointer_type) {
     tree fn = get_callee_fndecl(call), element = TREE_TYPE(pointer_type);
     std::string operation = heap_allocator(fn);
     unsigned arity = operation == "malloc" ? 1 : 2;
-    if ((operation != "malloc" && operation != "calloc" && operation != "realloc") ||
-        (unsigned)call_expr_nargs(call) != arity || !INTEGRAL_TYPE_P(element) ||
-        !TYPE_PRECISION(element) || TYPE_PRECISION(element) > 64 || !TYPE_SIZE_UNIT(element) ||
-        !tree_fits_uhwi_p(TYPE_SIZE_UNIT(element)))
+    if ((operation != "malloc" && operation != "calloc" && operation != "realloc" &&
+         operation != "aligned_alloc") ||
+        (unsigned)call_expr_nargs(call) != arity)
         return NULL_TREE;
-    uint64_t stride = tree_to_uhwi(TYPE_SIZE_UNIT(element));
-    if (stride != static_cast<uint64_t>((TYPE_PRECISION(element) + 7) / 8)) {
-        error_at(at(call), "|c>: quantum heap requires padding-free scalar elements");
-        return build_zero_cst(pointer_type);
+    tree scalar = element;
+    uint64_t field_count = 1, stride = 0;
+    if (TREE_CODE(element) == RECORD_TYPE) {
+        if (!heap_struct_layout(element, scalar, field_count, stride))
+            return NULL_TREE;
+    } else {
+        if (!INTEGRAL_TYPE_P(element) || !TYPE_PRECISION(element) || TYPE_PRECISION(element) > 64 ||
+            !TYPE_SIZE_UNIT(element) || !tree_fits_uhwi_p(TYPE_SIZE_UNIT(element)))
+            return NULL_TREE;
+        stride = tree_to_uhwi(TYPE_SIZE_UNIT(element));
+        if (stride != static_cast<uint64_t>((TYPE_PRECISION(element) + 7) / 8)) {
+            error_at(at(call), "|c>: quantum heap requires padding-free scalar elements");
+            return build_zero_cst(pointer_type);
+        }
+    }
+    if (operation == "aligned_alloc") {
+        tree align = strip(fold(CALL_EXPR_ARG(call, 0)));
+        if (!align || TREE_CODE(align) != INTEGER_CST || !tree_fits_uhwi_p(align) ||
+            tree_to_uhwi(align) == 0 || (tree_to_uhwi(align) & (tree_to_uhwi(align) - 1)) != 0) {
+            error_at(at(call),
+                     "|c>: quantum aligned_alloc requires a constant power-of-two alignment");
+            return build_zero_cst(pointer_type);
+        }
     }
     tree ull = long_long_unsigned_type_node;
     std::vector<tree> args, types;
@@ -135,7 +189,8 @@ tree heap_allocate_call(tree call, tree pointer_type) {
         args.push_back(CALL_EXPR_ARG(call, 0));
         types.push_back(ptr_type_node);
     }
-    for (unsigned i = operation == "realloc" ? 1 : 0; i < arity; ++i) {
+    for (unsigned i = (operation == "realloc" || operation == "aligned_alloc") ? 1 : 0; i < arity;
+         ++i) {
         if (has_quantum(CALL_EXPR_ARG(call, i))) {
             error_at(at(call), "|c>: quantum heap capacity must be a classical integer");
             return build_zero_cst(pointer_type);
@@ -144,8 +199,8 @@ tree heap_allocate_call(tree call, tree pointer_type) {
         types.push_back(ull);
     }
     args.push_back(build_int_cstu(ull, stride));
-    args.push_back(build_int_cstu(ull, TYPE_PRECISION(element)));
-    args.push_back(build_int_cstu(ull, !TYPE_UNSIGNED(element)));
+    args.push_back(build_int_cstu(ull, TYPE_PRECISION(scalar)));
+    args.push_back(build_int_cstu(ull, !TYPE_UNSIGNED(scalar)));
     types.insert(types.end(), 3, ull);
     const char *name = operation == "realloc"  ? "__cket_heap_realloc"
                        : operation == "calloc" ? "__cket_heap_calloc"
@@ -166,7 +221,8 @@ bool expand_heap_declaration(tree decl) {
                         heap_pointer(CALL_EXPR_ARG(init, 0));
     if (!annotated && !borrowed && !reallocation)
         return false;
-    tree element = TREE_TYPE(type);
+    tree element = TREE_TYPE(type), scalar = NULL_TREE;
+    uint64_t field_count = 1, stride = 0;
     if (init && TREE_CODE(init) == CALL_EXPR) {
         tree allocated = heap_allocate_call(init, type);
         if (allocated) {
@@ -175,7 +231,8 @@ bool expand_heap_declaration(tree decl) {
             return true;
         }
     }
-    if (init && integer_zerop(init) && annotated && INTEGRAL_TYPE_P(element)) {
+    if (init && integer_zerop(init) && annotated &&
+        (INTEGRAL_TYPE_P(element) || heap_struct_layout(element, scalar, field_count, stride))) {
         quantum_heap_pointers[decl] = element;
         instructions.push_back("{\"op\":\"cheap\"}");
         return true;
@@ -260,6 +317,70 @@ bool heap_access(tree value, QuantumHeapAccess &access) {
         return true;
     }
     tree pointer = NULL_TREE, index = NULL_TREE;
+    if (TREE_CODE(value) == COMPONENT_REF) {
+        tree container = strip(TREE_OPERAND(value, 0)), field = TREE_OPERAND(value, 1);
+        tree struct_type = container ? TREE_TYPE(container) : NULL_TREE;
+        tree field_type = NULL_TREE;
+        uint64_t field_count = 0, field_stride = 0;
+        if (!struct_type || !heap_struct_layout(struct_type, field_type, field_count, field_stride))
+            return false;
+        tree base_ptr = NULL_TREE, elem_idx = NULL_TREE;
+        if (TREE_CODE(container) == ARRAY_REF) {
+            base_ptr = TREE_OPERAND(container, 0);
+            elem_idx = TREE_OPERAND(container, 1);
+        } else if (TREE_CODE(container) == INDIRECT_REF) {
+            tree p = TREE_OPERAND(container, 0);
+            if (TREE_CODE(strip(p)) == POINTER_PLUS_EXPR) {
+                tree sum = strip(p);
+                base_ptr = TREE_OPERAND(sum, 0);
+                tree bytes = TREE_OPERAND(sum, 1);
+                uint64_t s = tree_to_uhwi(TYPE_SIZE_UNIT(struct_type));
+                if (TREE_CODE(strip(bytes)) == INTEGER_CST && tree_fits_uhwi_p(strip(bytes)) &&
+                    tree_to_uhwi(strip(bytes)) % s == 0)
+                    elem_idx = build_int_cstu(long_long_unsigned_type_node,
+                                              tree_to_uhwi(strip(bytes)) / s);
+                else
+                    elem_idx = unscaled_quantum_pointer_index(bytes, s);
+                if (!elem_idx)
+                    return false;
+            } else {
+                base_ptr = p;
+                elem_idx = build_zero_cst(long_long_unsigned_type_node);
+            }
+        } else {
+            return false;
+        }
+        tree element = NULL_TREE;
+        bool readonly = false;
+        if (!heap_pointer(base_ptr, element, readonly) ||
+            TYPE_MAIN_VARIANT(element) != TYPE_MAIN_VARIANT(struct_type))
+            return false;
+        uint64_t ord = 0;
+        bool found_field = false;
+        for (tree f = TYPE_FIELDS(struct_type); f; f = DECL_CHAIN(f))
+            if (TREE_CODE(f) == FIELD_DECL) {
+                if (f == field) {
+                    found_field = true;
+                    break;
+                }
+                ++ord;
+            }
+        if (!found_field || TYPE_MAIN_VARIANT(TREE_TYPE(value)) != TYPE_MAIN_VARIANT(field_type))
+            return false;
+        tree expanded_elem = expand_quantum_program(elem_idx);
+        tree ull = long_long_unsigned_type_node;
+        tree flat = fold_build2_loc(at(value),
+                                    PLUS_EXPR,
+                                    ull,
+                                    fold_build2_loc(at(value),
+                                                    MULT_EXPR,
+                                                    ull,
+                                                    fold_convert(ull, expanded_elem),
+                                                    build_int_cstu(ull, field_count)),
+                                    build_int_cstu(ull, ord));
+        access = {base_ptr, save_expr(flat), TREE_TYPE(value), readonly};
+        return true;
+    }
     if (TREE_CODE(value) == INDIRECT_REF) {
         pointer = TREE_OPERAND(value, 0);
         if (TREE_CODE(strip(pointer)) == POINTER_PLUS_EXPR) {

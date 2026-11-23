@@ -13,7 +13,7 @@ static int poly_toggle(qc_context *c, bit_poly *p, qc_mask term) {
     for (unsigned i = 0; i < p->count; ++i) {
         if (++c->symbolic_work > 2000000)
             return qc_fail(c, "symbolic synthesis work budget exceeded");
-        if (p->terms[i] == term) {
+        if (qc_mask_eq(p->terms[i], term)) {
             p->terms[i] = p->terms[--p->count];
             return 1;
         }
@@ -35,7 +35,7 @@ static int poly_product(qc_context *c, bit_poly *p, const bit_poly *a, const bit
     p->count = 0;
     for (unsigned i = 0; i < a->count; ++i)
         for (unsigned j = 0; j < b->count; ++j)
-            if (!poly_toggle(c, p, a->terms[i] | b->terms[j]))
+            if (!poly_toggle(c, p, qc_mask_or(a->terms[i], b->terms[j])))
                 return 0;
     return 1;
 }
@@ -56,6 +56,8 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         return 0;
     if (++c->symbolic_work > 2000000)
         return qc_fail(c, "symbolic synthesis work budget exceeded");
+    if (cj_bool(d, cj_get(d, e, "float")))
+        return 0;
     uint64_t width;
     if (!cj_u64(d, cj_get(d, e, "bits"), &width))
         return 0;
@@ -71,7 +73,7 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
             return 0;
         if (width == 1)
             value = !!value;
-        return !(value & (UINT64_C(1) << bit)) || poly_toggle(c, out, 0);
+        return !(value & (UINT64_C(1) << bit)) || poly_toggle(c, out, qc_mask_zero());
     }
     if (cj_equal(d, op, "reg")) {
         uint64_t id;
@@ -81,7 +83,7 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         if (!r || !r->alive || !r->prepared)
             return 0;
         if (r->basis_known)
-            return !(r->basis_value & (UINT64_C(1) << bit)) || poly_toggle(c, out, 0);
+            return !(r->basis_value & (UINT64_C(1) << bit)) || poly_toggle(c, out, qc_mask_zero());
         if (r->zero_mask & (UINT64_C(1) << bit))
             return 1;
         return poly_toggle(c, out, QC_WIRE(r->wires[bit]));
@@ -97,31 +99,42 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         // A bound heap read retains its evaluated index as a discarded first
         // operand. Prove that whole operand, then synthesize the selected
         // value by bits without allocating a second full-width word.
+        bit_poly *discarded = malloc(sizeof *discarded);
+        if (!discarded)
+            return qc_fail(c, "out of memory in structured synthesis");
         for (unsigned b = 0; b < discarded_width; ++b) {
-            bit_poly discarded;
-            if (!expr_bit(c, d, nodes[0], b, &discarded, depth + 1))
+            if (!expr_bit(c, d, nodes[0], b, discarded, depth + 1)) {
+                free(discarded);
                 return 0;
+            }
         }
+        free(discarded);
         return expr_bit(c, d, nodes[1], bit, out, depth + 1);
     }
     if (cj_equal(d, op, "select") && n == 3) {
         uint64_t condition_width;
         int condition_op = cj_get(d, nodes[0], "op");
-        bit_poly condition, yes, no, difference;
         if (!cj_u64(d, cj_get(d, nodes[0], "bits"), &condition_width) ||
             (condition_width != 1 && !cj_equal(d, condition_op, "eq") &&
              !cj_equal(d, condition_op, "ne") && !cj_equal(d, condition_op, "not") &&
-             !cj_equal(d, condition_op, "land") && !cj_equal(d, condition_op, "lor")) ||
-            !expr_bit(c, d, nodes[0], 0, &condition, depth + 1) ||
-            !expr_bit(c, d, nodes[1], bit, &yes, depth + 1) ||
-            !expr_bit(c, d, nodes[2], bit, &no, depth + 1))
+             !cj_equal(d, condition_op, "land") && !cj_equal(d, condition_op, "lor")))
             return 0;
-        // Both pure arms must pass definedness. Lazy domains that cannot be
-        // proved here use arithmetic synthesis. The mux needs no word copy:
-        // no XOR (condition AND (yes XOR no)).
-        difference = yes;
-        return poly_xor(c, &difference, &no) && poly_product(c, out, &condition, &difference) &&
-               poly_xor(c, out, &no);
+        bit_poly *s = malloc(4 * sizeof *s);
+        if (!s)
+            return qc_fail(c, "out of memory in structured synthesis");
+        int ok = expr_bit(c, d, nodes[0], 0, &s[0], depth + 1) &&
+                 expr_bit(c, d, nodes[1], bit, &s[1], depth + 1) &&
+                 expr_bit(c, d, nodes[2], bit, &s[2], depth + 1);
+        if (ok) {
+            // Both pure arms must pass definedness. Lazy domains that cannot be
+            // proved here use arithmetic synthesis. The mux needs no word copy:
+            // no XOR (condition AND (yes XOR no)).
+            s[3] = s[1];
+            ok = poly_xor(c, &s[3], &s[2]) && poly_product(c, out, &s[0], &s[3]) &&
+                 poly_xor(c, out, &s[2]);
+        }
+        free(s);
+        return ok;
     }
     if (cj_equal(d, op, "cast")) {
         uint64_t source_width;
@@ -148,7 +161,7 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
         uint64_t value;
         if (collect_domain(&constant, d, e, &inputs) && !inputs.count &&
             evaluate(&constant, d, e, &inputs, NULL, &value))
-            return !(value & (UINT64_C(1) << bit)) || poly_toggle(c, out, 0);
+            return !(value & (UINT64_C(1) << bit)) || poly_toggle(c, out, qc_mask_zero());
     }
     if (n == 2 && (cj_equal(d, op, "eq") || cj_equal(d, op, "ne"))) {
         uint64_t left_width, right_width;
@@ -156,21 +169,28 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
             !cj_u64(d, cj_get(d, nodes[1], "bits"), &right_width) || left_width != right_width ||
             cj_bool(d, cj_get(d, nodes[0], "signed")) != cj_bool(d, cj_get(d, nodes[1], "signed")))
             return 0;
-        bit_poly equal = {.terms = {0}, .count = 1};
+        bit_poly *s = malloc(4 * sizeof *s);
+        if (!s)
+            return qc_fail(c, "out of memory in structured synthesis");
+        s[0].terms[0] = qc_mask_zero();
+        s[0].count = 1;
+        int ok = 1;
         for (unsigned i = 0; i < left_width; ++i) {
-            bit_poly left, right, next;
             // Prove both complete operands even when an earlier bit differs.
-            if (!expr_bit(c, d, nodes[0], i, &left, depth + 1) ||
-                !expr_bit(c, d, nodes[1], i, &right, depth + 1) || !poly_xor(c, &left, &right) ||
-                !poly_toggle(c, &left, 0) || !poly_product(c, &next, &equal, &left))
-                return 0;
-            equal = next;
+            if (!expr_bit(c, d, nodes[0], i, &s[1], depth + 1) ||
+                !expr_bit(c, d, nodes[1], i, &s[2], depth + 1) || !poly_xor(c, &s[1], &s[2]) ||
+                !poly_toggle(c, &s[1], qc_mask_zero()) || !poly_product(c, &s[3], &s[0], &s[1])) {
+                ok = 0;
+                break;
+            }
+            s[0] = s[3];
         }
-        if (cj_equal(d, op, "ne") && !poly_toggle(c, &equal, 0))
-            return 0;
-        if (!bit)
-            *out = equal;
-        return 1;
+        if (ok && cj_equal(d, op, "ne") && !poly_toggle(c, &s[0], qc_mask_zero()))
+            ok = 0;
+        if (ok && !bit)
+            *out = s[0];
+        free(s);
+        return ok;
     }
     if (cj_equal(d, op, "shl") || cj_equal(d, op, "shr")) {
         uint64_t shift, source_width;
@@ -180,16 +200,22 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
             return 0;
         if (cj_equal(d, op, "shr"))
             return expr_bit(c, d, nodes[0], bit + (unsigned)shift, out, depth + 1);
-        if (sign)
+        if (sign) {
+            bit_poly *high = malloc(sizeof *high);
+            if (!high)
+                return qc_fail(c, "out of memory in structured synthesis");
             for (unsigned b = (unsigned)source_width - 1 - (unsigned)shift; b < source_width; ++b) {
-                bit_poly high;
-                if (!expr_bit(c, d, nodes[0], b, &high, depth + 1) || high.count)
+                if (!expr_bit(c, d, nodes[0], b, high, depth + 1) || high->count) {
+                    free(high);
                     return 0;
+                }
             }
+            free(high);
+        }
         return bit < shift ? 1 : expr_bit(c, d, nodes[0], bit - (unsigned)shift, out, depth + 1);
     }
     if (cj_equal(d, op, "bnot"))
-        return expr_bit(c, d, nodes[0], bit, out, depth + 1) && poly_toggle(c, out, 0);
+        return expr_bit(c, d, nodes[0], bit, out, depth + 1) && poly_toggle(c, out, qc_mask_zero());
     int logical_and = cj_equal(d, op, "land"), logical_or = cj_equal(d, op, "lor");
     if ((logical_and || logical_or || cj_equal(d, op, "not"))) {
         for (unsigned i = 0; i < n; ++i) {
@@ -202,17 +228,22 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
                 return 0;
         }
         if (cj_equal(d, op, "not")) {
-            if (!expr_bit(c, d, nodes[0], 0, out, depth + 1) || !poly_toggle(c, out, 0))
+            if (!expr_bit(c, d, nodes[0], 0, out, depth + 1) ||
+                !poly_toggle(c, out, qc_mask_zero()))
                 return 0;
             if (bit)
                 out->count = 0;
             return 1;
         }
-        bit_poly left, right;
-        if (!expr_bit(c, d, nodes[0], 0, &left, depth + 1) ||
-            !expr_bit(c, d, nodes[1], 0, &right, depth + 1) ||
-            !poly_product(c, out, &left, &right) ||
-            (logical_or && (!poly_xor(c, out, &left) || !poly_xor(c, out, &right))))
+        bit_poly *s = malloc(2 * sizeof *s);
+        if (!s)
+            return qc_fail(c, "out of memory in structured synthesis");
+        int ok = expr_bit(c, d, nodes[0], 0, &s[0], depth + 1) &&
+                 expr_bit(c, d, nodes[1], 0, &s[1], depth + 1) &&
+                 poly_product(c, out, &s[0], &s[1]) &&
+                 (!logical_or || (poly_xor(c, out, &s[0]) && poly_xor(c, out, &s[1])));
+        free(s);
+        if (!ok)
             return 0;
         if (bit)
             out->count = 0;
@@ -221,28 +252,33 @@ expr_bit(qc_context *c, const cj_doc *d, int e, unsigned bit, bit_poly *out, uns
     if (n != 2 || (!cj_equal(d, op, "band") && !cj_equal(d, op, "bor") &&
                    !cj_equal(d, op, "bxor") && !logical_and && !logical_or))
         return 0;
-    bit_poly a, b;
-    if (!expr_bit(c, d, nodes[0], bit, &a, depth + 1) ||
-        !expr_bit(c, d, nodes[1], bit, &b, depth + 1))
-        return 0;
-    if (cj_equal(d, op, "bxor")) {
-        *out = a;
-        return poly_xor(c, out, &b);
+    bit_poly *s = malloc(2 * sizeof *s);
+    if (!s)
+        return qc_fail(c, "out of memory in structured synthesis"), 0;
+    int ok = expr_bit(c, d, nodes[0], bit, &s[0], depth + 1) &&
+             expr_bit(c, d, nodes[1], bit, &s[1], depth + 1);
+    if (ok) {
+        if (cj_equal(d, op, "bxor")) {
+            *out = s[0];
+            ok = poly_xor(c, out, &s[1]);
+        } else {
+            ok = poly_product(c, out, &s[0], &s[1]) &&
+                 ((!cj_equal(d, op, "bor") && !logical_or) ||
+                  (poly_xor(c, out, &s[0]) && poly_xor(c, out, &s[1])));
+        }
     }
-    if (!poly_product(c, out, &a, &b))
-        return 0;
-    return (!cj_equal(d, op, "bor") && !logical_or) ||
-           (poly_xor(c, out, &a) && poly_xor(c, out, &b));
+    free(s);
+    return ok;
 }
 
 /* A literal is a constant, one wire or its complement. */
 static int poly_literal(const bit_poly *p, qc_mask *wire, int *inverted) {
-    *wire = 0;
+    *wire = qc_mask_zero();
     *inverted = 0;
     for (unsigned i = 0; i < p->count; ++i) {
-        if (!p->terms[i])
+        if (!qc_mask_any(p->terms[i]))
             *inverted ^= 1;
-        else if (*wire || pop(p->terms[i]) != 1)
+        else if (qc_mask_any(*wire) || qc_mask_pop(p->terms[i]) != 1)
             return 0;
         else
             *wire = p->terms[i];
@@ -253,18 +289,19 @@ static int poly_literal(const bit_poly *p, qc_mask *wire, int *inverted) {
 static int
 constrain(qc_mask wire, int inverted, int wanted, qc_mask *mask, qc_mask *pattern, int *possible) {
     int required = wanted ^ inverted;
-    if (!wire) {
+    if (!qc_mask_any(wire)) {
         if (required)
             *possible = 0;
         return 1;
     }
-    if ((*mask & wire) && !!(*pattern & wire) != required)
+    if (qc_mask_any(qc_mask_and(*mask, wire)) &&
+        qc_mask_any(qc_mask_and(*pattern, wire)) != required)
         *possible = 0;
-    *mask |= wire;
+    *mask = qc_mask_or(*mask, wire);
     if (required)
-        *pattern |= wire;
+        *pattern = qc_mask_or(*pattern, wire);
     else
-        *pattern &= ~wire;
+        *pattern = qc_mask_andnot(*pattern, wire);
     return 1;
 }
 
@@ -275,9 +312,10 @@ static int emit_condition(qc_context *c,
                           int possible,
                           qc_mask outer,
                           qc_mask state) {
-    if (!possible || ((state ^ values) & outer & local))
+    if (!possible ||
+        qc_mask_any(qc_mask_and(qc_mask_and(qc_mask_xor(state, values), outer), local)))
         return 1;
-    return qc_emit(c, QC_X, output, outer | local, state | values, 0);
+    return qc_emit(c, QC_X, output, qc_mask_or(outer, local), qc_mask_or(state, values), 0);
 }
 
 static int structured_predicate(
@@ -322,11 +360,12 @@ static int structured_predicate(
             return 0;
         qc_mask rw;
         int ri;
-        if (!poly_literal(&a, &wires[b], &inversion[b]) || !poly_literal(&r, &rw, &ri) || rw)
+        if (!poly_literal(&a, &wires[b], &inversion[b]) || !poly_literal(&r, &rw, &ri) ||
+            qc_mask_any(rw))
             return 0;
         constant[b] = ri;
     }
-    qc_mask mask = 0, pattern = 0;
+    qc_mask mask = qc_mask_zero(), pattern = qc_mask_zero();
     int possible = 1;
     int sign = cj_bool(d, cj_get(d, left, "signed"));
     if (less || greater) {
@@ -393,9 +432,10 @@ static int structured_compute(
     for (unsigned b = 0; b < target->width && ok; ++b)
         for (unsigned t = 0; t < bits[b].count && ok; ++t) {
             qc_mask term = bits[b].terms[t];
-            if (((state ^ term) & outer & term))
+            if (qc_mask_any(qc_mask_and(qc_mask_and(qc_mask_xor(state, term), outer), term)))
                 continue;
-            ok = qc_emit(c, QC_X, target->wires[b], outer | term, state | term, 0);
+            ok = qc_emit(
+                c, QC_X, target->wires[b], qc_mask_or(outer, term), qc_mask_or(state, term), 0);
         }
     free(bits);
     return ok ? 1 : -1;

@@ -12,7 +12,8 @@ supported scalar owners, including fixed array/field/pointer aliases and mutable
 procedures. [Structured CPU scalar versions](c11-cpu-control.md) have a separate ownership transport
 contract. [Runtime iteration history](c11-runtime-history.md) and [native heaps](c11-heap.md) now
 cover selected integer/memory paths. General CFG ownership, further dynamic-memory/ABI integration,
-floating/complex values and wider library contracts remain required.
+frontend/ABI floating/complex values (beyond Wave 1A engine `float`/`double` circuits) and wider
+library contracts remain required.
 
 ## Selected values and preserved branch decisions
 
@@ -94,10 +95,11 @@ earlier definition. A regression changes an identity predicate into its compleme
 inactive division becomes reachable and must fail before output gates or a new definition.
 
 The Boolean proof has a depth bound of 128 and shares the arithmetic work budget. Circuit storage
-remains bounded to 128 qubits and native state simulation to 24. Versions, predicates and work have
-separate costs. The eight-bit one-arm fixture generates a table-free circuit with 21 qubits; that
-resource report alone is not a correctness proof. Wider generation and complete states must continue
-to be reported separately.
+remains bounded to 128 qubits in baseline `5c5a965` (expanded to 1024 in Wave 1A engine
+`QC_MAX_PHYSICAL`, pending Wave 1B/2) and native dense simulation to 24. Versions, predicates and
+work have separate costs. The eight-bit one-arm fixture generates a table-free circuit with 21
+qubits; that resource report alone is not a correctness proof. Wider generation and complete states
+must continue to be reported separately.
 
 ## Validation scope
 
@@ -130,9 +132,10 @@ build/validate_qasm
 
 Completed campaign counts and hashes are recorded in the
 [evidence archive](audit-evidence/README.md). General CFG and runtime loop iterations still need
-further version/ownership support. Declarations inside controlled flow, products, dynamic indexed
-writes, `switch`, jumps and early returns remain separate P/R obligations. This finite stage does
-not close M3 or the full C11 objective.
+further version/ownership support. Declarations inside controlled flow, dynamic indexed overwrites,
+`goto`/unstructured jumps, and unverified arbitrary early returns (`5c5a965` adds structured
+`switch` and same-unit imperative owned returns) remain separate P/R obligations. This finite stage
+does not close M3 or the full C11 objective.
 
 When typed saved certificates prove a write globally inactive, materialization keeps existing
 inverse definitions and the inactive swap leaves owners/epochs unchanged. This permits checked

@@ -46,8 +46,9 @@ arbitrary amplitudes by their unitary gate construction and insert no measuremen
 The current carry-prefix implementation has at most cubic logical-gate growth in word width for the
 affine path; bit rearrangement needs at most three gates per swap and one per inversion. Hardware
 decomposition, connectivity and noise are separate costs. Gate and proof budgets remain explicit
-resource restrictions (**R**), and the 24-qubit native simulation limit remains distinct from the
-128-qubit circuit representation limit.
+resource restrictions (**R**), and the 24-qubit native dense simulation limit remains distinct from
+the physical circuit representation limit (128 qubits in baseline `5c5a965`; 1024 in Wave 1A engine
+`QC_MAX_PHYSICAL`, pending Wave 1B/2).
 
 ## C types and Boolean normalization
 

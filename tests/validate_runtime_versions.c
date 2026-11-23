@@ -97,10 +97,12 @@ static void resource_limit(void) {
     const char *operation =
         "{\"op\":\"qassign\",\"id\":0,\"expr\":{\"op\":\"not\",\"bits\":1,\"signed\":false,\"args\":[{\"op\":\"reg\",\"id\":0,\"bits\":1,\"signed\":false}]}}";
     unsigned iterations = 0;
-    while (iterations < 129 && qc_apply(c, operation, &result))
+    while (iterations <= QC_MAX_PHYSICAL && qc_apply(c, operation, &result))
         ++iterations;
-    require(iterations == 127 && c->physical == 128 && strstr(qc_error(c), "128 physical") &&
-                !c->measure && !c->reset,
+    char limit_msg[64];
+    snprintf(limit_msg, sizeof limit_msg, "%d physical", QC_MAX_PHYSICAL);
+    require(iterations == QC_MAX_PHYSICAL - 1 && c->physical == QC_MAX_PHYSICAL &&
+                strstr(qc_error(c), limit_msg) && !c->measure && !c->reset,
             "runtime history did not enforce its physical budget",
             c);
     qc_destroy(c);
@@ -112,8 +114,9 @@ int main(void) {
         for (int slot = 0; slot < 2; ++slot)
             transport(slot, tables);
     resource_limit();
-    puts(
-        "PASS 10 schema rejections before mutation, 4 saved-inverse state transports and 128-wire history limit");
+    printf(
+        "PASS 10 schema rejections before mutation, 4 saved-inverse state transports and %d-wire history limit\n",
+        QC_MAX_PHYSICAL);
     puts(
         "15 runtime history contracts passed; finite states, schema guards and resource bounds have separate scopes.");
     return 0;

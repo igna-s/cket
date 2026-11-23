@@ -4,9 +4,10 @@
 static qc_mask sequence_bits(const qc_register *r, unsigned value) {
     if (!r || !r->alive || r->width > 8)
         validation_fail("memory sequence register missing");
-    qc_mask result = 0;
+    qc_mask result = qc_mask_zero();
     for (unsigned bit = 0; bit < r->width; ++bit)
-        result |= (qc_mask)((value >> bit) & 1) << r->wires[bit];
+        if ((value >> bit) & 1)
+            result = qc_mask_or(result, QC_WIRE(r->wires[bit]));
     return result;
 }
 
@@ -41,13 +42,13 @@ static void sequence_compare(qc_context *c, unsigned profile, int inverse) {
         x->width != 8 || ((!inverse || profile == 1) && !y) ||
         (y && (!y->alive || y->width != (profile < 3 ? 8u : 1u))))
         validation_fail("memory sequence source/result invariant failed");
-    qc_mask states[2] = {0, 1};
+    qc_mask states[2] = {qc_mask_from_u64(0), qc_mask_from_u64(1)};
     double complex amplitudes[2] = {1 / sqrt(2.0), 1 / sqrt(2.0)};
     int prepared = 0, suffix = 0;
     for (size_t i = 0; i < c->ngates; ++i) {
         const qc_gate *g = &c->gates[i];
         if (g->kind == QC_H) {
-            if (prepared || suffix || g->mask || g->target != 0)
+            if (prepared || suffix || qc_mask_any(g->mask) || g->target != 0)
                 validation_fail("memory sequence requires canonical one-H preparation");
             prepared = 1;
             continue;
@@ -57,9 +58,9 @@ static void sequence_compare(qc_context *c, unsigned profile, int inverse) {
         suffix = 1;
         double complex phase = cexp(I * g->angle);
         for (unsigned b = 0; b < 2; ++b)
-            if ((states[b] & g->mask) == g->pattern) {
+            if (qc_mask_eq(qc_mask_and(states[b], g->mask), g->pattern)) {
                 if (g->kind == QC_X)
-                    states[b] ^= QC_WIRE(g->target);
+                    states[b] = qc_mask_xor(states[b], QC_WIRE(g->target));
                 else
                     amplitudes[b] *= phase;
             }
@@ -74,9 +75,9 @@ static void sequence_compare(qc_context *c, unsigned profile, int inverse) {
                           : profile == 2 ? second == 17
                                          : !!second;
         double angle = .31 * b + .17 * tagged;
-        qc_mask wanted = sequence_bits(input, b) | sequence_bits(x, inverse ? 5 : first);
+        qc_mask wanted = qc_mask_or(sequence_bits(input, b), sequence_bits(x, inverse ? 5 : first));
         if (y)
-            wanted |= sequence_bits(y, inverse ? 7 : second);
+            wanted = qc_mask_or(wanted, sequence_bits(y, inverse ? 7 : second));
         unsigned guards = 0;
         for (size_t i = 0; i < c->nregisters; ++i) {
             const qc_register *r = &c->registers[i];
@@ -85,9 +86,10 @@ static void sequence_compare(qc_context *c, unsigned profile, int inverse) {
             if (inverse || profile < 2 || ++guards > 1 || r->width != 1 || !r->ancillary ||
                 !r->definition)
                 validation_fail("unexpected live memory sequence auxiliary");
-            wanted |= sequence_bits(r, b);
+            wanted = qc_mask_or(wanted, sequence_bits(r, b));
         }
-        if (states[b] != wanted || cabs(amplitudes[b] - cexp(I * angle) / sqrt(2.0)) > 1e-10)
+        if (!qc_mask_eq(states[b], wanted) ||
+            cabs(amplitudes[b] - cexp(I * angle) / sqrt(2.0)) > 1e-10)
             validation_fail("memory sequence input/result/phase/private-wire mismatch");
     }
 }

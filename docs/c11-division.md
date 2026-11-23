@@ -135,11 +135,13 @@ quotient merely to use it as a condition.
 The maintained matrix adds **2310 finite domains** to `validate_expressions`: all byte inputs,
 selected 32/64-bit limits and divisor boundaries, signed/unsigned cases, narrow results, full 32-bit
 results, six Boolean forms, both synthesis policies, coherent controls, relative phases, preserved
-sources and clean inverses. Normal and ASan/UBSan qualifications pass **3505 expression checks**, 55
-shift checks, 990 division checks, 393 native checks and 271 in-place checks each. Their fresh cores
-were built on the production-identical 152-input revision; the 153-input revision rebuilds the
-changed expression validator. These finite gate-action checks are not a claim of dense wide-state
-execution or a new complete-state proof of every compiled quotient program.
+sources and clean inverses. That historical 152/153-input qualification passed **3505 expression
+checks**, 55 shift checks, 990 division checks, 393 native checks and 271 in-place checks each;
+published baseline `5c5a965`
+([full-ci-everyday-profile-v1](audit-evidence/full-ci-everyday-profile-v1/README.es.md)) runs **3509
+expression checks**, **203 shift checks**, **990 division checks**, **408 native checks** and **271
+in-place checks** in both configurations. These finite gate-action checks are not a claim of dense
+wide-state execution or a new complete-state proof of every compiled quotient program.
 
 [quantum_buckets.c](../examples/quantum_buckets.c) is a runnable byte example:
 
@@ -149,27 +151,29 @@ build/cket examples/quantum_buckets.c --run -o build/quantum_buckets
 
 It prepares values 0 through 15 in superposition, computes the quotient by three, then explicitly
 measures both correlated registers. The [first delivery](entregas-incrementales.es.md) packages it
-with other small usable programs and exports. Full 64-bit source and result registers together
-already consume all 128 public wires; this change does not make their additional workspace fit.
-General variable-divisor and expression contexts retain their existing restrictions.
+with other small usable programs and exports. In baseline `5c5a965`, full 64-bit source and result
+registers together already consume all 128 public wires, so additional divider workspace does not
+fit that baseline limit (Wave 1A widens `QC_MAX_PHYSICAL` to 1024 and `ar_value.bit` to 128 in
+`src/engine/arithmetic.inc`, pending Wave 1B/2 verification). General variable-divisor and
+expression contexts retain their existing restrictions.
 
 ## Resources and open cases
 
 On the tested GCC 11.4.0 LP64 Linux target, `div_t` contains two 32-bit fields; `ldiv_t`, `lldiv_t`
 and `imaxdiv_t` contain two 64-bit fields. A live one-bit input plus the latter complete products
-already requires 129 public qubits. The current 128-qubit representation rejects that case (**R**).
-Scalar projections with narrow destinations can fit and now generate power-of-two circuits for full
-32/64-bit sources. Wider representations are a required future implementation, not a semantic
-prohibition.
+already requires 129 public qubits, which the baseline 128-qubit representation in `5c5a965` rejects
+(**R**; Wave 1A raises engine physical capacity to 1024 pending Wave 1B/2). Scalar projections with
+narrow destinations can fit and generate power-of-two circuits for full 32/64-bit sources. Wider
+representations are a required implementation step, not a semantic prohibition.
 
 Default dense state simulation is limited to 24 qubits (**R**). The
-[sparse runtime](simulacion-dispersa.es.md) now supports wide states with a bounded occupied
-support; this does not certify every library-product context. The historical full `div_t` product
-matrix has circuit-generation evidence, while small projections have complete state comparisons.
-General 64-bit variable division still needs a wider remainder workspace and resource expansion
-(**P/R**). Sharing the two field computations, general retained-history composition, effectful
-quantum argument capture and full interprocedural product composition remain **P**. No hidden
-destructive operation is used to reduce these costs.
+[sparse runtime](simulacion-dispersa.es.md) supports wide states with a bounded occupied support;
+this does not certify every library-product context. The historical full `div_t` product matrix has
+circuit-generation evidence, while small projections have complete state comparisons. Verified
+64-bit variable division remains pending full Wave 1B/2 resource expansion (**P/R**), building on
+the 128-bit engine divider workspace introduced in Wave 1A. Sharing the two field computations,
+general retained-history composition, effectful quantum argument capture and full interprocedural
+product composition remain **P**. No hidden destructive operation is used to reduce these costs.
 
 [Unconditional scalar assignments](c11-history.md) can now version division/remainder results and
 preserve old dependents. This does not extend the general product ABI or versioned branch/loop

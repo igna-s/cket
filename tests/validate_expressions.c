@@ -569,12 +569,12 @@ static void string_guard_certificates(void) {
                 double complex amplitude;
                 if (!qc_sparse_entry(c, row, &low, &high_bits, &amplitude))
                     validation_fail("missing guarded expression row");
-                qc_mask actual = ((qc_mask)high_bits << 64) | low, expected = 0;
+                qc_mask actual = qc_mask_from_u128(low, high_bits), expected = qc_mask_zero();
                 unsigned values[5] = {0};
                 for (unsigned id = 0; id < 3; ++id) {
                     qc_register *r = qc_lookup(c, id);
                     for (unsigned b = 0; b < r->width; ++b)
-                        values[id] |= !!(actual & QC_WIRE(r->wires[b])) << b;
+                        values[id] |= (unsigned)qc_mask_test(actual, r->wires[b]) << b;
                 }
                 values[3] = values[1] && !(values[0] & 255);
                 values[4] = values[3] && (!variant || values[0]) ? 7 : 0;
@@ -582,9 +582,9 @@ static void string_guard_certificates(void) {
                     qc_register *r = qc_lookup(c, id);
                     for (unsigned b = 0; b < r->width; ++b)
                         if (values[id] & (1u << b))
-                            expected |= QC_WIRE(r->wires[b]);
+                            expected = qc_mask_or(expected, QC_WIRE(r->wires[b]));
                 }
-                if (actual != expected || cabs(amplitude - 1 / sqrt(8.0)) > 1e-10)
+                if (!qc_mask_eq(actual, expected) || cabs(amplitude - 1 / sqrt(8.0)) > 1e-10)
                     validation_fail("guard certificate changed C truth or quantum state");
             }
             apply(c, "{\"op\":\"quncompute\",\"id\":4,\"saved\":true}");

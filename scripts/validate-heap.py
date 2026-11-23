@@ -149,7 +149,7 @@ PROFILES.update(EFFECT_PROFILES)
 
 VALID = {
     'heap_loop_values': '''int main(void){quant uint8_t *p=calloc(1,sizeof *p);if(!p)return 2;quant uint8_t sum=0;size_t count=2;for(size_t i=0;i<count;++i)sum+=p[0]++;unsigned result=measure(sum),last=measure(p[0]);free((void*)p);return result!=1||last!=2;}''',
-    'allocation_failure': '''int main(void){size_t n=2;quant uint8_t *p=calloc(n,sizeof *p);if(!p)return 2;p[0]=7;p[1]=9;quant uint8_t *q=realloc((void*)p,65*sizeof *p);unsigned a=measure(p[0]),b=measure(p[1]);free((void*)p);return q!=NULL||a!=7||b!=9;}''',
+    'allocation_failure': '''int main(void){size_t n=2;quant uint8_t *p=calloc(n,sizeof *p);if(!p)return 2;p[0]=7;p[1]=9;quant uint8_t *q=realloc((void*)p,1025*sizeof *p);unsigned a=measure(p[0]),b=measure(p[1]);free((void*)p);return q!=NULL||a!=7||b!=9;}''',
     'calloc_overflow': '''int main(void){size_t n=SIZE_MAX;quant uint8_t *p=calloc(n,2);return p!=NULL;}''',
     'null_realloc': '''int main(void){quant uint8_t *p=NULL;p=realloc((void*)p,2*sizeof *p);if(!p)return 2;p[0]=5;unsigned x=measure(p[0]);free((void*)p);return x!=5;}''',
     'signed_words': '''int main(void){size_t n=2;quant int16_t *p=malloc(n*sizeof *p);if(!p)return 2;p[0]=-7;p[1]=1234;quant int16_t selected=p[1]^1;int result=measure(selected),first=measure(p[0]),second=measure(p[1]);free((void*)p);return result!=1235||first!=-7||second!=1234;}''',
@@ -177,7 +177,7 @@ INVALID = {
     ),
     'readonly_store': (
         'void f(quant const uint8_t *p){((uint8_t*)p)[0]=1;} int main(void){quant uint8_t *p=calloc(2,sizeof *p);f(p);free((void*)p);}',
-        ('mutable borrow',),
+        ('read-only quantum borrow',),
     ),
     'borrow_free': (
         'void f(quant uint8_t *p){free((void*)p);} int main(void){quant uint8_t *p=calloc(2,sizeof *p);f(p);free((void*)p);}',
@@ -250,6 +250,11 @@ def payload_expected(point: dict, context: dict) -> dict[int, complex]:
         context['initial'] = current
     elif point['tag'] == 'written':
         context['written'] = current
+    histories = sorted(
+        r['id']
+        for r in point['registers']
+        if r['history'] and r['id'] >= 0x80000000 and r['id'] not in context['initial']
+    )
     answer = {}
     for coin in (0, 1):
         for pick in (0, 1):
@@ -264,6 +269,10 @@ def payload_expected(point: dict, context: dict) -> dict[int, complex]:
             for identity, value in zip(context['initial'], (3, old)):
                 if identity in registers and identity not in terms:
                     terms[identity] = value
+            if not prepared:
+                assert len(histories) == 2
+                terms[histories[0]] = 0 if pick else 3
+                terms[histories[1]] = old if pick else 0
             if point['tag'] == 'written':
                 saved = old if pick else 3
                 terms[named['saved']['id']] = saved
@@ -295,6 +304,11 @@ def effect_expected(profile: str, point: dict, context: dict) -> dict[int, compl
         context['initial'] = dict(zip(current, (3, 9)))
     elif point['tag'] == 'written':
         context['written'] = current
+    histories = sorted(
+        r['id']
+        for r in point['registers']
+        if r['history'] and r['id'] >= 0x80000000 and r['id'] not in context['initial']
+    )
     answer = {}
     for coin in (0, 1):
         terms = {named['coin']['id']: coin}
@@ -316,6 +330,18 @@ def effect_expected(profile: str, point: dict, context: dict) -> dict[int, compl
         for identity, value in context['initial'].items():
             if identity in registers and identity not in terms:
                 terms[identity] = value
+        if not prepared:
+            if profile == 'lazy_update_value':
+                assert len(histories) == 2
+                terms[histories[0]] = 0
+                terms[histories[1]] = 9 if coin else 0
+            elif profile in ('postfix_saved', 'assigned_value'):
+                assert len(histories) == 2
+                terms[histories[0]] = 0 if coin else 3
+                terms[histories[1]] = 9 if coin else 0
+            else:
+                assert len(histories) == 1
+                terms[histories[0]] = 0 if coin else 3
         retained = point['tag'] in ('written', 'retired')
         if retained and profile != 'controlled_write':
             saved = (
@@ -366,10 +392,16 @@ def expected(profile: str, point: dict) -> dict[int, complex]:
             assert not histories
         else:
             terms.extend(zip(current, (11, 5, 9) if profile == 'grow_capture' else (1,)))
-            unknown = [r for r in histories if not r['known']]
-            assert len(unknown) == 1
-            old = (3 if coin else 7) if profile == 'grow_capture' else (2 if coin else 6)
-            terms.append((unknown[0], old))
+            unknown = sorted((r for r in histories if not r['known']), key=lambda r: r['id'])
+            if profile == 'grow_capture':
+                assert len(unknown) == 2
+                old = 3 if coin else 7
+                terms.append((unknown[0], old))
+                terms.append((unknown[1], 7 if coin else 0))
+            else:
+                assert len(unknown) == 1
+                old = 2 if coin else 6
+                terms.append((unknown[0], old))
             if retained:
                 terms.append((named['selected'], old ^ 1))
             for r in histories:
@@ -400,13 +432,16 @@ def main() -> None:
         if args.sanitized
         else []
     )
+    base_env = dict(os.environ, CC='gcc-11', CKET_SIMULATOR='sparse', CKET_SEED='7')
+    if args.sanitized:
+        base_env.update(CC=str(compiler / 'build/gcc-wrapper'), CKET_REAL_GCC='gcc-11')
     records = []
 
     def run(command: list[str], label: str, env=None):
         result = subprocess.run(
             command,
             cwd=compiler,
-            env=env,
+            env=base_env if env is None else env,
             text=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

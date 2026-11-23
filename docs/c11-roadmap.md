@@ -52,9 +52,11 @@ or a claim that the first groups are already complete.
    [146-input targeted integration](audit-evidence/known-fill-cleanup-v2/README.es.md); its full
    regression remains pending. Keep ordinary C behavior intact.
 1. Implement the next common capabilities, including quantum `float`/`double`, their conversions and
-   ordinary arithmetic, dynamic storage and general pointer/function use. Publish precise contracts
-   for classical I/O boundaries. Existing CPU floating angles for `phase` do not implement quantum
-   floating registers.
+   ordinary arithmetic, dynamic storage and general pointer/function use. Working-tree Wave 1A
+   already adds reversible IEEE-754 `float`/`double` circuits at the engine level
+   (`src/engine/float_arithmetic.inc`, `tests/validate_float.c`), pending Wave 1B frontend wiring
+   and Wave 2 full verification. Publish precise contracts for classical I/O boundaries. Existing
+   CPU floating angles for `phase` do not implement frontend quantum floating types.
 1. Keep less common facilities in the extended roadmap: `long double`, complex arithmetic, general
    bitfields and unions, wide-character/locale interfaces, advanced floating environments, atomics
    and threading. They are outside the current everyday-profile completion gate and remain pending.
@@ -74,12 +76,13 @@ restriction class. Multiple classes may apply to different contexts of the same 
 | R     | Resource requirement or explicit bound          | A declared bound, resource accounting and both acceptance and exhaustion tests |
 | S     | Semantic incompatibility in a specified context | A precise argument, diagnostic and an explicit alternative where one exists    |
 
-Examples: quantum floating point, unions, bitfields and dynamic allocation are P, with resource
-considerations R. Their absence is not a no-cloning result. Erasing an arbitrary state while
-preserving coherence and leaving no history is S. Coherent indexing is P/R; using a CPU pointer as
-though its address were in superposition is S for that particular pointer representation. Recursion
-is P/R when bounded. Unbounded computation cannot be promised as a finite static circuit, but that
-does not rule out classical control or bounded recursion.
+Examples: frontend/ABI quantum floating point (beyond Wave 1A engine circuits), unions, bitfields
+and dynamic allocation are P, with resource considerations R. Their absence is not a no-cloning
+result. Erasing an arbitrary state while preserving coherence and leaving no history is S. Coherent
+indexing is P/R; using a CPU pointer as though its address were in superposition is S for that
+particular pointer representation. Recursion is P/R when bounded. Unbounded computation cannot be
+promised as a finite static circuit, but that does not rule out classical control or bounded
+recursion.
 
 “Classical: GCC/libc” means delegated to the selected implementation, not that this project has
 exhaustively validated the entire C standard or every libc interface. Quantum operations must not
@@ -421,8 +424,11 @@ include the original 97, 810 remainder and 288 selection domains. The separate b
 remains separate; no earlier broad result certifies those changed inputs.
 
 The active goal closes against the [everyday-profile acceptance criteria](perfil-c-cotidiano.es.md),
-including the common features and integrated programs still missing. Resource bounds and incomplete
-runtime qualification must remain explicit. A missing implementation or an expected rejection is not
+including the common features and integrated programs still missing. The latest full-CI baseline is
+`5c5a965` (run `42507019584`), archived in
+[`full-ci-everyday-profile-v1`](audit-evidence/full-ci-everyday-profile-v1/README.es.md), ahead of
+active Wave 1A/1B/2 floating-point and 1024-wire integration. Resource bounds and incomplete runtime
+qualification must remain explicit. A missing implementation or an expected rejection is not
 functional support.
 
 Completing the extended M9 roadmap would additionally require implemented, validated coverage or a
