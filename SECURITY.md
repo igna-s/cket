@@ -4,9 +4,10 @@
 part of its security surface. The README describes ASan/UBSan and fuzzing evidence; this is not a
 formal audit.
 
-Since the repository is private, use
-[the security form within the repository](https://github.com/igna-s/cket/issues/new?template=security_report.yml),
-which is accessible to collaborators. Include a minimal C program or QIR document, the reproduction
+To report a vulnerability, use GitHub's private vulnerability reporting on this repository if
+enabled, or submit
+[the security form within the repository](https://github.com/igna-s/cket/issues/new?template=security_report.yml)
+for non-sensitive reproduction cases. Include a minimal C program or QIR document, the reproduction
 command, the versions used, and the observed impact. Omit credentials and sensitive data from
 examples.
 
