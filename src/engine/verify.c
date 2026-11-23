@@ -267,6 +267,12 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
                            "uabs",
                            "fneg",
                            "fabs",
+                           "ftrunc",
+                           "ffloor",
+                           "fceil",
+                           "fround",
+                           "fsqrt",
+                           "fsignbit",
                            "ctype_isalnum",
                            "ctype_isalpha",
                            "ctype_isblank",
@@ -282,32 +288,36 @@ static int bounded_expression(qc_context *c, const cj_doc *d, int e, unsigned de
                            "ctype_tolower",
                            "ctype_toupper",
                            NULL};
-    const char *binary[] = {"add",  "sub",  "mul",  "div",  "mod",      "band", "bor", "bxor",
-                            "shl",  "shr",  "eq",   "ne",   "lt",       "le",   "gt",  "ge",
-                            "fadd", "fsub", "fmul", "fdiv", "feq",      "fne",  "flt", "fle",
+    const char *binary[] = {"add",  "sub",  "mul",  "div",  "mod",      "band", "bor",
+                            "bxor", "shl",  "shr",  "eq",   "ne",       "lt",   "le",
+                            "gt",   "ge",   "fadd", "fsub", "fmul",     "fdiv", "fcopysign",
+                            "fmin", "fmax", "fdim", "feq",  "fne",      "flt",  "fle",
                             "fgt",  "fge",  "land", "lor",  "sequence", NULL};
     for (unsigned i = 0; unary[i]; ++i)
         if (cj_equal(d, op, unary[i])) {
             arity = 1;
-            matching = i == 1 || i == 2 || i == 4 || i == 6 || i == 7;
-            float_only = i == 6 || i == 7;
-            float_args = float_only;
+            matching = i == 1 || i == 2 || i == 4 || (i >= 6 && i <= 12);
+            float_only = i >= 6 && i <= 12;
+            float_args = i >= 6 && i <= 13;
             allow_float_result = i == 0;
             allow_float_args = i == 0 || i == 3;
-            ctype = i >= 8;
-            if (ctype && (bits != 32 || !sign))
-                return qc_fail(c, "ctype result requires the declared signed int representation");
+            ctype = i >= 14;
+            if ((ctype || i == 13) && (bits != 32 || !sign))
+                return qc_fail(
+                    c,
+                    ctype ? "ctype result requires the declared signed int representation"
+                          : "signbit result requires the declared signed int representation");
         }
     for (unsigned i = 0; binary[i]; ++i)
         if (cj_equal(d, op, binary[i])) {
             arity = 2;
-            matching = i < 8 || (i >= 16 && i < 20);
+            matching = i < 8 || (i >= 16 && i < 24);
             shift = i == 8 || i == 9;
-            comparison = (i >= 10 && i < 16) || (i >= 20 && i < 26);
-            float_only = i >= 16 && i < 20;
-            float_args = i >= 16 && i < 26;
-            allow_float_result = i == 28;
-            allow_float_args = i >= 26;
+            comparison = (i >= 10 && i < 16) || (i >= 24 && i < 30);
+            float_only = i >= 16 && i < 24;
+            float_args = i >= 16 && i < 30;
+            allow_float_result = i == 32;
+            allow_float_args = i >= 30;
         }
     if (cj_equal(d, op, "select")) {
         arity = 3;

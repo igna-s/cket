@@ -87,7 +87,8 @@ static const example examples[] = {
     {"everyday_matrix_struct", NULL, 1, 1, 1, 0, 0},
     {"everyday_buffers_strings", NULL, 0, 1, 1, 0, 0},
     {"everyday_dynamic_vector", NULL, 0, 1, 1, 0, 0},
-    {"everyday_control_phase", NULL, 0, 1, 1, 0, 0}};
+    {"everyday_control_phase", NULL, 0, 1, 1, 0, 0},
+    {"everyday_math_geometry", NULL, 1, 1, 1, 0, 0}};
 
 typedef struct {
     const char *name, *input, *output;
@@ -425,6 +426,13 @@ static void check_output(validation *v, const example *e, const char *output) {
     else if (!strcmp(e->name, "everyday_control_phase"))
         ok = !strcmp(text, "mode=0 res=12 count=0 x=3 interference=1\n") ||
              !strcmp(text, "mode=1 res=10 count=2 x=3 interference=1\n");
+    else if (!strcmp(e->name, "everyday_math_geometry"))
+        ok = !strcmp(text,
+                     "branch=0 hypot=2.50 span=3.50 sc=0.50 fl=0 ce=1 tr=0 rd=1 sbit=1 ord=1 "
+                     "interference=1\n") ||
+             !strcmp(text,
+                     "branch=1 hypot=5.00 span=1.00 sc=-2.50 fl=1 ce=2 tr=-2 rd=-3 sbit=0 ord=1 "
+                     "interference=1\n");
     if (!ok)
         fprintf(stderr, "Unexpected stdout: %s\n", text);
     free(text);

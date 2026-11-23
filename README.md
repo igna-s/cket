@@ -14,16 +14,21 @@ statevector simulator, with dense and opt-in sparse execution modes.
 **Published CI baseline (`5c5a965`, run `42507019584`):** see the
 [full CI archive (`full-ci-everyday-profile-v1`)](docs/audit-evidence/full-ci-everyday-profile-v1/README.es.md)
 covering the prior November 2026 everyday-C milestone (`408` native checks and `1509` example checks
-across `37` examples). On the active branch, Wave 1A + Wave 1B + Wave 2 are now integrated and
-locally verified across normal and ASan/UBSan builds: `1024`-wire `qc_mask`, `1024`-element heaps,
-`128`-bit divider scratch, end-to-end IEEE-754 `float`/`double` (`61725` checks in
+across `37` examples). On the active branch, Wave 1A + Wave 1B + Wave 2 + Wave 3 are now integrated
+and locally verified across normal and ASan/UBSan builds: `1024`-wire `qc_mask`, `1024`-element
+heaps, `128`-bit divider scratch, end-to-end IEEE-754 `float`/`double`, reversible gate-level
+`<math.h>` (`fabs`/`copysign`/`signbit`/`fmin`/`fmax`/`fdim`/`trunc`/`floor`/`ceil`/`round`/`sqrt`
+and unordered predicates
+`isnan`/`isinf`/`isfinite`/`isnormal`/`isgreater*`/`isless*`/`islessgreater`/`isunordered`),
+power-of-2 constant scaling, mixed int-float IR bridge, and float `++`/`--` (`68469` checks in
 `validate_float`), the full everyday C profile `A1`–`A12` (including `const` owners, `static`
 file-scope owners, padded structs/unions/bitfields/pointer fields, bounded VLAs, indirect `quant`
 function pointers, bounded recursion and variadics, multi-TU linking, bounded `while`/`do` and
-forward `goto`, extended stdlib adapters, and `6` integrated examples totaling `3610` checks across
-`75` examples), `408` native checks (`scripts/verify.sh` + `scripts/sanitize-all.sh` +
-`scripts/sanitize.sh`), and `validate-everyday-profile.py` passing (`O0`/`O2` normal and `O1`
-ASan/UBSan). Full C11 libc, `long double`/`_Complex`, unrestricted CFG/ABI/lifetimes, and physical
+forward `goto`, extended stdlib adapters, and `7` integrated examples including
+`everyday_math_geometry` totaling `3667` checks across `76` examples), `408` native checks
+(`scripts/verify.sh` + `scripts/sanitize-all.sh` + `scripts/sanitize.sh`), and
+`validate-everyday-profile.py` passing (`O0`/`O2` normal and `O1` ASan/UBSan). Transcendental
+`<math.h>`, full C11 libc, `long double`/`_Complex`, unrestricted CFG/ABI/lifetimes, and physical
 QPU execution remain outside scope.
 
 **Historical SDK snapshot:** the [updated Windows/WSL SDK](output/sdk/loop-jumps/README.es.md)
@@ -755,13 +760,14 @@ If a command fails:
 - **Synthesis budget or unsupported arithmetic:** inspect typed IR and ranges; a wider type alone
   does not establish safe or scalable synthesis.
 
-Wave 1B + Wave 2 complete frontend/ABI integration and local verification for IEEE-754 `float` and
-`double` (`validate_float`, `float_double`), padded structs/unions/bitfields, bounded static VLAs,
+Wave 1B + Wave 2 + Wave 3 complete frontend/ABI integration, reversible `<math.h>` operations, float
+`++`/`--`, and local verification for IEEE-754 `float` and `double` (`validate_float`,
+`float_double`, `everyday_math_geometry`), padded structs/unions/bitfields, bounded static VLAs,
 indirect `quant` function pointers, bounded recursion/variadics, bounded `while`/forward `goto`, and
-multi-TU linking within the everyday profile (`A1`–`A12`). `long double`, `_Complex`, general
-unbounded recursion/loops, QPU execution, and full C11 libc remain outside the supported subset. GCC
-integration uses a provisional internal `volatile` marker and differential testing, rather than a
-proof of every frontend transformation.
+multi-TU linking within the everyday profile (`A1`–`A12`). Transcendental `<math.h>`, `long double`,
+`_Complex`, general unbounded recursion/loops, QPU execution, and full C11 libc remain outside the
+supported subset. GCC integration uses a provisional internal `volatile` marker and differential
+testing, rather than a proof of every frontend transformation.
 
 ## Verify the installation
 
@@ -864,8 +870,9 @@ diagnostics, 60 wide exports and 120 complete phased states with saved inverses.
 proof checks 640 complete complex states across normal and ASan/UBSan builds, including full 64-bit
 `size_t` and 32-bit `int` results. See the [contract](docs/c11-strings.md) for bounds and remaining
 string work. `build/validate_phase` adds 3380 checks per configuration for supported deferred
-classical angles; IEEE-754 quantum `float` and `double` registers are also implemented end-to-end in
-Wave 1B + Wave 2 (`validate_float`: `61725` checks; `float_double` example and `b1_*` trace and
+classical angles; IEEE-754 quantum `float` and `double` registers, reversible `<math.h>` operations,
+and float `++`/`--` are also implemented end-to-end in Wave 1B + Wave 2 + Wave 3 (`validate_float`:
+`68469` checks; `float_double` and `everyday_math_geometry` examples, plus `b1_*`/`b2_*` trace and
 program checks across normal and ASan/UBSan).
 
 `build/validate_strncmp` adds 246 bounded string checks: complete phased states/inverses, native C,

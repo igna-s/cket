@@ -11,6 +11,7 @@ std::string standard_string_search(tree fn);
 bool standard_memory_set(tree fn);
 bool standard_memory_copy(tree fn, bool &move);
 std::string standard_ctype(tree call);
+std::string standard_float_math(tree fn, int nargs);
 std::map<tree, std::map<std::string, tree>> quantum_products;
 // An ordinary prototype can precede a later quant definition. Retain the
 // classical uses by assembler symbol so that redeclarations cannot hide them.
@@ -155,6 +156,13 @@ bool quantum_pure_expression(tree value) {
         return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
     if (code == CALL_EXPR && !standard_ctype(value).empty())
         return call_expr_nargs(value) == 1 && quantum_pure_expression(CALL_EXPR_ARG(value, 0));
+    if (code == CALL_EXPR &&
+        !standard_float_math(get_callee_fndecl(value), call_expr_nargs(value)).empty()) {
+        for (int i = 0; i < call_expr_nargs(value); ++i)
+            if (!quantum_pure_expression(CALL_EXPR_ARG(value, i)))
+                return false;
+        return true;
+    }
     if (code == CALL_EXPR || code == MODIFY_EXPR || code == INIT_EXPR || code == COMPOUND_EXPR ||
         code == PREINCREMENT_EXPR || code == POSTINCREMENT_EXPR || code == PREDECREMENT_EXPR ||
         code == POSTDECREMENT_EXPR || code == ADDR_EXPR)
@@ -641,7 +649,8 @@ bool quantum_return_is_pure(tree value) {
             !standard_string_length(get_callee_fndecl(value)) &&
             !standard_string_span(get_callee_fndecl(value)) &&
             standard_string_search(get_callee_fndecl(value)).empty() &&
-            standard_ctype(value).empty())
+            standard_ctype(value).empty() &&
+            standard_float_math(get_callee_fndecl(value), call_expr_nargs(value)).empty())
             return false;
         for (int i = 0; i < call_expr_nargs(value); ++i)
             if (!quantum_return_is_pure(CALL_EXPR_ARG(value, i)))
@@ -3788,7 +3797,8 @@ tree expand_static_loop_pair(tree decl_stmt, tree loop) {
                 standard_string_length(fn) || standard_string_span(fn) ||
                 standard_string_copy(fn) || !standard_string_search(fn).empty() ||
                 standard_memory_set(fn) || standard_decimal_conversion(fn) ||
-                quantum_function(fn) || !standard_ctype(value).empty()) {
+                quantum_function(fn) || !standard_ctype(value).empty() ||
+                !standard_float_math(fn, call_expr_nargs(value)).empty()) {
                 auto quantum_storage = [](tree *node, int *walk, void *) -> tree {
                     if (quantum(*node) || quantum_products.count(*node) ||
                         quantum_references.count(*node))
@@ -4836,7 +4846,8 @@ tree expand_quantum_program(tree value) {
         }
         // Resolve aggregate arguments before borrowing scalar storage.
         if (effect.empty() && !quantum_function(fn) && !standard_scalar_absolute(fn) &&
-            !standard_integer_division(fn))
+            !standard_integer_division(fn) &&
+            standard_float_math(fn, call_expr_nargs(value)).empty())
             for (int i = 0; i < call_expr_nargs(value); ++i)
                 if (memory_return_in_address(CALL_EXPR_ARG(value, i), true)) {
                     error_at(at(value),
@@ -4903,7 +4914,8 @@ tree expand_quantum_program(tree value) {
         bool standard_abs = standard_scalar_absolute(fn);
         if (standard_abs && call_expr_nargs(value) == 1 && has_quantum(CALL_EXPR_ARG(value, 0)))
             return build1_loc(at(value), ABS_EXPR, TREE_TYPE(value), CALL_EXPR_ARG(value, 0));
-        if (effect.empty())
+        if (effect.empty() &&
+            (standard_float_math(fn, call_expr_nargs(value)).empty() || !has_quantum(value)))
             record_classical_function_reference(fn, at(value), false);
         return value;
     }

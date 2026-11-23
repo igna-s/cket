@@ -3,6 +3,12 @@
 #include <fenv.h>
 #include <math.h>
 
+#if defined(__GNUC__)
+#define FL_NOINLINE __attribute__((noinline))
+#else
+#define FL_NOINLINE
+#endif
+
 typedef struct {
     unsigned bits, exp_bits, frac_bits, ew;
     int bias;
@@ -41,19 +47,10 @@ static uint64_t fl_f64_to_bits(double d) {
 }
 
 static int float_is_op(const cj_doc *d, int op) {
-    static const char *const ops[] = {"fneg",
-                                      "fabs",
-                                      "fadd",
-                                      "fsub",
-                                      "fmul",
-                                      "fdiv",
-                                      "feq",
-                                      "fne",
-                                      "flt",
-                                      "fle",
-                                      "fgt",
-                                      "fge",
-                                      NULL};
+    static const char *const ops[] = {"fneg",   "fabs",  "fadd",      "fsub",     "fmul",   "fdiv",
+                                      "feq",    "fne",   "flt",       "fle",      "fgt",    "fge",
+                                      "fmin",   "fmax",  "fdim",      "ftrunc",   "ffloor", "fceil",
+                                      "fround", "fsqrt", "fcopysign", "fsignbit", NULL};
     for (unsigned i = 0; ops[i]; ++i)
         if (cj_equal(d, op, ops[i]))
             return 1;
@@ -116,6 +113,69 @@ static int float_evaluate(qc_context *c,
     }
     if (cj_equal(d, op, "fabs")) {
         *out = av & ~(UINT64_C(1) << (bits - 1));
+        fesetround(saved_round);
+        return 1;
+    }
+    if (cj_equal(d, op, "fsignbit")) {
+        *out = (av >> ((unsigned)abits - 1)) & 1u;
+        fesetround(saved_round);
+        return 1;
+    }
+    if (cj_equal(d, op, "fcopysign")) {
+        uint64_t sb = UINT64_C(1) << (bits - 1);
+        *out = (av & ~sb) | (bv & sb);
+        fesetround(saved_round);
+        return 1;
+    }
+    if (cj_equal(d, op, "ftrunc") || cj_equal(d, op, "ffloor") || cj_equal(d, op, "fceil") ||
+        cj_equal(d, op, "fround") || cj_equal(d, op, "fsqrt")) {
+        if (bits == 32) {
+            volatile float fa = fl_bits_to_f32(av);
+            volatile float fr = cj_equal(d, op, "ftrunc")   ? truncf(fa)
+                                : cj_equal(d, op, "ffloor") ? floorf(fa)
+                                : cj_equal(d, op, "fceil")  ? ceilf(fa)
+                                : cj_equal(d, op, "fround") ? roundf(fa)
+                                                            : sqrtf(fa);
+            float tmp = fr;
+            *out = fl_f32_to_bits(tmp);
+        } else {
+            volatile double da = fl_bits_to_f64(av);
+            volatile double dr = cj_equal(d, op, "ftrunc")   ? trunc(da)
+                                 : cj_equal(d, op, "ffloor") ? floor(da)
+                                 : cj_equal(d, op, "fceil")  ? ceil(da)
+                                 : cj_equal(d, op, "fround") ? round(da)
+                                                             : sqrt(da);
+            double tmp = dr;
+            *out = fl_f64_to_bits(tmp);
+        }
+        fesetround(saved_round);
+        return 1;
+    }
+    if (cj_equal(d, op, "fmin") || cj_equal(d, op, "fmax") || cj_equal(d, op, "fdim")) {
+        int is_min = cj_equal(d, op, "fmin"), is_max = cj_equal(d, op, "fmax");
+        if (bits == 32) {
+            volatile float fa = fl_bits_to_f32(av), fb = fl_bits_to_f32(bv);
+            if ((is_min || is_max) && fa == 0.0f && fb == 0.0f) {
+                uint64_t sb = is_min ? ((av | bv) & UINT32_C(0x80000000))
+                                     : ((av & bv) & UINT32_C(0x80000000));
+                *out = sb;
+            } else {
+                volatile float fr = is_min ? fminf(fa, fb) : is_max ? fmaxf(fa, fb) : fdimf(fa, fb);
+                float tmp = fr;
+                *out = fl_f32_to_bits(tmp);
+            }
+        } else {
+            volatile double da = fl_bits_to_f64(av), db = fl_bits_to_f64(bv);
+            if ((is_min || is_max) && da == 0.0 && db == 0.0) {
+                uint64_t sb = is_min ? ((av | bv) & UINT64_C(0x8000000000000000))
+                                     : ((av & bv) & UINT64_C(0x8000000000000000));
+                *out = sb;
+            } else {
+                volatile double dr = is_min ? fmin(da, db) : is_max ? fmax(da, db) : fdim(da, db);
+                double tmp = dr;
+                *out = fl_f64_to_bits(tmp);
+            }
+        }
         fesetround(saved_round);
         return 1;
     }
@@ -501,7 +561,52 @@ typedef struct {
     ar_bit sign, is_zero, is_inf, is_nan;
 } fl_unpacked;
 
-static int fl_unpack(ar_builder *p, fl_spec sp, const ar_value *raw, int norm_sub, fl_unpacked *u) {
+static int fl_is_const(const ar_value *v, uint64_t *val_out) {
+    uint64_t val = 0;
+    for (unsigned i = 0; i < v->width; ++i) {
+        if (qc_mask_any(v->bit[i].wire))
+            return 0;
+        if (v->bit[i].inverted)
+            val |= UINT64_C(1) << i;
+    }
+    *val_out = val;
+    return 1;
+}
+
+static FL_NOINLINE int
+fl_unpack(ar_builder *p, fl_spec sp, const ar_value *raw, int norm_sub, fl_unpacked *u) {
+    uint64_t raw_u = 0;
+    if (fl_is_const(raw, &raw_u)) {
+        u->raw = *raw;
+        unsigned sign_bit = (unsigned)((raw_u >> (sp.bits - 1)) & 1u);
+        uint64_t exp_raw = (raw_u >> sp.frac_bits) & sp.exp_max;
+        uint64_t frac_mask = (UINT64_C(1) << sp.frac_bits) - 1;
+        uint64_t frac_raw = raw_u & frac_mask;
+        int exp_zero = exp_raw == 0;
+        int exp_max = exp_raw == sp.exp_max;
+        int frac_nz = frac_raw != 0;
+        u->sign = (ar_bit){qc_mask_zero(), (int)sign_bit};
+        u->is_zero = (ar_bit){qc_mask_zero(), exp_zero && !frac_nz};
+        u->is_inf = (ar_bit){qc_mask_zero(), exp_max && !frac_nz};
+        u->is_nan = (ar_bit){qc_mask_zero(), exp_max && frac_nz};
+        int64_t e_unbiased = (int64_t)exp_raw + (exp_zero ? 1 : 0) - sp.bias;
+        uint64_t sig_val = frac_raw;
+        if (!exp_zero && !exp_max)
+            sig_val |= UINT64_C(1) << sp.frac_bits;
+        if (norm_sub) {
+            if (sig_val == 0) {
+                e_unbiased -= sp.bits == 32 ? 31 : 63;
+            } else {
+                while (!(sig_val & (UINT64_C(1) << sp.frac_bits))) {
+                    sig_val <<= 1;
+                    --e_unbiased;
+                }
+            }
+        }
+        u->exp = fl_const_val(sp.ew, 1, (uint64_t)e_unbiased);
+        u->sig = fl_const_val(sp.frac_bits + 1, 0, sig_val);
+        return 1;
+    }
     u->raw = *raw;
     u->sign = raw->bit[sp.bits - 1];
     ar_bit exp_nz, exp_max, frac_nz, unit_one;
@@ -564,12 +669,12 @@ static int fl_unpack(ar_builder *p, fl_spec sp, const ar_value *raw, int norm_su
     return 1;
 }
 
-static int fl_round_and_pack(ar_builder *p,
-                             fl_spec sp,
-                             ar_bit res_sign,
-                             const ar_value *exp_in,
-                             const ar_value *m_in,
-                             ar_value *out) {
+static FL_NOINLINE int fl_round_and_pack(ar_builder *p,
+                                         fl_spec sp,
+                                         ar_bit res_sign,
+                                         const ar_value *exp_in,
+                                         const ar_value *m_in,
+                                         ar_value *out) {
     ar_bit is_sub = fl_not(m_in->bit[sp.frac_bits + 3]);
     ar_bit any_rs_lsb, round_up;
     ar_bit guard_bits[3] = {m_in->bit[1], m_in->bit[0], m_in->bit[3]};
@@ -631,7 +736,7 @@ static int fl_round_and_pack(ar_builder *p,
     return ar_condition(p, ar_wire(out->bit[sp.bits - 1]), &res_sign, &one, 1);
 }
 
-static int fl_underflow_shift(
+static FL_NOINLINE int fl_underflow_shift(
     ar_builder *p, fl_spec sp, const ar_value *norm_m, const ar_value *exp_in, ar_value *m_out) {
     unsigned mw = sp.frac_bits + 4;
     if (!ar_temp(p, mw, m_out))
@@ -708,19 +813,19 @@ static int fl_copy_bits(ar_builder *p, const ar_value *dst, const ar_bit *src, u
     return 1;
 }
 
-static int fl_apply_specials(ar_builder *p,
-                             fl_spec sp,
-                             const ar_value *a_raw,
-                             ar_bit a_is_nan,
-                             const ar_value *b_raw,
-                             ar_bit b_is_nan,
-                             ar_bit new_qnan,
-                             ar_bit sp_inf,
-                             ar_bit sp_inf_sign,
-                             ar_bit sp_zero,
-                             ar_bit sp_zero_sign,
-                             const ar_value *normal_val,
-                             ar_value *out) {
+static FL_NOINLINE int fl_apply_specials(ar_builder *p,
+                                         fl_spec sp,
+                                         const ar_value *a_raw,
+                                         ar_bit a_is_nan,
+                                         const ar_value *b_raw,
+                                         ar_bit b_is_nan,
+                                         ar_bit new_qnan,
+                                         ar_bit sp_inf,
+                                         ar_bit sp_inf_sign,
+                                         ar_bit sp_zero,
+                                         ar_bit sp_zero_sign,
+                                         const ar_value *normal_val,
+                                         ar_value *out) {
     if (!ar_temp(p, sp.bits, out))
         return 0;
     fl_scope sc = fl_scope_enter(p);
@@ -756,15 +861,15 @@ static int fl_apply_specials(ar_builder *p,
     return fl_scope_leave_before(p, sc, after_sel);
 }
 
-static int fl_finish_arith(ar_builder *p,
-                           fl_spec sp,
-                           const ar_value *a_raw,
-                           const ar_value *b_raw,
-                           const ar_value *flags_v,
-                           const ar_value *exp_val,
-                           const ar_value *m_in,
-                           int do_underflow,
-                           ar_value *out) {
+static FL_NOINLINE int fl_finish_arith(ar_builder *p,
+                                       fl_spec sp,
+                                       const ar_value *a_raw,
+                                       const ar_value *b_raw,
+                                       const ar_value *flags_v,
+                                       const ar_value *exp_val,
+                                       const ar_value *m_in,
+                                       int do_underflow,
+                                       ar_value *out) {
     ar_value m_shifted;
     const ar_value *m_use = m_in;
     if (do_underflow) {
@@ -790,12 +895,12 @@ static int fl_finish_arith(ar_builder *p,
                              out);
 }
 
-static int fl_synth_add_sub(ar_builder *p,
-                            fl_spec sp,
-                            const ar_value *a_raw,
-                            const ar_value *b_raw,
-                            int is_sub,
-                            ar_value *out) {
+static FL_NOINLINE int fl_synth_add_sub(ar_builder *p,
+                                        fl_spec sp,
+                                        const ar_value *a_raw,
+                                        const ar_value *b_raw,
+                                        int is_sub,
+                                        ar_value *out) {
     unsigned mw = sp.frac_bits + 4;
     ar_value flags_v, exp_norm, m_norm;
     if (!ar_temp(p, 7, &flags_v) || !ar_temp(p, sp.ew, &exp_norm) || !ar_temp(p, mw, &m_norm))
@@ -989,8 +1094,99 @@ static int fl_synth_add_sub(ar_builder *p,
     return fl_finish_arith(p, sp, a_raw, b_raw, &flags_v, &exp_norm, &m_norm, 0, out);
 }
 
-static int fl_synth_mul(
+static int fl_const_pow2(fl_spec sp, const ar_value *v, int *sign_out, int64_t *exp_out) {
+    uint64_t raw = 0;
+    if (!fl_is_const(v, &raw))
+        return 0;
+    *sign_out = (int)((raw >> (sp.bits - 1)) & 1u);
+    uint64_t exp_raw = (raw >> sp.frac_bits) & sp.exp_max;
+    uint64_t frac = raw & ((UINT64_C(1) << sp.frac_bits) - 1);
+    if (exp_raw > 0 && exp_raw < sp.exp_max && frac == 0) {
+        *exp_out = (int64_t)exp_raw - sp.bias;
+        return 1;
+    }
+    if (exp_raw == 0 && frac != 0 && (frac & (frac - 1)) == 0) {
+        int64_t e = (int64_t)(1 - sp.bias);
+        uint64_t top = UINT64_C(1) << sp.frac_bits;
+        while ((frac & top) == 0) {
+            frac <<= 1;
+            --e;
+        }
+        *exp_out = e;
+        return 1;
+    }
+    return 0;
+}
+
+static FL_NOINLINE int fl_synth_scale_pow2(ar_builder *p,
+                                           fl_spec sp,
+                                           const ar_value *a_raw,
+                                           const ar_value *b_raw,
+                                           int b_sign,
+                                           int64_t exp_delta,
+                                           ar_value *out) {
+    unsigned mw = sp.frac_bits + 4;
+    ar_value flags_v, exp_res, m_norm;
+    if (!ar_temp(p, 7, &flags_v) || !ar_temp(p, sp.ew, &exp_res) || !ar_temp(p, mw, &m_norm))
+        return 0;
+    exp_res.sign = 1;
+
+    {
+        fl_scope sc_core = fl_scope_enter(p);
+        fl_unpacked a;
+        if (!fl_unpack(p, sp, a_raw, 1, &a))
+            return 0;
+        ar_bit res_sign = b_sign ? fl_not(a.sign) : a.sign;
+        ar_value exp_acc;
+        if (!ar_temp(p, sp.ew, &exp_acc))
+            return 0;
+        exp_acc.sign = 1;
+        if (!fl_cadd(p, &exp_acc, &a.exp, sp.ew, fl_bit1(), 0))
+            return 0;
+        if (exp_delta != 0) {
+            ar_value delta_v = fl_const_val(sp.ew, 1, (uint64_t)exp_delta);
+            if (!fl_cadd(p, &exp_acc, &delta_v, sp.ew, fl_bit1(), 0))
+                return 0;
+        }
+
+        size_t after_core = p->count;
+        ar_bit exp_src[16];
+        for (unsigned i = 0; i < sp.ew; ++i)
+            exp_src[i] = exp_acc.bit[i];
+        if (!fl_copy_bits(p, &exp_res, exp_src, sp.ew))
+            return 0;
+        ar_bit fsrc[7] = {a.is_nan, fl_bit0(), fl_bit0(), a.is_inf, res_sign, a.is_zero, res_sign};
+        if (!fl_copy_bits(p, &flags_v, fsrc, 7))
+            return 0;
+        int one = 1;
+        for (unsigned i = 0; i <= sp.frac_bits; ++i)
+            if (!ar_condition(p, ar_wire(m_norm.bit[3 + i]), &a.sig.bit[i], &one, 1))
+                return 0;
+        if (!fl_scope_leave_before(p, sc_core, after_core))
+            return 0;
+    }
+
+    return fl_finish_arith(p, sp, a_raw, b_raw, &flags_v, &exp_res, &m_norm, 1, out);
+}
+
+static FL_NOINLINE int fl_synth_mul(
     ar_builder *p, fl_spec sp, const ar_value *a_raw, const ar_value *b_raw, ar_value *out) {
+    int p_sign = 0;
+    int64_t p_exp = 0;
+    if (fl_const_pow2(sp, b_raw, &p_sign, &p_exp))
+        return fl_synth_scale_pow2(p, sp, a_raw, b_raw, p_sign, p_exp, out);
+    if (fl_const_pow2(sp, a_raw, &p_sign, &p_exp))
+        return fl_synth_scale_pow2(p, sp, b_raw, a_raw, p_sign, p_exp, out);
+    uint64_t au = 0, bu = 0;
+    if (fl_is_const(a_raw, &au) && !fl_is_const(b_raw, &bu)) {
+        uint64_t aexp = (au >> sp.frac_bits) & sp.exp_max;
+        uint64_t afrac = au & ((UINT64_C(1) << sp.frac_bits) - 1);
+        if (!(aexp == sp.exp_max && afrac != 0)) {
+            const ar_value *tmp = a_raw;
+            a_raw = b_raw;
+            b_raw = tmp;
+        }
+    }
     unsigned mw = sp.frac_bits + 4;
     ar_value flags_v, exp_prod, m_norm;
     if (!ar_temp(p, 7, &flags_v) || !ar_temp(p, sp.ew, &exp_prod) || !ar_temp(p, mw, &m_norm))
@@ -1074,8 +1270,12 @@ static int fl_synth_mul(
     return fl_finish_arith(p, sp, a_raw, b_raw, &flags_v, &exp_prod, &m_norm, 1, out);
 }
 
-static int fl_synth_div(
+static FL_NOINLINE int fl_synth_div(
     ar_builder *p, fl_spec sp, const ar_value *a_raw, const ar_value *b_raw, ar_value *out) {
+    int p_sign = 0;
+    int64_t p_exp = 0;
+    if (fl_const_pow2(sp, b_raw, &p_sign, &p_exp))
+        return fl_synth_scale_pow2(p, sp, a_raw, b_raw, p_sign, -p_exp, out);
     unsigned mw = sp.frac_bits + 4;
     ar_value flags_v, exp_quot, m_norm;
     if (!ar_temp(p, 7, &flags_v) || !ar_temp(p, sp.ew, &exp_quot) || !ar_temp(p, mw, &m_norm))
@@ -1182,14 +1382,14 @@ static int fl_synth_div(
     return fl_finish_arith(p, sp, a_raw, b_raw, &flags_v, &exp_quot, &m_norm, 1, out);
 }
 
-static int fl_synth_cmp(ar_builder *p,
-                        fl_spec sp,
-                        const cj_doc *d,
-                        int op,
-                        const ar_value *a_raw,
-                        const ar_value *b_raw,
-                        unsigned out_bits,
-                        ar_value *out) {
+static FL_NOINLINE int fl_synth_cmp(ar_builder *p,
+                                    fl_spec sp,
+                                    const cj_doc *d,
+                                    int op,
+                                    const ar_value *a_raw,
+                                    const ar_value *b_raw,
+                                    unsigned out_bits,
+                                    ar_value *out) {
     fl_unpacked a, b;
     if (!fl_unpack(p, sp, a_raw, 0, &a) || !fl_unpack(p, sp, b_raw, 0, &b))
         return 0;
@@ -1246,7 +1446,346 @@ static int fl_synth_cmp(ar_builder *p,
     return 1;
 }
 
-static int fl_synth_f2f(
+static FL_NOINLINE int fl_synth_minmax(ar_builder *p,
+                                       fl_spec sp,
+                                       const cj_doc *d,
+                                       int is_max,
+                                       const ar_value *a_raw,
+                                       const ar_value *b_raw,
+                                       ar_value *out) {
+    (void)d;
+    ar_value out_flags;
+    if (!ar_temp(p, 2, &out_flags))
+        return 0;
+    {
+        fl_scope sc = fl_scope_enter(p);
+        fl_unpacked a, b;
+        if (!fl_unpack(p, sp, a_raw, 0, &a) || !fl_unpack(p, sp, b_raw, 0, &b))
+            return 0;
+        ar_bit either_nan, both_zero, bn;
+        if (!fl_or2(p, a.is_nan, b.is_nan, &either_nan) ||
+            !fl_and2(p, a.is_zero, b.is_zero, &both_zero) || !fl_and2(p, a.is_nan, b.is_nan, &bn))
+            return 0;
+        ar_value mag_eq, mag_lt;
+        if (!ar_temp(p, 1, &mag_eq) || !ar_temp(p, 1, &mag_lt) ||
+            !ar_compare(p, a_raw, b_raw, sp.bits - 1, 0, 0 /* == */, &mag_eq) ||
+            !ar_compare(p, a_raw, b_raw, sp.bits - 1, 0, 2 /* < */, &mag_lt))
+            return 0;
+        ar_bit mag_gt, cmp_win;
+        if (!fl_and2(p, fl_not(mag_eq.bit[0]), fl_not(mag_lt.bit[0]), &mag_gt))
+            return 0;
+        if (is_max) {
+            ar_bit pos_neg, pos_pos, neg_neg, t, any_gt;
+            if (!fl_and2(p, fl_not(a.sign), b.sign, &pos_neg) ||
+                !fl_and2(p, fl_not(a.sign), fl_not(b.sign), &t) ||
+                !fl_and2(p, t, mag_gt, &pos_pos) || !fl_and2(p, a.sign, b.sign, &t) ||
+                !fl_and2(p, t, mag_lt.bit[0], &neg_neg) || !fl_or2(p, pos_neg, pos_pos, &any_gt) ||
+                !fl_or2(p, any_gt, neg_neg, &any_gt) ||
+                !fl_and2(p, fl_not(both_zero), any_gt, &cmp_win))
+                return 0;
+        } else {
+            ar_bit neg_pos, neg_neg, pos_pos, t, any_lt;
+            if (!fl_and2(p, a.sign, fl_not(b.sign), &neg_pos) || !fl_and2(p, a.sign, b.sign, &t) ||
+                !fl_and2(p, t, mag_gt, &neg_neg) ||
+                !fl_and2(p, fl_not(a.sign), fl_not(b.sign), &t) ||
+                !fl_and2(p, t, mag_lt.bit[0], &pos_pos) || !fl_or2(p, neg_pos, neg_neg, &any_lt) ||
+                !fl_or2(p, any_lt, pos_pos, &any_lt) ||
+                !fl_and2(p, fl_not(both_zero), any_lt, &cmp_win))
+                return 0;
+        }
+        ar_bit z_tie, a_wins, nan_b_only, normal_a, pa;
+        if (!fl_and2(p, both_zero, is_max ? fl_not(a.sign) : a.sign, &z_tie) ||
+            !fl_or2(p, cmp_win, z_tie, &a_wins) ||
+            !fl_and2(p, fl_not(a.is_nan), b.is_nan, &nan_b_only) ||
+            !fl_and2(p, fl_not(either_nan), a_wins, &normal_a) ||
+            !fl_or2(p, nan_b_only, normal_a, &pa))
+            return 0;
+        size_t after_cmp = p->count;
+        int one = 1;
+        if (!ar_condition(p, ar_wire(out_flags.bit[0]), &pa, &one, 1) ||
+            !ar_condition(p, ar_wire(out_flags.bit[1]), &bn, &one, 1) ||
+            !fl_scope_leave_before(p, sc, after_cmp))
+            return 0;
+    }
+    ar_bit pick_a = out_flags.bit[0], both_nan = out_flags.bit[1];
+    ar_value sel, qnan_a;
+    if (!fl_quiet_nan(sp, a_raw, &qnan_a) ||
+        !ar_select_view(p, a_raw, b_raw, pick_a, sp.bits, 0, &sel) ||
+        !ar_select_view(p, &qnan_a, &sel, both_nan, sp.bits, 0, out))
+        return 0;
+    return 1;
+}
+
+static FL_NOINLINE int fl_synth_fdim(ar_builder *p,
+                                     fl_spec sp,
+                                     const cj_doc *d,
+                                     const ar_value *a_raw,
+                                     const ar_value *b_raw,
+                                     ar_value *out) {
+    ar_value gt_v;
+    if (!ar_temp(p, 1, &gt_v))
+        return 0;
+    {
+        fl_scope sc = fl_scope_enter(p);
+        fl_unpacked a, b;
+        if (!fl_unpack(p, sp, a_raw, 0, &a) || !fl_unpack(p, sp, b_raw, 0, &b))
+            return 0;
+        /* Use explicit fl_synth_cmp semantics for gt */
+        ar_bit either_nan, both_zero, mag_eq_b, mag_lt_b, mag_gt_b;
+        ar_value mag_eq, mag_lt;
+        if (!fl_or2(p, a.is_nan, b.is_nan, &either_nan) ||
+            !fl_and2(p, a.is_zero, b.is_zero, &both_zero) || !ar_temp(p, 1, &mag_eq) ||
+            !ar_temp(p, 1, &mag_lt) || !ar_compare(p, a_raw, b_raw, sp.bits - 1, 0, 0, &mag_eq) ||
+            !ar_compare(p, a_raw, b_raw, sp.bits - 1, 0, 2, &mag_lt))
+            return 0;
+        mag_eq_b = mag_eq.bit[0];
+        mag_lt_b = mag_lt.bit[0];
+        ar_bit pos_neg, pos_pos, neg_neg, t, any_gt, res_gt, kd;
+        if (!fl_and2(p, fl_not(mag_eq_b), fl_not(mag_lt_b), &mag_gt_b) ||
+            !fl_and2(p, fl_not(a.sign), b.sign, &pos_neg) ||
+            !fl_and2(p, fl_not(a.sign), fl_not(b.sign), &t) || !fl_and2(p, t, mag_gt_b, &pos_pos) ||
+            !fl_and2(p, a.sign, b.sign, &t) || !fl_and2(p, t, mag_lt_b, &neg_neg) ||
+            !fl_or2(p, pos_neg, pos_pos, &any_gt) || !fl_or2(p, any_gt, neg_neg, &any_gt) ||
+            !fl_and2(p, fl_not(either_nan), fl_not(both_zero), &t) ||
+            !fl_and2(p, t, any_gt, &res_gt) || !fl_or2(p, res_gt, either_nan, &kd))
+            return 0;
+        size_t after_cmp = p->count;
+        int one = 1;
+        if (!ar_condition(p, ar_wire(gt_v.bit[0]), &kd, &one, 1) ||
+            !fl_scope_leave_before(p, sc, after_cmp))
+            return 0;
+    }
+    ar_bit keep_diff = gt_v.bit[0];
+    (void)d;
+    ar_value diff, zero_v = fl_const_val(sp.bits, 0, 0);
+    if (!fl_synth_add_sub(p, sp, a_raw, b_raw, 1, &diff) ||
+        !ar_select_view(p, &diff, &zero_v, keep_diff, sp.bits, 0, out))
+        return 0;
+    return 1;
+}
+
+static FL_NOINLINE int
+fl_synth_round_int(ar_builder *p, fl_spec sp, int mode, const ar_value *a_raw, ar_value *out) {
+    ar_value mid_bits, flags5;
+    if (!ar_temp(p, sp.bits - 1, &mid_bits) || !ar_temp(p, 5, &flags5))
+        return 0;
+    unsigned fb = sp.frac_bits, eb = sp.bits == 32 ? 5u : 6u;
+    int one = 1;
+
+    {
+        fl_scope sc = fl_scope_enter(p);
+        fl_unpacked u;
+        if (!fl_unpack(p, sp, a_raw, 0, &u))
+            return 0;
+        ar_value ge_v;
+        ar_value fb_v = fl_const_val(sp.ew, 1, fb);
+        if (!ar_temp(p, 1, &ge_v) || !ar_compare(p, &u.exp, &fb_v, sp.ew, 1, 5 /* >= */, &ge_v))
+            return 0;
+        ar_bit lt0 = u.exp.bit[sp.ew - 1], gef = ge_v.bit[0], in_mid;
+        if (!fl_and2(p, fl_not(lt0), fl_not(gef), &in_mid))
+            return 0;
+
+        ar_bit one_mag = fl_bit0();
+        if (mode == 1) {
+            if (!fl_and2(p, u.sign, fl_not(u.is_zero), &one_mag))
+                return 0;
+        } else if (mode == 2) {
+            if (!fl_and2(p, fl_not(u.sign), fl_not(u.is_zero), &one_mag))
+                return 0;
+        } else if (mode == 3) {
+            if (!fl_all_ones(p, u.exp.bit, sp.ew, &one_mag))
+                return 0;
+        }
+
+        ar_bit prefix_or[52];
+        prefix_or[0] = a_raw->bit[0];
+        for (unsigned j = 1; j < fb; ++j)
+            if (!fl_or2(p, prefix_or[j - 1], a_raw->bit[j], &prefix_or[j]))
+                return 0;
+
+        ar_value matches;
+        if (!ar_temp(p, fb, &matches))
+            return 0;
+        for (unsigned e = 0; e < fb; ++e) {
+            ar_bit bits[8];
+            int wanted[8];
+            bits[0] = in_mid;
+            wanted[0] = 1;
+            for (unsigned j = 0; j < eb; ++j) {
+                bits[1 + j] = u.exp.bit[j];
+                wanted[1 + j] = !!((e >> j) & 1u);
+            }
+            if (!ar_condition(p, ar_wire(matches.bit[e]), bits, wanted, 1 + eb))
+                return 0;
+        }
+
+        ar_bit keep[52];
+        keep[0] = fl_bit0();
+        if (fb > 1)
+            keep[1] = matches.bit[fb - 1];
+        for (unsigned j = 2; j < fb; ++j)
+            if (!fl_xor2(p, keep[j - 1], matches.bit[fb - j], &keep[j]))
+                return 0;
+
+        ar_value trunc_mag, inc_vec;
+        if (!ar_temp(p, sp.bits - 1, &trunc_mag) || !ar_temp(p, sp.bits - 1, &inc_vec))
+            return 0;
+        for (unsigned j = 0; j < fb; ++j) {
+            ar_bit tc[2] = {a_raw->bit[j], keep[j]};
+            int tw[2] = {1, 1};
+            if (!ar_condition(p, ar_wire(trunc_mag.bit[j]), tc, tw, 2))
+                return 0;
+        }
+        for (unsigned j = fb; j < sp.bits - 1; ++j)
+            if (!ar_condition(p, ar_wire(trunc_mag.bit[j]), &a_raw->bit[j], &one, 1))
+                return 0;
+
+        if (mode != 0) {
+            for (unsigned e = 0; e < fb; ++e) {
+                unsigned k = fb - e;
+                ar_bit inc_e = fl_bit0();
+                if (mode == 1) {
+                    if (!fl_and2(p, u.sign, prefix_or[k - 1], &inc_e))
+                        return 0;
+                } else if (mode == 2) {
+                    if (!fl_and2(p, fl_not(u.sign), prefix_or[k - 1], &inc_e))
+                        return 0;
+                } else {
+                    inc_e = a_raw->bit[k - 1];
+                }
+                ar_bit ic[2] = {matches.bit[e], inc_e};
+                int iw[2] = {1, 1};
+                if (!ar_condition(p, ar_wire(inc_vec.bit[k]), ic, iw, 2))
+                    return 0;
+            }
+            if (!fl_cadd(p, &trunc_mag, &inc_vec, sp.bits - 1, fl_bit1(), 0))
+                return 0;
+        }
+
+        size_t after_mid = p->count;
+        for (unsigned j = 0; j < sp.bits - 1; ++j)
+            if (!ar_condition(p, ar_wire(mid_bits.bit[j]), &trunc_mag.bit[j], &one, 1))
+                return 0;
+        ar_bit fsrc[5] = {lt0, gef, one_mag, u.sign, u.is_nan};
+        if (!fl_copy_bits(p, &flags5, fsrc, 5) || !fl_scope_leave_before(p, sc, after_mid))
+            return 0;
+    }
+
+    ar_bit e_lt0 = flags5.bit[0], e_ge_fb = flags5.bit[1], one_mag = flags5.bit[2],
+           sbit = flags5.bit[3], is_nan = flags5.bit[4];
+    ar_value pos_one = fl_const_val(sp.bits, 0, (uint64_t)sp.bias << fb);
+    ar_value zero_v = fl_const_val(sp.bits, 0, 0);
+    pos_one.bit[sp.bits - 1] = sbit;
+    zero_v.bit[sp.bits - 1] = sbit;
+    ar_value small_res, mid_res = {.width = sp.bits}, big_res = *a_raw, t1;
+    for (unsigned j = 0; j < sp.bits - 1; ++j)
+        mid_res.bit[j] = mid_bits.bit[j];
+    mid_res.bit[sp.bits - 1] = sbit;
+    if (!fl_or2(p, a_raw->bit[fb - 1], is_nan, &big_res.bit[fb - 1]) ||
+        !ar_select_view(p, &pos_one, &zero_v, one_mag, sp.bits, 0, &small_res) ||
+        !ar_select_view(p, &small_res, &mid_res, e_lt0, sp.bits, 0, &t1) ||
+        !ar_select_view(p, &big_res, &t1, e_ge_fb, sp.bits, 0, out))
+        return 0;
+    return 1;
+}
+
+static FL_NOINLINE int
+fl_synth_sqrt(ar_builder *p, fl_spec sp, const ar_value *a_raw, ar_value *out) {
+    unsigned mw = sp.frac_bits + 4;
+    unsigned n_steps = sp.frac_bits + 2;
+    unsigned rw = n_steps + 3;
+    ar_value flags_v, exp_out, m_norm;
+    if (!ar_temp(p, 7, &flags_v) || !ar_temp(p, sp.ew, &exp_out) || !ar_temp(p, mw, &m_norm))
+        return 0;
+    exp_out.sign = 1;
+
+    {
+        fl_scope sc_core = fl_scope_enter(p);
+        fl_unpacked a;
+        if (!fl_unpack(p, sp, a_raw, 1, &a))
+            return 0;
+        ar_bit odd = a.exp.bit[0];
+        ar_value e_half = {.width = sp.ew, .sign = 1};
+        for (unsigned i = 0; i + 1 < sp.ew; ++i)
+            e_half.bit[i] = a.exp.bit[i + 1];
+        e_half.bit[sp.ew - 1] = a.exp.bit[sp.ew - 1];
+
+        ar_value rad;
+        if (!ar_temp(p, n_steps, &rad))
+            return 0;
+        ar_bit not_odd = fl_not(odd);
+        int w2[2] = {1, 1}, one = 1;
+        for (unsigned i = 0; i <= sp.frac_bits; ++i) {
+            ar_bit c0[2] = {not_odd, a.sig.bit[i]};
+            ar_bit c1[2] = {odd, a.sig.bit[i]};
+            if (!ar_condition(p, ar_wire(rad.bit[i]), c0, w2, 2) ||
+                !ar_condition(p, ar_wire(rad.bit[i + 1]), c1, w2, 2))
+                return 0;
+        }
+
+        ar_value rem, q;
+        if (!ar_temp(p, rw, &rem) || !ar_temp(p, n_steps, &q))
+            return 0;
+        for (unsigned step = 0; step < n_steps; ++step) {
+            unsigned k = n_steps - 1 - step;
+            if (step > 0) {
+                ar_bit top0 = rem.bit[rw - 2], top1 = rem.bit[rw - 1];
+                memmove(&rem.bit[2], &rem.bit[0], (rw - 2) * sizeof rem.bit[0]);
+                rem.bit[0] = top0;
+                rem.bit[1] = top1;
+            }
+            int idx_hi = (int)n_steps - 1 - 2 * (int)step;
+            int idx_lo = (int)n_steps - 2 - 2 * (int)step;
+            if (idx_hi >= 0 && !ar_condition(p, ar_wire(rem.bit[1]), &rad.bit[idx_hi], &one, 1))
+                return 0;
+            if (idx_lo >= 0 && !ar_condition(p, ar_wire(rem.bit[0]), &rad.bit[idx_lo], &one, 1))
+                return 0;
+
+            unsigned w_step = step + 4 <= rw ? step + 4 : rw;
+            ar_value trial = {.width = w_step};
+            trial.bit[0] = fl_bit1();
+            trial.bit[1] = fl_bit0();
+            for (unsigned j = 0; j < step && 2 + j < w_step; ++j)
+                trial.bit[2 + j] = q.bit[(n_steps - step) + j];
+            for (unsigned j = 2 + step; j < w_step; ++j)
+                trial.bit[j] = fl_bit0();
+
+            if (!fl_cadd(p, &rem, &trial, w_step, fl_bit1(), 1))
+                return 0;
+            ar_bit ok_bit = fl_not(rem.bit[w_step - 1]);
+            if (!ar_condition(p, ar_wire(q.bit[k]), &ok_bit, &one, 1) ||
+                !fl_cadd(p, &rem, &trial, w_step, fl_not(q.bit[k]), 0))
+                return 0;
+        }
+
+        ar_bit rem_nz, neg_nz, sp_inf;
+        if (!fl_bits_nz(p, rem.bit, rw, &rem_nz) ||
+            !fl_and2(p, a.sign, fl_not(a.is_zero), &neg_nz) ||
+            !fl_and2(p, fl_not(a.sign), a.is_inf, &sp_inf))
+            return 0;
+
+        size_t after_core = p->count;
+        ar_bit exp_src[16];
+        for (unsigned i = 0; i < sp.ew; ++i)
+            exp_src[i] = e_half.bit[i];
+        if (!fl_copy_bits(p, &exp_out, exp_src, sp.ew))
+            return 0;
+        ar_bit fsrc[7] = {a.is_nan, fl_bit0(), neg_nz, sp_inf, fl_bit0(), a.is_zero, a.sign};
+        if (!fl_copy_bits(p, &flags_v, fsrc, 7) ||
+            !ar_condition(p, ar_wire(m_norm.bit[0]), &rem_nz, &one, 1) ||
+            !ar_condition(p, ar_wire(m_norm.bit[2]), &q.bit[0], &one, 1))
+            return 0;
+        for (unsigned i = 0; i <= sp.frac_bits; ++i)
+            if (!ar_condition(p, ar_wire(m_norm.bit[3 + i]), &q.bit[1 + i], &one, 1))
+                return 0;
+        if (!fl_scope_leave_before(p, sc_core, after_core))
+            return 0;
+    }
+
+    return fl_finish_arith(p, sp, a_raw, a_raw, &flags_v, &exp_out, &m_norm, 0, out);
+}
+
+static FL_NOINLINE int fl_synth_f2f(
     ar_builder *p, unsigned src_bits, unsigned dst_bits, const ar_value *src, ar_value *out) {
     if (src_bits == dst_bits) {
         *out = *src;
@@ -1324,7 +1863,7 @@ static int fl_synth_f2f(
     return 1;
 }
 
-static int
+static FL_NOINLINE int
 fl_synth_i2f(ar_builder *p, unsigned dst_bits, const ar_value *src, int src_sign, ar_value *out) {
     fl_spec ds = fl_spec_for(dst_bits);
     ar_value mag = *src;
@@ -1383,12 +1922,12 @@ fl_synth_i2f(ar_builder *p, unsigned dst_bits, const ar_value *src, int src_sign
     return ar_select_view(p, &zero_v, &packed, all_zero, dst_bits, 0, out);
 }
 
-static int fl_synth_f2i(ar_builder *p,
-                        unsigned src_bits,
-                        const ar_value *src,
-                        unsigned dst_bits,
-                        int dst_sign,
-                        ar_value *out) {
+static FL_NOINLINE int fl_synth_f2i(ar_builder *p,
+                                    unsigned src_bits,
+                                    const ar_value *src,
+                                    unsigned dst_bits,
+                                    int dst_sign,
+                                    ar_value *out) {
     if (dst_bits == 1) {
         ar_bit nz;
         if (!fl_bits_nz(p, src->bit, src_bits - 1, &nz))
@@ -1570,10 +2109,10 @@ fl_check_all_subtrees_ub(qc_context *c, const cj_doc *d, int expr, qc_mask outer
     return 1;
 }
 
-static int fl_compute_node(
+static FL_NOINLINE int fl_compute_node(
     qc_context *c, const cj_doc *d, int expr, uint32_t target_id, qc_mask outer, qc_mask state);
 
-static int
+static FL_NOINLINE int
 fl_stage_view(qc_context *c, const cj_doc *d, int node, fl_stage_list *stages, ar_value *out) {
     uint64_t bits64 = 0;
     if (!number(c, d, node, "bits", &bits64))
@@ -1617,6 +2156,29 @@ fl_stage_view(qc_context *c, const cj_doc *d, int node, fl_stage_list *stages, a
             out->bit[bits - 1] = fl_bit0();
         return 1;
     }
+    if (n == 2 && cj_equal(d, op, "fcopysign")) {
+        ar_value *b_v = malloc(sizeof *b_v);
+        if (!b_v)
+            return qc_fail(c, "out of memory");
+        int ok = fl_stage_view(c, d, nodes[0], stages, out) &&
+                 fl_stage_view(c, d, nodes[1], stages, b_v);
+        if (ok)
+            out->bit[bits - 1] = b_v->bit[bits - 1];
+        free(b_v);
+        return ok;
+    }
+    if (n == 1 && cj_equal(d, op, "fsignbit")) {
+        ar_value *arg_v = malloc(sizeof *arg_v);
+        if (!arg_v)
+            return qc_fail(c, "out of memory");
+        int ok = fl_stage_view(c, d, nodes[0], stages, arg_v);
+        if (ok) {
+            *out = fl_const_val(bits, sign, 0);
+            out->bit[0] = arg_v->bit[arg_v->width - 1];
+        }
+        free(arg_v);
+        return ok;
+    }
 
     uint32_t tid = fl_fresh_id(c);
     if (!allocate(c, tid, bits, 1, sign))
@@ -1636,6 +2198,9 @@ fl_stage_view(qc_context *c, const cj_doc *d, int node, fl_stage_list *stages, a
         return 0;
     }
     qc_register *tr = reg(c, tid);
+    tr->clean = 0;
+    tr->prepared = 1;
+    unknown_support(tr);
     *out = (ar_value){.width = bits, .sign = sign};
     for (unsigned b = 0; b < bits; ++b)
         out->bit[b] = (ar_bit){QC_WIRE(tr->wires[b]), 0};
@@ -1674,7 +2239,64 @@ static int fl_cleanup_builder(ar_builder *p) {
     return ok;
 }
 
-static int fl_compute_node(
+static void
+fl_mark_stage_support(qc_context *c, const cj_doc *d, int expr, uint32_t tid, qc_mask outer) {
+    qc_register *tr = reg(c, tid);
+    if (!tr)
+        return;
+    tr->clean = 0;
+    tr->prepared = 1;
+    unknown_support(tr);
+    int cop = cj_get(d, expr, "op");
+    if (cop >= 0 &&
+        (cj_equal(d, cop, "fsignbit") || cj_equal(d, cop, "feq") || cj_equal(d, cop, "fne") ||
+         cj_equal(d, cop, "flt") || cj_equal(d, cop, "fle") || cj_equal(d, cop, "fgt") ||
+         cj_equal(d, cop, "fge") || cj_equal(d, cop, "eq") || cj_equal(d, cop, "ne") ||
+         cj_equal(d, cop, "lt") || cj_equal(d, cop, "le") || cj_equal(d, cop, "gt") ||
+         cj_equal(d, cop, "ge") || cj_equal(d, cop, "not") || cj_equal(d, cop, "land") ||
+         cj_equal(d, cop, "lor"))) {
+        tr->support_interval = 1;
+        tr->support_lower = 0;
+        tr->support_upper = 1;
+        tr->zero_mask = bits_mask(tr->width) & ~UINT64_C(1);
+        return;
+    }
+    uint64_t lower, upper;
+    if (!float_expr_uses_float(d, expr) &&
+        computed_interval(c, d, expr, tr->width, tr->signed_type, &lower, &upper)) {
+        if (qc_mask_any(outer))
+            lower = 0;
+        tr->support_interval = 1;
+        tr->support_lower = lower;
+        tr->support_upper = upper;
+        uint64_t span = (lower == upper) ? lower : (lower | upper);
+        uint64_t prefix = span;
+        for (unsigned shift = 1; shift < 64; shift *= 2)
+            prefix |= prefix >> shift;
+        if (tr->signed_type && (int64_t)lower < 0)
+            prefix = bits_mask(tr->width);
+        tr->zero_mask = bits_mask(tr->width) & ~prefix;
+    }
+}
+
+static int fl_buf_append(char **buf, size_t *len, size_t *cap, const char *s, size_t n) {
+    if (*len + n + 1 > *cap) {
+        size_t next = *cap ? *cap * 2 : 256;
+        while (next < *len + n + 1)
+            next *= 2;
+        char *grown = realloc(*buf, next);
+        if (!grown)
+            return 0;
+        *buf = grown;
+        *cap = next;
+    }
+    memcpy(*buf + *len, s, n);
+    *len += n;
+    (*buf)[*len] = '\0';
+    return 1;
+}
+
+static FL_NOINLINE int fl_compute_node(
     qc_context *c, const cj_doc *d, int expr, uint32_t target_id, qc_mask outer, qc_mask state) {
     if (!float_expr_uses_float(d, expr))
         return compute(c, d, expr, reg(c, target_id), outer, state);
@@ -1688,46 +2310,47 @@ static int fl_compute_node(
     int nodes[3];
     unsigned n = expr_nodes(d, expr, nodes);
 
+    ar_value *vals = calloc(4, sizeof *vals);
+    if (!vals)
+        return qc_fail(c, "out of memory");
     fl_stage_list stages = {0};
     ar_builder p = {.c = c, .d = d};
 
     if (cj_equal(d, op, "const") || cj_equal(d, op, "reg") ||
-        (n == 1 && (cj_equal(d, op, "fneg") || cj_equal(d, op, "fabs")))) {
-        ar_value v;
-        int ok = fl_stage_view(c, d, expr, &stages, &v) &&
-                 fl_emit_to_target(c, target_id, &v, outer, state);
+        (n == 1 &&
+         (cj_equal(d, op, "fneg") || cj_equal(d, op, "fabs") || cj_equal(d, op, "fsignbit"))) ||
+        (n == 2 && cj_equal(d, op, "fcopysign"))) {
+        int ok = fl_stage_view(c, d, expr, &stages, &vals[0]) &&
+                 fl_emit_to_target(c, target_id, &vals[0], outer, state);
         if (!fl_unwind_stages(c, &stages, 0))
             ok = 0;
         free(stages.items);
         ar_free(&p);
+        free(vals);
         return ok;
     }
 
     if (cj_equal(d, op, "sequence") && n == 2) {
-        ar_value disc;
-        int ok = fl_stage_view(c, d, nodes[0], &stages, &disc) && fl_unwind_stages(c, &stages, 0) &&
-                 fl_compute_node(c, d, nodes[1], target_id, outer, state);
+        int ok =
+            fl_stage_view(c, d, nodes[0], &stages, &vals[0]) && fl_unwind_stages(c, &stages, 0);
         free(stages.items);
         ar_free(&p);
-        return ok;
+        free(vals);
+        return ok ? fl_compute_node(c, d, nodes[1], target_id, outer, state) : 0;
     }
 
     if (cj_equal(d, op, "select") && n == 3) {
-        ar_value cond_v, res_val = {.width = bits, .sign = sign};
-        int ok = fl_stage_view(c, d, nodes[0], &stages, &cond_v);
+        int ok = fl_stage_view(c, d, nodes[0], &stages, &vals[0]);
         if (ok) {
             ar_bit cond_bit;
-            if (cj_bool(d, cj_get(d, nodes[0], "float"))) {
-                ar_value cond_abs = {.width = cond_v.width - 1};
-                for (unsigned i = 0; i < cond_v.width - 1; ++i)
-                    cond_abs.bit[i] = cond_v.bit[i];
-                ok = ar_truth(&p, &cond_abs, &cond_bit);
-            } else
-                ok = ar_truth(&p, &cond_v, &cond_bit);
+            if (cj_bool(d, cj_get(d, nodes[0], "float")) && vals[0].width > 0)
+                --vals[0].width;
+            ok = ar_truth(&p, &vals[0], &cond_bit);
             if (ok) {
                 if (!qc_mask_any(cond_bit.wire)) {
                     size_t inner_mark = stages.count;
                     ok = fl_cleanup_builder(&p);
+                    free(vals);
                     if (ok)
                         ok = fl_compute_node(
                             c, d, nodes[cond_bit.inverted ? 1 : 2], target_id, outer, state);
@@ -1737,41 +2360,40 @@ static int fl_compute_node(
                     free(stages.items);
                     return ok;
                 }
-                ar_value arm_yes, arm_no;
                 size_t saved_gates = p.count;
                 if (ok)
-                    ok = fl_stage_view(c, d, nodes[1], &stages, &arm_yes) &&
-                         fl_stage_view(c, d, nodes[2], &stages, &arm_no) &&
-                         ar_select_view(&p, &arm_yes, &arm_no, cond_bit, bits, sign, &res_val) &&
-                         fl_emit_to_target(c, target_id, &res_val, outer, state);
+                    ok = fl_stage_view(c, d, nodes[1], &stages, &vals[1]) &&
+                         fl_stage_view(c, d, nodes[2], &stages, &vals[2]) &&
+                         ar_select_view(&p, &vals[1], &vals[2], cond_bit, bits, sign, &vals[3]) &&
+                         fl_emit_to_target(c, target_id, &vals[3], outer, state);
                 (void)saved_gates;
                 if (!fl_cleanup_builder(&p))
                     ok = 0;
                 if (!fl_unwind_stages(c, &stages, 0))
                     ok = 0;
                 free(stages.items);
+                free(vals);
                 return ok;
             }
         }
         fl_cleanup_builder(&p);
         fl_unwind_stages(c, &stages, 0);
         free(stages.items);
+        free(vals);
         return 0;
     }
 
     if (cj_equal(d, op, "not") && n == 1) {
-        ar_value v;
         ar_bit nz;
-        int ok = fl_stage_view(c, d, nodes[0], &stages, &v);
+        int ok = fl_stage_view(c, d, nodes[0], &stages, &vals[0]);
         if (ok) {
-            ar_value mag = v;
-            if (cj_bool(d, cj_get(d, nodes[0], "float")))
-                mag.width = v.width - 1;
-            ok = ar_truth(&p, &mag, &nz);
+            if (cj_bool(d, cj_get(d, nodes[0], "float")) && vals[0].width > 0)
+                --vals[0].width;
+            ok = ar_truth(&p, &vals[0], &nz);
             if (ok) {
-                ar_value res = fl_const_val(bits, sign, 0);
-                res.bit[0] = fl_not(nz);
-                ok = fl_emit_to_target(c, target_id, &res, outer, state);
+                vals[1] = fl_const_val(bits, sign, 0);
+                vals[1].bit[0] = fl_not(nz);
+                ok = fl_emit_to_target(c, target_id, &vals[1], outer, state);
             }
         }
         if (!fl_cleanup_builder(&p))
@@ -1779,28 +2401,27 @@ static int fl_compute_node(
         if (!fl_unwind_stages(c, &stages, 0))
             ok = 0;
         free(stages.items);
+        free(vals);
         return ok;
     }
 
     if ((cj_equal(d, op, "land") || cj_equal(d, op, "lor")) && n == 2) {
-        ar_value va, vb;
         ar_bit ta = fl_bit0(), tb = fl_bit0(), out_b = fl_bit0();
-        int ok = fl_stage_view(c, d, nodes[0], &stages, &va) &&
-                 fl_stage_view(c, d, nodes[1], &stages, &vb);
+        int ok = fl_stage_view(c, d, nodes[0], &stages, &vals[0]) &&
+                 fl_stage_view(c, d, nodes[1], &stages, &vals[1]);
         if (ok) {
-            ar_value a_check = va, b_check = vb;
-            if (cj_bool(d, cj_get(d, nodes[0], "float")))
-                a_check.width = va.width - 1;
-            if (cj_bool(d, cj_get(d, nodes[1], "float")))
-                b_check.width = vb.width - 1;
-            ok = ar_truth(&p, &a_check, &ta) && ar_truth(&p, &b_check, &tb);
+            if (cj_bool(d, cj_get(d, nodes[0], "float")) && vals[0].width > 0)
+                --vals[0].width;
+            if (cj_bool(d, cj_get(d, nodes[1], "float")) && vals[1].width > 0)
+                --vals[1].width;
+            ok = ar_truth(&p, &vals[0], &ta) && ar_truth(&p, &vals[1], &tb);
             if (ok) {
                 ok = cj_equal(d, op, "land") ? fl_and2(&p, ta, tb, &out_b)
                                              : fl_or2(&p, ta, tb, &out_b);
                 if (ok) {
-                    ar_value res = fl_const_val(bits, sign, 0);
-                    res.bit[0] = out_b;
-                    ok = fl_emit_to_target(c, target_id, &res, outer, state);
+                    vals[2] = fl_const_val(bits, sign, 0);
+                    vals[2].bit[0] = out_b;
+                    ok = fl_emit_to_target(c, target_id, &vals[2], outer, state);
                 }
             }
         }
@@ -1809,6 +2430,7 @@ static int fl_compute_node(
         if (!fl_unwind_stages(c, &stages, 0))
             ok = 0;
         free(stages.items);
+        free(vals);
         return ok;
     }
 
@@ -1817,28 +2439,151 @@ static int fl_compute_node(
         if (!number(c, d, nodes[0], "bits", &abits64)) {
             ar_free(&p);
             free(stages.items);
+            free(vals);
             return 0;
         }
         unsigned abits = (unsigned)abits64;
         int asign = cj_bool(d, cj_get(d, nodes[0], "signed"));
         int afloat = cj_bool(d, cj_get(d, nodes[0], "float"));
         int dst_float = cj_bool(d, cj_get(d, expr, "float"));
-        ar_value a_v, out_v;
-        int ok = fl_stage_view(c, d, nodes[0], &stages, &a_v);
+        int ok = fl_stage_view(c, d, nodes[0], &stages, &vals[0]);
         if (ok) {
             if (afloat && dst_float)
-                ok = fl_synth_f2f(&p, abits, bits, &a_v, &out_v);
+                ok = fl_synth_f2f(&p, abits, bits, &vals[0], &vals[1]);
             else if (!afloat && dst_float)
-                ok = fl_synth_i2f(&p, bits, &a_v, asign, &out_v);
+                ok = fl_synth_i2f(&p, bits, &vals[0], asign, &vals[1]);
             else if (afloat && !dst_float)
-                ok = fl_synth_f2i(&p, abits, &a_v, bits, sign, &out_v);
+                ok = fl_synth_f2i(&p, abits, &vals[0], bits, sign, &vals[1]);
             else
-                out_v = a_v;
+                vals[1] = vals[0];
         }
         if (ok)
-            ok = fl_emit_to_target(c, target_id, &out_v, outer, state);
+            ok = fl_emit_to_target(c, target_id, &vals[1], outer, state);
         if (!fl_cleanup_builder(&p))
             ok = 0;
+        if (!fl_unwind_stages(c, &stages, 0))
+            ok = 0;
+        free(stages.items);
+        free(vals);
+        return ok;
+    }
+
+    if (n == 1 &&
+        (cj_equal(d, op, "ftrunc") || cj_equal(d, op, "ffloor") || cj_equal(d, op, "fceil") ||
+         cj_equal(d, op, "fround") || cj_equal(d, op, "fsqrt"))) {
+        int ok = fl_stage_view(c, d, nodes[0], &stages, &vals[0]);
+        if (ok) {
+            fl_spec sp = fl_spec_for(bits);
+            if (cj_equal(d, op, "fsqrt"))
+                ok = fl_synth_sqrt(&p, sp, &vals[0], &vals[1]);
+            else {
+                int mode = cj_equal(d, op, "ftrunc")   ? 0
+                           : cj_equal(d, op, "ffloor") ? 1
+                           : cj_equal(d, op, "fceil")  ? 2
+                                                       : 3;
+                ok = fl_synth_round_int(&p, sp, mode, &vals[0], &vals[1]);
+            }
+        }
+        if (ok)
+            ok = fl_emit_to_target(c, target_id, &vals[1], outer, state);
+        if (!fl_cleanup_builder(&p))
+            ok = 0;
+        if (!fl_unwind_stages(c, &stages, 0))
+            ok = 0;
+        free(stages.items);
+        free(vals);
+        return ok;
+    }
+
+    if (!cj_bool(d, cj_get(d, expr, "float")) && !float_is_op(d, op)) {
+        ar_free(&p);
+        free(vals);
+        char *buf = NULL;
+        size_t len = 0, cap = 0;
+        int ok = 1;
+        char hdr[192];
+        size_t op_begin = d->tokens[op].begin, op_end = d->tokens[op].end;
+        ok = fl_buf_append(&buf, &len, &cap, "{\"op\":", 6) &&
+             fl_buf_append(&buf, &len, &cap, d->text + op_begin, op_end - op_begin);
+        if (ok) {
+            int hl = snprintf(
+                hdr, sizeof hdr, ",\"bits\":%u,\"signed\":%s", bits, sign ? "true" : "false");
+            ok = hl > 0 && (size_t)hl < sizeof hdr &&
+                 fl_buf_append(&buf, &len, &cap, hdr, (size_t)hl);
+        }
+        int prof = cj_get(d, expr, "profile");
+        if (ok && prof >= 0) {
+            size_t pb = d->tokens[prof].begin, pe = d->tokens[prof].end;
+            ok = fl_buf_append(&buf, &len, &cap, ",\"profile\":", 11) &&
+                 fl_buf_append(&buf, &len, &cap, d->text + pb, pe - pb);
+        }
+        if (ok)
+            ok = fl_buf_append(&buf, &len, &cap, ",\"args\":[", 9);
+        for (unsigned i = 0; i < n && ok; ++i) {
+            if (i > 0 && !fl_buf_append(&buf, &len, &cap, ",", 1)) {
+                ok = 0;
+                break;
+            }
+            int child = nodes[i];
+            if (!float_expr_uses_float(d, child)) {
+                size_t cb = d->tokens[child].begin, ce = d->tokens[child].end;
+                ok = fl_buf_append(&buf, &len, &cap, d->text + cb, ce - cb);
+            } else {
+                uint64_t cbits64 = 0;
+                if (!number(c, d, child, "bits", &cbits64)) {
+                    ok = 0;
+                    break;
+                }
+                unsigned cbits = (unsigned)cbits64;
+                int csign = cj_bool(d, cj_get(d, child, "signed"));
+                uint32_t tid = fl_fresh_id(c);
+                if (!allocate(c, tid, cbits, 1, csign)) {
+                    ok = 0;
+                    break;
+                }
+                size_t begin = c->ngates;
+                int cok = fl_compute_node(c, d, child, tid, outer, state);
+                size_t end = c->ngates;
+                if (!cok || !fl_stage_push(c, &stages, tid, begin, end)) {
+                    if (cok)
+                        fl_reverse_gates(c, begin, end);
+                    qc_register *tr = reg(c, tid);
+                    if (tr && tr->alive) {
+                        tr->clean = 1;
+                        release(c, tr);
+                    }
+                    ok = 0;
+                    break;
+                }
+                if (!reg(c, tid)->prepared)
+                    fl_mark_stage_support(c, d, child, tid, outer);
+                char reg_buf[128];
+                int rl = snprintf(reg_buf,
+                                  sizeof reg_buf,
+                                  "{\"op\":\"reg\",\"id\":%u,\"bits\":%u,\"signed\":%s}",
+                                  tid,
+                                  cbits,
+                                  csign ? "true" : "false");
+                ok = rl > 0 && (size_t)rl < sizeof reg_buf &&
+                     fl_buf_append(&buf, &len, &cap, reg_buf, (size_t)rl);
+            }
+        }
+        if (ok)
+            ok = fl_buf_append(&buf, &len, &cap, "]}", 2);
+        if (ok) {
+            cj_doc sub_doc = {0};
+            ok = cj_parse(&sub_doc, buf);
+            if (!ok) {
+                if (sub_doc.error[0])
+                    qc_fail(c, sub_doc.error);
+            } else {
+                ok = compute(c, &sub_doc, 0, reg(c, target_id), outer, state);
+                if (ok)
+                    fl_mark_stage_support(c, &sub_doc, 0, target_id, outer);
+            }
+            cj_free(&sub_doc);
+        }
+        free(buf);
         if (!fl_unwind_stages(c, &stages, 0))
             ok = 0;
         free(stages.items);
@@ -1846,35 +2591,45 @@ static int fl_compute_node(
     }
 
     if (n == 2) {
-        ar_value a_v, b_v, out_v;
         uint64_t abits64 = 0;
         int ok = number(c, d, nodes[0], "bits", &abits64) &&
-                 fl_stage_view(c, d, nodes[0], &stages, &a_v) &&
-                 fl_stage_view(c, d, nodes[1], &stages, &b_v);
+                 fl_stage_view(c, d, nodes[0], &stages, &vals[0]) &&
+                 fl_stage_view(c, d, nodes[1], &stages, &vals[1]);
         if (ok) {
             fl_spec sp = fl_spec_for((unsigned)abits64);
             if (cj_equal(d, op, "fadd") || cj_equal(d, op, "fsub"))
-                ok = fl_synth_add_sub(&p, sp, &a_v, &b_v, cj_equal(d, op, "fsub"), &out_v);
+                ok =
+                    fl_synth_add_sub(&p, sp, &vals[0], &vals[1], cj_equal(d, op, "fsub"), &vals[2]);
             else if (cj_equal(d, op, "fmul"))
-                ok = fl_synth_mul(&p, sp, &a_v, &b_v, &out_v);
+                ok = fl_synth_mul(&p, sp, &vals[0], &vals[1], &vals[2]);
             else if (cj_equal(d, op, "fdiv"))
-                ok = fl_synth_div(&p, sp, &a_v, &b_v, &out_v);
+                ok = fl_synth_div(&p, sp, &vals[0], &vals[1], &vals[2]);
+            else if (cj_equal(d, op, "fmin") || cj_equal(d, op, "fmax"))
+                ok = fl_synth_minmax(
+                    &p, sp, d, cj_equal(d, op, "fmax"), &vals[0], &vals[1], &vals[2]);
+            else if (cj_equal(d, op, "fdim"))
+                ok = fl_synth_fdim(&p, sp, d, &vals[0], &vals[1], &vals[2]);
+            else if (cj_equal(d, op, "feq") || cj_equal(d, op, "fne") || cj_equal(d, op, "flt") ||
+                     cj_equal(d, op, "fle") || cj_equal(d, op, "fgt") || cj_equal(d, op, "fge"))
+                ok = fl_synth_cmp(&p, sp, d, op, &vals[0], &vals[1], bits, &vals[2]);
             else
-                ok = fl_synth_cmp(&p, sp, d, op, &a_v, &b_v, bits, &out_v);
+                ok = qc_fail(c, "unsupported floating-point expression operator");
         }
         if (ok)
-            ok = fl_emit_to_target(c, target_id, &out_v, outer, state);
+            ok = fl_emit_to_target(c, target_id, &vals[2], outer, state);
         if (!fl_cleanup_builder(&p))
             ok = 0;
         if (!fl_unwind_stages(c, &stages, 0))
             ok = 0;
         free(stages.items);
+        free(vals);
         return ok;
     }
 
     ar_free(&p);
     fl_unwind_stages(c, &stages, 0);
     free(stages.items);
+    free(vals);
     return qc_fail(c, "unsupported floating-point expression operator");
 }
 

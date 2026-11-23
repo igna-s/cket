@@ -20,6 +20,7 @@ HEADER = (
     '#include <inttypes.h>\n'
     '#include <limits.h>\n'
     '#include <locale.h>\n'
+    '#include <math.h>\n'
     '#include <quantum.h>\n'
     '#include <stdbool.h>\n'
     '#include <stddef.h>\n'
@@ -89,6 +90,15 @@ FULL_TRACE_CASES = {
         'if((c?2.5:-2.5)<0.0)phase(0.29);'
         'ownership_checkpoint("double_phase");'
         'measure(c);return 0;}'
+    ),
+    'b2_sqrt_phase_state': (
+        'int main(void){'
+        'quant bool c=superposition(0,1);'
+        'quant float x=c?9.0f:4.0f;'
+        'quant float r=sqrtf(x);'
+        'if(r>2.5f)phase(0.41);'
+        'ownership_checkpoint("sqrt_phase");'
+        'measure(c);measure(x);measure(r);return 0;}'
     ),
     'a4_union_bitfield_state': (
         'union U{uint16_t w;uint8_t b[2];};'
@@ -413,6 +423,49 @@ FULL_PROGRAMS = {
         ),
         'static_qasm': False,
     },
+    'b2_float_math_and_updates': {
+        'src': (
+            '#include <math.h>\n#include <quantum.h>\n#include <stdbool.h>\n#include <stdint.h>\n'
+            'int main(void){quant bool c=superposition(0,1);'
+            'quant double x=c?-1.0:4.0;'
+            'quant double r=sqrt(x);'
+            'quant double mn=fmin(x,2.5);'
+            'quant double mx=fmax(x,2.5);'
+            'quant float infv=c?INFINITY:2.0f;'
+            'quant bool q_nan=isnan(r);'
+            'quant bool q_fin=isfinite(r);'
+            'quant bool q_inf=isinf(infv);'
+            'quant bool q_norm=isnormal(infv);'
+            'quant bool q_unord=isunordered(r,1.0);'
+            'quant bool q_lg=islessgreater(r,1.0);'
+            'quant bool q_gt=isgreater(mx,1.0)&&isgreaterequal(mx,2.5);'
+            'quant bool q_lt=isless(mn,3.0)&&islessequal(mn,2.5);'
+            'quant float f=c?-1.5f:2.25f;f++;'
+            'quant float d=1.5f;--d;'
+            'quant float df=fdimf(2.5f,f);'
+            'quant float fl=floorf(f),ce=ceilf(f),tr=truncf(f),rd=roundf(f);'
+            'quant float cs=copysignf(3.5f,f);'
+            'quant int sb=signbit(x);'
+            'unsigned vc=measure(c);'
+            'float gf=measure(f),gd=measure(d),gdf=measure(df);'
+            'double gr=measure(r),gmn=measure(mn),gmx=measure(mx);'
+            'float gfl=measure(fl),gce=measure(ce),gtr=measure(tr),grd=measure(rd),gcs=measure(cs);'
+            'int gsb=measure(sb);'
+            'unsigned gnan=measure(q_nan),gfin=measure(q_fin),ginf=measure(q_inf),'
+            'gnorm=measure(q_norm),gunord=measure(q_unord),glg=measure(q_lg),'
+            'ggt=measure(q_gt),glt=measure(q_lt);'
+            'reset(x);reset(infv);'
+            'unsigned gok=ggt&&glt;'
+            'return vc?'
+            '(gf!=-0.5f||gd!=0.5f||!isnan(gr)||gmn!=-1.0||gmx!=2.5||gdf!=3.0f||'
+            'gfl!=-1.0f||gce!=-0.0f||!signbit(gce)||gtr!=-0.0f||!signbit(gtr)||grd!=-1.0f||'
+            'gcs!=-3.5f||gsb==0||!gnan||gfin||!ginf||gnorm||!gunord||glg||!gok):'
+            '(gf!=3.25f||gd!=0.5f||gr!=2.0||gmn!=2.5||gmx!=4.0||gdf!=0.0f||gfl!=3.0f||'
+            'gce!=4.0f||gtr!=3.0f||grd!=3.0f||gcs!=3.5f||gsb!=0||gnan||!gfin||ginf||!gnorm||'
+            'gunord||!glg||!gok);}\n'
+        ),
+        'static_qasm': True,
+    },
 }
 
 PRE_NEGATIVE = {
@@ -515,6 +568,7 @@ INTEGRATED_EXAMPLES = [
     'everyday_buffers_strings',
     'everyday_dynamic_vector',
     'everyday_control_phase',
+    'everyday_math_geometry',
 ]
 
 
@@ -603,6 +657,11 @@ def expected_trace_state(case: str, point: dict) -> dict[int, complex] | None:
         return {
             encode({'c': 0}): cmath.exp(1j * 0.29) / math.sqrt(2),
             encode({'c': 1}): 1 / math.sqrt(2),
+        }
+    if case == 'b2_sqrt_phase_state':
+        return {
+            encode({'c': 0, 'x': 0x40800000, 'r': 0x40000000}): 1 / math.sqrt(2),
+            encode({'c': 1, 'x': 0x41100000, 'r': 0x40400000}): cmath.exp(1j * 0.41) / math.sqrt(2),
         }
     return None
 
@@ -954,8 +1013,8 @@ def main() -> None:
             (compiler / 'build/cket_plugin.so').read_bytes()
         ).hexdigest(),
         'scope': (
-            'Everyday C profile A1-A12, IEEE-754 float/double, bounded while/goto, '
-            'stdlib extensions and 6 integrated examples across opt levels and ASan/UBSan.'
+            'Everyday C profile A1-A12, IEEE-754 float/double, <math.h>, bounded while/goto, '
+            'stdlib extensions and 7 integrated examples across opt levels and ASan/UBSan.'
         ),
     }
     (output / 'summary.json').write_text(json.dumps(summary, indent=2) + '\n')

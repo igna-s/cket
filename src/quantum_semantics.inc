@@ -80,6 +80,7 @@ tree lower_node(tree value);
 bool gcc_quantum_sanitizer_guard(tree value);
 bool quantum_pure_expression(tree value);
 std::string standard_ctype(tree call);
+std::string standard_float_math(tree fn, int nargs);
 std::string cpu_indexed_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_expression(tree selection, std::set<unsigned> &deps);
 std::string heap_byte_expression(tree selection, std::set<unsigned> &deps);
@@ -868,6 +869,50 @@ bool standard_scalar_absolute(tree fn) {
     return recognized;
 }
 
+std::string standard_float_math(tree fn, int nargs) {
+    if (!fn)
+        return "";
+    bool is_system = !DECL_SAVED_TREE(fn) && DECL_EXTERNAL(fn) && TREE_PUBLIC(fn) &&
+                     in_system_header_at(DECL_SOURCE_LOCATION(fn));
+    std::string name = is_system ? name_of(fn) : "";
+    if (nargs == 1) {
+        if (fndecl_built_in_p(fn, BUILT_IN_SIGNBIT) || fndecl_built_in_p(fn, BUILT_IN_SIGNBITF) ||
+            (is_system && (name == "signbit" || name == "__signbit" || name == "__signbitf")))
+            return "fsignbit";
+        if (fndecl_built_in_p(fn, BUILT_IN_TRUNC) || fndecl_built_in_p(fn, BUILT_IN_TRUNCF) ||
+            (is_system && (name == "trunc" || name == "truncf")))
+            return "ftrunc";
+        if (fndecl_built_in_p(fn, BUILT_IN_FLOOR) || fndecl_built_in_p(fn, BUILT_IN_FLOORF) ||
+            (is_system && (name == "floor" || name == "floorf")))
+            return "ffloor";
+        if (fndecl_built_in_p(fn, BUILT_IN_CEIL) || fndecl_built_in_p(fn, BUILT_IN_CEILF) ||
+            (is_system && (name == "ceil" || name == "ceilf")))
+            return "fceil";
+        if (fndecl_built_in_p(fn, BUILT_IN_ROUND) || fndecl_built_in_p(fn, BUILT_IN_ROUNDF) ||
+            (is_system && (name == "round" || name == "roundf")))
+            return "fround";
+        if (fndecl_built_in_p(fn, BUILT_IN_SQRT) || fndecl_built_in_p(fn, BUILT_IN_SQRTF) ||
+            (is_system && (name == "sqrt" || name == "sqrtf")))
+            return "fsqrt";
+        return "";
+    }
+    if (nargs == 2) {
+        if (fndecl_built_in_p(fn, BUILT_IN_COPYSIGN) || fndecl_built_in_p(fn, BUILT_IN_COPYSIGNF) ||
+            (is_system && (name == "copysign" || name == "copysignf")))
+            return "fcopysign";
+        if (fndecl_built_in_p(fn, BUILT_IN_FMIN) || fndecl_built_in_p(fn, BUILT_IN_FMINF) ||
+            (is_system && (name == "fmin" || name == "fminf")))
+            return "fmin";
+        if (fndecl_built_in_p(fn, BUILT_IN_FMAX) || fndecl_built_in_p(fn, BUILT_IN_FMAXF) ||
+            (is_system && (name == "fmax" || name == "fmaxf")))
+            return "fmax";
+        if (fndecl_built_in_p(fn, BUILT_IN_FDIM) || fndecl_built_in_p(fn, BUILT_IN_FDIMF) ||
+            (is_system && (name == "fdim" || name == "fdimf")))
+            return "fdim";
+    }
+    return "";
+}
+
 std::string expression(tree value, std::set<unsigned> &deps) {
     if (!value)
         return "{}";
@@ -889,6 +934,69 @@ std::string expression(tree value, std::set<unsigned> &deps) {
     std::string ctype = standard_ctype(value);
     if (!ctype.empty() && has_quantum(value))
         return ctype_expression(value, ctype, deps);
+    if (code == CALL_EXPR) {
+        std::string math_op = standard_float_math(get_callee_fndecl(value), call_expr_nargs(value));
+        if (!math_op.empty() && (coherent || has_quantum(value))) {
+            int nargs = call_expr_nargs(value);
+            if (nargs == 2) {
+                auto left_accesses = quantum_accesses(CALL_EXPR_ARG(value, 0), true);
+                auto right_accesses = quantum_accesses(CALL_EXPR_ARG(value, 1), true);
+                if (conflicting_accesses(left_accesses, right_accesses)) {
+                    error_at(
+                        at(value),
+                        ambiguous_heap_accesses(left_accesses, right_accesses)
+                            ? "|c>: unsequenced heap accesses require a proven disjoint-address contract; sequence them explicitly"
+                            : "|c>: unsequenced quantum modification and access have no defined C11 result");
+                    return "{}";
+                }
+            }
+            if (math_op == "fsignbit") {
+                tree arg0 = CALL_EXPR_ARG(value, 0);
+                tree atype = TREE_TYPE(arg0);
+                if (!atype || !SCALAR_FLOAT_TYPE_P(atype) ||
+                    (TYPE_PRECISION(atype) != 32 && TYPE_PRECISION(atype) != 64)) {
+                    error_at(
+                        at(value),
+                        "|c>: quantum floating-point math currently supports 32-bit float and 64-bit double");
+                    return "{}";
+                }
+                std::string sbit = "{\"op\":\"fsignbit\",\"bits\":32,\"signed\":true,\"args\":[" +
+                                   expression(arg0, deps) + "]}";
+                tree rtype = TREE_TYPE(value);
+                if (rtype && INTEGRAL_TYPE_P(rtype) && TYPE_PRECISION(rtype) == 32 &&
+                    !TYPE_UNSIGNED(rtype))
+                    return sbit;
+                return "{\"op\":\"cast\"" + type_json(rtype) + ",\"args\":[" + sbit + "]}";
+            }
+            tree rtype = TREE_TYPE(value);
+            if (!rtype || !SCALAR_FLOAT_TYPE_P(rtype) ||
+                (TYPE_PRECISION(rtype) != 32 && TYPE_PRECISION(rtype) != 64)) {
+                error_at(
+                    at(value),
+                    "|c>: quantum floating-point math currently supports 32-bit float and 64-bit double");
+                return "{}";
+            }
+            std::string args_json;
+            for (int i = 0; i < nargs; ++i) {
+                if (i > 0)
+                    args_json += ",";
+                tree arg = CALL_EXPR_ARG(value, i);
+                tree atype = TREE_TYPE(arg);
+                if (atype && SCALAR_FLOAT_TYPE_P(atype) && TYPE_PRECISION(atype) != 32 &&
+                    TYPE_PRECISION(atype) != 64) {
+                    error_at(
+                        at(value),
+                        "|c>: quantum floating-point math currently supports 32-bit float and 64-bit double");
+                    return "{}";
+                }
+                std::string aj = expression(arg, deps);
+                if (!atype || TYPE_MAIN_VARIANT(atype) != TYPE_MAIN_VARIANT(rtype))
+                    aj = "{\"op\":\"cast\"" + type_json(rtype) + ",\"args\":[" + aj + "]}";
+                args_json += aj;
+            }
+            return "{\"op\":" + json(math_op) + type_json(rtype) + ",\"args\":[" + args_json + "]}";
+        }
+    }
     // GCC inserts scalar UBSan handlers before this pass. In a coherent arm,
     // pure arithmetic belongs to the circuit, whose backend checks definedness.
     // Executing a host handler would eagerly evaluate an inactive branch.
@@ -1126,6 +1234,68 @@ std::string expression(tree value, std::set<unsigned> &deps) {
                 at(value),
                 "|c>: GCC narrowed a multiplication before the quantum pass; compute a full unsigned result before narrowing to preserve the arithmetic contract");
             return "{}";
+        }
+    }
+    if (code == UNORDERED_EXPR || code == ORDERED_EXPR || code == UNLT_EXPR || code == UNLE_EXPR ||
+        code == UNGT_EXPR || code == UNGE_EXPR || code == UNEQ_EXPR || code == LTGT_EXPR) {
+        tree a = TREE_OPERAND(value, 0);
+        tree b = TREE_OPERAND(value, 1);
+        tree atype = TREE_TYPE(a), btype = TREE_TYPE(b);
+        if (!atype || !btype || !SCALAR_FLOAT_TYPE_P(atype) || !SCALAR_FLOAT_TYPE_P(btype) ||
+            (TYPE_PRECISION(atype) != 32 && TYPE_PRECISION(atype) != 64) ||
+            (TYPE_PRECISION(btype) != 32 && TYPE_PRECISION(btype) != 64)) {
+            error_at(
+                at(value),
+                "|c>: quantum floating-point comparisons currently support 32-bit float and 64-bit double");
+            return "{}";
+        }
+        bool same =
+            operand_equal_p(a, b, 0) && TYPE_MAIN_VARIANT(atype) == TYPE_MAIN_VARIANT(btype);
+        std::string left = expression(a, deps);
+        std::string right = same ? left : expression(b, deps);
+        if (TYPE_MAIN_VARIANT(atype) != TYPE_MAIN_VARIANT(btype)) {
+            tree common = TYPE_PRECISION(atype) >= TYPE_PRECISION(btype) ? atype : btype;
+            if (TYPE_MAIN_VARIANT(atype) != TYPE_MAIN_VARIANT(common))
+                left = "{\"op\":\"cast\"" + type_json(common) + ",\"args\":[" + left + "]}";
+            if (TYPE_MAIN_VARIANT(btype) != TYPE_MAIN_VARIANT(common))
+                right = "{\"op\":\"cast\"" + type_json(common) + ",\"args\":[" + right + "]}";
+        }
+        auto bin =
+            [](const char *bop, const std::string &t, const std::string &x, const std::string &y) {
+                return std::string("{\"op\":\"") + bop + "\"" + t + ",\"args\":[" + x + "," + y +
+                       "]}";
+            };
+        auto unnot = [](const std::string &t, const std::string &x) {
+            return "{\"op\":\"not\"" + t + ",\"args\":[" + x + "]}";
+        };
+        std::string rt = type_json(TREE_TYPE(value));
+        std::string b1 = ",\"bits\":1,\"signed\":false";
+        switch (code) {
+        case UNORDERED_EXPR:
+            return same ? bin("fne", rt, left, left)
+                        : unnot(rt,
+                                bin("lor",
+                                    b1,
+                                    bin("fle", b1, left, right),
+                                    bin("fgt", b1, left, right)));
+        case ORDERED_EXPR:
+            return same ? bin("feq", rt, left, left)
+                        : bin("lor", rt, bin("fle", b1, left, right), bin("fgt", b1, left, right));
+        case UNLT_EXPR:
+            return unnot(rt, bin("fge", b1, left, right));
+        case UNLE_EXPR:
+            return unnot(rt, bin("fgt", b1, left, right));
+        case UNGT_EXPR:
+            return unnot(rt, bin("fle", b1, left, right));
+        case UNGE_EXPR:
+            return unnot(rt, bin("flt", b1, left, right));
+        case UNEQ_EXPR:
+            return unnot(rt,
+                         bin("lor", b1, bin("flt", b1, left, right), bin("fgt", b1, left, right)));
+        case LTGT_EXPR:
+            return bin("lor", rt, bin("flt", b1, left, right), bin("fgt", b1, left, right));
+        default:
+            break;
         }
     }
     bool float_result = TREE_TYPE(value) && SCALAR_FLOAT_TYPE_P(TREE_TYPE(value));
@@ -3723,13 +3893,14 @@ tree lower_node(tree value) {
         // This statement synthesizes two references from one source reference.
         ++remaining[var.id];
         bool subtract = code == PREDECREMENT_EXPR || code == POSTDECREMENT_EXPR;
-        tree promoted = TYPE_PRECISION(TREE_TYPE(var.decl)) < TYPE_PRECISION(integer_type_node)
-                            ? integer_type_node
-                            : TYPE_MAIN_VARIANT(TREE_TYPE(var.decl));
-        tree rhs = build2(subtract ? MINUS_EXPR : PLUS_EXPR,
-                          promoted,
-                          fold_convert(promoted, var.decl),
-                          build_int_cst(promoted, 1));
+        tree promoted =
+            var.is_float ? TYPE_MAIN_VARIANT(TREE_TYPE(var.decl))
+                         : (TYPE_PRECISION(TREE_TYPE(var.decl)) < TYPE_PRECISION(integer_type_node)
+                                ? integer_type_node
+                                : TYPE_MAIN_VARIANT(TREE_TYPE(var.decl)));
+        tree one_cst = var.is_float ? build_real(promoted, dconst1) : build_int_cst(promoted, 1);
+        tree rhs = build2(
+            subtract ? MINUS_EXPR : PLUS_EXPR, promoted, fold_convert(promoted, var.decl), one_cst);
         tree assignment = build2(
             MODIFY_EXPR, TREE_TYPE(var.decl), var.decl, fold_convert(TREE_TYPE(var.decl), rhs));
         protected_set_expr_location(assignment, at(value));
@@ -3823,7 +3994,8 @@ tree lower_node(tree value) {
             }
         } else if (addend && has_quantum(addend) &&
                    (quantum_pure_expression(addend) || expression_saves.count(strip(addend))) &&
-                   !references_storage(addend, var.decl) && !var.is_signed && var.width > 1) {
+                   !references_storage(addend, var.decl) && !var.is_float && !var.is_signed &&
+                   var.width > 1) {
             std::map<tree, tree> promoted;
             tree input = narrowed_integer_arithmetic(simple)
                              ? before_integer_narrowing(addend, TREE_TYPE(simple))
@@ -3869,7 +4041,8 @@ tree lower_node(tree value) {
                            ",\"subtract\":" + (TREE_CODE(simple) == MINUS_EXPR ? "true" : "false") +
                            control_json() + '}',
                        at(value)));
-        } else if (addend && !has_quantum(addend) && !var.is_signed && var.width > 1 &&
+        } else if (addend && !has_quantum(addend) && !var.is_float && !var.is_signed &&
+                   var.width > 1 &&
                    (controls.empty() || TREE_CODE(strip(addend)) == INTEGER_CST ||
                     pure_cpu_scalar_read(addend) || !quantum_pure_expression(addend))) {
             if (!controls.empty() && TREE_SIDE_EFFECTS(addend)) {
